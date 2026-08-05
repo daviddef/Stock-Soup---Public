@@ -345,7 +345,7 @@ function render(D,H){
       var rows=(arr||[]).map(function(sym,idx){
         var isNew=olderSet?olderSet.indexOf(sym)<0:false;
         var nm=names[String(sym).replace(/\*$/,'')]||'';
-        var badge=older?('<span class="jb '+(isNew?'jb-new':'jb-keep')+'">'+(isNew?'🆕 new':'↩ kept')+'</span>'):'';
+        var badge=older?('<span class="jb '+(isNew?'jb-new':'jb-keep')+'">'+(isNew?'NEW':'kept')+'</span>'):'';
         return '<div class="jrow"><span class="jtf">'+TFS[idx]+'</span><span class="jinfo">'+qlink(sym,region)+(nm?'<span class="jname">'+esc(nm)+'</span>':'')+'</span>'+badge+'</div>';
       }).join('');
       return '<div class="jgrp">'+label+'</div>'+rows;
