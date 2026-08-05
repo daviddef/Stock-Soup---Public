@@ -1,0 +1,275 @@
+<title>Stock Soup — Tonight's Menu</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root{
+    --ground:#14100E; --surface:#1E1815; --surface-2:#271F1A; --line:#3A2F27;
+    --broth:#FF6B1A; --buy:#23C267; --dont:#FF4D4D; --hold:#FFC53D;
+    --ink:#F4EDE4; --muted:#A69A8C; --faint:#6E6154;
+    --shadow:0 12px 40px -12px rgba(0,0,0,.7);
+    --font:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+    --mono:ui-monospace,"SF Mono",Menlo,monospace;
+  }
+  @media (prefers-color-scheme:light){
+    :root{ --ground:#FBF6EF; --surface:#FFFFFF; --surface-2:#F3EADF; --line:#E4D7C6;
+      --ink:#1E1815; --muted:#7A6C5C; --faint:#A99A88; --shadow:0 12px 40px -16px rgba(80,50,20,.25); }
+  }
+  :root[data-theme="dark"]{ --ground:#14100E; --surface:#1E1815; --surface-2:#271F1A; --line:#3A2F27;
+    --ink:#F4EDE4; --muted:#A69A8C; --faint:#6E6154; --shadow:0 12px 40px -12px rgba(0,0,0,.7); }
+  :root[data-theme="light"]{ --ground:#FBF6EF; --surface:#FFFFFF; --surface-2:#F3EADF; --line:#E4D7C6;
+    --ink:#1E1815; --muted:#7A6C5C; --faint:#A99A88; --shadow:0 12px 40px -16px rgba(80,50,20,.25); }
+
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--ground);color:var(--ink);font-family:var(--font);line-height:1.5;
+    -webkit-font-smoothing:antialiased;padding:clamp(14px,3vw,40px)}
+  .wrap{max-width:1080px;margin:0 auto;display:flex;flex-direction:column;gap:26px}
+  .display{font-weight:900;letter-spacing:-.02em;text-wrap:balance;line-height:.98;text-transform:uppercase}
+  .eyebrow{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);font-weight:700}
+  .mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+
+  .hero{background:radial-gradient(120% 140% at 100% 0%, rgba(255,107,26,.16), transparent 55%),var(--surface);
+    border:1px solid var(--line);border-radius:20px;padding:clamp(20px,3.5vw,38px);position:relative;overflow:hidden}
+  .brandrow{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}
+  .brand{display:flex;align-items:center;gap:12px;font-weight:900;font-size:20px;letter-spacing:-.01em}
+  .bowl{width:38px;height:38px;border-radius:50%;background:conic-gradient(from 200deg,var(--broth),#FFB061,var(--broth));
+    display:grid;place-items:center;font-size:20px;box-shadow:0 0 24px -4px var(--broth)}
+  .live{font-size:11px;font-weight:800;letter-spacing:.08em;color:var(--muted);display:inline-flex;align-items:center;gap:6px}
+  .live .pulse{width:7px;height:7px;border-radius:50%;background:var(--buy);box-shadow:0 0 0 0 rgba(35,194,103,.6);animation:pulse 2.4s infinite}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(35,194,103,.55)}70%{box-shadow:0 0 0 8px rgba(35,194,103,0)}100%{box-shadow:0 0 0 0 rgba(35,194,103,0)}}
+  .hero h1{font-size:clamp(34px,7vw,68px);margin:14px 0 6px}
+  .hero h1 .hot{color:var(--broth)}
+  .chef{font-size:clamp(15px,2.2vw,19px);color:var(--muted);max-width:60ch;text-wrap:pretty}
+  .chef b{color:var(--ink)}
+  .metastrip{display:flex;flex-wrap:wrap;gap:8px;margin-top:20px}
+  .chip{font-size:12px;font-weight:700;padding:6px 11px;border-radius:999px;border:1px solid var(--line);
+    background:var(--surface-2);display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+  .chip .dot{width:8px;height:8px;border-radius:50%}
+  .toggle{cursor:pointer;font-family:var(--font);color:var(--ink)}
+  .toggle:focus-visible{outline:2px solid var(--broth);outline-offset:2px}
+  .meter{margin-top:18px}
+  .meter .track{height:10px;border-radius:999px;background:linear-gradient(90deg,var(--dont),var(--hold),var(--buy));position:relative;opacity:.9}
+  .meter .needle{position:absolute;top:-5px;width:4px;height:20px;border-radius:2px;background:var(--ink);box-shadow:0 0 0 3px var(--surface);left:50%;transition:left .8s cubic-bezier(.2,.8,.2,1)}
+  .meter .lbls{display:flex;justify-content:space-between;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);margin-top:6px;font-weight:700}
+
+  .sec-head{display:flex;align-items:baseline;gap:12px;margin-bottom:2px}
+  .sec-head h2{font-size:clamp(20px,3.4vw,30px)}
+  .sec-head .k{color:var(--broth)}
+  .sec-sub{color:var(--muted);font-size:14px;margin-bottom:16px}
+
+  .tabs{display:inline-flex;background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:4px;gap:4px;flex-wrap:wrap}
+  .tab{border:0;background:transparent;color:var(--muted);font-family:var(--font);font-weight:800;font-size:13px;
+    padding:8px 16px;border-radius:9px;cursor:pointer;letter-spacing:.02em;transition:.15s}
+  .tab[aria-selected="true"]{background:var(--broth);color:#1a0f06}
+  .tab:disabled{opacity:.45;cursor:not-allowed}
+  .tab:focus-visible{outline:2px solid var(--broth);outline-offset:2px}
+
+  .menu{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  @media(max-width:760px){.menu{grid-template-columns:1fr}}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:12px;
+    box-shadow:var(--shadow);transition:transform .18s ease,border-color .18s ease}
+  .card:hover{transform:translateY(-4px);border-color:var(--broth)}
+  .card .tf{display:flex;align-items:center;justify-content:space-between}
+  .tf .name{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);font-weight:800}
+  .verdict{font-size:11px;font-weight:900;padding:5px 10px;border-radius:8px;letter-spacing:.04em;text-transform:uppercase}
+  .v-buy{background:rgba(35,194,103,.16);color:var(--buy);border:1px solid rgba(35,194,103,.4)}
+  .v-hold{background:rgba(255,197,61,.16);color:var(--hold);border:1px solid rgba(255,197,61,.4)}
+  .v-dont{background:rgba(255,77,77,.16);color:var(--dont);border:1px solid rgba(255,77,77,.4)}
+  .card .tick{display:flex;align-items:baseline;gap:10px}
+  .tick .sym{font-size:30px;font-weight:900;letter-spacing:-.02em}
+  .tick .px{margin-left:auto;text-align:right}
+  .px .p{font-weight:800;font-size:17px}
+  .px .c{font-size:12px;font-weight:700}
+  .up{color:var(--buy)} .down{color:var(--dont)}
+  .card .plain{font-size:14px;color:var(--ink);text-wrap:pretty}
+  .card .co{color:var(--broth);font-weight:800}
+  .card .lvls{display:flex;gap:6px;font-size:11px;color:var(--muted);border-top:1px dashed var(--line);padding-top:10px;flex-wrap:wrap}
+  .lvls b{color:var(--ink)}
+
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:760px){.grid2{grid-template-columns:1fr}}
+  .panel{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px}
+  .panel h3{font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:14px;font-weight:800}
+  .score{display:flex;gap:18px;align-items:center;margin-bottom:14px}
+  .score .big{font-size:40px;font-weight:900;line-height:1}
+  .score .sub{font-size:13px;color:var(--muted)}
+  .rec{display:flex;flex-direction:column;gap:8px}
+  .rec .row{display:flex;align-items:center;gap:10px;font-size:13px}
+  .rec .rsym{font-weight:800;width:52px}
+  .rec .bar{flex:1;height:8px;border-radius:999px;background:var(--surface-2);overflow:hidden;position:relative}
+  .rec .fill{position:absolute;top:0;bottom:0;border-radius:999px}
+  .rec .res{width:74px;text-align:right;font-weight:800;font-family:var(--mono)}
+  .cooking .row{justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--line);font-size:13px;display:flex;gap:10px;align-items:center}
+  .cooking .row:last-child{border-bottom:0}
+  .cooking .st{font-size:11px;font-weight:800;padding:3px 8px;border-radius:6px;background:var(--surface-2);color:var(--muted)}
+
+  .cols{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:760px){.cols{grid-template-columns:1fr}}
+  .stack{display:flex;flex-direction:column;gap:9px}
+  .line{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:11px;padding:11px 13px;font-size:14px}
+  .line .em{font-size:18px}
+  .line .txt{flex:1}
+  .line .txt small{display:block;color:var(--muted);font-size:12px;margin-top:1px}
+  .tag{font-size:11px;font-weight:900;padding:4px 9px;border-radius:7px;text-transform:uppercase;letter-spacing:.03em;white-space:nowrap}
+  .t-buy{background:rgba(35,194,103,.16);color:var(--buy)}
+  .t-dont{background:rgba(255,77,77,.16);color:var(--dont)}
+  .t-watch{background:rgba(255,197,61,.16);color:var(--hold)}
+
+  .trail .step{display:flex;gap:14px;padding:12px 0;border-bottom:1px solid var(--line)}
+  .trail .step:last-child{border-bottom:0}
+  .trail .n{font-family:var(--mono);color:var(--broth);font-weight:800;font-size:13px;min-width:22px}
+  .trail .st-txt{font-size:14px}
+  .trail .st-txt small{color:var(--muted);display:block;margin-top:2px}
+
+  .cta{display:flex;justify-content:center;margin-top:4px}
+  .cta a{background:var(--broth);color:#1a0f06;font-weight:900;text-decoration:none;padding:15px 30px;border-radius:12px;
+    font-size:15px;letter-spacing:.02em;box-shadow:0 8px 30px -8px var(--broth);transition:transform .15s}
+  .cta a:hover{transform:translateY(-2px)}
+  .cta a:focus-visible{outline:2px solid var(--ink);outline-offset:3px}
+  footer{text-align:center;color:var(--faint);font-size:11px;line-height:1.7;padding-top:6px}
+  .hidden{display:none}
+  @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<div class="wrap" id="app"></div>
+
+<script>
+/* ---- Embedded fallback = tonight's data. On GitHub Pages, latest.json overrides it live. ---- */
+var EMBEDDED = {
+  "generated":"2026-08-05T20:00:00+10:00","stamp":"Wed 5 Aug 2026 · 20:00 AEST",
+  "reportUrl":"https://daviddef.github.io/Stock-Soup---Public/reports/2026-08-05-2000.html",
+  "risk":{"label":"NEUTRAL","level":52,"btc":"$64,176","btcChange":"+0.97%","audusd":"0.7049","gold":"~$4,073"},
+  "headline":{"a":"AI","b":"Defence"},
+  "chef":"<b>Righto, listen up.</b> The market's calm — crypto barely moved, nobody's panicking. Robots and rockets are what's cooking; everything else is garnish tonight. I've plated <b>3 Aussie picks</b> and <b>3 from overseas</b>. One of them (PLTR) already bolted 29% — you're late, don't chase the bus, wait for it to stop.",
+  "hotTags":"🥇 Gold hot · 🛡️ Defence hot · 🤖 AI on fire",
+  "regions":[
+    {"id":"au","label":"🇦🇺 Australia","active":true,"picks":[
+      {"tf":"⚡ Day","verdict":"Get in","vclass":"v-buy","sym":"MND","name":"Monadelphous","price":"A$30.30","change":"+1.07%","up":true,"plain":"Just landed a $200m BHP contract but the shares have barely twitched. That's the whole game — good news, price hasn't caught up yet.","levels":"In <b>A$30.00</b> · Target <b>A$34</b> · Stop <b>A$28.50</b>"},
+      {"tf":"📅 Week","verdict":"Wait for dip","vclass":"v-hold","sym":"PNI","name":"Pinnacle","price":"A$19.25","change":"+8.39%","up":true,"plain":"Cracking result, jumped 8%. Only catch — it's a bit hot right now. Let it cool and buy the pullback near A$18.50.","levels":"In <b>A$18.50</b> · Target <b>A$22</b> · Stop <b>A$17.20</b>"},
+      {"tf":"📈 Long","verdict":"Get in","vclass":"v-buy","sym":"EOS","name":"Electro Optic","price":"A$7.65","change":"+1.19%","up":true,"plain":"Lasers and drone-killers. AUKUS money is a multi-year tide. It's cheap vs its average — a patient buy, not a sprint.","levels":"In <b>A$7.50</b> · Target <b>A$9.50</b> · Stop <b>A$6.90</b>"}
+    ]},
+    {"id":"us","label":"🇺🇸 International","active":false,"picks":[
+      {"tf":"⚡ Day","verdict":"Get in","vclass":"v-buy","sym":"KTOS","name":"Kratos Defense","price":"$51.87","change":"+5.41%","up":true,"plain":"Drones and target systems. A big broker just flipped bullish ($75 target) and 25 analysts say buy, zero say sell. That's a wall.","levels":"In <b>$51</b> · Target <b>$58</b> · Stop <b>$48</b>"},
+      {"tf":"📅 Week","verdict":"Too late — wait","vclass":"v-dont","sym":"PLTR","name":"Palantir","price":"$162.66","change":"+29.5%","up":true,"plain":"Monster earnings, best day in 2 years. But it's up 29% <b>today</b> — chasing that is how you get burned. Wait for the hangover dip near $150.","levels":"Watch <b>$150</b> · Target <b>$180</b> · Stop <b>$145</b>"},
+      {"tf":"📈 Long","verdict":"Get in","vclass":"v-buy","sym":"ETN","name":"Eaton","price":"$444.77","change":"+1.49%","up":true,"plain":"The boring genius pick. Every AI data-centre needs power gear — Eaton sells the picks & shovels. Broker just upgraded to $502.","levels":"In <b>$440</b> · Target <b>$500</b> · Stop <b>$410</b>"}
+    ]}
+  ],
+  "scoreboard":{"record":"1–2","recordNote":"last 3 calls · being straight with you",
+    "closed":[{"sym":"DRO","pct":"−5.4%","win":false},{"sym":"EOS*","pct":"−5.0%","win":false},{"sym":"VLO","pct":"+6.2%","win":true}],
+    "closedNote":"*Stopped out in July, back on the menu tonight with a fresh thesis. We hold ourselves to the stop.",
+    "open":[{"tf":"⚡","sym":"MND","period":"Day","status":"just plated","hot":false},{"tf":"📅","sym":"PNI","period":"Week","status":"simmering","hot":false},{"tf":"📈","sym":"EOS","period":"Long","status":"slow-cook","hot":false},{"tf":"⚡","sym":"KTOS","period":"Day","status":"just plated","hot":false},{"tf":"📅","sym":"PLTR","period":"Week","status":"too hot","hot":true},{"tf":"📈","sym":"ETN","period":"Long","status":"slow-cook","hot":false}]},
+  "geo":[{"em":"🛡️","title":"AUKUS defence build-out","note":"Governments spending big — tailwind for KTOS, EOS, BA","tag":"Buy the theme","tclass":"t-buy"},{"em":"🤖","title":"AI capex super-cycle","note":"Every big tech co is still spending on chips & power","tag":"Buy the theme","tclass":"t-buy"},{"em":"☢️","title":"Uranium term price 18-yr high","note":"Macro bullish — but no clean ASX ticker surfaced tonight","tag":"Watch","tclass":"t-watch"}],
+  "sectors":[{"em":"🤖","title":"AI / Semiconductors","note":"PLTR, NVDA, ETN — broad and strong 🔥🔥🔥🔥🔥","tag":"Buy","tclass":"t-buy"},{"em":"🛡️","title":"Defence / Aerospace","note":"KTOS, BA, EOS — upgrades stacking up 🔥🔥🔥🔥","tag":"Buy","tclass":"t-buy"},{"em":"🏥","title":"Healthcare (ASX)","note":"HLS crashed −23% on a guidance cut","tag":"Skip","tclass":"t-dont"}],
+  "commodities":[{"em":"🥇","name":"Gold","note":"Aussie miners broke out +8% — the pack is running","tag":"Buy","tclass":"t-buy"},{"em":"☢️","name":"Uranium","note":"Term price at 18-year high, supply getting cut","tag":"Buy","tclass":"t-buy"},{"em":"🛢️","name":"Oil","note":"~$83 and going nowhere fast tonight","tag":"Meh","tclass":"t-watch"},{"em":"🔩","name":"Copper","note":"Quiet — no fresh signal this run","tag":"Meh","tclass":"t-watch"}],
+  "trail":[{"n":"01","text":"<b>Scanned ~48 stocks</b> across Aussie news feeds and US movers.","note":"Stockhead, Motley Fool, Yahoo, Benzinga upgrades."},{"n":"02","text":"<b>Scored every one</b> on fresh catalysts and penalised anything that already ran too far.","note":"PLTR lost points for being +29% and overheated."},{"n":"03","text":"<b>Pulled live prices</b> and checked the charts on the survivors.","note":"Direct from EODHD + Finnhub."},{"n":"04","text":"<b>Picked the top 3 each</b> for Australia and the world — no doubling up.","note":"DUR had a $281m contract but no live price, so it sits out — no guessing."}]
+};
+
+var FUTURE_REGIONS = [{"id":"asia","label":"🌏 Asia-Pac","soon":true},{"id":"eu","label":"🇪🇺 Europe","soon":true}];
+var esc = function(s){return String(s==null?"":s);};
+
+function render(D){
+  var r = D.risk||{};
+  var regionTabs = (D.regions||[]).map(function(rg,i){
+    return '<button class="tab" role="tab" id="tab-'+rg.id+'" aria-selected="'+(i===0)+'" data-region="'+rg.id+'">'+esc(rg.label)+'</button>';
+  }).join('');
+  var soonTabs = FUTURE_REGIONS.map(function(f){return '<button class="tab" disabled title="Coming soon">'+esc(f.label)+' · soon</button>';}).join('');
+
+  var menus = (D.regions||[]).map(function(rg,i){
+    var cards = (rg.picks||[]).map(function(p){
+      return '<article class="card"><div class="tf"><span class="name">'+esc(p.tf)+'</span>'+
+        '<span class="verdict '+esc(p.vclass)+'">'+esc(p.verdict)+'</span></div>'+
+        '<div class="tick"><span class="sym">'+esc(p.sym)+'</span><span class="px"><span class="p mono">'+esc(p.price)+'</span><br>'+
+        '<span class="c mono '+(p.up?'up':'down')+'">'+esc(p.change)+'</span></span></div>'+
+        '<p class="plain"><span class="co">'+esc(p.name)+'.</span> '+p.plain+'</p>'+
+        '<div class="lvls">'+p.levels+'</div></article>';
+    }).join('');
+    return '<div class="menu'+(i===0?'':' hidden')+'" id="menu-'+rg.id+'" role="tabpanel">'+cards+'</div>';
+  }).join('');
+
+  var sb = D.scoreboard||{};
+  var recRows = (sb.closed||[]).map(function(c){
+    var w=c.win; return '<div class="row"><span class="rsym">'+esc(c.sym)+'</span><div class="bar">'+
+      '<span class="fill" style="'+(w?'left:50%;width:26%;background:var(--buy)':'right:50%;width:22%;background:var(--dont)')+'"></span></div>'+
+      '<span class="res '+(w?'up':'down')+'">'+esc(c.pct)+'</span></div>';
+  }).join('');
+  var openRows = (sb.open||[]).map(function(o){
+    return '<div class="row"><span>'+esc(o.tf)+' '+esc(o.sym)+' <span style="color:var(--muted)">'+esc(o.period)+'</span></span>'+
+      '<span class="st"'+(o.hot?' style="color:var(--hold)"':'')+'>'+esc(o.status)+'</span></div>';
+  }).join('');
+
+  function lines(arr,titleKey){return (arr||[]).map(function(x){
+    return '<div class="line"><span class="em">'+esc(x.em)+'</span><div class="txt">'+esc(x[titleKey])+
+      '<small>'+x.note+'</small></div><span class="tag '+esc(x.tclass)+'">'+esc(x.tag)+'</span></div>';
+  }).join('');}
+
+  var trail = (D.trail||[]).map(function(t){
+    return '<div class="step"><span class="n">'+esc(t.n)+'</span><div class="st-txt">'+t.text+'<small>'+esc(t.note)+'</small></div></div>';
+  }).join('');
+
+  document.getElementById('app').innerHTML =
+  '<header class="hero"><div class="brandrow"><div class="brand"><span class="bowl">🍲</span> Stock&nbsp;Soup</div>'+
+    '<div style="display:flex;gap:10px;align-items:center"><span class="live"><span class="pulse"></span>LIVE</span>'+
+    '<button class="chip toggle" id="themeBtn" aria-label="Toggle theme">🌗 Theme</button></div></div>'+
+    '<div class="eyebrow" style="margin-top:22px">'+esc(D.stamp)+' · Chef\'s hourly special</div>'+
+    '<h1 class="display">Two pots on the boil:<br><span class="hot">'+esc(r.a||D.headline.a)+'</span> &amp; <span class="hot">'+esc(D.headline.b)+'</span>.</h1>'+
+    '<p class="chef">'+D.chef+'</p>'+
+    '<div class="metastrip"><span class="chip"><span class="dot" style="background:var(--hold)"></span> Risk: '+esc(r.label)+'</span>'+
+    '<span class="chip mono">₿ '+esc(r.btc)+' <span class="up">'+esc(r.btcChange)+'</span></span>'+
+    '<span class="chip mono">AUD/USD '+esc(r.audusd)+'</span><span class="chip mono">Gold '+esc(r.gold)+'</span>'+
+    '<span class="chip">'+esc(D.hotTags)+'</span></div>'+
+    '<div class="meter"><div class="track"><div class="needle" id="needle"></div></div>'+
+    '<div class="lbls"><span>🔴 Hide the cash</span><span>⚪ Steady</span><span>🟢 Send it</span></div></div></header>'+
+
+  '<section><div class="sec-head"><h2 class="display"><span class="k">01</span> Tonight\'s menu</h2></div>'+
+    '<p class="sec-sub">Three time horizons. Day = a quick feed. Week = simmer a few days. Long = slow-cooked.</p>'+
+    '<div class="tabs" role="tablist" aria-label="Region" style="margin-bottom:14px">'+regionTabs+soonTabs+'</div>'+menus+'</section>'+
+
+  '<section><div class="sec-head"><h2 class="display"><span class="k">02</span> How\'d we do?</h2></div>'+
+    '<p class="sec-sub">No hiding. Closed picks scored honestly; open picks tracked against the horizon we promised.</p>'+
+    '<div class="grid2"><div class="panel"><h3>Recently plated (closed)</h3>'+
+    '<div class="score"><div><div class="big">'+esc(sb.record)+'</div><div class="sub">'+esc(sb.recordNote)+'</div></div></div>'+
+    '<div class="rec">'+recRows+'</div>'+
+    '<p style="font-size:11px;color:var(--faint);margin-top:12px">'+esc(sb.closedNote)+'</p></div>'+
+    '<div class="panel"><h3>On the stove (open now)</h3><div class="cooking">'+openRows+'</div></div></div></section>'+
+
+  '<section><div class="sec-head"><h2 class="display"><span class="k">03</span> The world &amp; the sectors</h2></div>'+
+    '<p class="sec-sub">What\'s moving the pot, and which kitchens are hot vs which to skip.</p>'+
+    '<div class="cols"><div class="stack"><div class="eyebrow">🌍 Geopolitics</div>'+lines(D.geo,'title')+'</div>'+
+    '<div class="stack"><div class="eyebrow">🍳 Sectors — buy vs skip</div>'+lines(D.sectors,'title')+'</div></div></section>'+
+
+  '<section><div class="sec-head"><h2 class="display"><span class="k">04</span> Commodities — simple</h2></div>'+
+    '<p class="sec-sub">No jargon. Just: worth a look, or leave it.</p>'+
+    '<div class="cols"><div class="stack">'+lines((D.commodities||[]).slice(0,2),'name')+'</div>'+
+    '<div class="stack">'+lines((D.commodities||[]).slice(2),'name')+'</div></div></section>'+
+
+  '<section><div class="sec-head"><h2 class="display"><span class="k">05</span> How we got here</h2></div>'+
+    '<p class="sec-sub">The recipe, in plain sight. No black box.</p>'+
+    '<div class="panel trail">'+trail+'</div></section>'+
+
+  '<div class="cta"><a href="'+esc(D.reportUrl)+'">📖 Read the full report →</a></div>'+
+  '<footer>Auto-generated for information only. <b>Not financial advice</b> — do your own research.<br>'+
+    'Stock Soup · served hot, hourly · next pot ~21:00 AEST</footer>';
+
+  wire(D);
+}
+
+function wire(D){
+  var root=document.documentElement;
+  document.getElementById('themeBtn').addEventListener('click',function(){
+    var cur=root.getAttribute('data-theme')||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');
+    root.setAttribute('data-theme',cur==='dark'?'light':'dark');
+  });
+  var tabs=document.querySelectorAll('.tab[data-region]');
+  tabs.forEach(function(t){t.addEventListener('click',function(){
+    tabs.forEach(function(x){x.setAttribute('aria-selected','false');document.getElementById('menu-'+x.dataset.region).classList.add('hidden');});
+    t.setAttribute('aria-selected','true');document.getElementById('menu-'+t.dataset.region).classList.remove('hidden');
+  });});
+  var lvl=(D.risk&&D.risk.level!=null)?D.risk.level:50;
+  requestAnimationFrame(function(){var n=document.getElementById('needle');if(n)n.style.left=lvl+'%';});
+}
+
+/* Try live data (works on GitHub Pages); fall back to embedded (works anywhere, incl. preview). */
+render(EMBEDDED);
+try{
+  fetch('latest.json',{cache:'no-store'}).then(function(res){return res.ok?res.json():null;})
+    .then(function(j){if(j&&j.regions)render(j);}).catch(function(){});
+}catch(e){}
+</script>
