@@ -71,6 +71,7 @@
   .cechartwrap{position:relative;padding-right:52px}
   .cechart{width:100%;height:120px;display:block}
   .celab{position:absolute;right:0;transform:translateY(-50%);font-size:11.5px;font-weight:900;white-space:nowrap;letter-spacing:.02em}
+  .ceflat{text-align:right;font-size:10.5px;font-weight:800;color:var(--muted);margin-top:7px;padding-right:6px;letter-spacing:.02em}
   .celegend{display:flex;flex-wrap:wrap;gap:12px;margin-top:12px;font-size:11px;font-weight:700}
   .celeg{display:inline-flex;align-items:center;gap:5px;color:var(--muted)}
   .celeg i{width:9px;height:9px;border-radius:2px;display:inline-block}
@@ -323,7 +324,7 @@
   .shero .seyebrow b{color:var(--broth)}
   .sbottom{font-size:14px;color:var(--muted);text-align:center;text-wrap:pretty;padding:2px 6px}
   .viewbtn{background:var(--surface-2);border:1px solid var(--line);color:var(--ink);font-family:var(--font);
-    font-weight:800;font-size:12px;padding:6px 12px;border-radius:999px;cursor:pointer}
+    font-weight:800;font-size:12px;padding:6px 12px;border-radius:999px;cursor:pointer;white-space:nowrap;line-height:1.5;height:34px;display:inline-flex;align-items:center}
   .viewbtn:focus-visible{outline:2px solid var(--broth);outline-offset:2px}
   .sfull{display:block;width:100%;text-align:center;background:transparent;border:1px dashed var(--line);color:var(--muted);
     font-family:var(--font);font-weight:800;font-size:14px;padding:14px;border-radius:14px;cursor:pointer}
@@ -1533,9 +1534,11 @@ function renderChangeEnv(D, pulses){
     return '<polyline points="'+pts.join(' ')+'" fill="none" stroke="'+s.color+'" stroke-width="1.5" vector-effect="non-scaling-stroke"/>'+
       (last?'<circle cx="'+last[0]+'" cy="'+last[1]+'" r="2.4" fill="'+s.color+'"/>':'');
   }).join('');
-  // Endpoint labels = the ticker itself, on the line (replaces the bottom legend — saves the row).
-  // Nudge labels apart so lines that finish close together don't overlap.
-  var _labs=series.map(function(s){var lv=s.pct[s.pct.length-1];return {sym:s.sym,color:s.color,y:lv!=null?(Y(lv)/H*100):null};}).filter(function(x){return x.y!=null;});
+  // Endpoint labels = the ticker on the line (replaces the bottom legend). Only MOVERS get a label;
+  // flat 0% names would just clutter the zero line, so they collapse into a small bottom-right note.
+  var _all=series.map(function(s){var lv=s.pct[s.pct.length-1];return {sym:s.sym,color:s.color,last:s.last,y:lv!=null?(Y(lv)/H*100):null};}).filter(function(x){return x.y!=null;});
+  var _labs=_all.filter(function(l){return Math.abs(l.last)>=0.15;});
+  var _flatL=_all.filter(function(l){return Math.abs(l.last)<0.15;});
   _labs.sort(function(a,b){return a.y-b.y;});
   var MINGAP=12;
   for(var _i=1;_i<_labs.length;_i++){ if(_labs[_i].y-_labs[_i-1].y<MINGAP) _labs[_i].y=_labs[_i-1].y+MINGAP; }
@@ -1543,6 +1546,7 @@ function renderChangeEnv(D, pulses){
   if(_over>0){ for(_i=0;_i<_labs.length;_i++) _labs[_i].y-=_over; }
   if(_labs.length&&_labs[0].y<4){ var _d=4-_labs[0].y; for(_i=0;_i<_labs.length;_i++) _labs[_i].y+=_d; }
   var labHtml=_labs.map(function(l){return '<span class="celab" style="top:'+l.y.toFixed(1)+'%;color:'+l.color+'">'+esc(l.sym)+'</span>';}).join('');
+  var flatHtml=_flatL.length?'<div class="ceflat">Flat this run · '+_flatL.map(function(l){return '<span style="color:'+l.color+'">'+esc(l.sym)+'</span>';}).join(' · ')+'</div>':'';
   var prox=picks.filter(function(pk){return pk.nEntry&&pk.now;}).sort(function(a,b){return (a.now/a.nEntry)-(b.now/b.nEntry);}).map(function(pk){
     var gap=(pk.now/pk.nEntry-1)*100;
     var st, lbl;
@@ -1553,13 +1557,13 @@ function renderChangeEnv(D, pulses){
     var pos=Math.max(3,Math.min(97,(gap/8)*100));
     return '<div class="proxrow s-'+st+'"><span class="pxs">'+esc(pk.sym)+'</span>'+
       '<div class="proxbar"><span class="proxzone"></span><span class="proxnow" style="left:'+pos.toFixed(0)+'%"></span></div>'+
-      '<span class="pxg"><span class="pxbuy">buy '+esc(pk.cur)+pk.nEntry+'</span><span class="pxst">'+lbl+'</span></span></div>';
+      '<span class="pxg"><span class="pxbuy">Buy @ '+esc(pk.cur)+pk.nEntry+'</span><span class="pxst">'+lbl+'</span></span></div>';
   }).join('');
   var latest=pulses[pulses.length-1];
   return '<section><div class="sec-head"><h2 class="display"><span class="k">01½</span> Change environment</h2></div>'+
     '<p class="sec-sub">How each pick moved across the last '+n+' runs (since '+esc(pulses[0].stamp)+'), and how close each is to its ideal buy — where to act.</p>'+
     '<div class="cenv"><div class="cetraj"><div class="ceh">📈 Trajectories · % from first run</div>'+
-      '<div class="cechartwrap"><svg class="cechart" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none">'+zero+lines+'</svg>'+labHtml+'</div></div>'+
+      '<div class="cechartwrap"><svg class="cechart" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none">'+zero+lines+'</svg>'+labHtml+'</div>'+flatHtml+'</div>'+
       '<div class="ceprox"><div class="ceh">🎯 Ready to buy? · distance to ideal buy</div>'+(prox||'<div class="pxg">No entry levels.</div>')+
       '<div class="proxkey"><b style="color:var(--buy)">green</b> = at/below your buy price → act · <b>grey</b> = above → wait for it to dip to your entry. A “too late — wait” pick (e.g. PLTR) shows the dip it still needs.</div></div></div>'+
     '<div class="pulsebar" style="margin-top:14px"><div class="ph"><span class="pdot"></span>Latest read · '+esc(latest.stamp)+'</div>'+
@@ -1611,7 +1615,8 @@ function render(D,H){
         '<span class="px"><span class="p mono">'+esc(p.price)+'</span><br><span class="c mono '+(p.up?'up':'down')+'">'+esc(p.change)+'</span></span></div>'+
         (p.nEntry?'<div class="buyat"><span class="bl">🎯 Ideal buy</span> ~'+esc(rg.cur||'$')+p.nEntry+'</div>':'')+
         '<p class="plain">'+p.plain+'</p><div class="lvls">'+p.levels+'</div>'+
-        (p.spark?rangeBar(p.spark,rg.cur||'$'):'')+'</article></div>';
+        (p.spark?rangeBar(p.spark,rg.cur||'$'):'')+'</article>'+
+        ((p.runnerUp && /wait|late|hold|skip|avoid|pass|don.t|steer/i.test(p.verdict||''))?ruCard(p.runnerUp,rg.id,idx):'')+'</div>';
     }).join('');
     return '<div class="menu'+(i===0?'':' hidden')+'" id="menu-'+rg.id+'" role="tabpanel">'+cards+'</div>';
   }).join('');
@@ -1975,7 +1980,8 @@ function renderSimple(D){
       '<div class="sname">'+esc(p.name)+' · '+esc(p.price)+' <span class="'+(p.up?'up':'down')+'">'+(p.up?'▲':'▼')+' '+esc(p.change)+'</span></div>'+
       (p.nEntry?'<div class="buyat"><span class="bl">🎯 Ideal buy</span> ~'+esc(region.cur||'$')+p.nEntry+'</div>':'')+
       '<div class="sline">'+esc(p.plain)+'</div>'+
-      (p.spark?rangeBar(p.spark,(region.cur||'$')):'')+'</article>';
+      (p.spark?rangeBar(p.spark,(region.cur||'$')):'')+'</article>'+
+      ((p.runnerUp && /wait|late|hold|skip|avoid|pass|don.t|steer/i.test(p.verdict||''))?ruCard(p.runnerUp,rid,idx):'');
   }).join('');
   function _grp(arr,key){var b=[],o=[],s=[];(arr||[]).forEach(function(x){var t=x.tclass,n=x[key];if(t==='t-dont')s.push(n);else if(t==='t-buy'||t==='t-hot')b.push(n);else o.push(n);});return {b:b,o:o,s:s};}
   function _line(g){var p=[];if(g.b.length)p.push('<span class="qbuy">✅ Buy: '+g.b.map(esc).join(', ')+'</span>');if(g.o.length)p.push('<span class="qmeh"><span class="qdot"></span> Watch: '+g.o.map(esc).join(', ')+'</span>');if(g.s.length)p.push('<span class="qskip">⛔ Skip: '+g.s.map(esc).join(', ')+'</span>');return p.join('<br>');}
