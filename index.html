@@ -111,16 +111,16 @@
   .card:focus-visible{outline:2px solid var(--broth);outline-offset:3px}
   .card .tf{display:flex;align-items:center;justify-content:space-between}
   .tf .name{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);font-weight:800}
-  .verdict{font-size:11px;font-weight:900;padding:5px 10px;border-radius:8px;letter-spacing:.04em;text-transform:uppercase}
+  .verdict{font-size:12px;font-weight:900;padding:5px 11px;border-radius:8px;letter-spacing:.04em;text-transform:uppercase}
   .v-buy{background:rgba(35,194,103,.16);color:var(--buy);border:1px solid rgba(35,194,103,.4)}
   .v-hold{background:rgba(255,197,61,.16);color:var(--hold);border:1px solid rgba(255,197,61,.4)}
   .v-dont{background:rgba(255,77,77,.16);color:var(--dont);border:1px solid rgba(255,77,77,.4)}
   .card .tick{display:flex;align-items:baseline;gap:10px}
   .tick .symwrap{display:flex;flex-direction:column}
-  .tick .sym{font-size:28px;font-weight:900;letter-spacing:-.02em;line-height:1}
+  .tick .sym{font-size:32px;font-weight:900;letter-spacing:-.02em;line-height:1}
   .tick .co{font-size:12px;color:var(--muted);font-weight:700;margin-top:2px}
   .tick .px{margin-left:auto;text-align:right}
-  .px .p{font-weight:800;font-size:17px}
+  .px .p{font-weight:800;font-size:19px}
   .px .c{font-size:12px;font-weight:700}
   .up{color:var(--buy)} .down{color:var(--dont)}
   .card .plain{font-size:14px;color:var(--ink);text-wrap:pretty}
@@ -132,6 +132,11 @@
   .buyat.ba-close{background:rgba(240,180,0,.10);border-color:rgba(240,180,0,.34);color:var(--hold)}
   .buyat.ba-wait{background:var(--surface-2);border-color:var(--line);color:var(--muted)}
   .baact{font-weight:800;font-size:12px}
+  .tonight{display:flex;align-items:center;gap:7px;margin:2px 0 2px}
+  .tnl{text-transform:uppercase;letter-spacing:.07em;font-size:9.5px;font-weight:800;color:var(--faint)}
+  .tonight svg{flex:0 0 auto;display:block}
+  .mtpct{font-family:var(--mono);font-weight:800;font-size:11.5px}
+  .mtn{font-size:10px;color:var(--faint);font-weight:700}
   .buyat .bl{color:var(--muted);font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.05em}
   .storyrow{display:flex;flex-direction:column;gap:3px;padding:10px 0;border-bottom:1px solid var(--line);font-size:14px}
   .storyrow:last-child{border-bottom:0}
@@ -337,9 +342,9 @@
   .scard:hover{border-color:var(--broth)} .scard:active{transform:scale(.99)}
   .scard:focus-visible{outline:2px solid var(--broth);outline-offset:3px}
   .stf{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:800;margin-bottom:8px}
-  .ssym{font-size:clamp(30px,9vw,38px);font-weight:900;letter-spacing:-.02em;display:flex;align-items:center;gap:12px;flex-wrap:wrap;line-height:1}
+  .ssym{font-size:clamp(30px,8vw,36px);font-weight:900;letter-spacing:-.02em;display:flex;align-items:center;gap:12px;flex-wrap:wrap;line-height:1}
   .sverd{font-size:13px;font-weight:900;padding:5px 11px;border-radius:9px;text-transform:uppercase;letter-spacing:.03em}
-  .sname{color:var(--muted);font-size:14px;font-weight:700;margin:8px 0 12px}
+  .sname{color:var(--muted);font-size:15px;font-weight:700;margin:8px 0 12px}
   .sname .up{color:var(--buy)} .sname .down{color:var(--dont)}
   .sline{font-size:16px;line-height:1.45;text-wrap:pretty}
   .stap{font-size:11px;font-weight:800;color:var(--broth);margin-top:12px;letter-spacing:.02em}
@@ -1617,6 +1622,20 @@ function sparkSVG(vals){
     '<polygon points="0,'+h+' '+poly+' '+w+','+h+'"/><polyline points="'+poly+'"/>'+
     '<circle cx="'+last[0]+'" cy="'+last[1]+'" r="2.2"/></svg>';
 }
+// Inline "tonight" mini-trajectory from the hourly pulses (hour-by-hour path for one pick)
+function miniTraj(sym){
+  if(!PULSES||PULSES.length<2) return '';
+  var vals=PULSES.map(function(pu){return (pu.snap&&pu.snap[sym]?pu.snap[sym].price:null);}).filter(function(v){return v!=null;});
+  if(vals.length<2) return '';
+  var first=vals[0], last=vals[vals.length-1], pct=(last/first-1)*100;
+  var mn=Math.min.apply(null,vals), mx=Math.max.apply(null,vals), rng=(mx-mn)||1, W=54, H=15;
+  var pts=vals.map(function(v,i){return (i/(vals.length-1)*W).toFixed(1)+','+(H-((v-mn)/rng)*(H-3)-1.5).toFixed(1);}).join(' ');
+  var col=pct>0.05?'var(--buy)':pct<-0.05?'var(--dont)':'var(--muted)';
+  return '<div class="tonight"><span class="tnl">Tonight</span>'+
+    '<svg viewBox="0 0 '+W+' '+H+'" width="'+W+'" height="'+H+'" preserveAspectRatio="none" aria-hidden="true"><polyline points="'+pts+'" fill="none" stroke="'+col+'" stroke-width="1.5" vector-effect="non-scaling-stroke"/></svg>'+
+    '<span class="mtpct" style="color:'+col+'">'+(pct>=0?'+':'')+pct.toFixed(1)+'%</span>'+
+    '<span class="mtn">· '+(vals.length)+' runs</span></div>';
+}
 function rangeBar(spark,cur){
   if(!spark||spark.length<3) return '';
   var mn=Math.min.apply(null,spark),mx=Math.max.apply(null,spark),c=spark[spark.length-1];
@@ -1654,6 +1673,7 @@ function render(D,H){
         '<div class="tf"><span class="name">'+esc(p.tf)+'</span><span class="verdict '+esc(p.vclass)+'">'+esc(p.verdict)+'</span></div>'+
         '<div class="tick"><span class="symwrap"><span class="sym">'+qlink(p.sym,rg.id)+'</span><span class="co">'+qlink(p.sym,rg.id,p.name)+' ↗</span></span>'+
         '<span class="px"><span class="p mono">'+esc(p.price)+'</span><br><span class="c mono '+(p.up?'up':'down')+'">'+esc(p.change)+'</span></span></div>'+
+        miniTraj(p.sym)+
         '<div class="buyat'+(p.nEntry?' ba-'+buyState(p):'')+'">'+(p.nEntry?'<span class="bl">🎯 Ideal buy</span> ~'+esc(rg.cur||'$')+p.nEntry+buyAction(p):'<span class="bl">Track this pick</span>')+'<button class="watchbtn cardwatch" data-sym="'+esc(p.sym)+'" data-region="'+esc(rg.id)+'" data-name="'+esc(p.name)+'"'+(p.nEntry!=null?' data-entry="'+p.nEntry+'"':'')+' aria-pressed="false">＋ Watch</button></div>'+
         '<p class="plain">'+p.plain+'</p><div class="lvls">'+p.levels+'</div>'+
         (p.spark?rangeBar(p.spark,rg.cur||'$'):'')+'</article>'+
@@ -2061,6 +2081,7 @@ function renderSimple(D){
       '<div class="stf">'+esc(BIG[tf]||p.tf)+'</div>'+
       '<div class="ssym">'+esc(p.sym)+' <span class="sverd '+esc(p.vclass)+'">'+esc(p.verdict)+'</span></div>'+
       '<div class="sname">'+esc(p.name)+' · '+esc(p.price)+' <span class="'+(p.up?'up':'down')+'">'+(p.up?'▲':'▼')+' '+esc(p.change)+'</span></div>'+
+      miniTraj(p.sym)+
       '<div class="buyat'+(p.nEntry?' ba-'+buyState(p):'')+'">'+(p.nEntry?'<span class="bl">🎯 Ideal buy</span> ~'+esc(region.cur||'$')+p.nEntry+buyAction(p):'<span class="bl">Track this pick</span>')+'<button class="watchbtn cardwatch" data-sym="'+esc(p.sym)+'" data-region="'+esc(rid)+'" data-name="'+esc(p.name)+'"'+(p.nEntry!=null?' data-entry="'+p.nEntry+'"':'')+' aria-pressed="false">＋ Watch</button></div>'+
       '<div class="sline">'+esc(p.plain)+'</div>'+
       (p.spark?rangeBar(p.spark,(region.cur||'$')):'')+'</article>'+
