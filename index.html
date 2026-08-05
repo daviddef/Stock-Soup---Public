@@ -1595,16 +1595,12 @@ function renderChangeEnv(D, pulses){
   var flatHtml=_flatL.length?'<div class="ceflat">Flat this run · '+_flatL.map(function(l){return '<span style="color:'+l.color+'">'+esc(l.sym)+'</span>';}).join(' · ')+'</div>':'';
   var prox=picks.filter(function(pk){return pk.nEntry&&pk.now;}).sort(function(a,b){return (a.now/a.nEntry)-(b.now/b.nEntry);}).map(function(pk){
     var gap=(pk.now/pk.nEntry-1)*100;
-    var st, lbl;
-    if(gap<=0){ st='in'; lbl='below buy ✓'; }
-    else if(gap<=1.5){ st='near'; lbl='at buy ✓'; }
-    else if(gap<=4){ st='close'; lbl=Math.round(gap)+'% to go'; }
-    else { st='wait'; lbl='wait −'+Math.round(gap/(1+gap/100))+'%'; }
+    var st = gap<=0?'in':(gap<=1.5?'near':(gap<=4?'close':'wait'));
     var pos=Math.max(3,Math.min(97,(gap/8)*100));
     var onLine=gap<=1.5?'✓':'−'+Math.round(gap)+'%';
     return '<div class="proxrow s-'+st+'"><span class="pxs">'+esc(pk.sym)+'</span>'+
       '<div class="proxbar"><span class="proxzone"></span><span class="proxpct" style="left:'+pos.toFixed(0)+'%">'+onLine+'</span><span class="proxnow" style="left:'+pos.toFixed(0)+'%"></span></div>'+
-      '<span class="pxg"><span class="pxbuy">Buy @ '+esc(pk.cur)+pk.nEntry+'</span><span class="pxst">'+lbl+'</span></span></div>';
+      '<span class="pxg"><span class="pxbuy">Buy @ '+esc(pk.cur)+pk.nEntry+'</span></span></div>';
   }).join('');
   var latest=pulses[pulses.length-1];
   return '<section><div class="sec-head"><h2 class="display"><span class="k">01½</span> Change environment</h2></div>'+
