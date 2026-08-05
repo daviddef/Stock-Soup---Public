@@ -1,0 +1,273 @@
+{
+  "run": "Wed 5 Aug 2026 16:00 AEST",
+  "report": "reports/2026-08-05-1600.html",
+  "tickers": {
+    "EOS": {
+      "tier": "day",
+      "price": "A$A$8.41*",
+      "change": "+7.74%*",
+      "score": "",
+      "note": "Defence specialist with analyst consensus target A$11.12 (+32% upside). Counter-drone + space control systems with AUD 459M order book. Iran conflict and AUKUS ",
+      "market": "ASX",
+      "name": "Electro Optic Systems Holdings",
+      "entry": "A$8.20\u20138.60",
+      "target": "A$10.20",
+      "stop": "A$7.70",
+      "signals": [
+        "Analyst PT A$11.12 (+32%)",
+        "Order book AUD 459M",
+        "AUKUS defence",
+        "Counter-drone systems"
+      ],
+      "narrative": "Defence specialist with AUD 459M order book and analyst consensus PT A$11.12. AUKUS + Iran conflict driving defence sector rotation.",
+      "sentiment": "strong_buy",
+      "rsi": 55,
+      "trend": "above_50sma"
+    },
+    "4DX": {
+      "tier": "week",
+      "price": "A$A$4.160",
+      "change": "-8.97%",
+      "score": "",
+      "note": "Pullback entry (-8.97% today) with three fresh catalysts: Medicare CMS reimbursement approval for CT:VQ, expanded Philips distribution deal (US$10M minimum), UC",
+      "market": "ASX",
+      "name": "4DMedical Ltd",
+      "entry": "A$4.00\u20134.20",
+      "target": "A$5.40",
+      "stop": "A$3.65",
+      "signals": [
+        "Medicare CMS approval",
+        "Philips US$10M deal",
+        "UC San Diego adoption",
+        "Short squeeze \ud83e\ude73",
+        "RSI 51 neutral"
+      ],
+      "narrative": "Pullback entry with three fresh catalysts: Medicare CMS approval, Philips distribution deal (US$10M), UC San Diego Health adoption. RSI 51 = not overbought.",
+      "sentiment": "strong_buy",
+      "rsi": 51,
+      "trend": "above_200sma"
+    },
+    "PDN": {
+      "tier": "long",
+      "price": "A$A$10.06*",
+      "change": "\u2014",
+      "score": "",
+      "note": "Uranium structural long. AI datacentre energy demand driving nuclear power renaissance globally. Iran conflict adds near-term energy risk premium. AUKUS positio",
+      "market": "ASX",
+      "name": "Paladin Energy",
+      "entry": "A$9.60\u201310.20",
+      "target": "A$13.50",
+      "stop": "A$8.80",
+      "signals": [
+        "Uranium long-term",
+        "Iran energy risk",
+        "AUKUS supply chain",
+        "Nuclear renaissance"
+      ],
+      "narrative": "Uranium structural long play \u2014 AI datacentre power demand, Iran conflict energy risk, AUKUS positioning as tier-1 critical minerals supplier.",
+      "sentiment": "buy",
+      "trend": "above_50sma"
+    },
+    "ANET": {
+      "tier": "day",
+      "price": "$~$190.51*",
+      "change": "ATH close Aug 4",
+      "score": "",
+      "note": "Q2 2026 earnings released after close Aug 4. Today (Aug 5) is the first post-earnings session \u2014 historically the highest momentum day. Arista is the AI data cen",
+      "market": "GLOBAL",
+      "name": "Arista Networks",
+      "entry": "$188\u2013192",
+      "target": "$215",
+      "stop": "$182",
+      "signals": [
+        "Q2 2026 earnings beat",
+        "ATH close $190.51",
+        "AI networking infrastructure",
+        "First post-earnings session"
+      ],
+      "narrative": "First post-earnings session after Q2 beat. AI data centre interconnect backbone \u2014 secular demand.",
+      "sentiment": "strong_buy",
+      "trend": "above_200sma"
+    },
+    "MRVL": {
+      "tier": "week",
+      "price": "$$235.81",
+      "change": "AI bookings surge",
+      "score": "",
+      "note": "CEO Matt Murphy raised FY2027 and FY2028 guidance citing exceptional AI bookings. Marvell designs custom AI ASICs for AWS, Google, and Microsoft \u2014 the most defe",
+      "market": "GLOBAL",
+      "name": "Marvell Technology",
+      "entry": "$228\u2013238",
+      "target": "$268",
+      "stop": "$218",
+      "signals": [
+        "CEO raised FY27/28 outlook",
+        "35% Q2 YoY growth",
+        "AI bookings surge",
+        "Custom AI silicon (ASIC)"
+      ],
+      "narrative": "CEO raised FY2027/28 guidance citing exceptional AI bookings. Custom AI chip supplier for hyperscalers \u2014 AWS, Google, Microsoft.",
+      "sentiment": "strong_buy",
+      "trend": "above_200sma"
+    },
+    "PLTR": {
+      "tier": "long",
+      "price": "$~$144.45",
+      "change": "+28-29% (DO NOT CHASE)",
+      "score": "",
+      "note": "Palantir Q2 confirms step-change: $1.94B revenue (+93% YoY), EPS beat, full-year guidance raised. AI-driven decision platform for defence and enterprise is comp",
+      "market": "GLOBAL",
+      "name": "Palantir Technologies",
+      "entry": "$128\u2013138",
+      "target": "$200",
+      "stop": "$118",
+      "signals": [
+        "Q2 +93% YoY revenue",
+        "EPS beat $0.41 vs $0.34",
+        "Citi PT $245",
+        "DA Davidson PT $200",
+        "DO NOT CHASE at $144+"
+      ],
+      "narrative": "Long pick only \u2014 do not enter at post-surge levels. Wait for pullback to $128-138 zone. 93% revenue growth makes this a 12-month structural hold.",
+      "sentiment": "buy",
+      "rsi": 75,
+      "trend": "above_200sma"
+    },
+    "VTM": {
+      "tier": "monitor",
+      "price": "\u2014",
+      "change": "\u2014",
+      "score": "",
+      "note": "Not researched this run",
+      "name": "Vital Metals",
+      "sentiment": "hold",
+      "trend": "below_50sma",
+      "signals": [
+        "Rare earths watch",
+        "China supply catalyst"
+      ],
+      "narrative": "Monitoring rare earth exposure. Price unavailable this run (EODHD blocked)."
+    },
+    "IEL": {
+      "tier": "monitor",
+      "price": "\u2014",
+      "change": "\u2014",
+      "score": "",
+      "note": "Not researched this run",
+      "sentiment": "hold"
+    },
+    "TLX": {
+      "tier": "monitor",
+      "price": "\u2014",
+      "change": "\u2014",
+      "score": "",
+      "note": "Not researched this run",
+      "name": "Telix Pharmaceuticals",
+      "sentiment": "hold",
+      "trend": "above_200sma",
+      "signals": [
+        "Radiopharmaceuticals",
+        "Healthcare sector"
+      ],
+      "narrative": "Monitoring \u2014 price unavailable this run."
+    },
+    "NTU": {
+      "tier": "monitor",
+      "price": "\u2014",
+      "change": "\u2014",
+      "score": "",
+      "note": "Not researched this run",
+      "sentiment": "hold"
+    },
+    "DYL": {
+      "tier": "monitor",
+      "price": "\u2014",
+      "change": "\u2014",
+      "score": "",
+      "note": "Not researched this run",
+      "name": "Deep Yellow",
+      "sentiment": "hold",
+      "trend": "above_50sma",
+      "signals": [
+        "Uranium sector watch",
+        "Correlation with PDN"
+      ],
+      "entry": "A$1.35\u20131.50",
+      "target": "A$2.00",
+      "stop": "A$1.20",
+      "narrative": "Uranium watchlist stock. Monitoring for sector breakout alongside PDN."
+    },
+    "DRO": {
+      "tier": "monitor",
+      "price": "\u2014",
+      "change": "\u2014",
+      "score": "",
+      "note": "Not researched this run",
+      "name": "DroneShield",
+      "sentiment": "buy",
+      "trend": "above_50sma",
+      "signals": [
+        "Counter-drone",
+        "AUKUS beneficiary",
+        "Defence sector heat"
+      ],
+      "narrative": "Counter-drone technology \u2014 AUKUS and Iran conflict driving procurement. Monitor for contract announcements."
+    },
+    "A2M": {
+      "tier": "monitor",
+      "price": "\u2014",
+      "change": "\u2014",
+      "score": "",
+      "note": "Not researched this run",
+      "sentiment": "hold"
+    },
+    "SGH": {
+      "tier": "monitor",
+      "price": "\u2014",
+      "change": "\u2014",
+      "score": "",
+      "note": "Not researched this run",
+      "sentiment": "hold"
+    },
+    "WTC": {
+      "tier": "monitor",
+      "price": "\u2014",
+      "change": "\u2014",
+      "score": "",
+      "note": "Not researched this run",
+      "sentiment": "hold"
+    },
+    "BOE": {
+      "tier": "monitor",
+      "price": "\u2014",
+      "change": "\u2014",
+      "score": "",
+      "note": "Uranium watchlist \u2014 monitoring alongside PDN and DYL for sector move.",
+      "name": "Boss Energy",
+      "sentiment": "hold",
+      "trend": "above_50sma",
+      "signals": [
+        "Uranium mine production",
+        "Sector correlation PDN/DYL"
+      ],
+      "entry": "A$1.10\u20131.30",
+      "target": "A$1.80",
+      "stop": "A$0.98"
+    },
+    "BHP": {
+      "tier": "monitor",
+      "price": "\u2014",
+      "change": "\u2014",
+      "score": "",
+      "note": "Monitor \u2014 copper supply tight globally (Chile mine strike). Iron ore tracking China demand.",
+      "name": "BHP Group",
+      "sentiment": "hold",
+      "trend": "above_200sma",
+      "signals": [
+        "Iron ore",
+        "Copper exposure",
+        "China demand watch"
+      ]
+    }
+  }
+}

@@ -1,0 +1,580 @@
+{
+  "last_synced": "2026-06-29T14:11:44.197059+10:00",
+  "watchlists": [
+    {
+      "name": "Recently Invested",
+      "items": [
+        {
+          "ticker": "PLTR",
+          "exchange": "NASDAQ",
+          "name": "Palantir Technologies Inc.",
+          "id": 7991
+        },
+        {
+          "ticker": "SILVER",
+          "exchange": "COMDTY",
+          "name": "Silver (Non Expiry)",
+          "id": 19
+        },
+        {
+          "ticker": "MIOTA",
+          "exchange": "CRYPTO",
+          "name": "IOTA",
+          "id": 100018
+        },
+        {
+          "ticker": "BTGO",
+          "exchange": "NYSE",
+          "name": "BitGo Holdings, Inc",
+          "id": 15208
+        },
+        {
+          "ticker": "CRWV",
+          "exchange": "NASDAQ",
+          "name": "CoreWeave Inc",
+          "id": 12167
+        },
+        {
+          "ticker": "BCH",
+          "exchange": "CRYPTO",
+          "name": "Bitcoin Cash",
+          "id": 100002
+        },
+        {
+          "ticker": "GOLD",
+          "exchange": "COMDTY",
+          "name": "Gold (Non Expiry)",
+          "id": 18
+        },
+        {
+          "ticker": "TEAM",
+          "exchange": "NASDAQ",
+          "name": "Atlassian Corp PLC A",
+          "id": 4286
+        },
+        {
+          "ticker": "NFLX",
+          "exchange": "NASDAQ",
+          "name": "Netflix, Inc.",
+          "id": 1127
+        },
+        {
+          "ticker": "MANA",
+          "exchange": "CRYPTO",
+          "name": "Decentraland",
+          "id": 100048
+        },
+        {
+          "ticker": "CRML",
+          "exchange": "NASDAQ",
+          "name": "Critical Metals Corp",
+          "id": 15197
+        },
+        {
+          "ticker": "OCGN",
+          "exchange": "NASDAQ",
+          "name": "Ocugen Inc",
+          "id": 6258
+        },
+        {
+          "ticker": "BAC",
+          "exchange": "NYSE",
+          "name": "Bank of America Corp",
+          "id": 1011
+        },
+        {
+          "ticker": "BTC",
+          "exchange": "CRYPTO",
+          "name": "Bitcoin",
+          "id": 100000
+        },
+        {
+          "ticker": "VRM",
+          "exchange": "NASDAQ",
+          "name": "Vroom Inc",
+          "id": 8802
+        },
+        {
+          "ticker": "AI.PA",
+          "exchange": "EU",
+          "name": "Air Liquide SA",
+          "id": 1233
+        },
+        {
+          "ticker": "DDOG",
+          "exchange": "NASDAQ",
+          "name": "Datadog Inc",
+          "id": 6414
+        },
+        {
+          "ticker": "HIPO",
+          "exchange": "NYSE",
+          "name": "Hippo Holdings Inc",
+          "id": 8624
+        },
+        {
+          "ticker": "DOGE",
+          "exchange": "CRYPTO",
+          "name": "Dogecoin",
+          "id": 100043
+        },
+        {
+          "ticker": "NEO",
+          "exchange": "CRYPTO",
+          "name": "NEO",
+          "id": 100023
+        },
+        {
+          "ticker": "BNGO",
+          "exchange": "NASDAQ",
+          "name": "BioNano Genomics Inc",
+          "id": 6194
+        },
+        {
+          "ticker": "SAGE",
+          "exchange": "NASDAQ",
+          "name": "Sage Therapeutics Inc",
+          "id": 6036
+        },
+        {
+          "ticker": "TWLO",
+          "exchange": "NYSE",
+          "name": "Twilio Inc A",
+          "id": 4340
+        },
+        {
+          "ticker": "BIDU",
+          "exchange": "NASDAQ",
+          "name": "Baidu, Inc.-ADR",
+          "id": 1141
+        },
+        {
+          "ticker": "AU",
+          "exchange": "NYSE",
+          "name": "AngloGold Ashanti Ltd-ADR",
+          "id": 6604
+        },
+        {
+          "ticker": "GRWG",
+          "exchange": "NASDAQ",
+          "name": "GrowGeneration",
+          "id": 5074
+        },
+        {
+          "ticker": "CMBN.ZU",
+          "exchange": "SIX",
+          "name": "Cembra Money Bank AG",
+          "id": 5809
+        },
+        {
+          "ticker": "ADA",
+          "exchange": "CRYPTO",
+          "name": "Cardano",
+          "id": 100017
+        },
+        {
+          "ticker": "ETC",
+          "exchange": "CRYPTO",
+          "name": "Ethereum Classic",
+          "id": 100007
+        },
+        {
+          "ticker": "XRP",
+          "exchange": "CRYPTO",
+          "name": "XRP",
+          "id": 100003
+        },
+        {
+          "ticker": "LTC",
+          "exchange": "CRYPTO",
+          "name": "Litecoin",
+          "id": 100005
+        },
+        {
+          "ticker": "DASH",
+          "exchange": "CRYPTO",
+          "name": "Dash",
+          "id": 100004
+        },
+        {
+          "ticker": "AMZN",
+          "exchange": "NASDAQ",
+          "name": "Amazon.com Inc",
+          "id": 1005
+        },
+        {
+          "ticker": "XLM",
+          "exchange": "CRYPTO",
+          "name": "Stellar",
+          "id": 100020
+        },
+        {
+          "ticker": "ETH",
+          "exchange": "CRYPTO",
+          "name": "Ethereum",
+          "id": 100001
+        },
+        {
+          "ticker": "TRX",
+          "exchange": "CRYPTO",
+          "name": "TRON",
+          "id": 100026
+        }
+      ]
+    },
+    {
+      "name": "My Watchlist",
+      "items": [
+        {
+          "ticker": "TEAM",
+          "exchange": "NASDAQ",
+          "name": "Atlassian Corp PLC A",
+          "id": 4286
+        },
+        {
+          "ticker": "INDA",
+          "exchange": "ETF",
+          "name": "iShares MSCI India ETF",
+          "id": 4429
+        },
+        {
+          "ticker": "SOL",
+          "exchange": "CRYPTO",
+          "name": "Solana",
+          "id": 100063
+        },
+        {
+          "ticker": "DOGE",
+          "exchange": "CRYPTO",
+          "name": "Dogecoin",
+          "id": 100043
+        },
+        {
+          "ticker": "CRWV",
+          "exchange": "NASDAQ",
+          "name": "CoreWeave Inc",
+          "id": 12167
+        },
+        {
+          "ticker": "MANA",
+          "exchange": "CRYPTO",
+          "name": "Decentraland",
+          "id": 100048
+        },
+        {
+          "ticker": "TSLA",
+          "exchange": "NASDAQ",
+          "name": "Tesla Motors, Inc.",
+          "id": 1111
+        },
+        {
+          "ticker": "NIO",
+          "exchange": "NYSE",
+          "name": "Nio Inc.-ADR",
+          "id": 4489
+        },
+        {
+          "ticker": "PLTR",
+          "exchange": "NASDAQ",
+          "name": "Palantir Technologies Inc.",
+          "id": 7991
+        },
+        {
+          "ticker": "AAPL",
+          "exchange": "NASDAQ",
+          "name": "Apple",
+          "id": 1001
+        },
+        {
+          "ticker": "AMZN",
+          "exchange": "NASDAQ",
+          "name": "Amazon.com Inc",
+          "id": 1005
+        },
+        {
+          "ticker": "OCGN",
+          "exchange": "NASDAQ",
+          "name": "Ocugen Inc",
+          "id": 6258
+        },
+        {
+          "ticker": "AUDUSD",
+          "exchange": "FOREX",
+          "name": "AUD/USD",
+          "id": 7
+        },
+        {
+          "ticker": "NSDQ100",
+          "exchange": "INDEX",
+          "name": "NASDAQ100 Index (Non Expiry)",
+          "id": 28
+        },
+        {
+          "ticker": "OIL",
+          "exchange": "COMDTY",
+          "name": "Oil (Non Expiry)",
+          "id": 17
+        },
+        {
+          "ticker": "GOLD",
+          "exchange": "COMDTY",
+          "name": "Gold (Non Expiry)",
+          "id": 18
+        },
+        {
+          "ticker": "BTC",
+          "exchange": "CRYPTO",
+          "name": "Bitcoin",
+          "id": 100000
+        },
+        {
+          "ticker": "ADA",
+          "exchange": "CRYPTO",
+          "name": "Cardano",
+          "id": 100017
+        },
+        {
+          "ticker": "ETH",
+          "exchange": "CRYPTO",
+          "name": "Ethereum",
+          "id": 100001
+        },
+        {
+          "ticker": "JMIA",
+          "exchange": "NYSE",
+          "name": "Jumia Technologies AG-ADR",
+          "id": 5664
+        },
+        {
+          "ticker": "BNGO",
+          "exchange": "NASDAQ",
+          "name": "BioNano Genomics Inc",
+          "id": 6194
+        }
+      ]
+    },
+    {
+      "name": "DJ People Watch",
+      "items": []
+    },
+    {
+      "name": "Tempting",
+      "items": [
+        {
+          "ticker": "GDOT",
+          "exchange": "NYSE",
+          "name": "Green Dot Corp",
+          "id": 6711
+        },
+        {
+          "ticker": "LTC",
+          "exchange": "CRYPTO",
+          "name": "Litecoin",
+          "id": 100005
+        },
+        {
+          "ticker": "JD.US",
+          "exchange": "NASDAQ",
+          "name": "JD.com-ADR",
+          "id": 1378
+        },
+        {
+          "ticker": "00241.HK",
+          "exchange": "HKEX",
+          "name": "Alibaba Health Information Tec",
+          "id": 2361
+        },
+        {
+          "ticker": "MQ",
+          "exchange": "NASDAQ",
+          "name": "Marqeta Inc.",
+          "id": 9273
+        },
+        {
+          "ticker": "MNDY",
+          "exchange": "NASDAQ",
+          "name": "Monday.com",
+          "id": 9271
+        },
+        {
+          "ticker": "HOOD",
+          "exchange": "NASDAQ",
+          "name": "Robinhood Markets Inc.",
+          "id": 9272
+        },
+        {
+          "ticker": "INGN",
+          "exchange": "NASDAQ",
+          "name": "Inogen Inc",
+          "id": 6105
+        },
+        {
+          "ticker": "SAGE",
+          "exchange": "NASDAQ",
+          "name": "Sage Therapeutics Inc",
+          "id": 6036
+        },
+        {
+          "ticker": "BNGO",
+          "exchange": "NASDAQ",
+          "name": "BioNano Genomics Inc",
+          "id": 6194
+        },
+        {
+          "ticker": "TWLO",
+          "exchange": "NYSE",
+          "name": "Twilio Inc A",
+          "id": 4340
+        }
+      ]
+    },
+    {
+      "name": "2026 New DJ",
+      "items": [
+        {
+          "ticker": "ZS",
+          "exchange": "NASDAQ",
+          "name": "Zscaler Inc",
+          "id": 4403
+        },
+        {
+          "ticker": "QBTS",
+          "exchange": "NYSE",
+          "name": "D-Wave Quantum Inc",
+          "id": 10881
+        },
+        {
+          "ticker": "IONQ",
+          "exchange": "NYSE",
+          "name": "IONQ Inc",
+          "id": 9425
+        },
+        {
+          "ticker": "PLTR",
+          "exchange": "NASDAQ",
+          "name": "Palantir Technologies Inc.",
+          "id": 7991
+        },
+        {
+          "ticker": "RIO.ASX",
+          "exchange": "ASX",
+          "name": "Rio Tinto Group",
+          "id": 7006
+        },
+        {
+          "ticker": "OIL",
+          "exchange": "COMDTY",
+          "name": "Oil (Non Expiry)",
+          "id": 17
+        },
+        {
+          "ticker": "GOLD",
+          "exchange": "COMDTY",
+          "name": "Gold (Non Expiry)",
+          "id": 18
+        },
+        {
+          "ticker": "SILVER",
+          "exchange": "COMDTY",
+          "name": "Silver (Non Expiry)",
+          "id": 19
+        },
+        {
+          "ticker": "NEM",
+          "exchange": "NYSE",
+          "name": "Newmont Mining Corp",
+          "id": 1757
+        },
+        {
+          "ticker": "ECHO",
+          "exchange": "NASDAQ",
+          "name": "EchoStar Corporation",
+          "id": 9771
+        },
+        {
+          "ticker": "RIO",
+          "exchange": "NYSE",
+          "name": "Rio Tinto PLC ADR",
+          "id": 4240
+        },
+        {
+          "ticker": "TSLA",
+          "exchange": "NASDAQ",
+          "name": "Tesla Motors, Inc.",
+          "id": 1111
+        },
+        {
+          "ticker": "BTG.US",
+          "exchange": "NYSE",
+          "name": "B2Gold Corp",
+          "id": 6919
+        },
+        {
+          "ticker": "BTGO",
+          "exchange": "NYSE",
+          "name": "BitGo Holdings, Inc",
+          "id": 15208
+        },
+        {
+          "ticker": "BCH",
+          "exchange": "CRYPTO",
+          "name": "Bitcoin Cash",
+          "id": 100002
+        },
+        {
+          "ticker": "DASH",
+          "exchange": "CRYPTO",
+          "name": "Dash",
+          "id": 100004
+        },
+        {
+          "ticker": "SNOW",
+          "exchange": "NYSE",
+          "name": "Snowflake Inc.",
+          "id": 7999
+        },
+        {
+          "ticker": "PYPL",
+          "exchange": "NASDAQ",
+          "name": "PayPal Holdings",
+          "id": 1484
+        },
+        {
+          "ticker": "MIOTA",
+          "exchange": "CRYPTO",
+          "name": "IOTA",
+          "id": 100018
+        },
+        {
+          "ticker": "MANA",
+          "exchange": "CRYPTO",
+          "name": "Decentraland",
+          "id": 100048
+        },
+        {
+          "ticker": "AU",
+          "exchange": "NYSE",
+          "name": "AngloGold Ashanti Ltd-ADR",
+          "id": 6604
+        },
+        {
+          "ticker": "BTC",
+          "exchange": "CRYPTO",
+          "name": "Bitcoin",
+          "id": 100000
+        }
+      ]
+    },
+    {
+      "name": "Quantum and AI",
+      "items": [
+        {
+          "ticker": "QBTS",
+          "exchange": "NYSE",
+          "name": "D-Wave Quantum Inc",
+          "id": 10881
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,552 @@
+<html>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background-color:#f4f6f8;font-family:Arial,Helvetica,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" bgcolor="#f4f6f8" style="background-color:#f4f6f8;">
+<tr><td align="center" style="padding:16px 8px;">
+<table width="600" cellpadding="0" cellspacing="0" bgcolor="#ffffff" style="background-color:#ffffff;border-radius:8px;border:1px solid #cccccc;max-width:600px;">
+
+<!-- SECTION 0: SEE FULL REPORT BANNER -->
+<tr>
+  <td align="center" bgcolor="#1a6b3c" style="background-color:#1a6b3c;padding:0;border-radius:8px 8px 0 0;">
+    <table width="100%" cellpadding="0" cellspacing="0">
+      <tr>
+        <td align="center" bgcolor="#1a6b3c" style="background-color:#1a6b3c;padding:16px 24px 14px 24px;">
+          <a href="https://daviddef.github.io/Stock-Soup/reports/hourly-stock-watch.md" style="display:inline-block;background-color:#27ae60;color:#ffffff;font-weight:bold;font-size:16px;text-decoration:none;padding:10px 28px;border-radius:6px;letter-spacing:0.5px;">
+            &#128202; VIEW FULL INTERACTIVE REPORT &rarr;
+          </a>
+          <div style="color:#a8e6bf;font-size:11px;margin-top:8px;">
+            Full report with all data, charts &amp; decision logic &nbsp;&bull;&nbsp; Updated 10:00 &nbsp;&bull;&nbsp; <a href="https://daviddef.github.io/Stock-Soup/" style="color:#a8e6bf;text-decoration:underline;">All Reports Archive</a>
+          </div>
+        </td>
+      </tr>
+      <tr>
+        <td bgcolor="#145a32" style="background-color:#145a32;padding:7px 24px;text-align:center;">
+          <span style="color:#82c99a;font-size:11px;">&#127462;&#127482; ASX: 4DX &bull; EOS &bull; TLX &nbsp;&#124;&nbsp; &#127760; Global: NVDA &bull; PLTR &bull; MSFT &nbsp;&#124;&nbsp; 10:00</span>
+        </td>
+      </tr>
+    </table>
+  </td>
+</tr>
+
+<!-- SECTION 1: HEADER BAR -->
+<tr>
+  <td bgcolor="#1a2332" style="background-color:#1a2332;padding:20px 24px;">
+    <div style="font-size:22px;font-weight:bold;color:#ffffff;">ASX Hourly Stock Watch</div>
+    <div style="font-size:13px;color:#aabbcc;margin-top:6px;">10:00 | [Day Date e.g. Wednesday 24 June 2026] | [MARKET OPEN / MARKET CLOSED]</div>
+    <div style="font-size:12px;color:#ccd;margin-top:8px;">Full Report: <a href="https://github.com/daviddef/Stock-Soup/blob/main/hourly-stock-watch.md" style="color:#f39c12;text-decoration:underline;">github.com/daviddef/Stock-Soup</a></div>
+  </td>
+</tr>
+
+<!-- SECTION 2: MACRO SNAPSHOT -->
+<tr>
+  <td style="padding:0 24px;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin:20px 0 10px 0;">
+      <tr><td bgcolor="#1a2332" style="background-color:#1a2332;padding:8px 14px;border-radius:4px;">
+        <span style="font-size:12px;font-weight:bold;color:#ffffff;text-transform:uppercase;letter-spacing:2px;">MACRO SNAPSHOT</span>
+      </td></tr>
+    </table>
+    <table width="100%" cellpadding="6" cellspacing="0" style="border-collapse:collapse;font-size:13px;border:1px solid #cccccc;">
+      <tr bgcolor="#eef1f5" style="background-color:#eef1f5;">
+        <td style="padding:6px 8px;font-weight:bold;width:28%;">Indicator</td>
+        <td style="padding:6px 8px;font-weight:bold;width:18%;">Value</td>
+        <td style="padding:6px 8px;font-weight:bold;width:18%;">Change</td>
+        <td style="padding:6px 8px;font-weight:bold;">Signal</td>
+      </tr>
+      <tr><td style="padding:5px 8px;"><b>ASX 200</b></td><td style="padding:5px 8px;">8,748</td><td style="padding:5px 8px;color:[RED_IF_NEG_ELSE_GREEN];">−0.3% Fri</td><td style="padding:5px 8px;">Ended 3-week winning streak; opens Mon 30 Jun</td></tr>
+      <tr bgcolor="#fafafa" style="background-color:#fafafa;"><td style="padding:5px 8px;"><b>VIX</b></td><td style="padding:5px 8px;">18.41</td><td style="padding:5px 8px;color:[COLOR];">—</td><td style="padding:5px 8px;">Moderate volatility</td></tr>
+      <tr><td style="padding:5px 8px;"><b>Gold (USD/oz)</b></td><td style="padding:5px 8px;">~$3,285</td><td style="padding:5px 8px;color:[COLOR];">—</td><td style="padding:5px 8px;">web search est.</td></tr>
+      <tr bgcolor="#fafafa" style="background-color:#fafafa;"><td style="padding:5px 8px;"><b>Oil WTI (USD)</b></td><td style="padding:5px 8px;">~$68</td><td style="padding:5px 8px;color:[COLOR];">—</td><td style="padding:5px 8px;">Iran de-escalation tailwind</td></tr>
+      <tr><td style="padding:5px 8px;"><b>AUD/USD</b></td><td style="padding:5px 8px;">0.7080</td><td style="padding:5px 8px;">web search (weekend) — verify</td><td style="padding:5px 8px;">Neutral</td></tr>
+      <tr bgcolor="#fafafa" style="background-color:#fafafa;"><td style="padding:5px 8px;"><b>PLTR (NYSE)</b></td><td style="padding:5px 8px;">$$116.70</td><td style="padding:5px 8px;color:[COLOR];">−2.34%</td><td style="padding:5px 8px;">Pullback entry — Week pick</td></tr>
+    </table>
+    <p style="font-size:12px;color:#555;margin:10px 0 0 0;"><b>Market tone:</b> <i>[2-sentence market narrative]</i></p>
+  </td>
+</tr>
+
+<!-- SECTION 2B: CANDIDATES ASSESSED -->
+<!-- MANDATORY: This section must appear every run. It shows ALL candidates scored from ALL sources before picks were selected. -->
+<!-- Rule: Fill every row. Use 0 for sources that returned no candidates. Never skip rows. -->
+<tr>
+  <td style="padding:0 24px;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin:20px 0 10px 0;">
+      <tr><td bgcolor="#2d4a3e" style="background-color:#2d4a3e;padding:8px 14px;border-radius:4px;">
+        <span style="font-size:12px;font-weight:bold;color:#ffffff;text-transform:uppercase;letter-spacing:2px;">CANDIDATES ASSESSED</span>
+        <span style="font-size:11px;color:#a8d5b5;margin-left:10px;">signal-first scan across 12+ sources &mdash; 11 candidates evaluated &rarr; 6 selected (3 ASX + 3 Global)</span>
+      </td></tr>
+    </table>
+
+    <!-- Source breakdown table -->
+    <table width="100%" cellpadding="5" cellspacing="0" style="border-collapse:collapse;font-size:12px;border:1px solid #cccccc;margin-bottom:12px;">
+      <tr bgcolor="#eef1f5" style="background-color:#eef1f5;">
+        <td style="padding:5px 8px;font-weight:bold;width:38%;">Signal Source</td>
+        <td style="padding:5px 8px;font-weight:bold;width:14%;text-align:center;">Candidates</td>
+        <td style="padding:5px 8px;font-weight:bold;width:24%;">Signal Type</td>
+        <td style="padding:5px 8px;font-weight:bold;">Top Hit</td>
+      </tr>
+      <tr><td style="padding:4px 8px;">ASX Volume Leaders (smallcaps volume scan)</td><td style="text-align:center;padding:4px 8px;">8</td><td style="padding:4px 8px;">VOL SPIKE</td><td style="padding:4px 8px;font-size:11px;">[TOP_VOL_TICKER or none]</td></tr>
+      <tr bgcolor="#fafafa"><td style="padding:4px 8px;">ASX Announcements (price-sensitive)</td><td style="text-align:center;padding:4px 8px;">2</td><td style="padding:4px 8px;">ASX ANN / DEAL</td><td style="padding:4px 8px;font-size:11px;">[TOP_ANN_TICKER or none]</td></tr>
+      <tr><td style="padding:4px 8px;">Stockhead — ASX small/mid cap news</td><td style="text-align:center;padding:4px 8px;">0</td><td style="padding:4px 8px;">Stockhead Lead</td><td style="padding:4px 8px;font-size:11px;">[TOP_STOCKHEAD_TICKER or none]</td></tr>
+      <tr bgcolor="#fafafa"><td style="padding:4px 8px;">News feeds (SDU / Motley Fool / LiveWire / NTNews)</td><td style="text-align:center;padding:4px 8px;">6</td><td style="padding:4px 8px;">UPGRADE / COVERAGE</td><td style="padding:4px 8px;font-size:11px;">[TOP_NEWS_TICKER or none]</td></tr>
+      <tr><td style="padding:4px 8px;">RSS feeds (Reuters / MarketWatch / CNBC / AFR)</td><td style="text-align:center;padding:4px 8px;">2</td><td style="padding:4px 8px;">RSS Lead</td><td style="padding:4px 8px;font-size:11px;">[TOP_RSS_TICKER or none]</td></tr>
+      <tr bgcolor="#fafafa"><td style="padding:4px 8px;">Web Search — Google/Bing/DDG (qdr:h hourly filter)</td><td style="text-align:center;padding:4px 8px;">3</td><td style="padding:4px 8px;">WEB_SEARCH</td><td style="padding:4px 8px;font-size:11px;">[TOP_WEB_TICKER or none]</td></tr>
+      <tr><td style="padding:4px 8px;">Sector macro signals (commodity / policy / Fed)</td><td style="text-align:center;padding:4px 8px;">2</td><td style="padding:4px 8px;">SECTOR</td><td style="padding:4px 8px;font-size:11px;">[TOP_SECTOR_TICKER or none]</td></tr>
+      <tr bgcolor="#fafafa"><td style="padding:4px 8px;">US movers — Alpha Vantage TOP_GAINERS</td><td style="text-align:center;padding:4px 8px;">3</td><td style="padding:4px 8px;">AV TOP MOVER</td><td style="padding:4px 8px;font-size:11px;">[TOP_US_TICKER or none]</td></tr>
+      <tr><td style="padding:4px 8px;">Yahoo Finance gainers / Finviz movers (US)</td><td style="text-align:center;padding:4px 8px;">0</td><td style="padding:4px 8px;">YF/Finviz Lead</td><td style="padding:4px 8px;font-size:11px;">[TOP_YF_TICKER or none]</td></tr>
+      <tr bgcolor="#fafafa"><td style="padding:4px 8px;">Mediastack global news</td><td style="text-align:center;padding:4px 8px;">0</td><td style="padding:4px 8px;">Mediastack Lead</td><td style="padding:4px 8px;font-size:11px;">[TOP_MEDIA_TICKER or none]</td></tr>
+      <tr><td style="padding:4px 8px;">SimplyWallSt community narratives</td><td style="text-align:center;padding:4px 8px;">0</td><td style="padding:4px 8px;">SWS Community</td><td style="padding:4px 8px;font-size:11px;">[TOP_SWS_TICKER or none]</td></tr>
+      <tr bgcolor="#fafafa"><td style="padding:4px 8px;">TradingView Ideas (technical community)</td><td style="text-align:center;padding:4px 8px;">0</td><td style="padding:4px 8px;">TV Community</td><td style="padding:4px 8px;font-size:11px;">[TOP_TV_TICKER or none]</td></tr>
+      <tr style="border-top:2px solid #1a2332;"><td style="padding:4px 8px;">Fixed watchlist (monitoring only — hold/exit signals)</td><td style="text-align:center;padding:4px 8px;">6</td><td style="padding:4px 8px;">Various</td><td style="padding:4px 8px;font-size:11px;">VTM / PDN / IEL / TLX / EOS etc.</td></tr>
+    </table>
+
+    <!-- Full scored candidate pool -->
+    <table width="100%" cellpadding="4" cellspacing="0" style="border-collapse:collapse;font-size:11px;border:1px solid #cccccc;">
+      <tr bgcolor="#1a2332" style="background-color:#1a2332;">
+        <td style="padding:5px 6px;font-weight:bold;color:#ffffff;">Ticker</td>
+        <td style="padding:5px 6px;font-weight:bold;color:#ffffff;">Market</td>
+        <td style="padding:5px 6px;font-weight:bold;color:#ffffff;">Source</td>
+        <td style="padding:5px 6px;font-weight:bold;color:#ffffff;">Price</td>
+        <td style="padding:5px 6px;font-weight:bold;color:#ffffff;">RSI</td>
+        <td style="padding:5px 6px;font-weight:bold;color:#ffffff;">SMA50</td>
+        <td style="padding:5px 6px;font-weight:bold;color:#ffffff;">yf Trend</td>
+        <td style="padding:5px 6px;font-weight:bold;color:#ffffff;">TD ST</td>
+        <td style="padding:5px 6px;font-weight:bold;color:#ffffff;">Leading Signal</td>
+        <td style="padding:5px 6px;font-weight:bold;color:#ffffff;">Score</td>
+        <td style="padding:5px 6px;font-weight:bold;color:#ffffff;">Decision</td>
+      </tr>
+      <!-- ROW FORMAT: top pick first, then ranked descending. Use colors: DAY=#fff0f0, WEEK=#fff5ee, LONG=#f0fff4, Monitor=#fafafa -->
+      <!-- Example rows — replace with actual data each run: -->
+      <tr bgcolor="#fff0f0" style="background-color:#fff0f0;"><td style="padding:4px 6px;font-weight:bold;">4DX</td><td style="color:#555;">[source]</td><td>$[X]</td><td>51.10</td><td style="color:#007a55;">↑</td><td>[X]x</td><td><span style="background-color:#e8f5e9;color:#276749;font-size:10px;font-weight:bold;padding:2px 6px;border-radius:8px;">DEAL × 2 + COVERAGE × 2 | Above both SMAs | 1.62× vol</span></td><td style="font-weight:bold;color:#c53030;">[X]/5</td><td style="font-weight:bold;color:#c53030;">⚡ DAY</td></tr>
+      <tr bgcolor="#fff5ee" style="background-color:#fff5ee;"><td style="padding:4px 6px;font-weight:bold;">EOS</td><td style="color:#555;">[source]</td><td>$[X]</td><td>47.10</td><td style="color:#007a55;">↑</td><td>[X]x</td><td><span style="background-color:#e3f2fd;color:#1565c0;font-size:10px;font-weight:bold;padding:2px 6px;border-radius:8px;">ASX ANN (institutional) + DEAL | Above SMA200 | PRE-MOVE</span></td><td style="font-weight:bold;color:#c05621;">[X]/5</td><td style="font-weight:bold;color:#c05621;">📅 WEEK</td></tr>
+      <tr bgcolor="#f0fff4" style="background-color:#f0fff4;"><td style="padding:4px 6px;font-weight:bold;">TLX</td><td style="color:#555;">[source]</td><td>$[X]</td><td>60.79</td><td style="color:#cc0000;">↓</td><td>—</td><td><span style="background-color:#f3e5f5;color:#6a1b9a;font-size:10px;font-weight:bold;padding:2px 6px;border-radius:8px;">DEAL + COVERAGE + REG | Above both SMAs | 5D +6.62%</span></td><td style="font-weight:bold;color:#276749;">[X]/5</td><td style="font-weight:bold;color:#276749;">📈 LONG</td></tr>
+      <!-- Additional Monitor/Watch rows below picks -->
+      <tr bgcolor="#fafafa" style="background-color:#fafafa;"><td style="padding:4px 6px;">CU6</td><td style="color:#555;">[source]</td><td>$[X]</td><td>50.77</td><td>[↑/↓]</td><td>[X]x</td><td style="color:#888;">FDA fast-track + Cu-64 Theragenics deal; below SMAs = not yet a pick</td><td style="color:#888;">[X]/5</td><td style="color:#888;">Monitor</td></tr>
+    </table>
+    <p style="font-size:11px;color:#888;margin:6px 0 0 0;font-style:italic;">Scores: base 1&ndash;5 by catalyst type (ASX ANN=5, known catalyst=4, strong thesis=3, vol-only=2, momentum=1) + bonuses for multi-source, above both SMAs, SWS/TV confirmation. Watchlist stocks compete on equal footing. Only top 3 scorers become picks.</p>
+  </td>
+</tr>
+
+<!-- SECTION 3A: ASX PICKS -->
+<tr>
+  <td style="padding:0 24px;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin:20px 0 10px 0;">
+      <tr><td bgcolor="#1a2332" style="background-color:#1a2332;padding:8px 14px;border-radius:4px;">
+        <span style="font-size:12px;font-weight:bold;color:#ffffff;text-transform:uppercase;letter-spacing:2px;">🇦🇺 ASX PICKS OF THE HOUR</span>
+      </td></tr>
+    </table>
+
+    <!-- DAY PICK CARD -->
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:14px;border:2px solid #c53030;border-radius:6px;">
+      <tr>
+        <td bgcolor="#c53030" style="background-color:#c53030;padding:10px 16px;border-radius:4px 4px 0 0;">
+          <strong style="font-size:13px;color:#ffffff;text-transform:uppercase;">🇦🇺 ASX DAY TRADE -- 4DX (4DMedical) -- A$A$4.160 [NEW / HOLD]</strong>
+        </td>
+      </tr>
+      <tr>
+        <td bgcolor="#ffffff" style="background-color:#ffffff;padding:14px 16px;border-left:4px solid #c53030;">
+          <table width="100%" cellpadding="0" cellspacing="0">
+            <tr>
+              <td><span style="font-size:26px;font-weight:bold;color:#111111;">4DX</span> &nbsp;<span style="font-size:13px;color:#666666;">4DMedical</span></td>
+              <td align="right" valign="top"><span style="font-size:24px;font-weight:bold;color:#111111;">A$A$4.160</span><br><span style="font-size:14px;font-weight:bold;color:#007a55;">−8.97% Fri</span></td>
+            </tr>
+          </table>
+          <table width="100%" cellpadding="8" cellspacing="4" style="margin-top:12px;">
+            <tr>
+              <td bgcolor="#fff0f0" style="background-color:#fff0f0;text-align:center;border-radius:4px;"><div style="font-size:10px;color:#555;font-weight:bold;text-transform:uppercase;">Entry</div><div style="font-size:14px;font-weight:bold;color:#333;">$A$4.05 – $4.30</div></td>
+              <td bgcolor="#e8f5e9" style="background-color:#e8f5e9;text-align:center;border-radius:4px;"><div style="font-size:10px;color:#555;font-weight:bold;text-transform:uppercase;">Target</div><div style="font-size:14px;font-weight:bold;color:#007a55;">$A$4.80 – $5.00</div></td>
+              <td bgcolor="#ffebee" style="background-color:#ffebee;text-align:center;border-radius:4px;"><div style="font-size:10px;color:#555;font-weight:bold;text-transform:uppercase;">Stop</div><div style="font-size:14px;font-weight:bold;color:#cc0000;">$A$3.85</div></td>
+              <td bgcolor="#f0f4ff" style="background-color:#f0f4ff;text-align:center;border-radius:4px;"><div style="font-size:10px;color:#555;font-weight:bold;text-transform:uppercase;">R:R</div><div style="font-size:14px;font-weight:bold;color:#333;">~2.5:1:1</div></td>
+            </tr>
+          </table>
+          <!-- LEADING SIGNAL BADGES: show what triggered this pick BEFORE price moved -->
+          <!-- Badge options: ASX ANN / DEAL / UPGRADE / EARNINGS DATE / SDU BUY / INSIDER / SECTOR MOVE / VOL SPIKE -->
+          <div style="margin-top:10px;">[DAY_CATALYST_BADGES -- e.g. &lt;span style="background-color:#e8f5e9;color:#276749;font-size:11px;font-weight:bold;padding:3px 8px;border-radius:10px;margin-right:4px;"&gt;ASX ANN&lt;/span&gt; &lt;span style="background-color:#fff3cd;color:#856404;font-size:11px;font-weight:bold;padding:3px 8px;border-radius:10px;"&gt;SDU BUY&lt;/span&gt;]</div>
+          <p style="font-size:13px;margin:10px 0 8px 0;">[DAY_NARRATIVE -- 2-3 sentences with bolded key facts]</p>
+          <ul style="font-size:13px;margin:0 0 8px 0;padding-left:20px;">
+            <li>[DAY_CATALYST_1 -- specific named fact with source]</li>
+            <li>💊 Philips $10M Global Distribution Deal — exclusive XV partnership</li>
+            <li>🏥 UC San Diego Health adoption — national screening network</li>
+            <li>[DAY_CATALYST_4 -- optional]</li>
+          </ul>
+          <p style="font-size:12px;color:#888;font-style:italic;margin:0;">Risk: Gap-up >$4.50 → skip. Gap-down <$4.00 → check for negative news. ⛔ Size −25%.</p>
+        </td>
+      </tr>
+    </table>
+
+    <!-- WEEK PICK CARD -->
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:14px;border:2px solid #c05621;border-radius:6px;">
+      <tr>
+        <td bgcolor="#c05621" style="background-color:#c05621;padding:10px 16px;border-radius:4px 4px 0 0;">
+          <strong style="font-size:13px;color:#ffffff;text-transform:uppercase;">🇦🇺 ASX WEEK TRADE -- EOS (Electro Optic Systems) -- A$A$9.440 [NEW / HOLD]</strong>
+        </td>
+      </tr>
+      <tr>
+        <td bgcolor="#ffffff" style="background-color:#ffffff;padding:14px 16px;border-left:4px solid #c05621;">
+          <table width="100%" cellpadding="0" cellspacing="0">
+            <tr>
+              <td><span style="font-size:26px;font-weight:bold;color:#111111;">EOS</span> &nbsp;<span style="font-size:13px;color:#666666;">Electro Optic Systems</span></td>
+              <td align="right" valign="top"><span style="font-size:24px;font-weight:bold;color:#111111;">A$A$9.440</span><br><span style="font-size:14px;font-weight:bold;color:#007a55;">−1.67% Fri</span></td>
+            </tr>
+          </table>
+          <table width="100%" cellpadding="8" cellspacing="4" style="margin-top:12px;">
+            <tr>
+              <td bgcolor="#fff5ee" style="background-color:#fff5ee;text-align:center;border-radius:4px;"><div style="font-size:10px;color:#555;font-weight:bold;text-transform:uppercase;">Entry</div><div style="font-size:14px;font-weight:bold;color:#333;">$A$9.20 – $9.65</div></td>
+              <td bgcolor="#e8f5e9" style="background-color:#e8f5e9;text-align:center;border-radius:4px;"><div style="font-size:10px;color:#555;font-weight:bold;text-transform:uppercase;">Target</div><div style="font-size:14px;font-weight:bold;color:#007a55;">$A$11.00</div></td>
+              <td bgcolor="#ffebee" style="background-color:#ffebee;text-align:center;border-radius:4px;"><div style="font-size:10px;color:#555;font-weight:bold;text-transform:uppercase;">Stop</div><div style="font-size:14px;font-weight:bold;color:#cc0000;">$A$8.80</div></td>
+              <td bgcolor="#f0f4ff" style="background-color:#f0f4ff;text-align:center;border-radius:4px;"><div style="font-size:10px;color:#555;font-weight:bold;text-transform:uppercase;">R:R</div><div style="font-size:14px;font-weight:bold;color:#333;">~3.0:1:1</div></td>
+            </tr>
+          </table>
+          <div style="margin-top:10px;">[WEEK_CATALYST_BADGES -- same badge format as Day card]</div>
+          <p style="font-size:13px;margin:10px 0 8px 0;">[WEEK_NARRATIVE -- 2-3 sentences with bolded key facts]</p>
+          <ul style="font-size:13px;margin:0 0 8px 0;padding-left:20px;">
+            <li>📢 ASX ANN: 'Becoming a Substantial Holder' at $9.60 — institution crossed 5% = PRE-MOVE</li>
+            <li>🛡️ MARSS Acquisition: €140M earnout + £85M order; €135M + US$726M combined backlog</li>
+            <li>🌐 Counter-drone orders surging — European NATO defence budgets expanding</li>
+            <li>[WEEK_CATALYST_4 -- optional]</li>
+          </ul>
+          <p style="font-size:12px;color:#888;font-style:italic;margin:0;">Risk: Close above $9.60 confirms buying. Break below $9.00 invalidates thesis.</p>
+        </td>
+      </tr>
+    </table>
+
+    <!-- LONG PICK CARD -->
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:14px;border:2px solid #276749;border-radius:6px;">
+      <tr>
+        <td bgcolor="#276749" style="background-color:#276749;padding:10px 16px;border-radius:4px 4px 0 0;">
+          <strong style="font-size:13px;color:#ffffff;text-transform:uppercase;">🇦🇺 ASX LONG TERM -- TLX (Telix Pharmaceuticals) -- A$A$14.560 [NEW / HOLD]</strong>
+        </td>
+      </tr>
+      <tr>
+        <td bgcolor="#ffffff" style="background-color:#ffffff;padding:14px 16px;border-left:4px solid #276749;">
+          <table width="100%" cellpadding="0" cellspacing="0">
+            <tr>
+              <td><span style="font-size:26px;font-weight:bold;color:#111111;">TLX</span> &nbsp;<span style="font-size:13px;color:#666666;">Telix Pharmaceuticals</span></td>
+              <td align="right" valign="top"><span style="font-size:24px;font-weight:bold;color:#111111;">A$A$14.560</span><br><span style="font-size:12px;color:#888;">ASX · Healthcare defensive-growth — fully insulated from BTC risk-off. Full sizing.</span></td>
+            </tr>
+          </table>
+          <table width="100%" cellpadding="8" cellspacing="4" style="margin-top:12px;">
+            <tr>
+              <td bgcolor="#f0fff4" style="background-color:#f0fff4;text-align:center;border-radius:4px;"><div style="font-size:10px;color:#555;font-weight:bold;text-transform:uppercase;">Entry</div><div style="font-size:14px;font-weight:bold;color:#333;">$A$14.20 – $15.00</div></td>
+              <td bgcolor="#e8f5e9" style="background-color:#e8f5e9;text-align:center;border-radius:4px;"><div style="font-size:10px;color:#555;font-weight:bold;text-transform:uppercase;">Target (consensus)</div><div style="font-size:14px;font-weight:bold;color:#007a55;">$A$18.00</div></td>
+              <td bgcolor="#ffebee" style="background-color:#ffebee;text-align:center;border-radius:4px;"><div style="font-size:10px;color:#555;font-weight:bold;text-transform:uppercase;">Stop</div><div style="font-size:14px;font-weight:bold;color:#cc0000;">$A$13.20</div></td>
+            </tr>
+          </table>
+          <div style="margin-top:10px;">[LONG_CATALYST_BADGES -- same badge format]</div>
+          <p style="font-size:13px;margin:10px 0 8px 0;">[LONG_NARRATIVE -- 2-3 sentences]</p>
+          <ul style="font-size:13px;margin:0 0 8px 0;padding-left:20px;">
+            <li>💊 ARTMS Acquisition ($125.9M) — cyclotron isotope platform + Cu-64 supply chain</li>
+            <li>🔬 US Regulator Nod (Jun 27) — US regulatory clearance received</li>
+            <li>🏥 Healthcare Rotation Top Pick — PME, TLX, TNE, 360, SDR (SmallCaps)</li>
+          </ul>
+          <p style="font-size:12px;color:#888;font-style:italic;margin:0;">Risk: SMA50 $14.22 = dynamic support. Average in on dips to $13.50–$14.00.</p>
+        </td>
+      </tr>
+    </table>
+  </td>
+</tr>
+
+<!-- SECTION 3B: GLOBAL PICKS -->
+<tr>
+  <td style="padding:0 24px;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin:20px 0 10px 0;">
+      <tr><td bgcolor="#1b2d40" style="background-color:#1b2d40;padding:8px 14px;border-radius:4px;">
+        <span style="font-size:12px;font-weight:bold;color:#ffffff;text-transform:uppercase;letter-spacing:2px;">🌏 GLOBAL PICKS OF THE HOUR</span>
+      </td></tr>
+    </table>
+
+    <!-- GLOBAL DAY PICK CARD -->
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:14px;border:2px solid #c53030;border-radius:6px;">
+      <tr>
+        <td bgcolor="#c53030" style="background-color:#c53030;padding:10px 16px;border-radius:4px 4px 0 0;">
+          <strong style="font-size:13px;color:#ffffff;text-transform:uppercase;">🌏 GLOBAL DAY TRADE -- NVDA (NVIDIA Corporation) -- $$192.53 ⚠️ [NEW / HOLD] — NASDAQ</strong>
+        </td>
+      </tr>
+      <tr>
+        <td bgcolor="#ffffff" style="background-color:#ffffff;padding:14px 16px;border-left:4px solid #c53030;">
+          <table width="100%" cellpadding="0" cellspacing="0">
+            <tr>
+              <td><span style="font-size:26px;font-weight:bold;color:#111111;">NVDA</span> &nbsp;<span style="font-size:13px;color:#666666;">NVIDIA Corporation</span></td>
+              <td align="right" valign="top"><span style="font-size:24px;font-weight:bold;color:#111111;">$$192.53 ⚠️</span><br><span style="font-size:14px;font-weight:bold;color:#007a55;">−1.67% Fri</span></td>
+            </tr>
+          </table>
+          <table width="100%" cellpadding="8" cellspacing="4" style="margin-top:12px;">
+            <tr>
+              <td bgcolor="#fff0f0" style="background-color:#fff0f0;text-align:center;border-radius:4px;"><div style="font-size:10px;color:#555;font-weight:bold;text-transform:uppercase;">Entry</div><div style="font-size:14px;font-weight:bold;color:#333;">$$190 – $196</div></td>
+              <td bgcolor="#e8f5e9" style="background-color:#e8f5e9;text-align:center;border-radius:4px;"><div style="font-size:10px;color:#555;font-weight:bold;text-transform:uppercase;">Target</div><div style="font-size:14px;font-weight:bold;color:#007a55;">$$205 – $210</div></td>
+              <td bgcolor="#ffebee" style="background-color:#ffebee;text-align:center;border-radius:4px;"><div style="font-size:10px;color:#555;font-weight:bold;text-transform:uppercase;">Stop</div><div style="font-size:14px;font-weight:bold;color:#cc0000;">$$185</div></td>
+              <td bgcolor="#f0f4ff" style="background-color:#f0f4ff;text-align:center;border-radius:4px;"><div style="font-size:10px;color:#555;font-weight:bold;text-transform:uppercase;">R:R</div><div style="font-size:14px;font-weight:bold;color:#333;">~2.5:1:1</div></td>
+            </tr>
+          </table>
+          <div style="margin-top:10px;">AI INFRA · VOLUME LEADER</div>
+          <p style="font-size:13px;margin:10px 0 8px 0;">[GLB_DAY_NARRATIVE -- 2-3 sentences with bolded key facts]</p>
+          <ul style="font-size:13px;margin:0 0 8px 0;padding-left:20px;">
+            <li>🤖 MSFT +5.71% Fri confirms enterprise AI spend; NVDA primary GPU beneficiary</li>
+            <li>📦 #1 most actively traded Fri 146M shares (Alpha Vantage)</li>
+            <li>🔄 Minor −1.67% pullback from $195.74 = value re-entry on structural theme</li>
+          </ul>
+          <p style="font-size:12px;color:#888;font-style:italic;margin:0;">Risk: Price web search — verify pre-market. Gap >3% → reassess. ⛔ Size −25%.</p>
+        </td>
+      </tr>
+    </table>
+
+    <!-- GLOBAL WEEK PICK CARD -->
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:14px;border:2px solid #c05621;border-radius:6px;">
+      <tr>
+        <td bgcolor="#c05621" style="background-color:#c05621;padding:10px 16px;border-radius:4px 4px 0 0;">
+          <strong style="font-size:13px;color:#ffffff;text-transform:uppercase;">🌏 GLOBAL WEEK TRADE -- PLTR (Palantir Technologies) -- $$116.70 [NEW / HOLD] — NASDAQ</strong>
+        </td>
+      </tr>
+      <tr>
+        <td bgcolor="#ffffff" style="background-color:#ffffff;padding:14px 16px;border-left:4px solid #c05621;">
+          <table width="100%" cellpadding="0" cellspacing="0">
+            <tr>
+              <td><span style="font-size:26px;font-weight:bold;color:#111111;">PLTR</span> &nbsp;<span style="font-size:13px;color:#666666;">Palantir Technologies</span></td>
+              <td align="right" valign="top"><span style="font-size:24px;font-weight:bold;color:#111111;">$$116.70</span><br><span style="font-size:14px;font-weight:bold;color:#007a55;">−2.34% Fri</span></td>
+            </tr>
+          </table>
+          <table width="100%" cellpadding="8" cellspacing="4" style="margin-top:12px;">
+            <tr>
+              <td bgcolor="#fff5ee" style="background-color:#fff5ee;text-align:center;border-radius:4px;"><div style="font-size:10px;color:#555;font-weight:bold;text-transform:uppercase;">Entry</div><div style="font-size:14px;font-weight:bold;color:#333;">$$115 – $119</div></td>
+              <td bgcolor="#e8f5e9" style="background-color:#e8f5e9;text-align:center;border-radius:4px;"><div style="font-size:10px;color:#555;font-weight:bold;text-transform:uppercase;">Target</div><div style="font-size:14px;font-weight:bold;color:#007a55;">$$124 – $130</div></td>
+              <td bgcolor="#ffebee" style="background-color:#ffebee;text-align:center;border-radius:4px;"><div style="font-size:10px;color:#555;font-weight:bold;text-transform:uppercase;">Stop</div><div style="font-size:14px;font-weight:bold;color:#cc0000;">$$112</div></td>
+              <td bgcolor="#f0f4ff" style="background-color:#f0f4ff;text-align:center;border-radius:4px;"><div style="font-size:10px;color:#555;font-weight:bold;text-transform:uppercase;">R:R</div><div style="font-size:14px;font-weight:bold;color:#333;">~2.5:1:1</div></td>
+            </tr>
+          </table>
+          <div style="margin-top:10px;">ANALYST CONVICTION · INSIDER BUYING</div>
+          <p style="font-size:13px;margin:10px 0 8px 0;">[GLB_WEEK_NARRATIVE -- 2-3 sentences with bolded key facts]</p>
+          <ul style="font-size:13px;margin:0 0 8px 0;padding-left:20px;">
+            <li>📊 26:2 analyst consensus (Buy:Sell) — highest institutional conviction in large-cap tech</li>
+            <li>💼 Insider buying MSPR +46.69 — management net buyers</li>
+            <li>🏛️ US Government AI Platform — DoD + intelligence + commercial contracts expanding</li>
+          </ul>
+          <p style="font-size:12px;color:#888;font-style:italic;margin:0;">Risk: BTC RISK-OFF: if BTC <$58K, tighten stop to $114. ⛔ Size −30%.</p>
+        </td>
+      </tr>
+    </table>
+
+    <!-- GLOBAL LONG PICK CARD -->
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:14px;border:2px solid #276749;border-radius:6px;">
+      <tr>
+        <td bgcolor="#276749" style="background-color:#276749;padding:10px 16px;border-radius:4px 4px 0 0;">
+          <strong style="font-size:13px;color:#ffffff;text-transform:uppercase;">🌏 GLOBAL LONG TERM -- MSFT (Microsoft Corporation) -- $$372.97 ⚠️ [NEW / HOLD] — NASDAQ</strong>
+        </td>
+      </tr>
+      <tr>
+        <td bgcolor="#ffffff" style="background-color:#ffffff;padding:14px 16px;border-left:4px solid #276749;">
+          <table width="100%" cellpadding="0" cellspacing="0">
+            <tr>
+              <td><span style="font-size:26px;font-weight:bold;color:#111111;">MSFT</span> &nbsp;<span style="font-size:13px;color:#666666;">Microsoft Corporation</span></td>
+              <td align="right" valign="top"><span style="font-size:24px;font-weight:bold;color:#111111;">$$372.97 ⚠️</span><br><span style="font-size:12px;color:#888;">NASDAQ · Large-cap defensive-growth — fully insulated from BTC risk-off. Full sizing.</span></td>
+            </tr>
+          </table>
+          <table width="100%" cellpadding="8" cellspacing="4" style="margin-top:12px;">
+            <tr>
+              <td bgcolor="#f0fff4" style="background-color:#f0fff4;text-align:center;border-radius:4px;"><div style="font-size:10px;color:#555;font-weight:bold;text-transform:uppercase;">Entry</div><div style="font-size:14px;font-weight:bold;color:#333;">$$365 – $385</div></td>
+              <td bgcolor="#e8f5e9" style="background-color:#e8f5e9;text-align:center;border-radius:4px;"><div style="font-size:10px;color:#555;font-weight:bold;text-transform:uppercase;">Target (consensus)</div><div style="font-size:14px;font-weight:bold;color:#007a55;">$$415 – $430</div></td>
+              <td bgcolor="#ffebee" style="background-color:#ffebee;text-align:center;border-radius:4px;"><div style="font-size:10px;color:#555;font-weight:bold;text-transform:uppercase;">Stop</div><div style="font-size:14px;font-weight:bold;color:#cc0000;">$$350</div></td>
+            </tr>
+          </table>
+          <div style="margin-top:10px;">AI CLOUD · ENTERPRISE RE-RATING</div>
+          <p style="font-size:13px;margin:10px 0 8px 0;">[GLB_LONG_NARRATIVE -- 2-3 sentences]</p>
+          <ul style="font-size:13px;margin:0 0 8px 0;padding-left:20px;">
+            <li>☁️ Azure AI + Copilot: +5.71% Fri confirms enterprise cloud spend cycle</li>
+            <li>🤖 M365 Copilot + Azure OpenAI generating material revenue</li>
+            <li>🛡️ Large-cap defensive — superannuation/pension held globally</li>
+          </ul>
+          <p style="font-size:12px;color:#888;font-style:italic;margin:0;">Risk: Price web search — verify pre-market. Watch Azure commentary.</p>
+        </td>
+      </tr>
+    </table>
+  </td>
+</tr>
+
+
+
+<!-- SECTION 5: FULL WATCHLIST SCAN -->
+<tr>
+  <td style="padding:0 24px;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 10px 0;">
+      <tr><td bgcolor="#1a2332" style="background-color:#1a2332;padding:8px 14px;border-radius:4px;">
+        <span style="font-size:12px;font-weight:bold;color:#ffffff;text-transform:uppercase;letter-spacing:2px;">FULL WATCHLIST SCAN</span>
+      </td></tr>
+    </table>
+    <table width="100%" cellpadding="5" cellspacing="0" style="border-collapse:collapse;font-size:12px;border:1px solid #cccccc;">
+      <tr bgcolor="#1a2332" style="background-color:#1a2332;">
+        <td style="padding:6px 8px;font-weight:bold;color:#ffffff;">Ticker</td>
+        <td style="padding:6px 8px;font-weight:bold;color:#ffffff;">Price</td>
+        <td style="padding:6px 8px;font-weight:bold;color:#ffffff;">Day%</td>
+        <td style="padding:6px 8px;font-weight:bold;color:#ffffff;">RSI</td>
+        <td style="padding:6px 8px;font-weight:bold;color:#ffffff;">SMA50</td>
+        <td style="padding:6px 8px;font-weight:bold;color:#ffffff;">Vol</td>
+        <td style="padding:6px 8px;font-weight:bold;color:#ffffff;">Leading Signal</td>
+        <td style="padding:6px 8px;font-weight:bold;color:#ffffff;">Status</td>
+      </tr>
+      <tr><td>VTM</td><td>A$1.645</td><td>58.38</td><td>Both ✅</td><td>+7.42%</td><td>COVERAGE: 5.9% TREO flotation upgrade; PFS Q2</td><td>WATCH</td></tr><tr><td>PDN</td><td>A$10.020</td><td>43.64</td><td>200D ✅</td><td>+3.19%</td><td>ANN: News release Jun 27; 3× avg vol</td><td>WATCH</td></tr><tr><td>CU6</td><td>A$3.120</td><td>50.77</td><td>Neither ❌</td><td>+2.47%</td><td>DEAL: FDA fast-track + Cu-64 supply</td><td>MONITORING</td></tr><tr><td>NTU</td><td>A$0.025</td><td>43.93</td><td>Neither ❌</td><td>0.00%</td><td>MACRO: Trump-Albanese $1.5B critical minerals</td><td>WATCH</td></tr><tr><td>BOE</td><td>A$1.275</td><td>43.62</td><td>Neither ❌</td><td>−1.92%</td><td>SECTOR: uranium structural deficit</td><td>AVOID below SMA</td></tr><tr><td>IEL</td><td>A$2.350</td><td>44.99</td><td>Neither ❌</td><td>+20.19%</td><td>New CEO + Intake acquisition; 5D bounce</td><td>MONITORING — YTD −55%</td></tr>
+    </table>
+  </td>
+</tr>
+
+<!-- SECTION 6: SECTOR HEAT MAP -->
+<tr>
+  <td style="padding:0 24px;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin:20px 0 10px 0;">
+      <tr><td bgcolor="#1a2332" style="background-color:#1a2332;padding:8px 14px;border-radius:4px;">
+        <span style="font-size:12px;font-weight:bold;color:#ffffff;text-transform:uppercase;letter-spacing:2px;">SECTOR HEAT MAP</span>
+      </td></tr>
+    </table>
+    <table width="100%" cellpadding="6" cellspacing="0" style="border-collapse:collapse;font-size:13px;border:1px solid #cccccc;">
+      <tr bgcolor="#eef1f5" style="background-color:#eef1f5;">
+        <td style="padding:6px 8px;font-weight:bold;width:30%;">Sector</td>
+        <td style="padding:6px 8px;font-weight:bold;width:18%;">Strength</td>
+        <td style="padding:6px 8px;font-weight:bold;width:22%;">Key Names</td>
+        <td style="padding:6px 8px;font-weight:bold;">Leading Signal</td>
+      </tr>
+      <tr><td style="padding:5px 8px;">Healthcare (XHJ)</td><td style="padding:5px 8px;font-weight:bold;color:#cc0000;">TLX, 4DX primary beneficiaries</td><td style="padding:5px 8px;">TLX, 4DX</td><td style="padding:5px 8px;font-size:11px;">🔥 +13.73% 13W</td></tr>
+      <tr bgcolor="#fafafa" style="background-color:#fafafa;"><td style="padding:5px 8px;">Energy (XEJ)</td><td style="padding:5px 8px;font-weight:bold;color:#cc0000;">Uranium + oil complex</td><td style="padding:5px 8px;">PDN, BOE</td><td style="padding:5px 8px;font-size:11px;">🔥 +11.07% 13W</td></tr>
+      <tr><td style="padding:5px 8px;">Gold (XGD)</td><td style="padding:5px 8px;font-weight:bold;">Gold ~A$4,085/oz est.</td><td style="padding:5px 8px;">NST, EVN</td><td style="padding:5px 8px;font-size:11px;">📈 +9.29% 13W</td></tr>
+      <tr bgcolor="#fafafa" style="background-color:#fafafa;"><td style="padding:5px 8px;">Materials (XMJ)</td><td style="padding:5px 8px;font-weight:bold;color:#1565c0;">Critical minerals, rare earths; NTU/VTM</td><td style="padding:5px 8px;">NTU, VTM</td><td style="padding:5px 8px;font-size:11px;">📈 +5.39% 13W</td></tr>
+    </table>
+  </td>
+</tr>
+
+<!-- SECTION 7: ASX ANNOUNCEMENTS -->
+<tr>
+  <td style="padding:0 24px;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin:20px 0 10px 0;">
+      <tr><td bgcolor="#1a2332" style="background-color:#1a2332;padding:8px 14px;border-radius:4px;">
+        <span style="font-size:12px;font-weight:bold;color:#ffffff;text-transform:uppercase;letter-spacing:2px;">ASX ANNOUNCEMENTS</span>
+      </td></tr>
+    </table>
+    <ul style="font-size:13px;margin:0;padding-left:20px;line-height:1.8;color:#333333;">
+      <li><b>EOS</b> -- Becoming a Substantial Holder — institutional investor crossed 5% threshold at $9.60. PRE-MOVE signal. [positive/negative/watch]</li>
+      <li><b>PDN</b> -- News Release (Jun 27) at $9.62 — content unknown; 3× avg volume suggests significance. [positive/negative/watch]</li>
+      <li><b>SWP</b> -- Binding Agreement to Sell Melbourne Fibre Project — positive deal catalyst. [positive/negative/watch]</li>
+    </ul>
+  </td>
+</tr>
+
+
+
+
+
+<!-- SECTION 9: SOURCES STATUS -->
+<tr>
+  <td style="padding:20px 24px 0 24px;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 10px 0;">
+      <tr><td bgcolor="#1a2332" style="background-color:#1a2332;padding:8px 14px;border-radius:4px;">
+        <span style="font-size:12px;font-weight:bold;color:#ffffff;text-transform:uppercase;letter-spacing:2px;">DATA SOURCES THIS RUN</span>
+      </td></tr>
+    </table>
+    <!-- ⚠️ FILL EVERY ROW — show ❌ Blocked or ⚠️ Skipped for any feed that did not run. NEVER omit a row or reduce the list. -->
+    <table width="100%" cellpadding="3" cellspacing="0" style="border-collapse:collapse;font-size:11px;border:1px solid #cccccc;">
+      <tr bgcolor="#eef1f5" style="background-color:#eef1f5;"><td style="padding:4px 6px;font-weight:bold;width:40%;">Source</td><td style="padding:4px 6px;font-weight:bold;width:15%;">Status</td><td style="padding:4px 6px;font-weight:bold;">Key contribution</td></tr>
+      <tr><td>Finnhub</td><td>✅</td><td>BTC $60,792 (−3.09%), PLTR $116.70, US CLOSED</td></tr><tr><td>EODHD</td><td>❌ Empty</td><td>2nd consecutive empty — AUD/USD + ASX prices via fallback</td></tr><tr><td>Alpha Vantage</td><td>✅</td><td>TOP_GAINERS_LOSERS: MSFT +5.71%, NVDA −1.67% #1 vol 146M</td></tr><tr><td>smallcaps.com.au</td><td>✅</td><td>All ASX prices + RSI/SMA: 4DX, EOS, TLX, VTM, PDN, CU6, BOE, NTU, IEL</td></tr><tr><td>Web Search</td><td>⚠️</td><td>NVDA $192.53, MSFT $372.97, AUD/USD 0.7080 — verify at open</td></tr><tr><td>Motley Fool AU</td><td>✅</td><td>Healthcare rotation, Jun 24 coverage</td></tr><tr><td>Stockhead</td><td>❌</td><td>Empty response</td></tr><tr><td>FMP</td><td>❌</td><td>Empty response</td></tr><tr><td>Mediastack</td><td>⚠️ Skipped</td><td>Quota preservation (100/month)</td></tr>
+    </table>
+  </td>
+</tr>
+
+<!-- SECTION 15: DECISION LOGIC AND RESEARCH TRAIL -->
+<tr>
+  <td style="padding:20px 24px 0 24px;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 10px 0;">
+      <tr><td bgcolor="#1a2332" style="background-color:#1a2332;padding:8px 14px;border-radius:4px;">
+        <span style="font-size:12px;font-weight:bold;color:#ffffff;text-transform:uppercase;letter-spacing:2px;">SECTION 15 -- HOW WE GOT HERE</span>
+      </td></tr>
+    </table>
+
+    <!-- 15A: Candidate Scoring Pool -->
+    <div style="font-size:12px;color:#333333;font-weight:bold;margin:10px 0 6px 0;">15A -- All Tickers Evaluated This Run</div>
+    <table width="100%" cellpadding="4" cellspacing="0" style="border-collapse:collapse;font-size:11px;margin-bottom:14px;border:1px solid #cccccc;">
+      <tr bgcolor="#1a2332" style="background-color:#1a2332;">
+        <td style="padding:5px 6px;font-weight:bold;color:#ffffff;">Ticker</td>
+        <td style="padding:5px 6px;font-weight:bold;color:#ffffff;">Source</td>
+        <td style="padding:5px 6px;font-weight:bold;color:#ffffff;">Price</td>
+        <td style="padding:5px 6px;font-weight:bold;color:#ffffff;">RSI</td>
+        <td style="padding:5px 6px;font-weight:bold;color:#ffffff;">SMA50</td>
+        <td style="padding:5px 6px;font-weight:bold;color:#ffffff;">Vol</td>
+        <td style="padding:5px 6px;font-weight:bold;color:#ffffff;">Leading Signal</td>
+        <td style="padding:5px 6px;font-weight:bold;color:#ffffff;">Score</td>
+        <td style="padding:5px 6px;font-weight:bold;color:#ffffff;">Decision</td>
+      </tr>
+      <tr><td>4DX</td><td>DEAL×2+COVERAGE×2</td><td>51.10</td><td>Both ✅</td><td>1.62×</td><td>4.5</td><td>−0.25</td><td>4.25 ← Day</td></tr><tr><td>EOS</td><td>ANN(INST)+DEAL</td><td>47.10</td><td>200D ✅</td><td>0.51×</td><td>4.0</td><td>0</td><td>4.0 ← Week</td></tr><tr><td>TLX</td><td>DEAL+COVERAGE+REG</td><td>60.79</td><td>Both ✅</td><td>0.71×</td><td>4.5</td><td>0</td><td>4.5 ← Long</td></tr><tr><td>PDN</td><td>ANN+SECTOR</td><td>43.64</td><td>200D ✅</td><td>3.0×</td><td>3.5</td><td>0</td><td>3.5</td></tr><tr><td>CU6</td><td>DEAL+COVERAGE</td><td>50.77</td><td>Neither ❌</td><td>1.82×</td><td>3.5</td><td>−0.25</td><td>3.25</td></tr>
+    </table>
+
+    <!-- 15B: Pick Selection Logic -->
+    <div style="font-size:12px;color:#333333;font-weight:bold;margin:10px 0 8px 0;">15B -- Why These Six Picks (3 ASX + 3 Global)</div>
+    <div style="font-size:11px;color:#555;font-weight:bold;margin:6px 0 4px 0;">🇦🇺 ASX Pool</div>
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:10px;">
+      <tr>
+        <td bgcolor="#fff8f8" style="background-color:#fff8f8;border-left:4px solid #c53030;padding:9px 12px;font-size:12px;border-radius:0 4px 4px 0;">
+          <b style="color:#c53030;">🇦🇺 ASX Day -- 4DX</b> | Signals: [vol · RSI · catalyst · SMA · yf_rsi_trend · TD_supertrend]<br>
+          <span style="color:#888;">Runner-up PDN (3× vol, uranium ANN): [why rejected — 8 words max]</span>
+        </td>
+      </tr>
+      <tr><td style="padding:4px 0;"></td></tr>
+      <tr>
+        <td bgcolor="#fff9f5" style="background-color:#fff9f5;border-left:4px solid #c05621;padding:9px 12px;font-size:12px;border-radius:0 4px 4px 0;">
+          <b style="color:#c05621;">🇦🇺 ASX Week -- EOS</b> | Signals: [catalyst · price action · thesis source]<br>
+          <span style="color:#888;">Runner-up TLX (healthcare rotation): [why rejected]</span>
+        </td>
+      </tr>
+      <tr><td style="padding:4px 0;"></td></tr>
+      <tr>
+        <td bgcolor="#f5fff8" style="background-color:#f5fff8;border-left:4px solid #276749;padding:9px 12px;font-size:12px;border-radius:0 4px 4px 0;">
+          <b style="color:#276749;">🇦🇺 ASX Long -- TLX</b> | Signals: [analyst consensus · upside pct · catalyst · FMP grades]<br>
+          <span style="color:#888;">Runner-up VTM (rare earths, above both SMAs): [why rejected]</span>
+        </td>
+      </tr>
+    </table>
+    <div style="font-size:11px;color:#555;font-weight:bold;margin:10px 0 4px 0;">🌏 Global Pool</div>
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:14px;">
+      <tr>
+        <td bgcolor="#fff8f8" style="background-color:#fff8f8;border-left:4px solid #c53030;padding:9px 12px;font-size:12px;border-radius:0 4px 4px 0;">
+          <b style="color:#c53030;">🌏 Global Day -- NVDA</b> | Signals: [vol · RSI · catalyst · SMA · AV top mover]<br>
+          <span style="color:#888;">Runner-up AAPL (AI device cycle): [why rejected]</span>
+        </td>
+      </tr>
+      <tr><td style="padding:4px 0;"></td></tr>
+      <tr>
+        <td bgcolor="#fff9f5" style="background-color:#fff9f5;border-left:4px solid #c05621;padding:9px 12px;font-size:12px;border-radius:0 4px 4px 0;">
+          <b style="color:#c05621;">🌏 Global Week -- PLTR</b> | Signals: [catalyst · price action · thesis source]<br>
+          <span style="color:#888;">Runner-up MSFT (AI cloud momentum): [why rejected]</span>
+        </td>
+      </tr>
+      <tr><td style="padding:4px 0;"></td></tr>
+      <tr>
+        <td bgcolor="#f5fff8" style="background-color:#f5fff8;border-left:4px solid #276749;padding:9px 12px;font-size:12px;border-radius:0 4px 4px 0;">
+          <b style="color:#276749;">🌏 Global Long -- MSFT</b> | Signals: [Finnhub consensus · FMP grades · upside pct · catalyst]<br>
+          <span style="color:#888;">Runner-up AMZN (AWS AI cloud): [why rejected]</span>
+        </td>
+      </tr>
+    </table>
+
+    <!-- 15C: Source Status — FILL EVERY ROW, never omit. Use ❌ Blocked / ⚠️ Partial for anything that didn't fully run. -->
+    <div style="font-size:12px;color:#333333;font-weight:bold;margin:10px 0 6px 0;">15C -- Sources This Run (30+ feeds · [N] ✅ · [N] ⚠️ · [N] ❌)</div>
+    <table width="100%" cellpadding="3" cellspacing="0" style="border-collapse:collapse;font-size:11px;margin-bottom:14px;border:1px solid #cccccc;">
+      <tr bgcolor="#eef1f5" style="background-color:#eef1f5;"><td style="padding:4px 6px;font-weight:bold;width:38%;">Source</td><td style="padding:4px 6px;font-weight:bold;width:15%;">Status</td><td style="padding:4px 6px;font-weight:bold;">Key contribution</td></tr>
+      <tr><td>Finnhub</td><td>✅</td><td>BTC, PLTR, US market status</td></tr><tr><td>EODHD</td><td>❌ Empty (2nd run)</td><td>Investigate API key</td></tr><tr><td>Alpha Vantage</td><td>✅</td><td>TOP_GAINERS_LOSERS, EARNINGS_CALENDAR</td></tr><tr><td>smallcaps.com.au</td><td>✅</td><td>All ASX prices, RSI, SMA, volume</td></tr><tr><td>Web Search</td><td>⚠️</td><td>NVDA, MSFT prices, AUD/USD</td></tr><tr><td>Mediastack</td><td>⚠️ Skipped</td><td>Quota preservation</td></tr>
+    </table>
+
+    <!-- 15D: Considered and Rejected -->
+    <div style="font-size:12px;color:#333333;font-weight:bold;margin:10px 0 6px 0;">15D -- Considered and Rejected</div>
+    <table width="100%" cellpadding="3" cellspacing="0" style="border-collapse:collapse;font-size:11px;margin-bottom:6px;border:1px solid #cccccc;">
+      <tr bgcolor="#eef1f5" style="background-color:#eef1f5;"><td style="padding:4px 6px;font-weight:bold;width:15%;">Ticker</td><td style="padding:4px 6px;font-weight:bold;width:30%;">Why evaluated</td><td style="padding:4px 6px;font-weight:bold;">Why rejected</td></tr>
+      <tr><td>4DX</td><td>Day</td><td>A$4.05</td><td>A$4.80</td><td>Quad-catalyst PRE-MOVE</td></tr><tr><td>EOS</td><td>Week</td><td>A$9.20</td><td>A$11.00</td><td>Institutional substantial holder PRE-MOVE</td></tr><tr><td>TLX</td><td>Long</td><td>A$14.20</td><td>A$18.00</td><td>Healthcare rotation + ARTMS deal</td></tr><tr><td>NVDA</td><td>Day (Global)</td><td>$190</td><td>$205</td><td>AI infra + MSFT catalyst</td></tr><tr><td>PLTR</td><td>Week (Global)</td><td>$115</td><td>$124</td><td>26:2 analyst + insider buying</td></tr><tr><td>MSFT</td><td>Long (Global)</td><td>$365</td><td>$415</td><td>+5.71% Fri AI cloud re-rating</td></tr>
+    </table>
+  </td>
+</tr>
+
+<!-- FOOTER -->
+<tr>
+  <td bgcolor="#2c3e50" style="background-color:#2c3e50;padding:16px 24px;border-radius:0 0 8px 8px;">
+    <p style="margin:0 0 6px 0;color:#dddddd;font-size:12px;"><b>DISCLAIMER:</b> Auto-generated for informational purposes only. Not financial advice. Always do your own research.</p>
+    <p style="margin:0 0 6px 0;color:#aaaaaa;font-size:11px;">Sources: EODHD &middot; smallcaps.com.au &middot; Stockhead &middot; Finnhub &middot; Alpha Vantage &middot; Mediastack &middot; SDU &middot; Motley Fool &middot; LiveWire &middot; NTNews &middot; Yahoo Finance &middot; Finviz &middot; Reuters RSS &middot; MarketWatch RSS &middot; Simply Wall St &middot; Morningstar &middot; SeekingAlpha &middot; Google/Bing/DDG web search</p>
+    <p style="margin:0;color:#aaaaaa;font-size:11px;">Generated: 10:00 | Sun 29 Jun 2026 | Next update: ~11:00 | david.defranceski@gmail.com</p>
+  </td>
+</tr>
+
+</table>
+</td></tr>
+</table>
+</body>
+</html>
+

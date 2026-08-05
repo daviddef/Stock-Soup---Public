@@ -1,0 +1,14 @@
+[
+  {"ticker": "VTM",  "exchange": "ASX",  "name": "Victory Metals"},
+  {"ticker": "PDN",  "exchange": "ASX",  "name": "Paladin Energy"},
+  {"ticker": "IEL",  "exchange": "ASX",  "name": "IDP Education"},
+  {"ticker": "TLX",  "exchange": "ASX",  "name": "Telix Pharmaceuticals"},
+  {"ticker": "EOS",  "exchange": "ASX",  "name": "Electro Optic Systems"},
+  {"ticker": "NTU",  "exchange": "ASX",  "name": "Northern Minerals"},
+  {"ticker": "DYL",  "exchange": "ASX",  "name": "Deep Yellow"},
+  {"ticker": "DRO",  "exchange": "ASX",  "name": "DroneShield"},
+  {"ticker": "A2M",  "exchange": "ASX",  "name": "A2 Milk"},
+  {"ticker": "SGH",  "exchange": "ASX",  "name": "Sievert Larson Holdings"},
+  {"ticker": "WTC",  "exchange": "ASX",  "name": "WiseTech Global"},
+  {"ticker": "PLTR", "exchange": "NYSE", "name": "Palantir Technologies"}
+]

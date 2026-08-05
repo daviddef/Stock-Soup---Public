@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>How It Works — ASX Stock Watch Guide</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, Arial, sans-serif; background: #f4f6f8; color: #333; line-height: 1.6; }
+
+  /* Header */
+  .header { background: #1a2332; color: #fff; padding: 24px 32px; }
+  .header-inner { max-width: 900px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+  .header h1 { font-size: 20px; font-weight: bold; }
+  .header p { color: #aabbcc; font-size: 13px; margin-top: 4px; }
+  .back-btn { background: #27ae60; color: #fff; text-decoration: none; padding: 8px 18px; border-radius: 6px; font-size: 13px; font-weight: bold; white-space: nowrap; }
+  .back-btn:hover { background: #1e8449; }
+
+  /* Nav pills */
+  .nav-bar { background: #1b2d40; padding: 0 32px; overflow-x: auto; }
+  .nav-inner { max-width: 900px; margin: 0 auto; display: flex; gap: 0; }
+  .nav-inner a { color: #8ab4cc; text-decoration: none; font-size: 12px; font-weight: bold; padding: 11px 16px; display: block; border-bottom: 2px solid transparent; white-space: nowrap; letter-spacing: 0.5px; text-transform: uppercase; }
+  .nav-inner a:hover { color: #fff; border-color: #27ae60; }
+
+  /* Content */
+  .container { max-width: 900px; margin: 0 auto; padding: 32px 16px 48px; }
+
+  /* Cards */
+  .card { background: #fff; border-radius: 8px; border: 1px solid #ddd; overflow: hidden; margin-bottom: 28px; }
+  .card-header { background: #1a2332; color: #fff; padding: 12px 20px; display: flex; align-items: center; gap: 10px; }
+  .card-header h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 2px; }
+  .card-header .icon { font-size: 16px; }
+  .card-body { padding: 20px 24px; }
+
+  /* Pipeline diagram */
+  .pipeline { display: flex; align-items: center; justify-content: center; gap: 0; flex-wrap: wrap; padding: 8px 0 16px; }
+  .pipe-box { background: #1a2332; color: #fff; border-radius: 8px; padding: 14px 20px; text-align: center; min-width: 160px; }
+  .pipe-box .label { font-size: 11px; color: #8ab4cc; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+  .pipe-box .title { font-size: 15px; font-weight: bold; }
+  .pipe-box .sub { font-size: 11px; color: #aabbcc; margin-top: 4px; }
+  .pipe-arrow { font-size: 22px; color: #27ae60; padding: 0 8px; font-weight: bold; }
+  .pipe-green { background: #27ae60; }
+  .pipe-blue { background: #2980b9; }
+
+  /* Funnel */
+  .funnel { display: flex; flex-direction: column; align-items: center; gap: 0; margin: 8px 0 16px; }
+  .funnel-step { display: flex; align-items: center; gap: 12px; width: 100%; max-width: 520px; }
+  .funnel-bar { border-radius: 6px; padding: 10px 16px; color: #fff; font-size: 13px; font-weight: bold; text-align: center; transition: width 0.3s; }
+  .funnel-down { color: #27ae60; font-size: 20px; text-align: center; line-height: 1.2; padding: 2px 0; }
+  .funnel-label { font-size: 12px; color: #666; min-width: 130px; }
+
+  /* Source grid */
+  .source-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; margin-top: 4px; }
+  .source-card { border: 1px solid #e0e0e0; border-radius: 6px; padding: 12px 14px; }
+  .source-card .s-title { font-size: 12px; font-weight: bold; color: #1a2332; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+  .source-card .s-items { font-size: 12px; color: #555; line-height: 1.7; }
+  .source-card .s-items span { display: block; }
+  .source-card.green { border-left: 3px solid #27ae60; }
+  .source-card.blue  { border-left: 3px solid #2980b9; }
+  .source-card.gold  { border-left: 3px solid #f39c12; }
+  .source-card.red   { border-left: 3px solid #e74c3c; }
+  .source-card.purple{ border-left: 3px solid #8e44ad; }
+
+  /* Score model */
+  .score-row { display: flex; align-items: flex-start; gap: 14px; padding: 10px 0; border-bottom: 1px solid #f0f0f0; }
+  .score-row:last-child { border-bottom: none; }
+  .score-badge { min-width: 48px; height: 32px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px; flex-shrink: 0; }
+  .score-row .detail { font-size: 13px; }
+  .score-row .detail strong { color: #1a2332; }
+  .score-row .detail .sub { color: #888; font-size: 12px; }
+
+  .bonus-row { display: flex; gap: 10px; padding: 7px 0; border-bottom: 1px solid #f8f8f8; align-items: flex-start; }
+  .bonus-row:last-child { border-bottom: none; }
+  .bonus-val { min-width: 42px; font-weight: bold; font-size: 13px; }
+  .bonus-val.pos { color: #27ae60; }
+  .bonus-val.neg { color: #e74c3c; }
+  .bonus-desc { font-size: 13px; color: #444; }
+
+  /* Timeframe cards */
+  .tf-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; }
+  .tf-card { border-radius: 8px; padding: 16px; text-align: center; }
+  .tf-card .tf-icon { font-size: 28px; margin-bottom: 6px; }
+  .tf-card .tf-name { font-weight: bold; font-size: 15px; margin-bottom: 4px; }
+  .tf-card .tf-hold { font-size: 12px; margin-bottom: 8px; }
+  .tf-card .tf-desc { font-size: 12px; line-height: 1.5; }
+  .tf-day  { background: #fff3f3; border: 1px solid #f5c6c6; }
+  .tf-week { background: #fffbf0; border: 1px solid #f5e4b3; }
+  .tf-long { background: #f0fff4; border: 1px solid #a3d9b8; }
+
+  /* Risk table */
+  table.nice { width: 100%; border-collapse: collapse; font-size: 13px; }
+  table.nice th { background: #1a2332; color: #fff; padding: 9px 14px; text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; }
+  table.nice td { padding: 9px 14px; border-bottom: 1px solid #f0f0f0; vertical-align: top; }
+  table.nice tr:last-child td { border-bottom: none; }
+  table.nice tr:nth-child(even) td { background: #fafafa; }
+
+  /* Tech indicators */
+  .ind-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+  .ind-card { border: 1px solid #e0e0e0; border-radius: 6px; padding: 14px; }
+  .ind-card .ind-name { font-weight: bold; font-size: 13px; color: #1a2332; margin-bottom: 4px; }
+  .ind-card .ind-plain { font-size: 12px; color: #555; margin-bottom: 8px; }
+  .ind-signals { display: flex; gap: 6px; }
+  .sig { font-size: 11px; padding: 3px 8px; border-radius: 10px; font-weight: bold; }
+  .sig.bull { background: #e8f5e9; color: #276749; }
+  .sig.bear { background: #fff3f3; color: #c53030; }
+
+  /* Macro diagram */
+  .macro-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .macro-box { border-radius: 6px; padding: 14px 16px; }
+  .macro-box.dark { background: #1a2332; color: #fff; }
+  .macro-box.green { background: #e8f5e9; border: 1px solid #a3d9b8; }
+  .macro-box.gold  { background: #fffbf0; border: 1px solid #f5e4b3; }
+  .macro-box.blue  { background: #eef6ff; border: 1px solid #bee3f8; }
+  .macro-box h4 { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; opacity: 0.8; }
+  .macro-box ul { list-style: none; font-size: 12px; line-height: 1.8; }
+  .macro-box.dark ul { color: #cde; }
+
+  /* Email anatomy */
+  .email-mock { border: 2px solid #ddd; border-radius: 8px; overflow: hidden; max-width: 560px; margin: 0 auto; font-size: 12px; }
+  .em-banner { background: #1a6b3c; color: #a8e6bf; padding: 12px 16px; text-align: center; font-size: 11px; }
+  .em-banner strong { display: block; color: #fff; font-size: 14px; margin-bottom: 4px; }
+  .em-sub { background: #145a32; color: #82c99a; padding: 6px 16px; font-size: 11px; text-align: center; }
+  .em-macro { background: #1a2332; color: #aabbcc; padding: 10px 16px; font-size: 11px; }
+  .em-section { background: #fff; padding: 12px 16px; border-bottom: 1px solid #eee; }
+  .em-section .em-label { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: #888; margin-bottom: 4px; }
+  .em-section .em-pick { font-weight: bold; font-size: 13px; color: #1a2332; }
+  .em-section .em-meta { font-size: 11px; color: #666; margin-top: 2px; }
+  .em-risk { background: #fff8f8; border-left: 3px solid #e74c3c; padding: 8px 16px; font-size: 11px; color: #c53030; font-weight: bold; }
+
+  /* Skill architecture */
+  .arch { display: grid; grid-template-columns: 200px 1fr; gap: 0; border: 1px solid #ddd; border-radius: 8px; overflow: hidden; }
+  .arch-label { background: #1a2332; color: #aabbcc; padding: 14px 16px; font-size: 12px; font-weight: bold; border-bottom: 1px solid #243447; display: flex; align-items: center; }
+  .arch-detail { padding: 12px 16px; font-size: 12px; color: #555; border-bottom: 1px solid #f0f0f0; line-height: 1.6; }
+  .arch-detail strong { color: #1a2332; }
+  .arch-label:last-of-type, .arch-detail:last-of-type { border-bottom: none; }
+
+  /* Badges */
+  .badge { display: inline-block; font-size: 11px; font-weight: bold; padding: 2px 8px; border-radius: 10px; margin: 2px; }
+  .badge.green  { background: #e8f5e9; color: #276749; }
+  .badge.orange { background: #fff3e0; color: #e65100; }
+  .badge.red    { background: #fff3f3; color: #c53030; }
+  .badge.blue   { background: #eef6ff; color: #1a4a7a; }
+  .badge.purple { background: #f3e5f5; color: #6a1b9a; }
+  .badge.gold   { background: #fffbf0; color: #7d5a00; border: 1px solid #f5e4b3; }
+
+  /* Health */
+  .health-bar { display: flex; gap: 4px; align-items: center; font-size: 13px; }
+  .h-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+
+  /* Glossary */
+  .glossary dt { font-weight: bold; color: #1a2332; margin-top: 12px; font-size: 13px; }
+  .glossary dd { font-size: 13px; color: #555; padding-left: 16px; margin-top: 2px; }
+
+  .footer { text-align: center; color: #aaa; font-size: 11px; margin-top: 16px; padding-bottom: 32px; }
+
+  @media(max-width:600px) {
+    .tf-grid { grid-template-columns: 1fr; }
+    .macro-grid { grid-template-columns: 1fr; }
+    .arch { grid-template-columns: 1fr; }
+    .arch-label { border-bottom: none; border-right: none; }
+    .pipe-box { min-width: 120px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-inner">
+    <div>
+      <h1>📖 How It Works — Stock Watch Guide</h1>
+      <p>Plain-language guide to the research pipeline, scoring logic, and what every pick means</p>
+    </div>
+    <a href="index.html" class="back-btn">← Back to Reports</a>
+  </div>
+</div>
+
+<div class="nav-bar">
+  <div class="nav-inner">
+    <a href="#pipeline">Pipeline</a>
+    <a href="#discovery">Discovery</a>
+    <a href="#scoring">Scoring</a>
+    <a href="#technicals">Technicals</a>
+    <a href="#macro">Macro</a>
+    <a href="#picks">Pick Types</a>
+    <a href="#email">Email Guide</a>
+    <a href="#risk">Risk Rules</a>
+    <a href="#architecture">Architecture</a>
+    <a href="#watchlists">Watchlists</a><a href="#etoro">eToro</a>
+    <a href="#glossary">Glossary</a>
+  </div>
+</div>
+
+<div class="container">
+
+<!-- ═══════════════════════════════ PIPELINE ═══════════════════════════════ -->
+<div class="card" id="pipeline">
+  <div class="card-header"><span class="icon">🗺️</span><h2>The Big Picture — What Happens Every Hour</h2></div>
+  <div class="card-body">
+    <p style="margin-bottom:20px;color:#555;font-size:13px;">Three skills run in sequence every hour across 8 phases. Think of it as a three-stage funnel: cast wide, score everything, deliver the best.</p>
+
+    <div class="pipeline">
+      <div class="pipe-box">
+        <div class="label">Skill 1</div>
+        <div class="title">🔍 Discovery</div>
+        <div class="sub">Find candidates</div>
+      </div>
+      <div class="pipe-arrow">▶</div>
+      <div class="pipe-box pipe-green">
+        <div class="label">Skill 2</div>
+        <div class="title">📊 Research &amp; Score</div>
+        <div class="sub">Rank candidates</div>
+      </div>
+      <div class="pipe-arrow">▶</div>
+      <div class="pipe-box pipe-blue">
+        <div class="label">Skill 3</div>
+        <div class="title">📬 Publish Report</div>
+        <div class="sub">Email + GitHub + Log</div>
+      </div>
+    </div>
+    <div style="margin:12px 0 4px;overflow-x:auto;">
+      <table style="width:100%;border-collapse:collapse;font-size:11px;min-width:600px;">
+        <tr style="background:#1a2332;color:#aabbcc;text-align:left;">
+          <th style="padding:6px 10px;">Phase</th><th style="padding:6px 10px;">Skill / Section</th><th style="padding:6px 10px;">What it does</th><th style="padding:6px 10px;white-space:nowrap;">Frequency</th>
+        </tr>
+        <tr style="background:#f8f9fa;"><td style="padding:5px 10px;font-weight:bold;">1 — INIT</td><td style="padding:5px 10px;">STEP 0A</td><td style="padding:5px 10px;">Load <code>watchlist.json</code> + <code>etoro-instruments.json</code> from GitHub; fetch eToro live prices via Chrome MCP</td><td style="padding:5px 10px;">Every run</td></tr>
+        <tr><td style="padding:5px 10px;font-weight:bold;">2 — GEO</td><td style="padding:5px 10px;">STEP 0A-GEO</td><td style="padding:5px 10px;">3 searches → Geopolitical Briefing above Macro Snapshot</td><td style="padding:5px 10px;">Every run</td></tr>
+        <tr style="background:#f8f9fa;"><td style="padding:5px 10px;font-weight:bold;">3 — DISCOVER</td><td style="padding:5px 10px;">asx-global-discovery</td><td style="padding:5px 10px;">Homepage scrapes + keyword searches → candidate pool</td><td style="padding:5px 10px;">Every run</td></tr>
+        <tr><td style="padding:5px 10px;font-weight:bold;">4 — PRICE DATA</td><td style="padding:5px 10px;">STEP 0, 0B, 0C</td><td style="padding:5px 10px;">Live prices, AUD/USD, BTC/VIX risk signal, RSI/SMA</td><td style="padding:5px 10px;">Every run</td></tr>
+        <tr style="background:#f8f9fa;"><td style="padding:5px 10px;font-weight:bold;">5 — ENRICH</td><td style="padding:5px 10px;">STEP 0B-ii, 0B-iii, 0F</td><td style="padding:5px 10px;">Fundamentals, advanced technicals, global news — <strong>daily cache</strong></td><td style="padding:5px 10px;">Once/day (cached)</td></tr>
+        <tr><td style="padding:5px 10px;font-weight:bold;">5 — FEEDS</td><td style="padding:5px 10px;">STEP 0D (tiered T1/T2/T3)</td><td style="padding:5px 10px;">T1 always · T2 if pool thin · T3 if pool very thin</td><td style="padding:5px 10px;">Every run</td></tr>
+        <tr style="background:#f8f9fa;"><td style="padding:5px 10px;font-weight:bold;">6 — SCORE</td><td style="padding:5px 10px;">STEP 0E + 0I</td><td style="padding:5px 10px;">Score all candidates → ranked ASX + Global pools</td><td style="padding:5px 10px;">Every run</td></tr>
+        <tr><td style="padding:5px 10px;font-weight:bold;">7 — PICK + REPORT</td><td style="padding:5px 10px;">STEP 1, 2, 3</td><td style="padding:5px 10px;">Select 3 ASX + 3 Global picks, write report</td><td style="padding:5px 10px;">Every run</td></tr>
+        <tr style="background:#f8f9fa;"><td style="padding:5px 10px;font-weight:bold;">8 — PUBLISH</td><td style="padding:5px 10px;">publish-report skill</td><td style="padding:5px 10px;">email-builder.py → Gmail → GitHub Pages → watchlist-status.json</td><td style="padding:5px 10px;">Every run</td></tr>
+      </table>
+    </div>
+
+    <div class="funnel">
+      <div class="funnel-step">
+        <div class="funnel-bar" style="background:#1a2332;width:100%;">30+ sources scanned</div>
+        <div class="funnel-label" style="color:#888;">All markets, all signals</div>
+      </div>
+      <div class="funnel-down">▼</div>
+      <div class="funnel-step">
+        <div class="funnel-bar" style="background:#2c3e50;width:80%;">~20–30 candidates found</div>
+        <div class="funnel-label" style="color:#888;">Signal-triggered only</div>
+      </div>
+      <div class="funnel-down">▼</div>
+      <div class="funnel-step">
+        <div class="funnel-bar" style="background:#27ae60;width:50%;">Scored &amp; ranked</div>
+        <div class="funnel-label" style="color:#888;">0–7+ weighted model</div>
+      </div>
+      <div class="funnel-down">▼</div>
+      <div class="funnel-step">
+        <div class="funnel-bar" style="background:#1a6b3c;width:25%;">6 picks selected</div>
+        <div class="funnel-label" style="color:#888;">3 ASX · 3 Global</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ DISCOVERY ═══════════════════════════════ -->
+<div class="card" id="discovery">
+  <div class="card-header"><span class="icon">🔍</span><h2>Skill 1 — Discovery: Finding Candidates</h2></div>
+  <div class="card-body">
+    <p style="margin-bottom:16px;font-size:13px;color:#555;">Before picking anything, the system casts a wide net across 30+ sources. <strong>It never searches for specific companies</strong> — it searches for <em>signals</em> and lets candidates emerge. This prevents confirmation bias.</p>
+
+    <div class="source-grid">
+      <div class="source-card green">
+        <div class="s-title">📰 ASX News</div>
+        <div class="s-items">
+          <span>Stockhead</span><span>Small Caps</span><span>Motley Fool AU</span><span>Discovery Alert</span>
+        </div>
+      </div>
+      <div class="source-card red">
+        <div class="s-title">🩳 Short Interest</div>
+        <div class="s-items">
+          <span>shorted.com.au</span><span>fintel.io</span><span>CBOE AU (daily)</span>
+        </div>
+      </div>
+      <div class="source-card blue">
+        <div class="s-title">⚡ Breakout Scanners</div>
+        <div class="s-items">
+          <span>SwingTradeBot ASX</span><span>MarketIndex breakouts</span><span>RSI oversold scans</span>
+        </div>
+      </div>
+      <div class="source-card gold">
+        <div class="s-title">📊 Analyst Upgrades</div>
+        <div class="s-items">
+          <span>Benzinga</span><span>MarketBeat</span><span>TipRanks</span><span>Goldman / MS / UBS</span>
+        </div>
+      </div>
+      <div class="source-card purple">
+        <div class="s-title">🗣️ Community</div>
+        <div class="s-items">
+          <span>HotCopper (ASX forum)</span><span>Reddit r/ASXbets</span><span>Reddit r/stocks</span>
+        </div>
+      </div>
+      <div class="source-card blue">
+        <div class="s-title">🌏 US / Global</div>
+        <div class="s-items">
+          <span>Yahoo Finance gainers</span><span>Benzinga upgrades</span><span>finviz.com news</span>
+        </div>
+      </div>
+      <div class="source-card gold">
+        <div class="s-title">🔒 Pro Signals (daily)</div>
+        <div class="s-items">
+          <span>Unusual Whales (options)</span><span>OpenInsider (cluster buys)</span><span>Capitol Trades (Congress)</span>
+        </div>
+      </div>
+      <div class="source-card green">
+        <div class="s-title">📡 RSS Feeds</div>
+        <div class="s-items">
+          <span>Stockhead feed</span><span>Motley Fool AU feed</span><span>Reuters Business</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:20px;padding:14px 16px;background:#fffbf0;border-left:3px solid #f39c12;border-radius:0 6px 6px 0;font-size:13px;">
+      <strong>Why no company names in search queries?</strong> Searching for a stock you already know only confirms what you already believe. Signal-first discovery finds what you <em>don't</em> know yet — the stocks about to move before you heard about them.
+    </div>
+    <div style="margin-top:16px;padding:14px 16px;background:#eef6ff;border-left:3px solid #2980b9;border-radius:0 6px 6px 0;font-size:13px;">
+      <strong>Tiered news feeds (T1 / T2 / T3):</strong> The 32 news feeds now run in priority order. <span style="background:#fff3f3;color:#c53030;font-weight:bold;padding:2px 7px;border-radius:10px;font-size:11px;">T1</span> (Stockhead, SDU, Discovery Alert, ASX Announcements) always runs. <span style="background:#fff3e0;color:#c77d00;font-weight:bold;padding:2px 7px;border-radius:10px;font-size:11px;">T2</span> runs only if the candidate pool is thin (&lt;10 ASX or &lt;4 Global). <span style="background:#f8f8f8;color:#666;font-weight:bold;padding:2px 7px;border-radius:10px;font-size:11px;">T3</span> runs only if the pool is very thin. This skips unnecessary fetches on busy market days.
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ SCORING ═══════════════════════════════ -->
+<div class="card" id="scoring">
+  <div class="card-header"><span class="icon">📊</span><h2>Skill 2 — The Scoring Model (0 to 7+)</h2></div>
+  <div class="card-body">
+    <p style="margin-bottom:16px;font-size:13px;color:#555;">Every candidate gets a <strong>Base Score (1–5)</strong> based on catalyst strength, then <strong>Bonuses</strong> and <strong>Penalties</strong> adjust it. Minimum score of 3.5 required to become a pick.</p>
+
+    <p style="font-size:12px;font-weight:bold;color:#1a2332;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">Base Score — Catalyst Strength</p>
+    <div class="score-row">
+      <div class="score-badge" style="background:#27ae60;color:#fff;">5</div>
+      <div class="detail"><strong>Major catalyst TODAY — stock hasn't moved yet</strong><div class="sub">Best entry: ASX announcement just filed, deal signed this morning, upgrade just published. Market hasn't priced it in.</div></div>
+    </div>
+    <div class="score-row">
+      <div class="score-badge" style="background:#52be80;color:#fff;">4</div>
+      <div class="detail"><strong>Strong catalyst — upgrade, deal, or earnings beat</strong><div class="sub">Fresh analyst upgrade, new contract announced, earnings above expectations. Confirmed, not speculative.</div></div>
+    </div>
+    <div class="score-row">
+      <div class="score-badge" style="background:#f39c12;color:#fff;">3</div>
+      <div class="detail"><strong>Volume-backed move with supporting news</strong><div class="sub">Unusual volume spike AND a reason for it — sector news, macro tailwind, small ANN. Both signals together.</div></div>
+    </div>
+    <div class="score-row">
+      <div class="score-badge" style="background:#e67e22;color:#fff;">2</div>
+      <div class="detail"><strong>News only — no volume confirmation</strong><div class="sub">Interesting catalyst but nobody is buying yet. Wait for volume to confirm before entering.</div></div>
+    </div>
+    <div class="score-row">
+      <div class="score-badge" style="background:#e74c3c;color:#fff;">1</div>
+      <div class="detail"><strong>Volume only — no catalyst found</strong><div class="sub">Something is happening but we can't explain it. Possible pre-announcement leak. Flag as ❓ INVESTIGATE.</div></div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:24px;flex-wrap:wrap;">
+      <div>
+        <p style="font-size:12px;font-weight:bold;color:#276749;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">✅ Bonuses (up to +2.0 total)</p>
+        <div class="bonus-row"><div class="bonus-val pos">+1.0</div><div class="bonus-desc">ASX announcement today <em>and</em> price not yet moved 5%+</div></div>
+        <div class="bonus-row"><div class="bonus-val pos">+1.0</div><div class="bonus-desc">Analyst upgrade or initiation published today</div></div>
+        <div class="bonus-row"><div class="bonus-val pos">+0.5</div><div class="bonus-desc">Earnings within 5 days with bullish prior history</div></div>
+        <div class="bonus-row"><div class="bonus-val pos">+0.5</div><div class="bonus-desc">Mentioned in 3+ independent sources in 24h</div></div>
+        <div class="bonus-row"><div class="bonus-val pos">+0.5</div><div class="bonus-desc">Tier-1 bank upgrade (Goldman, MS, UBS)</div></div>
+        <div class="bonus-row"><div class="bonus-val pos">+0.5</div><div class="bonus-desc">Unusual options sweep (bullish — big bets placed)</div></div>
+        <div class="bonus-row"><div class="bonus-val pos">+0.5</div><div class="bonus-desc">Director / insider confirmed buying on market</div></div>
+        <div class="bonus-row"><div class="bonus-val pos">+0.5</div><div class="bonus-desc">Above both SMA50 and SMA200 (healthy uptrend)</div></div>
+        <div class="bonus-row"><div class="bonus-val pos">+0.5</div><div class="bonus-desc">5-day RSI rising + price above SMA50</div></div>
+        <div class="bonus-row"><div class="bonus-val pos">+0.5</div><div class="bonus-desc">Sector commodity rising (iron ore, copper, gold…)</div></div>
+      </div>
+      <div>
+        <p style="font-size:12px;font-weight:bold;color:#c53030;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">❌ Penalties</p>
+        <div class="bonus-row"><div class="bonus-val neg">−1.0</div><div class="bonus-desc">Already up &gt;15% today — chasing is dangerous</div></div>
+        <div class="bonus-row"><div class="bonus-val neg">−1.0</div><div class="bonus-desc">Analyst downgrade or profit warning issued</div></div>
+        <div class="bonus-row"><div class="bonus-val neg">−0.5</div><div class="bonus-desc">RSI &gt;70 AND still rising — overbought</div></div>
+        <div class="bonus-row"><div class="bonus-val neg">−0.5</div><div class="bonus-desc">RSI falling + price below SMA50 — deteriorating</div></div>
+        <div class="bonus-row"><div class="bonus-val neg">−0.5</div><div class="bonus-desc">Supertrend signal = DOWN</div></div>
+        <div class="bonus-row"><div class="bonus-val neg">−0.5</div><div class="bonus-desc">Analyst target already achieved — thesis is stale</div></div>
+        <div class="bonus-row"><div class="bonus-val neg">−0.5</div><div class="bonus-desc">VIX &gt;25 — broad market fear, reduce conviction</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ TECHNICALS ═══════════════════════════════ -->
+<div class="card" id="technicals">
+  <div class="card-header"><span class="icon">📈</span><h2>Technical Indicators — Plain Language</h2></div>
+  <div class="card-body">
+    <div class="ind-grid">
+      <div class="ind-card">
+        <div class="ind-name">RSI (Relative Strength Index)</div>
+        <div class="ind-plain">Measures momentum on a 0–100 scale. Think of it as a speedometer — how fast is the stock moving?</div>
+        <div class="ind-signals">
+          <span class="sig bull">40–65 rising ✓</span>
+          <span class="sig bear">&gt;70 overbought</span>
+          <span class="sig bear">&lt;30 falling</span>
+        </div>
+      </div>
+      <div class="ind-card">
+        <div class="ind-name">SMA 50 (50-day Average)</div>
+        <div class="ind-plain">The average share price over the past 50 days. Being above it means the medium-term trend is up.</div>
+        <div class="ind-signals">
+          <span class="sig bull">Price above ✓</span>
+          <span class="sig bear">Price below ✗</span>
+        </div>
+      </div>
+      <div class="ind-card">
+        <div class="ind-name">SMA 200 (200-day Average)</div>
+        <div class="ind-plain">The long-term average. Above = confirmed uptrend. Below = bear territory. The "golden cross" (SMA50 crossing SMA200 upward) is a major bull signal.</div>
+        <div class="ind-signals">
+          <span class="sig bull">Above = uptrend ✓</span>
+          <span class="sig bear">Below = bear zone</span>
+        </div>
+      </div>
+      <div class="ind-card">
+        <div class="ind-name">Supertrend</div>
+        <div class="ind-plain">A single UP or DOWN signal based on price + volatility bands. Simpler than RSI — it just tells you the trend direction.</div>
+        <div class="ind-signals">
+          <span class="sig bull">UP + ADX&gt;25 ✓</span>
+          <span class="sig bear">DOWN = avoid</span>
+        </div>
+      </div>
+      <div class="ind-card">
+        <div class="ind-name">ADX (Average Directional Index)</div>
+        <div class="ind-plain">Measures trend <em>strength</em>, not direction. A weak trend in either direction means choppy trading — hard to profit from.</div>
+        <div class="ind-signals">
+          <span class="sig bull">&gt;25 strong trend</span>
+          <span class="sig bear">&lt;20 = no trend</span>
+        </div>
+      </div>
+      <div class="ind-card">
+        <div class="ind-name">Volume Ratio</div>
+        <div class="ind-plain">Today's volume vs the 20-day average. 3× means 3 times the normal amount of shares are changing hands — something is happening.</div>
+        <div class="ind-signals">
+          <span class="sig bull">&gt;3× unusual ✓</span>
+          <span class="sig bear">&lt;0.5× quiet</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:20px;">
+      <p style="font-size:12px;font-weight:bold;color:#1a2332;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;">How Entry / Target / Stop are set</p>
+      <table class="nice">
+        <tr><th>Field</th><th>How it's calculated</th><th>Why it matters</th></tr>
+        <tr><td><strong>Entry Zone</strong></td><td>Current price ±1–2% (limit order range)</td><td>Set a limit order — never chase with a market order</td></tr>
+        <tr><td><strong>Target</strong></td><td>Analyst consensus price target or next resistance</td><td>Where to sell when right</td></tr>
+        <tr><td><strong>Stop Loss</strong></td><td>Below key support (recent swing low or SMA50)</td><td>Where to exit when wrong — non-negotiable</td></tr>
+        <tr><td><strong>R:R Ratio</strong></td><td>(Target − Entry) ÷ (Entry − Stop)</td><td>Must be ≥1.5 to qualify as a pick. 2.0 = risk $1 to make $2.</td></tr>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ MACRO ═══════════════════════════════ -->
+<div class="card" id="macro">
+  <div class="card-header"><span class="icon">🌍</span><h2>Macro Layer — What Shapes Every Run</h2></div>
+  <div class="card-body">
+    <p style="margin-bottom:16px;font-size:13px;color:#555;">Before individual stocks are scored, the system reads the macro environment. Commodity prices, sector ETFs, and geopolitical signals all feed into score bonuses and penalties.</p>
+    <div class="macro-grid">
+      <div class="macro-box dark">
+        <h4>⛔ BTC Risk-Off Signal</h4>
+        <ul>
+          <li>BTC drops &gt;3% in 24h →</li>
+          <li>RISK-OFF banner fires</li>
+          <li>Reduce all positions 25–30%</li>
+          <li>Tighten stops to entry</li>
+          <li>Avoid crypto-correlated names</li>
+          <li>Prefer gold, healthcare, defensives</li>
+        </ul>
+      </div>
+      <div class="macro-box green">
+        <h4>🏭 Commodity Basket (checked every run)</h4>
+        <ul>
+          <li>Iron ore &gt;$120/t → BHP, RIO, FMG ↑</li>
+          <li>Copper &gt;$9,500/t → copper miners ↑</li>
+          <li>Gold &gt;$3,500/oz → EVN, NST, NCM ↑</li>
+          <li>Oil &gt;$75/bbl → WDS, STO ↑</li>
+          <li>Uranium &gt;$85/lb → PDN, BOE, LOT ↑</li>
+        </ul>
+      </div>
+      <div class="macro-box blue">
+        <h4>📉 ASX Sector ETFs</h4>
+        <ul>
+          <li>XMJ — Materials (iron ore, copper)</li>
+          <li>XEJ — Energy (oil, LNG, coal)</li>
+          <li>XFJ — Financials (rate sensitive)</li>
+          <li>XHJ — Healthcare (approvals)</li>
+          <li>XTEK — Technology (AI/cloud)</li>
+        </ul>
+        <div style="margin-top:8px;font-size:11px;color:#666;">Rising sector → +0.3 bonus to all stocks in it. Falling sector → −0.3 penalty.</div>
+      </div>
+      <div class="macro-box gold">
+        <h4>🌐 Geopolitical &amp; Policy</h4>
+        <ul>
+          <li>China tension ↑ → AUD, iron ore risk</li>
+          <li>RBA rate cut → REITs, financials ↑</li>
+          <li>US Fed hawkish → AUD falls, risk-off</li>
+          <li>AUKUS deal → EOS, MEI, DRO ↑</li>
+          <li>Trade tariffs → supply chain exposure</li>
+        </ul>
+      </div>
+    </div>
+    <div style="margin-top:14px;padding:12px 16px;background:#f8f9fa;border-radius:6px;font-size:12px;color:#555;">
+      <strong style="color:#1a2332;">⚡ Daily API cache:</strong> Alpha Vantage (25 calls/day), Mediastack (100 calls/month), and Twelve Data (800 credits/month) are called <strong>once per day only</strong>. The first run writes results to <code style="background:#f0f0f0;padding:1px 4px;border-radius:3px;">/tmp/daily-cache-YYYY-MM-DD.json</code>. All subsequent hourly runs read from cache — no wasted quota.
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ PICKS ═══════════════════════════════ -->
+<div class="card" id="picks">
+  <div class="card-header"><span class="icon">🎯</span><h2>The Three Pick Timeframes</h2></div>
+  <div class="card-body">
+    <div class="tf-grid">
+      <div class="tf-card tf-day">
+        <div class="tf-icon">⚡</div>
+        <div class="tf-name">DAY Pick</div>
+        <div class="tf-hold" style="color:#c53030;">Same session or next open</div>
+        <div class="tf-desc">Fast-moving catalyst: short squeeze, gap-and-go, pre-market announcement. Set a tight stop. Exit by end of session if not at target.</div>
+      </div>
+      <div class="tf-card tf-week">
+        <div class="tf-icon">📅</div>
+        <div class="tf-name">WEEK Pick</div>
+        <div class="tf-hold" style="color:#c77d00;">1–5 trading days</div>
+        <div class="tf-desc">Analyst upgrade, upcoming earnings, deal announced but not fully priced yet. Hold through the week and re-assess Friday.</div>
+      </div>
+      <div class="tf-card tf-long">
+        <div class="tf-icon">📈</div>
+        <div class="tf-name">LONG Pick</div>
+        <div class="tf-hold" style="color:#276749;">Weeks to months</div>
+        <div class="tf-desc">Structural thesis: sector rotation, undervalued vs analyst consensus, AI/commodity megatrend. Patient entry, wider stop, hold through noise.</div>
+      </div>
+    </div>
+
+    <div style="margin-top:20px;">
+      <p style="font-size:12px;font-weight:bold;color:#1a2332;margin-bottom:10px;">Pick badge meanings</p>
+      <div>
+        <span class="badge green">🆕 NEW</span> First time this ticker appears as a pick<br style="margin:4px 0">
+        <span class="badge blue">HOLD</span> Was a pick last run — thesis still intact<br style="margin:4px 0">
+        <span class="badge gold">⚠️ Runner-up</span> Promoted due to diversity rule — lower conviction<br style="margin:4px 0">
+        <span class="badge red">⛔ RISK-OFF</span> BTC triggered — reduce size 25–30%<br style="margin:4px 0">
+        <span class="badge orange">PRE-MOVE</span> Catalyst today, market hasn't priced it yet — best entry<br style="margin:4px 0">
+        <span class="badge red">SHORT-SQUEEZE</span> High short interest + catalyst = potential sharp move<br style="margin:4px 0">
+        <span class="badge green">FMP+Vol</span> Confirmed by FMP screener AND volume leaders — double signal
+      </div>
+    </div>
+
+    <div style="margin-top:20px;padding:14px 16px;background:#e8f5e9;border-radius:6px;font-size:13px;">
+      <strong>The Diversity Rule:</strong> The same ticker can never appear more than once across the 3 ASX or 3 Global slots. If the top scorer would fill all three slots, the runner-up is promoted and labelled accordingly. Concentration in a single name kills returns.
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ EMAIL ═══════════════════════════════ -->
+<div class="card" id="email">
+  <div class="card-header"><span class="icon">📬</span><h2>Reading the Email Report</h2></div>
+  <div class="card-body">
+    <p style="margin-bottom:20px;font-size:13px;color:#555;">The same locked template is filled in every single run — the layout never changes.</p>
+    <div class="email-mock">
+      <div class="em-banner">
+        <strong>📊 VIEW FULL INTERACTIVE REPORT →</strong>
+        Links to the GitHub Pages report for this exact run
+      </div>
+      <div class="em-sub">🇦🇺 ASX: TICKER · TICKER · TICKER &nbsp;|&nbsp; 🌏 Global: TICKER · TICKER · TICKER</div>
+      <div style="background:#2c3e50;color:#8ab4cc;padding:8px 16px;font-size:11px;">🌐 GEOPOLITICAL BRIEFING — <span style="color:#fff;">Situation summary + commodity table: Oil · Gold · Uranium · Copper · Wheat</span></div>
+      <div class="em-macro">📊 MARKET SNAPSHOT &nbsp;·&nbsp; ASX 200 · VIX · Gold · Oil · AUD/USD · BTC · Candidates: N</div>
+      <div class="em-section">
+        <div class="em-label">🇦🇺 ASX ⚡ Day Pick</div>
+        <div class="em-pick">TICKER — Company Name &nbsp; +X.X%</div>
+        <div class="em-meta">Entry $X.XX–$X.XX &nbsp;·&nbsp; Target $X.XX &nbsp;·&nbsp; Stop $X.XX &nbsp;·&nbsp; R:R 2.1</div>
+        <div style="margin-top:6px;font-size:11px;color:#444;">Narrative explaining why + 4 catalyst bullet points + specific risk</div>
+      </div>
+      <div class="em-section">
+        <div class="em-label">🇦🇺 ASX 📅 Week Pick &nbsp;+&nbsp; 📈 Long Pick (same format)</div>
+        <div class="em-pick" style="color:#888;font-size:11px;">…then 3 Global picks in the same structure…</div>
+      </div>
+      <div class="em-section">
+        <div class="em-label">📋 Watchlist · 🗺️ Sector Heat Map · 📣 ASX Announcements</div>
+        <div class="em-meta" style="font-size:11px;">Full coverage of all monitored tickers + which sectors are hot this run</div>
+      </div>
+      <div class="em-section" style="border-bottom:none;">
+        <div class="em-label">Section 15 — Full Logic Audit Trail</div>
+        <div class="em-meta" style="font-size:11px;">Every candidate scored · every source queried · every search run — full transparency</div>
+      </div>
+      <div class="em-risk">⛔ RISK-OFF BANNER — appears when BTC drops &gt;3% or VIX &gt;25</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ RISK ═══════════════════════════════ -->
+<div class="card" id="risk">
+  <div class="card-header"><span class="icon">⚠️</span><h2>Risk Management — Built In</h2></div>
+  <div class="card-body">
+    <table class="nice" style="margin-bottom:16px;">
+      <tr><th>Rule</th><th>Trigger</th><th>Action</th></tr>
+      <tr><td><strong>BTC Risk-Off</strong></td><td>BTC drops &gt;3% in 24h</td><td>Reduce all position sizes 25–30%, tighten stops, avoid crypto-correlated names</td></tr>
+      <tr><td><strong>VIX Spike</strong></td><td>VIX &gt;25</td><td>Reduce all conviction scores by 0.5 — fewer picks qualify</td></tr>
+      <tr><td><strong>Anti-Chase</strong></td><td>Stock already up &gt;15% today</td><td>−1.0 score penalty — almost always excluded</td></tr>
+      <tr><td><strong>Stale Catalyst</strong></td><td>Catalyst &gt;7 days old</td><td>Score reduced — old news doesn't move markets</td></tr>
+      <tr><td><strong>Target Achieved</strong></td><td>Stock already at analyst PT</td><td>Marked stale — upside exhausted, not selected</td></tr>
+      <tr><td><strong>Diversity Rule</strong></td><td>Same ticker in 2+ slots</td><td>Runner-up promoted — forces diversification</td></tr>
+      <tr><td><strong>Source Quality</strong></td><td>&lt;10 live sources in a run</td><td>Picks labelled with ⚠️ — treat entry zones as wider</td></tr>
+    </table>
+
+    <p style="font-size:12px;font-weight:bold;color:#1a2332;margin-bottom:8px;">Source health indicator (in the log)</p>
+    <div style="font-size:13px;">
+      <div class="health-bar" style="margin-bottom:6px;"><div class="h-dot" style="background:#27ae60;"></div>&nbsp; ✅ = Live data fetched this run</div>
+      <div class="health-bar" style="margin-bottom:6px;"><div class="h-dot" style="background:#f39c12;"></div>&nbsp; ⚠️ = Fallback used (cached or web search)</div>
+      <div class="health-bar"><div class="h-dot" style="background:#e74c3c;"></div>&nbsp; ❌ = Source unavailable — not used this run</div>
+    </div>
+    <p style="font-size:12px;color:#888;margin-top:10px;">15+ ✅ = high quality run. Below 10 ✅ = more fallback data — use wider entry zones.</p>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ ARCHITECTURE ═══════════════════════════════ -->
+<div class="card" id="architecture">
+  <div class="card-header"><span class="icon">🔧</span><h2>Under the Hood — Skill Architecture</h2></div>
+  <div class="card-body">
+    <p style="margin-bottom:16px;font-size:13px;color:#555;">The system uses four modular skills. Each handles a distinct phase of the pipeline and can be run or re-run independently.</p>
+    <div class="arch">
+      <div class="arch-label">🔍 asx-global-discovery</div>
+      <div class="arch-detail"><strong>Phase 3 — Discover:</strong> 15 homepage scrapes + 35 keyword searches → candidate pool. Always runs first. Outputs ranked table + sector heat map that feeds directly into scoring. <em>~245 lines.</em></div>
+      <div class="arch-label">📊 hourly-global-stock-picks</div>
+      <div class="arch-detail"><strong>Phases 2, 4, 5, 6, 7:</strong> Geopolitical briefing → price data (EODHD + Finnhub + smallcaps) → enrichment (AV/Mediastack/Twelve Data — daily cache) → tiered news feeds → scoring → pick selection → report writing. <em>~1,735 lines · report structure in report-template.md.</em></div>
+      <div class="arch-label">📬 publish-report</div>
+      <div class="arch-detail"><strong>Phase 8 — Publish:</strong> Reads /tmp/email-data.json → email-builder.py fills email-template.html → Gmail draft → publish-report.py pushes HTML to GitHub Pages → writes watchlist-status.json → SMS (paused). Can be re-run independently to retry a failed send. <em>~148 lines.</em></div>
+      <div class="arch-label">👁️ watchlist-monitor</div>
+      <div class="arch-detail"><strong>Anytime — Quick check:</strong> Fetches live prices, RSI, SMA position, volume, and last-researched tier for every ticker in watchlist.json + etoro-watchlist.json. No pick generation. Runs in under 3 minutes. Use when you say "how is my watchlist doing?" <em>~178 lines.</em></div>
+      <div class="arch-label" style="background:#1b2d40;color:#8ab4cc;">📲 etoro-watchlist-sync-skill — once per day, scheduled</div>
+      <div class="arch-detail" style="background:#f5f9ff;border-left:3px solid #2980b9;">
+        <strong>Scheduled Claude skill</strong> — runs automatically once per day. Uses Chrome MCP JS fetch to bypass the sandbox HTTPS proxy and call the eToro API with auth headers natively.<br><br>
+        Writes two files to GitHub:
+        <ul style="margin:8px 0 4px 18px;font-size:12px;line-height:1.9;">
+          <li><code style="background:#f0f0f0;padding:1px 5px;border-radius:3px;">etoro-instruments.json</code> — instrument IDs only (no prices); read by hourly skill to batch-fetch live rates</li>
+          <li><code style="background:#f0f0f0;padding:1px 5px;border-radius:3px;">etoro-watchlist.json</code> — full positions with prices; displayed on GitHub Pages</li>
+        </ul>
+        Does <strong>not</strong> modify SKILL.md or any skill file — ever.
+      </div>
+    </div>
+    <div style="margin-top:14px;background:#f8f9fa;border-radius:6px;padding:14px 16px;font-size:12px;">
+      <strong style="color:#1a2332;">Supporting files:</strong>
+      <span style="color:#555;"> &nbsp;email-template.html (locked layout) · report-template.md (report structure, on GitHub) · email-builder.py (fills template from JSON) · publish-report.py (pushes to GitHub) · etoro-watchlist-sync-skill.md (daily scheduled skill) · watchlist.json (monitoring tickers, GitHub) · etoro-instruments.json (eToro IDs — no prices) · etoro-watchlist.json (eToro positions + prices) · watchlist-status.json (per-ticker tier/score, written each run)</span>
+    </div>
+
+    <div style="margin-top:16px;padding:14px 16px;background:#e8f5e9;border-radius:6px;font-size:13px;">
+      <strong>Why email-builder.py?</strong> Every run that writes its own HTML produces a different layout — breaking formatting for recipients. One locked template, substituted each run via JSON data. The structure is physically impossible to drift between runs.
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════ WATCHLISTS ═══════════════════════════════ -->
+<div class="card" id="watchlists">
+  <div class="card-header"><span class="icon">📋</span><h2>Watchlists — Three Layers Explained</h2></div>
+  <div class="card-body">
+    <p style="margin-bottom:20px;font-size:13px;color:#555;">The system uses three separate watchlist layers. They serve different purposes and are fetched in different ways — none of them automatically override the signal-first discovery process.</p>
+
+    <!-- Layer 1 -->
+    <div style="border:1px solid #a3d9b8;border-radius:8px;overflow:hidden;margin-bottom:18px;">
+      <div style="background:#1a2332;color:#fff;padding:10px 16px;display:flex;align-items:center;gap:10px;">
+        <span style="font-size:15px;">1️⃣</span>
+        <div>
+          <div style="font-size:12px;font-weight:bold;text-transform:uppercase;letter-spacing:1px;">Fixed Monitoring List — checked every run</div>
+          <div style="font-size:11px;color:#8ab4cc;margin-top:2px;">watchlist.json on GitHub · EODHD + Finnhub + smallcaps.com.au</div>
+        </div>
+      </div>
+      <div style="padding:16px 18px;font-size:13px;">
+        <p style="color:#555;margin-bottom:12px;">A curated list of tickers stored in <code style="background:#f0f4ff;padding:2px 6px;border-radius:4px;font-size:11px;">watchlist.json</code> in the Stock-Soup GitHub repo — no hardcoded tickers in the skill file. Every run, the system fetches live prices, RSI/SMA technicals, and recent news for each. They enter the scoring pool on equal footing with newly discovered candidates — no automatic pick priority. The watchlist is loaded fresh each run so adding/removing tickers takes effect immediately without editing the skill.</p>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;">
+          <span class="badge green">VTM</span><span class="badge green">PDN</span><span class="badge green">IEL</span><span class="badge green">TLX</span><span class="badge green">EOS</span><span class="badge green">NTU</span><span class="badge green">DYL</span><span class="badge green">DRO</span><span class="badge green">A2M</span><span class="badge green">SGH</span><span class="badge green">WTC</span><span class="badge blue">PLTR</span>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:12px;">
+          <div style="background:#f8f8f8;border-radius:6px;padding:10px 12px;">
+            <div style="font-weight:bold;color:#1a2332;margin-bottom:6px;">What's fetched each run</div>
+            <div style="color:#555;line-height:1.8;">
+              ✅ Live price via EODHD batch API<br>
+              ✅ RSI + SMA50/200 via Yahoo Finance chart API<br>
+              ✅ Recent news via EODHD news API<br>
+              ✅ Smallcaps.com.au page (RSI, volume, narrative)<br>
+              ✅ SimplyWallSt discount % (daily)
+            </div>
+          </div>
+          <div style="background:#f8f8f8;border-radius:6px;padding:10px 12px;">
+            <div style="font-weight:bold;color:#1a2332;margin-bottom:6px;">How they become picks</div>
+            <div style="color:#555;line-height:1.8;">
+              They compete on score — same 0–7+ model as every other candidate.<br><br>
+              A watchlist stock with no catalyst scores ~2/5 and won't be picked.<br>
+              A watchlist stock with a fresh upgrade scores 4.5+ and wins a slot.
+            </div>
+          </div>
+        </div>
+        <div style="margin-top:12px;padding:10px 14px;background:#fffbf0;border-left:3px solid #f39c12;border-radius:0 6px 6px 0;font-size:12px;color:#555;">
+          <strong>To add a ticker to the fixed list:</strong> edit <code style="background:#f0f0f0;padding:1px 4px;border-radius:3px;">watchlist.json</code> in the <a href="https://github.com/daviddef/Stock-Soup" style="color:#c77d00;" target="_blank">Stock-Soup GitHub repo</a>. The next hourly run will pick it up automatically — no skill file changes needed.
+        </div>
+      </div>
+    </div>
+
+    <!-- Layer 2 -->
+    <div id="etoro" style="border:1px solid #bee3f8;border-radius:8px;overflow:hidden;margin-bottom:18px;">
+      <div style="background:#1b2d40;color:#fff;padding:10px 16px;display:flex;align-items:center;gap:10px;">
+        <span style="font-size:15px;">2️⃣</span>
+        <div>
+          <div style="font-size:12px;font-weight:bold;text-transform:uppercase;letter-spacing:1px;">eToro Integration — daily sync + live hourly prices</div>
+          <div style="font-size:11px;color:#8ab4cc;margin-top:2px;">etoro-instruments.json + etoro-watchlist.json on GitHub · automatic scheduled sync</div>
+        </div>
+      </div>
+      <div style="padding:16px 18px;font-size:13px;">
+
+        <!-- How it works: two-stage -->
+        <p style="color:#555;margin-bottom:14px;">The eToro integration runs in two separate stages — a <strong>daily ID sync</strong> and a <strong>live price fetch every hourly run</strong>.</p>
+
+        <!-- Stage 1 -->
+        <div style="background:#f0f6ff;border:1px solid #c3daf7;border-radius:8px;padding:14px 16px;margin-bottom:12px;">
+          <div style="font-weight:bold;color:#1a2332;font-size:12px;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">⏱ Stage 1 — Daily Sync (scheduled task)</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:12px;margin-bottom:10px;">
+            <div style="background:#fff;border-radius:6px;padding:10px 12px;border:1px solid #dde8f5;">
+              <div style="font-weight:bold;color:#1a2332;margin-bottom:6px;">What it does</div>
+              <div style="color:#555;line-height:1.8;">
+                1. Calls eToro API → fetch all watchlists<br>
+                2. Compare vs current JSON → log changes<br>
+                3. Write <code style="background:#eef;padding:1px 4px;border-radius:3px;font-size:10px;">etoro-instruments.json</code> (IDs only)<br>
+                4. Write <code style="background:#eef;padding:1px 4px;border-radius:3px;font-size:10px;">etoro-watchlist.json</code> (+ prices)<br>
+                5. Push both files to GitHub
+              </div>
+            </div>
+            <div style="background:#fff;border-radius:6px;padding:10px 12px;border:1px solid #dde8f5;">
+              <div style="font-weight:bold;color:#1a2332;margin-bottom:6px;">Why two files?</div>
+              <div style="color:#555;line-height:1.8;">
+                <strong>etoro-instruments.json</strong> has IDs only — no prices. The hourly skill reads this to know <em>which</em> instruments to fetch.<br><br>
+                <strong>etoro-watchlist.json</strong> has full data + prices — shown on GitHub Pages watchlist view.
+              </div>
+            </div>
+          </div>
+          <div style="background:#fff3cd;border-left:3px solid #f39c12;border-radius:0 6px 6px 0;padding:9px 13px;font-size:12px;color:#555;">
+            <strong>Chrome MCP required — here's why:</strong> eToro's API requires custom auth headers (<code style="background:#f0f0f0;padding:1px 4px;border-radius:3px;font-size:10px;">x-api-key</code>, <code style="background:#f0f0f0;padding:1px 4px;border-radius:3px;font-size:10px;">x-user-key</code>). Python/curl can't send them through the sandbox proxy. Chrome's JS fetch() sends them natively — no proxy involved.
+          </div>
+        </div>
+
+        <!-- Stage 2 -->
+        <div style="background:#f0fff4;border:1px solid #a3d9b8;border-radius:8px;padding:14px 16px;margin-bottom:12px;">
+          <div style="font-weight:bold;color:#1a2332;font-size:12px;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">🔄 Stage 2 — Live Prices Every Hourly Run</div>
+          <div style="display:flex;align-items:flex-start;gap:16px;flex-wrap:wrap;font-size:12px;">
+            <div style="flex:1;min-width:200px;color:#555;line-height:1.9;">
+              1. Read <code style="background:#e8f5e9;padding:1px 4px;border-radius:3px;font-size:10px;">etoro-instruments.json</code> from GitHub<br>
+              2. Batch IDs (20 per call — eToro API limit)<br>
+              3. Fetch live rates via Chrome MCP JS fetch<br>
+              4. Pass as <code style="background:#e8f5e9;padding:1px 4px;border-radius:3px;font-size:10px;">ETORO_LIVE_PRICES</code> to email-builder.py<br>
+              5. Auto-injected into <strong>External Watchlists</strong> section
+            </div>
+            <div style="flex:1;min-width:200px;background:#fff;border-radius:6px;padding:10px 12px;border:1px solid #c3e6cb;">
+              <div style="font-weight:bold;color:#1a2332;margin-bottom:6px;">In the report</div>
+              <div style="color:#555;line-height:1.8;font-size:11px;">
+                Appears as <strong>EXTERNAL WATCHLISTS</strong> section (below Watchlist Notables). Shows all 62 instruments grouped by watchlist, with live price column. Read-only — not editable in reports. Prices show "—" if eToro API is unreachable.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="padding:10px 14px;background:#f8f8f8;border-left:3px solid #aaa;border-radius:0 6px 6px 0;font-size:12px;color:#666;">
+          <strong>To update after adding/removing eToro positions:</strong> the daily scheduled sync handles this automatically. If you need an immediate update, ask Claude to "run the eToro watchlist sync" — it will invoke <code style="background:#f0f0f0;padding:1px 4px;border-radius:3px;">etoro-watchlist-sync-skill.md</code>.
+        </div>
+      </div>
+    </div>
+
+    <!-- Layer 3 -->
+    <div style="border:1px solid #e0e0e0;border-radius:8px;overflow:hidden;">
+      <div style="background:#2c3e50;color:#fff;padding:10px 16px;display:flex;align-items:center;gap:10px;">
+        <span style="font-size:15px;">3️⃣</span>
+        <div>
+          <div style="font-size:12px;font-weight:bold;text-transform:uppercase;letter-spacing:1px;">Browser Watchlist — personal reminder layer</div>
+          <div style="font-size:11px;color:#8ab4cc;margin-top:2px;">Saved in browser localStorage · visible on the archive page · not read by Claude</div>
+        </div>
+      </div>
+      <div style="padding:16px 18px;font-size:13px;">
+        <p style="color:#555;margin-bottom:12px;">The chip UI on the <a href="index.html" style="color:#2980b9;">archive page</a> lets you save tickers locally in your browser. Chips are colour-coded by the tier assigned in the last hourly run (<code style="background:#f0f4ff;padding:2px 6px;border-radius:4px;font-size:11px;">watchlist-status.json</code> written by publish-report.py). These are stored in <code style="background:#f0f4ff;padding:2px 6px;border-radius:4px;font-size:11px;">localStorage</code> — they persist across refreshes but are not read by Claude.</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:12px;">
+          <div style="background:#f8f8f8;border-radius:6px;padding:10px 12px;">
+            <div style="font-weight:bold;color:#1a2332;margin-bottom:6px;">What it does</div>
+            <div style="color:#555;line-height:1.8;">
+              ✅ Visual reminder of tickers you're watching<br>
+              ✅ Survives browser refresh and app restart<br>
+              ✅ Colour-coded by exchange (ASX / US / Global)<br>
+              ✅ Add / remove instantly, no login needed
+            </div>
+          </div>
+          <div style="background:#f8f8f8;border-radius:6px;padding:10px 12px;">
+            <div style="font-weight:bold;color:#1a2332;margin-bottom:6px;">What it doesn't do</div>
+            <div style="color:#555;line-height:1.8;">
+              ❌ Not sent to Claude automatically<br>
+              ❌ Not fetched for prices or news<br>
+              ❌ Not synced across devices or browsers<br>
+              ❌ Won't influence pick selection
+            </div>
+          </div>
+        </div>
+        <div style="margin-top:12px;padding:10px 14px;background:#f8f8f8;border-left:3px solid #aaa;border-radius:0 6px 6px 0;font-size:12px;color:#666;">
+          To get Claude to actually research a ticker, use the <strong>Request Ticker for Research Queue</strong> form — that creates a GitHub issue and gets the ticker added to the Layer 1 fixed list in SKILL.md.
+        </div>
+      </div>
+    </div>
+
+    <!-- Summary table -->
+    <div style="margin-top:20px;">
+      <p style="font-size:12px;font-weight:bold;color:#1a2332;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">Summary</p>
+      <table class="nice">
+        <tr><th>Layer</th><th>Where stored</th><th>Fetched by Claude?</th><th>Influences picks?</th><th>How to update</th></tr>
+        <tr><td><strong>1 — Fixed list</strong></td><td>watchlist.json (GitHub)</td><td>✅ Every run</td><td>✅ Competes equally</td><td>Edit watchlist.json in GitHub repo</td></tr>
+        <tr><td><strong>2 — eToro sync</strong></td><td>etoro-instruments.json + etoro-watchlist.json (GitHub)</td><td>✅ IDs loaded Phase 1; live prices fetched hourly</td><td>✅ If catalyst exists + shown in External Watchlists</td><td>Automatic daily scheduled task (or ask Claude to run sync)</td></tr>
+        <tr><td><strong>3 — Browser chips</strong></td><td>Browser localStorage</td><td>❌ Not read</td><td>❌ No</td><td>Add/remove on archive page</td></tr>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ GLOSSARY ═══════════════════════════════ -->
+<div class="card" id="glossary">
+  <div class="card-header"><span class="icon">📚</span><h2>Glossary</h2></div>
+  <div class="card-body">
+    <dl class="glossary">
+      <dt>ASX</dt><dd>Australian Securities Exchange — where Australian shares trade (opens 10am AEST Mon–Fri)</dd>
+      <dt>NYSE / NASDAQ</dt><dd>US stock exchanges — NYSE is traditional blue-chips, NASDAQ is tech-heavy</dd>
+      <dt>RSI</dt><dd>Relative Strength Index — 0–100 momentum gauge. Think of it as a speedometer. 70+ = too fast (overbought), 30− = too slow (oversold)</dd>
+      <dt>SMA 50 / 200</dt><dd>Simple Moving Average — average price over 50 or 200 days. Being above your SMA50 is like running faster than your usual pace — positive momentum</dd>
+      <dt>Short interest</dt><dd>% of shares borrowed and sold by people betting the price will fall. High short interest = many bears. When they're wrong, they all rush to buy at once — that's a squeeze</dd>
+      <dt>Short squeeze</dt><dd>When a stock unexpectedly rises — short sellers must buy to close their positions, which pushes the price even higher, fast</dd>
+      <dt>Catalyst</dt><dd>The specific event that causes a stock to move: earnings beat, new contract, analyst upgrade, FDA approval, regulatory clearance, insider buy</dd>
+      <dt>PRE-MOVE</dt><dd>A catalyst just fired but the stock price hasn't reacted yet. Best entry window — market is slow to price in new information</dd>
+      <dt>R:R (Risk:Reward)</dt><dd>How much you could make vs how much you risk. 2.0 = risk $1 to potentially make $2. System requires minimum 1.5 to qualify as a pick</dd>
+      <dt>Entry zone</dt><dd>The price range to buy at. Always set as a limit order — never chase with a market order above the zone</dd>
+      <dt>Stop loss</dt><dd>The price to exit if wrong. Non-negotiable — set it at the moment you enter the trade</dd>
+      <dt>Day pick ⚡</dt><dd>Trade designed to be entered and exited within the same ASX or US session</dd>
+      <dt>Week pick 📅</dt><dd>Hold for 1–5 trading days — re-assess at end of week</dd>
+      <dt>Long pick 📈</dt><dd>Structural thesis — hold for weeks to months through normal volatility</dd>
+      <dt>RISK-OFF ⛔</dt><dd>Market mood where investors sell risky assets and move to cash/gold. BTC dropping 3%+ is the system's trigger</dd>
+      <dt>VIX</dt><dd>The "fear index" — measures expected market volatility. Above 25 = fear. Below 15 = calm</dd>
+      <dt>AUD/USD</dt><dd>Exchange rate: how many US dollars one Australian dollar buys. Higher AUD = good for importing; lower = good for ASX export stocks</dd>
+      <dt>EODHD</dt><dd>End of Day Historical Data — the primary API for live ASX prices and AUD/USD each run</dd>
+      <dt>Finnhub</dt><dd>API for US/global stock quotes, analyst consensus ratings, and BTC price (risk-off signal)</dd>
+      <dt>FMP</dt><dd>Financial Modeling Prep — provides analyst grades, stock screener, and the economic calendar (run mandatory every session)</dd>
+      <dt>Supertrend</dt><dd>A technical indicator that gives a simple UP or DOWN direction signal based on price and volatility bands. Combined with ADX for trend strength</dd>
+      <dt>ADX</dt><dd>Average Directional Index — measures trend strength (not direction). Above 25 = strong trend. Below 20 = choppy market, hard to trade</dd>
+      <dt>etoro-instruments.json</dt><dd>The single source of truth for your eToro instrument IDs — written by the daily sync task, read by the hourly skill to batch-fetch live prices. No prices stored here (they're fetched fresh each run)</dd>
+      <dt>etoro-watchlist.json</dt><dd>Your full eToro positions including last-synced prices — pushed to GitHub and displayed on the GitHub Pages watchlist view</dd>
+      <dt>External Watchlists</dt><dd>Section in every report showing all your eToro positions with live prices, grouped by watchlist. Read-only — populated automatically by email-builder.py from etoro-instruments.json + live eToro rates</dd>
+      <dt>Win rate</dt><dd>Tracked by win-rate.py — the % of past picks that hit their price target vs were stopped out. Visible in Section 15B of every report</dd>
+    </dl>
+  </div>
+</div>
+
+<div class="footer">
+  ASX + Global Stock Watch · Auto-generated market research · Not financial advice · Updated June 2026 · eToro integration: daily sync → etoro-instruments.json + live hourly prices via Chrome MCP
+</div>
+
+</div><!-- /container -->
+</body>
+</html>
