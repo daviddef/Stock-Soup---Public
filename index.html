@@ -192,7 +192,9 @@
   .wlpill a:hover{color:var(--broth)}
   .wlpill .rm{background:var(--surface-2);border:1px solid var(--line);color:var(--muted);border-radius:50%;width:20px;height:20px;cursor:pointer;font-size:11px;line-height:1;padding:0}
   .wlempty{color:var(--faint);font-size:13px}
-  .wlreg{display:inline-block;background:var(--buy);color:#04240f;font-weight:900;text-decoration:none;padding:12px 22px;border-radius:11px;font-size:14px}
+  .wlreg{display:inline-block;background:var(--buy);color:#04240f;font-weight:900;text-decoration:none;padding:12px 22px;border-radius:11px;font-size:14px;border:0;cursor:pointer;font-family:var(--font)}
+  .wlreg:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+  .wlstatus{font-size:13px;font-weight:700;margin-top:10px;min-height:18px}
   .wlnote{font-size:12px;color:var(--muted);margin-top:12px;max-width:60ch}
 
   /* ARCHIVE */
@@ -465,8 +467,10 @@ function render(D,H){
       '<span class="wlseg" role="group" aria-label="Market"><button id="wlAu" aria-pressed="true">🇦🇺 AU</button><button id="wlUs" aria-pressed="false">🇺🇸 US</button></span>'+
       '<button class="wladd" id="wlAdd">Add</button></div>'+
     '<div class="wlpills" id="wlPills"></div>'+
-    '<a class="wlreg" id="wlReg" href="#">📩 Register these with the Chef</a>'+
-    '<div class="wlnote">Right now your list lives in this browser, and “register” opens a pre-filled email so we can add them to the live monitor. A proper login/account can come later.</div></section>'+
+    '<div class="wlbar"><input id="wlEmail" type="email" placeholder="Your email (so we can follow up)" aria-label="Your email"></div>'+
+    '<button class="wlreg" id="wlReg">📩 Register these with the Chef</button>'+
+    '<div class="wlstatus" id="wlStatus" role="status" aria-live="polite"></div>'+
+    '<div class="wlnote">Your list is saved in this browser; Register sends it to us so we can add it to the live monitor. Sign-in &amp; cross-device sync are on the roadmap.</div></section>'+
 
   '<section><div class="sec-head"><h2 class="display"><span class="k">03</span> The journey</h2></div>'+
     '<p class="sec-sub">Every run replaces the menu. Here\'s how it\'s moved — newest first. Green = kept, red = dropped, NEW = fresh this run.</p>'+
@@ -580,7 +584,29 @@ function wire(D){
   function wlAdd(){var inp=document.getElementById('wlInput');if(!inp)return;var v=(inp.value||'').trim().toUpperCase().replace(/[^A-Z0-9.]/g,'');if(!v)return;var a=wlGet();if(!a.some(function(w){return w.sym===v&&w.region===wlRegion;}))a.push({sym:v,region:wlRegion});wlSet(a);inp.value='';wlRender();}
   var ab=document.getElementById('wlAdd');if(ab)ab.onclick=wlAdd;
   var wi=document.getElementById('wlInput');if(wi)wi.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();wlAdd();}});
-  var reg=document.getElementById('wlReg');if(reg)reg.addEventListener('click',function(e){e.preventDefault();var a=wlGet();var list=a.map(function(w){return w.sym+' ('+(w.region==='au'?'ASX':'US')+')';}).join(', ')||'(none yet — add some first)';location.href='mailto:thestocksoup@gmail.com?subject='+encodeURIComponent('Stock Soup — please monitor my watchlist')+'&body='+encodeURIComponent('Hi Chef, please add these to your monitoring list:\n\n'+list+'\n\nThanks!');});
+  // Paste your Formspree endpoint here (e.g. "https://formspree.io/f/xxxxxxx") to make Register store submissions.
+  // Empty = graceful fallback to a pre-filled email.
+  var REGISTER_ENDPOINT = "";
+  function mailtoFallback(list, email){
+    location.href='mailto:thestocksoup@gmail.com?subject='+encodeURIComponent('Stock Soup — please monitor my watchlist')+
+      '&body='+encodeURIComponent('Hi Chef, please add these to your monitoring list:\n\n'+(list||'(none)')+(email?'\n\nFrom: '+email:'')+'\n\nThanks!');
+  }
+  function setStatus(msg, col){ var s=document.getElementById('wlStatus'); if(s){ s.textContent=msg; s.style.color='var(--'+(col||'muted')+')'; } }
+  var reg=document.getElementById('wlReg');
+  if(reg) reg.addEventListener('click', function(e){
+    e.preventDefault();
+    var a=wlGet();
+    if(!a.length){ setStatus('Add a ticker first 🙂','hold'); return; }
+    var list=a.map(function(w){return w.sym+' ('+(w.region==='au'?'ASX':'US')+')';}).join(', ');
+    var email=(document.getElementById('wlEmail')||{}).value||'';
+    if(!REGISTER_ENDPOINT){ mailtoFallback(list, email); return; }
+    setStatus('Sending…','muted');
+    fetch(REGISTER_ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},
+      body:JSON.stringify({email:email,watchlist:list,tickers:a,source:'stock-soup-dashboard'})})
+      .then(function(r){ if(r.ok){ setStatus('✅ Registered — the Chef will keep an eye on these.','buy'); }
+                         else { setStatus('That didn\'t send — opening an email instead…','hold'); mailtoFallback(list, email); } })
+      .catch(function(){ setStatus('Network hiccup — opening an email instead…','hold'); mailtoFallback(list, email); });
+  });
   wlRender();
 
   // ---- Archive (live report index) ----
