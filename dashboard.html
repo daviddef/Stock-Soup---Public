@@ -225,6 +225,8 @@
   .pill .ph{width:9px;height:9px;border-radius:50%;flex:0 0 auto}
   .pill b{font-weight:800}
   .pill small{color:var(--muted);font-size:12px}
+  .pill .ppx{font-family:var(--mono);font-size:11.5px;font-weight:800}
+  .pill .ppx.up{color:var(--buy)} .pill .ppx.down{color:var(--dont)}
   .pill .flag{font-size:10px;color:var(--faint);font-weight:700}
   .h-hot{background:rgba(255,107,26,.13);border-color:rgba(255,107,26,.45)} .h-hot .ph{background:var(--broth)}
   .h-good{background:rgba(35,194,103,.11);border-color:rgba(35,194,103,.4)} .h-good .ph{background:var(--buy)}
@@ -377,6 +379,45 @@
   .mcat li::before{content:"🥄";flex:0 0 auto}
   .mrisk{font-size:13px;background:rgba(255,77,77,.1);border:1px solid rgba(255,77,77,.3);color:var(--ink);border-radius:10px;padding:11px 13px}
   .mrisk b{color:var(--dont)}
+  .paneltop{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+  .trackbtn{background:var(--surface-2);border:1px solid var(--line);color:var(--broth);font-family:var(--font);font-weight:800;font-size:11.5px;padding:6px 12px;border-radius:999px;cursor:pointer;white-space:nowrap}
+  .trackbtn:hover{border-color:var(--broth)}
+  .trackcta{display:block;width:100%;margin-top:14px;background:linear-gradient(180deg,var(--surface-2),var(--surface));border:1px solid var(--line);border-left:3px solid var(--broth);color:var(--ink);font-family:var(--font);font-weight:700;font-size:12.5px;text-align:left;padding:12px 14px;border-radius:11px;cursor:pointer;line-height:1.4}
+  .trackcta:hover{border-color:var(--broth)}
+  .trtab{width:100%;border-collapse:collapse;font-size:12.5px;margin:4px 0 2px}
+  .trtab th{text-align:right;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:800;padding:4px 8px;border-bottom:1px solid var(--line)}
+  .trtab th:first-child{text-align:left}
+  .trtab td{text-align:right;padding:7px 8px;font-variant-numeric:tabular-nums;font-family:var(--mono);border-bottom:1px solid var(--line)}
+  .trtab td:first-child{text-align:left;font-family:var(--font);font-weight:700}
+  .trtab tr:last-child td{border-bottom:0}
+  .trtab .tf-best td{background:rgba(46,204,113,.09)}
+  .trtab .tf-best td:first-child{box-shadow:inset 3px 0 0 var(--buy)}
+  .trtab .up{color:var(--buy)} .trtab .down{color:var(--dont)}
+  .bwgrid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:520px){.bwgrid{grid-template-columns:1fr}}
+  .bwrow{display:flex;align-items:baseline;gap:8px;padding:6px 0;border-bottom:1px solid var(--line)}
+  .bwrow:last-child{border-bottom:0}
+  .bwrow b{font-size:14px;font-weight:900} .bwrow .up{color:var(--buy)} .bwrow .down{color:var(--dont)}
+  .bwtf{font-size:11px;color:var(--muted);font-weight:700}
+  .bwret{margin-left:auto;font-family:var(--mono);font-weight:800;font-size:12.5px}
+  .bwret.up{color:var(--buy)} .bwret.down{color:var(--dont)}
+  .trlearn{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:8px}
+  .trlearn li{font-size:12.5px;line-height:1.5;padding-left:24px;position:relative}
+  .trlearn li.lg::before{content:"✅";position:absolute;left:0} .trlearn li.lb::before{content:"⚠️";position:absolute;left:0}
+  .tradj{margin:8px 0 0;padding-left:20px;display:flex;flex-direction:column;gap:7px;font-size:12.5px;line-height:1.5}
+  .malts{border-top:1px solid var(--line);padding-top:15px}
+  .maltsh{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--broth);font-weight:800;margin-bottom:10px}
+  .altcard{display:block;background:var(--surface-2);border:1px solid var(--line);border-left:3px solid var(--faint,var(--line));border-radius:11px;padding:11px 13px;text-decoration:none;color:var(--ink);margin-bottom:8px;transition:border-color .12s}
+  .altcard:last-child{margin-bottom:0}
+  .altcard:hover{border-left-color:var(--broth)}
+  .altcard.h-hot{border-left-color:var(--broth)} .altcard.h-good{border-left-color:var(--buy)} .altcard.h-mid{border-left-color:var(--hold)} .altcard.h-cold{border-left-color:var(--dont)}
+  .altmain{display:flex;align-items:baseline;gap:8px}
+  .altmain b{font-size:15px;font-weight:900}
+  .altnm{font-size:12px;color:var(--muted);font-weight:700}
+  .altpx{margin-left:auto;font-size:12px;font-weight:800;font-family:var(--mono)}
+  .altpx.up{color:var(--buy)} .altpx.down{color:var(--dont)} .altpx.muted{color:var(--muted);font-weight:700}
+  .altarrow{color:var(--broth);font-weight:800;font-size:12px}
+  .altnote{font-size:12px;color:var(--muted);margin-top:5px;line-height:1.45}
   .mfoot{display:flex;gap:10px;flex-wrap:wrap}
   .mbtn{flex:1;min-width:140px;text-align:center;text-decoration:none;font-weight:800;font-size:13px;padding:12px;border-radius:11px;border:1px solid var(--line);background:var(--surface-2);color:var(--ink)}
   .mbtn.primary{background:var(--broth);color:#1a0f06;border-color:var(--broth)}
@@ -1568,8 +1609,7 @@ function render(D,H){
         '<span class="px"><span class="p mono">'+esc(p.price)+'</span><br><span class="c mono '+(p.up?'up':'down')+'">'+esc(p.change)+'</span></span></div>'+
         (p.nEntry?'<div class="buyat"><span class="bl">🎯 Ideal buy</span> ~'+esc(rg.cur||'$')+p.nEntry+'</div>':'')+
         '<p class="plain">'+p.plain+'</p><div class="lvls">'+p.levels+'</div>'+
-        (p.spark?rangeBar(p.spark,rg.cur||'$'):'')+'</article>'+
-        (p.runnerUp?ruCard(p.runnerUp,rg.id,idx):'')+'</div>';
+        (p.spark?rangeBar(p.spark,rg.cur||'$'):'')+'</article></div>';
     }).join('');
     return '<div class="menu'+(i===0?'':' hidden')+'" id="menu-'+rg.id+'" role="tabpanel">'+cards+'</div>';
   }).join('');
@@ -1619,7 +1659,7 @@ function render(D,H){
         return '<div class="plrow"><span class="pltime">'+esc(pu.stamp)+'</span><span class="plmv">'+(mv||'baseline set')+'</span></div>';
       }).join('')+'</div></div>')
     : '<div class="panel"><h3>Tonight\'s hourly runs</h3><p class="panelsub">Hourly pulses will appear here as they run.</p></div>';
-  var pot=(D.candidates||[]).map(function(c){return '<a class="pill h-'+esc(c.heat)+'" href="'+yf(c.sym,c.region)+'" target="_blank" rel="noopener"><span class="ph"></span><b>'+esc(c.sym)+'</b> <small>'+esc(c.note)+'</small> <span class="flag">'+(c.region==='au'?'AU':'US')+'</span></a>';}).join('');
+  var pot=(D.candidates||[]).map(function(c){return '<a class="pill h-'+esc(c.heat)+'" href="'+yf(c.sym,c.region)+'" target="_blank" rel="noopener"><span class="ph"></span><b>'+esc(c.sym)+'</b>'+(c.price?' <span class="ppx '+(c.up?'up':'down')+'">'+esc(c.price)+'</span>':'')+' <small>'+esc(c.note)+'</small> <span class="flag">'+(c.region==='au'?'AU':'US')+'</span></a>';}).join('');
   var half=Math.ceil((D.commodities||[]).length/2);
   var trail=(D.trail||[]).map(function(t){return '<div class="step"><span class="n">'+esc(t.n)+'</span><div class="st-txt">'+t.text+'<small>'+esc(t.note)+'</small></div></div>';}).join('');
 
@@ -1646,9 +1686,10 @@ function render(D,H){
   '<section><div class="sec-head"><h2 class="display"><span class="k">02</span> The journey</h2></div>'+
     '<p class="sec-sub">Every run replaces the menu. Here\'s how it\'s moved — newest first. Each row: <b>⚡ Day · 📅 Week · 📈 Long</b>. <span style="color:var(--buy)">Green = kept</span>, <span style="color:var(--dont)">red/✕ = DROP</span>, NEW = fresh this run.</p>'+
     '<div class="chef-note">'+note+'</div><div class="journey">'+journeyCols+'</div>'+
-    '<div class="grid2"><div class="panel"><h3>Closed calls · scored honestly</h3>'+
+    '<div class="grid2"><div class="panel"><div class="paneltop"><h3>Closed calls · scored honestly</h3><button class="trackbtn" id="trackBtn">📊 Full month →</button></div>'+
     '<div class="score"><div><div class="big">'+esc(sb.record)+' <span class="wl">W–L</span></div>'+recClear+'<div class="sub">'+esc(sb.recordNote)+'</div></div></div>'+
-    '<div class="rec">'+recRows+'</div><p style="font-size:11px;color:var(--faint);margin-top:12px">'+esc(sb.closedNote)+'</p></div>'+
+    '<div class="rec">'+recRows+'</div><p style="font-size:11px;color:var(--faint);margin-top:12px">'+esc(sb.closedNote)+'</p>'+
+    '<button class="trackcta" id="trackCta">See the last month graded → 29 W · 31 L, what we learned, what we\'d change</button></div>'+
     story+'</div></section>'+
 
   '<section><div class="sec-head"><h2 class="display"><span class="k">03</span> The full pot</h2></div>'+
@@ -1715,6 +1756,22 @@ function openModal(p,region,cur){
     }
   }
   var sparkHtml = p.spark ? '<div class="viz"><h4>Recent trend · last ~2 months</h4>'+sparkSVG(p.spark)+'<div class="rsimeta">'+(p.spark[p.spark.length-1]>=p.spark[0]?'📈 Up over the stretch':'📉 Down over the stretch')+'</div></div>' : '';
+  // Other options — runner-up + same-market candidates, so there's always a Plan B inside the tap
+  var _curS={}; (LAST.D.regions||[]).forEach(function(rg){(rg.picks||[]).forEach(function(pp){_curS[pp.sym]=1;});});
+  var _alts=[];
+  if(p.runnerUp) _alts.push({sym:p.runnerUp.sym,region:p.runnerUp.region||region,name:p.runnerUp.name,price:p.runnerUp.price,change:p.runnerUp.change,up:p.runnerUp.up,note:p.runnerUp.line});
+  var _ho={hot:0,good:1,mid:2,cold:3};
+  (LAST.D.candidates||[]).filter(function(c){return c.region===region&&c.sym!==p.sym&&!_curS[c.sym]&&!_alts.some(function(a){return a.sym===c.sym;});})
+    .sort(function(a,b){return (_ho[a.heat]==null?9:_ho[a.heat])-(_ho[b.heat]==null?9:_ho[b.heat]);})
+    .slice(0,Math.max(0,3-_alts.length))
+    .forEach(function(c){_alts.push({sym:c.sym,region:c.region,note:c.note,heat:c.heat,price:c.price,change:c.change,up:c.up});});
+  var altsHtml=_alts.length?'<div class="malts"><h4 class="maltsh">🥈 Prefer another? · '+_alts.length+' other option'+(_alts.length>1?'s':'')+' this run</h4>'+
+    _alts.map(function(a){
+      var px=a.price?'<span class="altpx '+(a.up?'up':'down')+'">'+esc(a.price)+(a.change?' '+esc(a.change):'')+'</span>':'<span class="altpx muted">live ↗</span>';
+      return '<a class="altcard'+(a.heat?' h-'+a.heat:'')+'" href="'+yf(a.sym,a.region||region)+'" target="_blank" rel="noopener">'+
+        '<div class="altmain"><b>'+esc(a.sym)+'</b>'+(a.name?' <span class="altnm">'+esc(a.name)+'</span>':'')+px+'<span class="altarrow">↗</span></div>'+
+        (a.note?'<div class="altnote">'+esc(a.note)+'</div>':'')+'</a>';
+    }).join('')+'</div>':'';
   var m=document.getElementById('modal');
   m.className='modal';
   m.innerHTML=
@@ -1738,7 +1795,7 @@ function openModal(p,region,cur){
       '<p class="mtake"><span class="lead">Chef says:</span> '+esc(p.chefTake)+'</p>'+
       '<div><h4 style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:800;margin-bottom:10px">Why it\'s on the menu</h4><ul class="mcat">'+cats+'</ul></div>'+
       '<div class="mrisk"><b>Watch out:</b> '+esc(p.risk)+'</div>'+
-      (p.runnerUp?'<div class="mrunner"><div class="rh">🥈 Runner-up you can act on now: '+qlink(p.runnerUp.sym,p.runnerUp.region,p.runnerUp.sym+' · '+p.runnerUp.name)+'</div>'+esc(p.runnerUp.line)+' <span class="mono" style="white-space:nowrap">'+esc(p.runnerUp.price)+' <span class="'+(p.runnerUp.up?'up':'down')+'">'+esc(p.runnerUp.change)+'</span></span></div>':'')+
+      altsHtml+
       '<div class="mfoot"><a class="mbtn" href="'+yf(p.sym,region)+'" target="_blank" rel="noopener">📈 Yahoo Finance ↗</a>'+
         '<a class="mbtn primary" href="'+esc(LAST.D.reportUrl)+'" target="_blank" rel="noopener">📖 Full report ↗</a></div>'+
     '</div>';
@@ -1752,6 +1809,40 @@ function closeModal(){
   if(LASTFOCUS&&LASTFOCUS.focus)LASTFOCUS.focus();
 }
 
+function openTrackRecord(){
+  var T=TRACK; if(!T)return;
+  LASTFOCUS=document.activeElement;
+  function pc(x){return (x>=0?'+':'')+(x*100).toFixed(1)+'%';}
+  var wr=Math.round(T.win_rate*100);
+  var tf=(T.by_timeframe||[]).map(function(r){
+    return '<tr class="'+(r.verdict==='best'?'tf-best':'')+'"><td>'+esc(r.emoji)+' '+esc(r.tf)+'</td><td>'+r.n+'</td><td>'+Math.round(r.win_rate*100)+'%</td><td class="'+(r.avg_return>=0?'up':'down')+'">'+pc(r.avg_return)+'</td><td class="'+(r.avg_excess>=0?'up':'down')+'">'+pc(r.avg_excess)+'</td></tr>';}).join('');
+  var mk=(T.by_market||[]).map(function(r){
+    return '<tr><td>'+esc(r.mkt)+'</td><td>'+r.n+'</td><td>'+Math.round(r.win_rate*100)+'%</td><td class="'+(r.avg_return>=0?'up':'down')+'">'+pc(r.avg_return)+'</td><td class="'+(r.avg_excess>=0?'up':'down')+'">'+pc(r.avg_excess)+'</td></tr>';}).join('');
+  var best=(T.best||[]).map(function(b){return '<div class="bwrow"><b class="up">'+esc(b.sym)+'</b><span class="bwtf">'+esc(b.tf)+'</span><span class="bwret up">'+pc(b.ret)+'</span></div>';}).join('');
+  var worst=(T.worst||[]).map(function(b){return '<div class="bwrow"><b class="down">'+esc(b.sym)+'</b><span class="bwtf">'+esc(b.tf)+'</span><span class="bwret down">'+pc(b.ret)+'</span></div>';}).join('');
+  var learn=(T.learnings||[]).map(function(l){return '<li class="'+(l.good?'lg':'lb')+'">'+esc(l.text)+'</li>';}).join('');
+  var adj=(T.adjustments||[]).map(function(a){return '<li>'+esc(a)+'</li>';}).join('');
+  var m=document.getElementById('modal');
+  m.className='modal';
+  m.innerHTML=
+    '<div class="mhead don"><button class="mclose" id="mClose" aria-label="Close">✕</button>'+
+      '<div class="mtf">📊 Track record · '+esc(T.window)+'</div>'+
+      '<div class="mtop"><div><div class="msym">'+esc(T.record)+' <span style="font-size:14px;color:var(--muted);font-weight:700">W–L</span></div><div class="mco">'+wr+'% win · '+T.n+' closed calls</div></div>'+
+        '<div class="mpx"><div class="mp mono '+(T.avg_excess>=0?'up':'down')+'">'+pc(T.avg_excess)+'</div><div class="mono" style="font-size:12px;color:var(--muted)">vs index</div></div></div></div>'+
+    '<div class="mbody">'+
+      '<p class="mtake"><span class="lead">Honest read:</span> '+esc(T.headline)+'</p>'+
+      '<div class="viz"><h4>By timeframe — where the edge actually is</h4><table class="trtab"><thead><tr><th>Slot</th><th>n</th><th>Win</th><th>Avg</th><th>vs index</th></tr></thead><tbody>'+tf+'</tbody></table><div class="rsimeta">📅 <b>Week is the only lane that made money.</b> Day picks ran a negative expectancy.</div></div>'+
+      '<div class="viz"><h4>By market</h4><table class="trtab"><thead><tr><th>Market</th><th>n</th><th>Win</th><th>Avg</th><th>vs index</th></tr></thead><tbody>'+mk+'</tbody></table></div>'+
+      '<div class="bwgrid"><div><h4 class="maltsh" style="color:var(--buy)">Best 3</h4>'+best+'</div><div><h4 class="maltsh" style="color:var(--dont)">Worst 3</h4>'+worst+'</div></div>'+
+      '<div><h4 style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:800;margin:4px 0 10px">What we learned</h4><ul class="trlearn">'+learn+'</ul></div>'+
+      '<div class="mrunner"><div class="rh">🔧 How we\'re adjusting the logic for next time</div><ul class="tradj">'+adj+'</ul></div>'+
+      '<p style="font-size:11px;color:var(--faint);margin-top:2px">'+esc(T.caveat)+'</p>'+
+    '</div>';
+  var ov=document.getElementById('overlay');
+  ov.classList.add('open');ov.setAttribute('aria-hidden','false');
+  document.getElementById('mClose').focus();
+}
+
 function wire(D){
   var root=document.documentElement;
   document.getElementById('themeBtn').addEventListener('click',function(){
@@ -1759,6 +1850,9 @@ function wire(D){
     root.setAttribute('data-theme',cur==='dark'?'light':'dark');
   });
   var vb=document.getElementById('viewBtn'); if(vb) vb.onclick=function(){setView('simple');};
+  var tb=document.getElementById('trackBtn'), tc=document.getElementById('trackCta');
+  if(TRACK){ if(tb)tb.onclick=openTrackRecord; if(tc)tc.onclick=openTrackRecord; }
+  else { if(tb)tb.style.display='none'; if(tc)tc.style.display='none'; }
   var tabs=document.querySelectorAll('.tab[data-region]');
   tabs.forEach(function(t){t.addEventListener('click',function(){
     tabs.forEach(function(x){x.setAttribute('aria-selected','false');document.getElementById('menu-'+x.dataset.region).classList.add('hidden');});
@@ -1851,7 +1945,7 @@ document.addEventListener('keydown',function(e){if(e.key==='Escape')closeModal()
 document.getElementById('overlay').addEventListener('click',function(e){if(e.target&&e.target.id==='mClose')closeModal();});
 
 /* ---- View mode: simple (mobile default) vs full, with toggle ---- */
-var VIEW = null, SREGION = 'au', PULSES = null;
+var VIEW = null, SREGION = 'au', PULSES = null, TRACK = null;
 function setView(v){ VIEW = v; try{ localStorage.setItem('soup_view', v); }catch(e){} applyView(); }
 function applyView(){ if(!LAST) return; window.scrollTo(0,0); if(VIEW==='simple') renderSimple(LAST.D); else render(LAST.D, LAST.H); }
 function boot(D,H){
@@ -1879,8 +1973,7 @@ function renderSimple(D){
       '<div class="sname">'+esc(p.name)+' · '+esc(p.price)+' <span class="'+(p.up?'up':'down')+'">'+(p.up?'▲':'▼')+' '+esc(p.change)+'</span></div>'+
       (p.nEntry?'<div class="buyat"><span class="bl">🎯 Ideal buy</span> ~'+esc(region.cur||'$')+p.nEntry+'</div>':'')+
       '<div class="sline">'+esc(p.plain)+'</div>'+
-      (p.spark?rangeBar(p.spark,(region.cur||'$')):'')+'</article>'+
-      (p.runnerUp?ruCard(p.runnerUp,rid,idx):'');
+      (p.spark?rangeBar(p.spark,(region.cur||'$')):'')+'</article>';
   }).join('');
   function _grp(arr,key){var b=[],o=[],s=[];(arr||[]).forEach(function(x){var t=x.tclass,n=x[key];if(t==='t-dont')s.push(n);else if(t==='t-buy'||t==='t-hot')b.push(n);else o.push(n);});return {b:b,o:o,s:s};}
   function _line(g){var p=[];if(g.b.length)p.push('<span class="qbuy">✅ Buy: '+g.b.map(esc).join(', ')+'</span>');if(g.o.length)p.push('<span class="qmeh"><span class="qdot"></span> Watch: '+g.o.map(esc).join(', ')+'</span>');if(g.s.length)p.push('<span class="qskip">⛔ Skip: '+g.s.map(esc).join(', ')+'</span>');return p.join('<br>');}
@@ -1934,10 +2027,12 @@ boot(EMBEDDED,HIST_EMBED);
 Promise.allSettled([
   fetch('latest.json',{cache:'no-store'}).then(function(r){return r.ok?r.json():null;}),
   fetch('menu-history.json',{cache:'no-store'}).then(function(r){return r.ok?r.json():null;}),
-  fetch('reports/pulse-history.json',{cache:'no-store'}).then(function(r){return r.ok?r.json():null;})
+  fetch('reports/pulse-history.json',{cache:'no-store'}).then(function(r){return r.ok?r.json():null;}),
+  fetch('reports/track-record.json',{cache:'no-store'}).then(function(r){return r.ok?r.json():null;})
 ]).then(function(res){
-  var d=res[0].value, h=res[1].value, pu=res[2].value;
+  var d=res[0].value, h=res[1].value, pu=res[2].value, tr=res[3].value;
   if(pu&&pu.pulses&&pu.pulses.length>1) PULSES=pu.pulses;
-  if((d&&d.regions)||(h&&h.menus)||PULSES) boot(d&&d.regions?d:EMBEDDED, h&&h.menus?h:HIST_EMBED);
+  if(tr&&tr.record) TRACK=tr;
+  if((d&&d.regions)||(h&&h.menus)||PULSES||TRACK) boot(d&&d.regions?d:EMBEDDED, h&&h.menus?h:HIST_EMBED);
 }).catch(function(){});
 </script>
