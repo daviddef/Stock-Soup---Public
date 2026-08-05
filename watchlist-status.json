@@ -1,137 +1,108 @@
 {
-  "run": "Wed 5 Aug 2026 16:00 AEST",
-  "report": "reports/2026-08-05-1600.html",
+  "run": "Wed 5 Aug 2026 20:00 AEST",
+  "report": "reports/2026-08-05-2000.html",
   "tickers": {
+    "MND": {
+      "tier": "day",
+      "price": "A$A$30.30",
+      "change": "+1.07%",
+      "score": "",
+      "note": "Monadelphous won a ~A$200m contract with BHP, yet the stock is up only +1.07% \u2014 a leading-indicator pre-move setup where the catalyst is fresh but not yet price",
+      "market": "ASX",
+      "name": "Monadelphous Group",
+      "entry": "A$30.00",
+      "target": "A$34.00",
+      "stop": "A$28.50",
+      "signals": [
+        "<span style='background:#276749;color:#fff;padding:2px 6px;border-radius:3px;font-size:11px;margin-right:4px;'>$200M_BHP_CONTRACT</span><span style='background:#276749;color:#fff;padding:2px 6px;border-radius:3px;font-size:11px;margin-right:4px;'>PRE-MOVE_+1.1%</span><span style='background:#276749;color:#fff;padding:2px 6px;border-radius:3px;font-size:11px;margin-right:4px;'>ABOVE_BOTH_SMAs</span><span style='background:#276749;color:#fff;padding:2px 6px;border-radius:3px;font-size:11px;'>RSI_59</span>"
+      ],
+      "narrative": "Monadelphous won a ~A$200m contract with BHP, yet the stock is up only +1.07% \u2014 a leading-indicator pre-move setup where the catalyst is fresh but not yet priced in. RSI 59 with price above both the 50-day (A$29.55) and 200-day (A$28.36) SMAs confirms a healthy uptrend, not an extended one. Engineering & mining-services demand stays strong on the resources rally.",
+      "sentiment": "strong_buy"
+    },
+    "PNI": {
+      "tier": "week",
+      "price": "A$A$19.25",
+      "change": "+8.39%",
+      "score": "",
+      "note": "Pinnacle jumped +8.39% on ~2.84m shares after a result showing strong funds-under-management growth \u2014 the multi-source discovery of this run (Stockhead + Fool).",
+      "market": "ASX",
+      "name": "Pinnacle Investment Management",
+      "entry": "A$18.50 (pullback)",
+      "target": "A$22.00",
+      "stop": "A$17.20",
+      "signals": [
+        "<span style='background:#c05621;color:#fff;padding:2px 6px;border-radius:3px;font-size:11px;margin-right:4px;'>EARNINGS_BEAT</span><span style='background:#c05621;color:#fff;padding:2px 6px;border-radius:3px;font-size:11px;margin-right:4px;'>MULTI-SOURCE_\u2b50</span><span style='background:#c05621;color:#fff;padding:2px 6px;border-radius:3px;font-size:11px;margin-right:4px;'>FUM_GROWTH</span><span style='background:#c05621;color:#fff;padding:2px 6px;border-radius:3px;font-size:11px;'>+8.4%_VOLUME</span>"
+      ],
+      "narrative": "Pinnacle jumped +8.39% on ~2.84m shares after a result showing strong funds-under-management growth \u2014 the multi-source discovery of this run (Stockhead + Fool). RSI 68.9 is near overbought after the pop, so this is a Week/momentum hold on a pullback rather than a fresh chase. Price sits well above both SMAs (50d A$16.66, 200d A$16.54).",
+      "sentiment": "buy"
+    },
     "EOS": {
-      "tier": "day",
-      "price": "A$A$8.41*",
-      "change": "+7.74%*",
-      "score": "",
-      "note": "Defence specialist with analyst consensus target A$11.12 (+32% upside). Counter-drone + space control systems with AUD 459M order book. Iran conflict and AUKUS ",
-      "market": "ASX",
-      "name": "Electro Optic Systems Holdings",
-      "entry": "A$8.20\u20138.60",
-      "target": "A$10.20",
-      "stop": "A$7.70",
-      "signals": [
-        "Analyst PT A$11.12 (+32%)",
-        "Order book AUD 459M",
-        "AUKUS defence",
-        "Counter-drone systems"
-      ],
-      "narrative": "Defence specialist with AUD 459M order book and analyst consensus PT A$11.12. AUKUS + Iran conflict driving defence sector rotation.",
-      "sentiment": "strong_buy",
-      "rsi": 55,
-      "trend": "above_50sma"
-    },
-    "4DX": {
-      "tier": "week",
-      "price": "A$A$4.160",
-      "change": "-8.97%",
-      "score": "",
-      "note": "Pullback entry (-8.97% today) with three fresh catalysts: Medicare CMS reimbursement approval for CT:VQ, expanded Philips distribution deal (US$10M minimum), UC",
-      "market": "ASX",
-      "name": "4DMedical Ltd",
-      "entry": "A$4.00\u20134.20",
-      "target": "A$5.40",
-      "stop": "A$3.65",
-      "signals": [
-        "Medicare CMS approval",
-        "Philips US$10M deal",
-        "UC San Diego adoption",
-        "Short squeeze \ud83e\ude73",
-        "RSI 51 neutral"
-      ],
-      "narrative": "Pullback entry with three fresh catalysts: Medicare CMS approval, Philips distribution deal (US$10M), UC San Diego Health adoption. RSI 51 = not overbought.",
-      "sentiment": "strong_buy",
-      "rsi": 51,
-      "trend": "above_200sma"
-    },
-    "PDN": {
       "tier": "long",
-      "price": "A$A$10.06*",
-      "change": "\u2014",
+      "price": "A$A$7.65",
+      "change": "+1.19%",
       "score": "",
-      "note": "Uranium structural long. AI datacentre energy demand driving nuclear power renaissance globally. Iran conflict adds near-term energy risk premium. AUKUS positio",
+      "note": "EOS is the structural defence play \u2014 optronics, remote weapon systems and directed-energy/counter-drone tech, directly levered to AUKUS and rising global defenc",
       "market": "ASX",
-      "name": "Paladin Energy",
-      "entry": "A$9.60\u201310.20",
-      "target": "A$13.50",
-      "stop": "A$8.80",
+      "name": "Electro Optic Systems",
+      "entry": "A$7.50",
+      "target": "A$9.50",
+      "stop": "A$6.90",
       "signals": [
-        "Uranium long-term",
-        "Iran energy risk",
-        "AUKUS supply chain",
-        "Nuclear renaissance"
+        "<span style='background:#276749;color:#fff;padding:2px 6px;border-radius:3px;font-size:11px;margin-right:4px;'>BROKER_BUY</span><span style='background:#276749;color:#fff;padding:2px 6px;border-radius:3px;font-size:11px;margin-right:4px;'>AUKUS_DEFENCE</span><span style='background:#276749;color:#fff;padding:2px 6px;border-radius:3px;font-size:11px;margin-right:4px;'>LASER/C-UAS</span><span style='background:#276749;color:#fff;padding:2px 6px;border-radius:3px;font-size:11px;'>RSI_48_RECOVERY</span>"
       ],
-      "narrative": "Uranium structural long play \u2014 AI datacentre power demand, Iran conflict energy risk, AUKUS positioning as tier-1 critical minerals supplier.",
-      "sentiment": "buy",
-      "trend": "above_50sma"
+      "narrative": "EOS is the structural defence play \u2014 optronics, remote weapon systems and directed-energy/counter-drone tech, directly levered to AUKUS and rising global defence budgets. At A$7.65 it trades below its 50-day SMA (A$8.96) with RSI 48.5, an un-extended recovery entry with a fresh broker buy rec supporting the thesis.",
+      "sentiment": "buy"
     },
-    "ANET": {
+    "KTOS": {
       "tier": "day",
-      "price": "$~$190.51*",
-      "change": "ATH close Aug 4",
+      "price": "$$51.87",
+      "change": "+5.41%",
       "score": "",
-      "note": "Q2 2026 earnings released after close Aug 4. Today (Aug 5) is the first post-earnings session \u2014 historically the highest momentum day. Arista is the AI data cen",
+      "note": "Kratos was upgraded by Piper Sandler (Neutral\u2192Overweight, $75 target) and rose +5.41% \u2014 a fresh catalyst with room to run vs the $75 target. Analyst consensus i",
       "market": "GLOBAL",
-      "name": "Arista Networks",
-      "entry": "$188\u2013192",
-      "target": "$215",
-      "stop": "$182",
+      "name": "Kratos Defense & Security",
+      "entry": "$51.00",
+      "target": "$58.00",
+      "stop": "$48.00",
       "signals": [
-        "Q2 2026 earnings beat",
-        "ATH close $190.51",
-        "AI networking infrastructure",
-        "First post-earnings session"
+        "<span style='background:#276749;color:#fff;padding:2px 6px;border-radius:3px;font-size:11px;margin-right:4px;'>PIPER_UPGRADE</span><span style='background:#276749;color:#fff;padding:2px 6px;border-radius:3px;font-size:11px;margin-right:4px;'>OVERWEIGHT_$75</span><span style='background:#276749;color:#fff;padding:2px 6px;border-radius:3px;font-size:11px;margin-right:4px;'>25_BUY_0_SELL</span><span style='background:#276749;color:#fff;padding:2px 6px;border-radius:3px;font-size:11px;'>DRONES/DEFENCE</span>"
       ],
-      "narrative": "First post-earnings session after Q2 beat. AI data centre interconnect backbone \u2014 secular demand.",
-      "sentiment": "strong_buy",
-      "trend": "above_200sma"
-    },
-    "MRVL": {
-      "tier": "week",
-      "price": "$$235.81",
-      "change": "AI bookings surge",
-      "score": "",
-      "note": "CEO Matt Murphy raised FY2027 and FY2028 guidance citing exceptional AI bookings. Marvell designs custom AI ASICs for AWS, Google, and Microsoft \u2014 the most defe",
-      "market": "GLOBAL",
-      "name": "Marvell Technology",
-      "entry": "$228\u2013238",
-      "target": "$268",
-      "stop": "$218",
-      "signals": [
-        "CEO raised FY27/28 outlook",
-        "35% Q2 YoY growth",
-        "AI bookings surge",
-        "Custom AI silicon (ASIC)"
-      ],
-      "narrative": "CEO raised FY2027/28 guidance citing exceptional AI bookings. Custom AI chip supplier for hyperscalers \u2014 AWS, Google, Microsoft.",
-      "sentiment": "strong_buy",
-      "trend": "above_200sma"
+      "narrative": "Kratos was upgraded by Piper Sandler (Neutral\u2192Overweight, $75 target) and rose +5.41% \u2014 a fresh catalyst with room to run vs the $75 target. Analyst consensus is a wall of support: 10 Strong Buy + 15 Buy + 4 Hold, zero sell. Drones, target systems and hypersonics ride the same AUKUS/defence-spend theme leading global markets today.",
+      "sentiment": "strong_buy"
     },
     "PLTR": {
-      "tier": "long",
-      "price": "$~$144.45",
-      "change": "+28-29% (DO NOT CHASE)",
+      "tier": "week",
+      "price": "$$162.66",
+      "change": "+29.45%",
       "score": "",
-      "note": "Palantir Q2 confirms step-change: $1.94B revenue (+93% YoY), EPS beat, full-year guidance raised. AI-driven decision platform for defence and enterprise is comp",
+      "note": "Palantir exploded +29.45% to $162.66 on an earnings blowout \u2014 its best day since Feb 2024 \u2014 with Deutsche Bank moving to Buy ($200). It is the multi-source name",
       "market": "GLOBAL",
       "name": "Palantir Technologies",
-      "entry": "$128\u2013138",
-      "target": "$200",
-      "stop": "$118",
+      "entry": "$150 (LATE \u2014 pullback only)",
+      "target": "$180",
+      "stop": "$145",
       "signals": [
-        "Q2 +93% YoY revenue",
-        "EPS beat $0.41 vs $0.34",
-        "Citi PT $245",
-        "DA Davidson PT $200",
-        "DO NOT CHASE at $144+"
+        "<span style='background:#c05621;color:#fff;padding:2px 6px;border-radius:3px;font-size:11px;margin-right:4px;'>EARNINGS_BLOWOUT</span><span style='background:#c05621;color:#fff;padding:2px 6px;border-radius:3px;font-size:11px;margin-right:4px;'>\u26a0\ufe0f_LATE_+29%</span><span style='background:#c05621;color:#fff;padding:2px 6px;border-radius:3px;font-size:11px;margin-right:4px;'>RSI_72.8</span><span style='background:#c05621;color:#fff;padding:2px 6px;border-radius:3px;font-size:11px;'>DB_BUY_$200</span>"
       ],
-      "narrative": "Long pick only \u2014 do not enter at post-surge levels. Wait for pullback to $128-138 zone. 93% revenue growth makes this a 12-month structural hold.",
-      "sentiment": "buy",
-      "rsi": 75,
-      "trend": "above_200sma"
+      "narrative": "Palantir exploded +29.45% to $162.66 on an earnings blowout \u2014 its best day since Feb 2024 \u2014 with Deutsche Bank moving to Buy ($200). It is the multi-source name of the run (gainer + most-active + upgrade + earnings). But +29% in a day with RSI 72.8 triggers the LATE and overbought penalties: this is an accumulate-on-pullback / momentum hold, NOT a fresh chase. Monitored every run as the AI/risk barometer.",
+      "sentiment": "buy"
+    },
+    "ETN": {
+      "tier": "long",
+      "price": "$$444.77",
+      "change": "+1.49%",
+      "score": "",
+      "note": "Eaton is the picks-and-shovels play on the AI-datacenter build-out \u2014 electrical power management is the bottleneck for every GPU cluster. Evercore upgraded to O",
+      "market": "GLOBAL",
+      "name": "Eaton Corporation",
+      "entry": "$440",
+      "target": "$500",
+      "stop": "$410",
+      "signals": [
+        "<span style='background:#276749;color:#fff;padding:2px 6px;border-radius:3px;font-size:11px;margin-right:4px;'>EVERCORE_UPGRADE</span><span style='background:#276749;color:#fff;padding:2px 6px;border-radius:3px;font-size:11px;margin-right:4px;'>OUTPERFORM_$502</span><span style='background:#276749;color:#fff;padding:2px 6px;border-radius:3px;font-size:11px;margin-right:4px;'>AI_DATACENTER_POWER</span><span style='background:#276749;color:#fff;padding:2px 6px;border-radius:3px;font-size:11px;'>ABOVE_BOTH_SMAs</span>"
+      ],
+      "narrative": "Eaton is the picks-and-shovels play on the AI-datacenter build-out \u2014 electrical power management is the bottleneck for every GPU cluster. Evercore upgraded to Outperform ($502), and the stock is in a clean uptrend (RSI 61.9, above 50d $405.87 and 200d $374.92) with 26 analyst buys. Lower-beta way to own the AI capex theme than the semis themselves.",
+      "sentiment": "buy"
     },
     "VTM": {
       "tier": "monitor",
@@ -139,14 +110,15 @@
       "change": "\u2014",
       "score": "",
       "note": "Not researched this run",
-      "name": "Vital Metals",
-      "sentiment": "hold",
-      "trend": "below_50sma",
-      "signals": [
-        "Rare earths watch",
-        "China supply catalyst"
-      ],
-      "narrative": "Monitoring rare earth exposure. Price unavailable this run (EODHD blocked)."
+      "sentiment": "hold"
+    },
+    "PDN": {
+      "tier": "monitor",
+      "price": "\u2014",
+      "change": "\u2014",
+      "score": "",
+      "note": "Not researched this run",
+      "sentiment": "hold"
     },
     "IEL": {
       "tier": "monitor",
@@ -162,14 +134,7 @@
       "change": "\u2014",
       "score": "",
       "note": "Not researched this run",
-      "name": "Telix Pharmaceuticals",
-      "sentiment": "hold",
-      "trend": "above_200sma",
-      "signals": [
-        "Radiopharmaceuticals",
-        "Healthcare sector"
-      ],
-      "narrative": "Monitoring \u2014 price unavailable this run."
+      "sentiment": "hold"
     },
     "NTU": {
       "tier": "monitor",
@@ -185,17 +150,7 @@
       "change": "\u2014",
       "score": "",
       "note": "Not researched this run",
-      "name": "Deep Yellow",
-      "sentiment": "hold",
-      "trend": "above_50sma",
-      "signals": [
-        "Uranium sector watch",
-        "Correlation with PDN"
-      ],
-      "entry": "A$1.35\u20131.50",
-      "target": "A$2.00",
-      "stop": "A$1.20",
-      "narrative": "Uranium watchlist stock. Monitoring for sector breakout alongside PDN."
+      "sentiment": "hold"
     },
     "DRO": {
       "tier": "monitor",
@@ -203,15 +158,7 @@
       "change": "\u2014",
       "score": "",
       "note": "Not researched this run",
-      "name": "DroneShield",
-      "sentiment": "buy",
-      "trend": "above_50sma",
-      "signals": [
-        "Counter-drone",
-        "AUKUS beneficiary",
-        "Defence sector heat"
-      ],
-      "narrative": "Counter-drone technology \u2014 AUKUS and Iran conflict driving procurement. Monitor for contract announcements."
+      "sentiment": "hold"
     },
     "A2M": {
       "tier": "monitor",
@@ -236,38 +183,6 @@
       "score": "",
       "note": "Not researched this run",
       "sentiment": "hold"
-    },
-    "BOE": {
-      "tier": "monitor",
-      "price": "\u2014",
-      "change": "\u2014",
-      "score": "",
-      "note": "Uranium watchlist \u2014 monitoring alongside PDN and DYL for sector move.",
-      "name": "Boss Energy",
-      "sentiment": "hold",
-      "trend": "above_50sma",
-      "signals": [
-        "Uranium mine production",
-        "Sector correlation PDN/DYL"
-      ],
-      "entry": "A$1.10\u20131.30",
-      "target": "A$1.80",
-      "stop": "A$0.98"
-    },
-    "BHP": {
-      "tier": "monitor",
-      "price": "\u2014",
-      "change": "\u2014",
-      "score": "",
-      "note": "Monitor \u2014 copper supply tight globally (Chile mine strike). Iron ore tracking China demand.",
-      "name": "BHP Group",
-      "sentiment": "hold",
-      "trend": "above_200sma",
-      "signals": [
-        "Iron ore",
-        "Copper exposure",
-        "China demand watch"
-      ]
     }
   }
 }

@@ -222,8 +222,9 @@
         <tr style="background:#1a2332;color:#aabbcc;text-align:left;">
           <th style="padding:6px 10px;">Phase</th><th style="padding:6px 10px;">Skill / Section</th><th style="padding:6px 10px;">What it does</th><th style="padding:6px 10px;white-space:nowrap;">Frequency</th>
         </tr>
-        <tr style="background:#f8f9fa;"><td style="padding:5px 10px;font-weight:bold;">1 — INIT</td><td style="padding:5px 10px;">STEP 0A</td><td style="padding:5px 10px;">Load <code>watchlist.json</code> + <code>etoro-instruments.json</code> from GitHub; fetch eToro live prices via Chrome MCP</td><td style="padding:5px 10px;">Every run</td></tr>
-        <tr><td style="padding:5px 10px;font-weight:bold;">2 — GEO</td><td style="padding:5px 10px;">STEP 0A-GEO</td><td style="padding:5px 10px;">3 searches → Geopolitical Briefing above Macro Snapshot</td><td style="padding:5px 10px;">Every run</td></tr>
+        <tr style="background:#f8f9fa;"><td style="padding:5px 10px;font-weight:bold;">1 — INIT</td><td style="padding:5px 10px;">STEP 0A</td><td style="padding:5px 10px;">Load <code>watchlist.json</code> + <code>etoro-watchlist.json</code> + <code>analyst-watchlist.json</code> from GitHub</td><td style="padding:5px 10px;">Every run</td></tr>
+        <tr><td style="padding:5px 10px;font-weight:bold;">1B — ANALYST</td><td style="padding:5px 10px;">STEP 0A-ANALYST</td><td style="padding:5px 10px;">Add analyst-consensus tickers (score ≥ 3.5) to candidate pool with scoring bonuses — feeds 🎯 Global Analyst Focus section</td><td style="padding:5px 10px;">Every run</td></tr>
+        <tr style="background:#f8f9fa;"><td style="padding:5px 10px;font-weight:bold;">2 — GEO</td><td style="padding:5px 10px;">STEP 0A-GEO</td><td style="padding:5px 10px;">3 searches → Geopolitical Briefing above Macro Snapshot</td><td style="padding:5px 10px;">Every run</td></tr>
         <tr style="background:#f8f9fa;"><td style="padding:5px 10px;font-weight:bold;">3 — DISCOVER</td><td style="padding:5px 10px;">asx-global-discovery</td><td style="padding:5px 10px;">Homepage scrapes + keyword searches → candidate pool</td><td style="padding:5px 10px;">Every run</td></tr>
         <tr><td style="padding:5px 10px;font-weight:bold;">4 — PRICE DATA</td><td style="padding:5px 10px;">STEP 0, 0B, 0C</td><td style="padding:5px 10px;">Live prices, AUD/USD, BTC/VIX risk signal, RSI/SMA</td><td style="padding:5px 10px;">Every run</td></tr>
         <tr style="background:#f8f9fa;"><td style="padding:5px 10px;font-weight:bold;">5 — ENRICH</td><td style="padding:5px 10px;">STEP 0B-ii, 0B-iii, 0F</td><td style="padding:5px 10px;">Fundamentals, advanced technicals, global news — <strong>daily cache</strong></td><td style="padding:5px 10px;">Once/day (cached)</td></tr>
@@ -623,6 +624,17 @@
       <div class="arch-detail"><strong>Phase 8 — Publish:</strong> Reads /tmp/email-data.json → email-builder.py fills email-template.html → Gmail draft → publish-report.py pushes HTML to GitHub Pages → writes watchlist-status.json → SMS (paused). Can be re-run independently to retry a failed send. <em>~148 lines.</em></div>
       <div class="arch-label">👁️ watchlist-monitor</div>
       <div class="arch-detail"><strong>Anytime — Quick check:</strong> Fetches live prices, RSI, SMA position, volume, and last-researched tier for every ticker in watchlist.json + etoro-watchlist.json. No pick generation. Runs in under 3 minutes. Use when you say "how is my watchlist doing?" <em>~178 lines.</em></div>
+      <div class="arch-label" style="background:#1b3a2a;color:#7ecfa0;">🎯 analyst-watchlist-builder.py — once per day, morning</div>
+      <div class="arch-detail" style="background:#f0fff4;border-left:3px solid #27ae60;">
+        <strong>Run from your machine each morning</strong> before the first hourly run. Builds the global analyst watchlist from three sources:<br><br>
+        <ul style="margin:8px 0 4px 18px;font-size:12px;line-height:1.9;">
+          <li><strong>Finnhub</strong> <code>/stock/recommendation</code> — strongBuy/buy/hold/sell counts for 60+ global tickers (free tier)</li>
+          <li><strong>FMP</strong> upgrades/downgrades — major firm buy actions from Goldman, JPMorgan, Morgan Stanley etc. in the last 7 days (Starter plan)</li>
+          <li><strong>eToro</strong> curated lists + your default watchlist — social/community signal layer</li>
+        </ul>
+        Scores all tickers 0–5, writes <code>analyst-watchlist.json</code> to GitHub. The hourly skill reads it in STEP 0A-ANALYST and adds qualifying tickers to the candidate pool with score bonuses (+0.5 to +1.0). A <strong>🎯 Global Analyst Focus</strong> section appears in every report.<br><br>
+        <code style="background:#e8f5e9;padding:3px 8px;border-radius:3px;font-size:11px;">cd "/Users/daviddefranceski/Claude/Projects/Share / Stock Trading" &amp;&amp; python3 analyst-watchlist-builder.py</code>
+      </div>
       <div class="arch-label" style="background:#1b2d40;color:#8ab4cc;">📲 etoro-watchlist-sync-skill — once per day, scheduled</div>
       <div class="arch-detail" style="background:#f5f9ff;border-left:3px solid #2980b9;">
         <strong>Scheduled Claude skill</strong> — runs automatically once per day. Uses Chrome MCP JS fetch to bypass the sandbox HTTPS proxy and call the eToro API with auth headers natively.<br><br>
@@ -636,7 +648,7 @@
     </div>
     <div style="margin-top:14px;background:#f8f9fa;border-radius:6px;padding:14px 16px;font-size:12px;">
       <strong style="color:#1a2332;">Supporting files:</strong>
-      <span style="color:#555;"> &nbsp;email-template.html (locked layout) · report-template.md (report structure, on GitHub) · email-builder.py (fills template from JSON) · publish-report.py (pushes to GitHub) · etoro-watchlist-sync-skill.md (daily scheduled skill) · watchlist.json (monitoring tickers, GitHub) · etoro-instruments.json (eToro IDs — no prices) · etoro-watchlist.json (eToro positions + prices) · watchlist-status.json (per-ticker tier/score, written each run)</span>
+      <span style="color:#555;"> &nbsp;email-template.html (locked layout) · report-template.md (report structure, on GitHub) · email-builder.py (fills template from JSON) · publish-report.py (pushes to GitHub) · etoro-watchlist-sync-skill.md (daily scheduled skill) · analyst-watchlist-builder.py (daily morning script) · watchlist.json (monitoring tickers, GitHub) · etoro-instruments.json (eToro IDs — no prices) · etoro-watchlist.json (eToro positions + prices) · <strong>analyst-watchlist.json</strong> (55+ analyst-scored tickers, updated daily) · watchlist-status.json (per-ticker tier/score, written each run)</span>
     </div>
 
     <div style="margin-top:16px;padding:14px 16px;background:#e8f5e9;border-radius:6px;font-size:13px;">
@@ -648,7 +660,7 @@
 
 <!-- ═══════════════════════════════ WATCHLISTS ═══════════════════════════════ -->
 <div class="card" id="watchlists">
-  <div class="card-header"><span class="icon">📋</span><h2>Watchlists — Three Layers Explained</h2></div>
+  <div class="card-header"><span class="icon">📋</span><h2>Watchlists — All Sources Explained</h2></div>
   <div class="card-body">
     <p style="margin-bottom:20px;font-size:13px;color:#555;">The system uses three separate watchlist layers. They serve different purposes and are fetched in different ways — none of them automatically override the signal-first discovery process.</p>
 
@@ -759,10 +771,68 @@
       </div>
     </div>
 
-    <!-- Layer 3 -->
+    <!-- Layer 3 — Analyst Consensus -->
+    <div style="border:1px solid #d4edda;border-radius:8px;overflow:hidden;margin-bottom:18px;">
+      <div style="background:#1e3d2f;color:#fff;padding:10px 16px;display:flex;align-items:center;gap:10px;">
+        <span style="font-size:15px;">3️⃣</span>
+        <div>
+          <div style="font-size:12px;font-weight:bold;text-transform:uppercase;letter-spacing:1px;">Global Analyst Consensus — institutional sell-side signals</div>
+          <div style="font-size:11px;color:#8ab4cc;margin-top:2px;">analyst-watchlist.json on GitHub · built daily by analyst-watchlist-builder.py · Finnhub + FMP + eToro</div>
+        </div>
+      </div>
+      <div style="padding:16px 18px;font-size:13px;">
+        <p style="color:#555;margin-bottom:14px;">A scored list of 55+ global tickers ranked by institutional analyst consensus. Built each morning by running <code style="background:#f0f4ff;padding:2px 6px;border-radius:4px;font-size:11px;">analyst-watchlist-builder.py</code> — the result is pushed to GitHub and read by every hourly run via STEP 0A-ANALYST.</p>
+
+        <!-- Pipeline -->
+        <div style="background:#f0fff4;border:1px solid #c3e6cb;border-radius:8px;padding:14px 16px;margin-bottom:12px;font-size:12px;">
+          <div style="font-weight:bold;color:#1a2332;font-size:11px;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">⏱ Daily builder pipeline (run each morning)</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">
+            <div style="background:#fff;border-radius:6px;padding:10px 12px;border:1px solid #c3e6cb;">
+              <div style="font-weight:bold;color:#1a2332;margin-bottom:6px;">Finnhub <span style="font-weight:normal;color:#27ae60;">free</span></div>
+              <div style="color:#555;line-height:1.8;font-size:11px;">/stock/recommendation<br>strongBuy / buy / hold<br>sell / strongSell counts<br>60+ global tickers</div>
+            </div>
+            <div style="background:#fff;border-radius:6px;padding:10px 12px;border:1px solid #c3e6cb;">
+              <div style="font-weight:bold;color:#1a2332;margin-bottom:6px;">FMP upgrades <span style="font-weight:normal;color:#e67e22;">$25/mo</span></div>
+              <div style="color:#555;line-height:1.8;font-size:11px;">Last 7 days upgrades<br>Goldman / JPMorgan /<br>Morgan Stanley etc.<br>Skipped on free tier</div>
+            </div>
+            <div style="background:#fff;border-radius:6px;padding:10px 12px;border:1px solid #c3e6cb;">
+              <div style="font-weight:bold;color:#1a2332;margin-bottom:6px;">eToro curated</div>
+              <div style="color:#555;line-height:1.8;font-size:11px;">Your default watchlist<br>+ curated editorial lists<br>Same x-api-key auth<br>Social/community signal</div>
+            </div>
+          </div>
+          <div style="margin-top:12px;background:#e8f5e9;border-radius:6px;padding:10px 12px;font-size:11px;color:#555;">
+            <strong>Scoring formula:</strong> <code style="background:#fff;padding:1px 4px;border-radius:3px;">((SB×2 + B×1 + H×0 + S×-1 + SS×-2) / (2×total) + 1) × 2.5</code> → 0–5 scale. Tickers scoring ≥ 3.5 enter the hourly candidate pool tagged <code style="background:#fff;padding:1px 4px;border-radius:3px;">ANALYST_CONSENSUS</code>.
+          </div>
+        </div>
+
+        <!-- Score bonuses -->
+        <div style="background:#f8f8f8;border-radius:8px;padding:12px 14px;margin-bottom:12px;font-size:12px;">
+          <div style="font-weight:bold;color:#1a2332;margin-bottom:8px;">Pick score bonuses applied in STEP 0E</div>
+          <table style="width:100%;border-collapse:collapse;font-size:11px;">
+            <tr style="background:#e8f5e9;"><th style="text-align:left;padding:5px 8px;border-radius:4px 4px 0 0;">Condition</th><th style="text-align:left;padding:5px 8px;">Bonus</th></tr>
+            <tr><td style="padding:4px 8px;color:#555;">Analyst score ≥ 4.5 (Strong Buy consensus)</td><td style="padding:4px 8px;color:#27ae60;font-weight:bold;">+1.0</td></tr>
+            <tr style="background:#f5f5f5;"><td style="padding:4px 8px;color:#555;">Analyst score 3.5–4.49 (Buy consensus)</td><td style="padding:4px 8px;color:#27ae60;font-weight:bold;">+0.75</td></tr>
+            <tr><td style="padding:4px 8px;color:#555;">Analyst score 3.0–3.49 (borderline)</td><td style="padding:4px 8px;color:#27ae60;font-weight:bold;">+0.5</td></tr>
+            <tr style="background:#f5f5f5;"><td style="padding:4px 8px;color:#555;">+ MAJOR_FIRM_UPGRADE tag (Goldman/JPM/MS etc.)</td><td style="padding:4px 8px;color:#27ae60;font-weight:bold;">+0.5 extra</td></tr>
+            <tr><td style="padding:4px 8px;color:#555;">+ ETORO_CURATED tag</td><td style="padding:4px 8px;color:#27ae60;font-weight:bold;">+0.25 extra</td></tr>
+          </table>
+        </div>
+
+        <!-- How to run -->
+        <div style="padding:10px 14px;background:#fffbf0;border-left:3px solid #f39c12;border-radius:0 6px 6px 0;font-size:12px;color:#555;">
+          <strong>Run each morning:</strong>
+          <code style="display:block;background:#f0f0f0;padding:6px 10px;border-radius:4px;margin-top:6px;font-size:11px;">cd "/Users/daviddefranceski/Claude/Projects/Share / Stock Trading" &amp;&amp; python3 analyst-watchlist-builder.py</code>
+          Takes ~30s. Pushes <code style="background:#f0f0f0;padding:1px 4px;border-radius:3px;">analyst-watchlist.json</code> to GitHub. Every subsequent hourly run reads it automatically.
+          <br><br>
+          <strong>In the report:</strong> a <em>🎯 Global Analyst Focus</em> section lists the top 5 analyst-backed tickers. Any pick sourced from analyst consensus shows full count in the pick card — e.g. "Analyst consensus: Buy (24 SB / 39 Buy / 4 Hold) — 68 analysts as of Jun 2026".
+        </div>
+      </div>
+    </div>
+
+    <!-- Layer 4 — Browser chips -->
     <div style="border:1px solid #e0e0e0;border-radius:8px;overflow:hidden;">
       <div style="background:#2c3e50;color:#fff;padding:10px 16px;display:flex;align-items:center;gap:10px;">
-        <span style="font-size:15px;">3️⃣</span>
+        <span style="font-size:15px;">4️⃣</span>
         <div>
           <div style="font-size:12px;font-weight:bold;text-transform:uppercase;letter-spacing:1px;">Browser Watchlist — personal reminder layer</div>
           <div style="font-size:11px;color:#8ab4cc;margin-top:2px;">Saved in browser localStorage · visible on the archive page · not read by Claude</div>
@@ -803,7 +873,8 @@
         <tr><th>Layer</th><th>Where stored</th><th>Fetched by Claude?</th><th>Influences picks?</th><th>How to update</th></tr>
         <tr><td><strong>1 — Fixed list</strong></td><td>watchlist.json (GitHub)</td><td>✅ Every run</td><td>✅ Competes equally</td><td>Edit watchlist.json in GitHub repo</td></tr>
         <tr><td><strong>2 — eToro sync</strong></td><td>etoro-instruments.json + etoro-watchlist.json (GitHub)</td><td>✅ IDs loaded Phase 1; live prices fetched hourly</td><td>✅ If catalyst exists + shown in External Watchlists</td><td>Automatic daily scheduled task (or ask Claude to run sync)</td></tr>
-        <tr><td><strong>3 — Browser chips</strong></td><td>Browser localStorage</td><td>❌ Not read</td><td>❌ No</td><td>Add/remove on archive page</td></tr>
+        <tr style="background:#f0fff4;"><td><strong>3 — Analyst consensus</strong></td><td>analyst-watchlist.json (GitHub)</td><td>✅ STEP 0A-ANALYST every run</td><td>✅ +0.5 to +1.0 score bonus + 🎯 Global Analyst Focus section</td><td>Run <code>analyst-watchlist-builder.py</code> each morning</td></tr>
+        <tr><td><strong>4 — Browser chips</strong></td><td>Browser localStorage</td><td>❌ Not read</td><td>❌ No</td><td>Add/remove on archive page</td></tr>
       </table>
     </div>
   </div>
