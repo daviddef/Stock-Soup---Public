@@ -69,7 +69,10 @@
   .cetraj,.ceprox{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px}
   .ceh{font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:12px}
   .cechart{width:100%;height:120px;display:block}
-  .celegend{display:flex;flex-wrap:wrap;gap:12px;margin-top:12px;font-size:11px;font-weight:700}
+  .celegend{display:flex;flex-direction:column;gap:9px;margin-top:12px;font-size:11px;font-weight:700}
+  .celeggrp{display:flex;flex-wrap:wrap;align-items:center;gap:11px}
+  .cglbl{font-size:10px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;width:100%;margin-bottom:1px}
+  .cglbl.up{color:var(--buy)} .cglbl.down{color:var(--dont)}
   .celeg{display:inline-flex;align-items:center;gap:5px;color:var(--muted)}
   .celeg i{width:9px;height:9px;border-radius:2px;display:inline-block}
   .celeg b.up{color:var(--buy)} .celeg b.down{color:var(--dont)}
@@ -1478,7 +1481,11 @@ function renderChangeEnv(D, pulses){
     return '<polyline points="'+pts.join(' ')+'" fill="none" stroke="'+s.color+'" stroke-width="1.5" vector-effect="non-scaling-stroke"/>'+
       (last?'<circle cx="'+last[0]+'" cy="'+last[1]+'" r="2.4" fill="'+s.color+'"/>':'');
   }).join('');
-  var legend=series.map(function(s){return '<span class="celeg"><i style="background:'+s.color+'"></i>'+esc(s.sym)+' <b class="'+(s.last>=0?'up':'down')+'">'+(s.last>=0?'+':'')+s.last.toFixed(1)+'%</b></span>';}).join('');
+  function leg1(s){return '<span class="celeg"><i style="background:'+s.color+'"></i>'+esc(s.sym)+' <b class="'+(s.last>=0?'up':'down')+'">'+(s.last>=0?'+':'')+s.last.toFixed(1)+'%</b></span>';}
+  var _ups=series.filter(function(s){return s.last>=0;}).sort(function(a,b){return b.last-a.last;});
+  var _dns=series.filter(function(s){return s.last<0;}).sort(function(a,b){return a.last-b.last;});
+  var legend=(_ups.length?'<div class="celeggrp"><span class="cglbl up">▲ Above / gaining</span>'+_ups.map(leg1).join('')+'</div>':'')+
+             (_dns.length?'<div class="celeggrp"><span class="cglbl down">▼ Below / falling</span>'+_dns.map(leg1).join('')+'</div>':'');
   var prox=picks.filter(function(pk){return pk.nEntry&&pk.now;}).sort(function(a,b){return (a.now/a.nEntry)-(b.now/b.nEntry);}).map(function(pk){
     var gap=(pk.now/pk.nEntry-1)*100;
     var st=gap<=0?'in':gap<=1.5?'near':gap<=4?'close':'wait';
