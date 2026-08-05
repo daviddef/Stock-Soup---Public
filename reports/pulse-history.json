@@ -1,0 +1,92 @@
+{
+ "pulses": [
+  {
+   "stamp": "Wed 23:33",
+   "iso": "2026-08-05T23:33:54.230396+10:00",
+   "snap": {
+    "MND": {
+     "price": 30.3,
+     "dp": 1.07,
+     "region": "au"
+    },
+    "PNI": {
+     "price": 19.25,
+     "dp": 8.39,
+     "region": "au"
+    },
+    "EOS": {
+     "price": 7.65,
+     "dp": 1.19,
+     "region": "au"
+    },
+    "KTOS": {
+     "price": 57.43,
+     "dp": 10.72,
+     "region": "us"
+    },
+    "PLTR": {
+     "price": 164.76,
+     "dp": 1.29,
+     "region": "us"
+    },
+    "ETN": {
+     "price": 444.09,
+     "dp": -0.15,
+     "region": "us"
+    },
+    "VTM": {
+     "price": 1.45,
+     "dp": -2.36,
+     "region": "au"
+    },
+    "PDN": {
+     "price": 9.99,
+     "dp": 4.17,
+     "region": "au"
+    },
+    "IEL": {
+     "price": 2.4,
+     "dp": 2.13,
+     "region": "au"
+    },
+    "TLX": {
+     "price": 14.72,
+     "dp": 2.15,
+     "region": "au"
+    },
+    "NTU": {
+     "price": 0.03,
+     "dp": 0.0,
+     "region": "au"
+    },
+    "DYL": {
+     "price": 1.41,
+     "dp": 4.06,
+     "region": "au"
+    },
+    "DRO": {
+     "price": 2.19,
+     "dp": 5.29,
+     "region": "au"
+    },
+    "A2M": {
+     "price": 6.89,
+     "dp": 0.73,
+     "region": "au"
+    },
+    "SGH": {
+     "price": 46.32,
+     "dp": 1.74,
+     "region": "au"
+    },
+    "WTC": {
+     "price": 39.91,
+     "dp": 5.41,
+     "region": "au"
+    }
+   },
+   "changes": [],
+   "synth": "First pulse of the night — baseline set. Changes appear from the next hour."
+  }
+ ]
+}
