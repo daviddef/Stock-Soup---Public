@@ -76,6 +76,15 @@
      "risk": "It's run hard already (RSI nearly 69). Chasing it here means paying full menu price. Be patient for the pullback.",
      "score": {
       "pending": true
+     },
+     "runnerUp": {
+      "sym": "LNW",
+      "name": "Light & Wonder",
+      "price": "A$118.00",
+      "change": "+3.96%",
+      "up": true,
+      "region": "au",
+      "line": "Earnings beat, +6.5% — the other multi-source Aussie result, and less overheated than PNI."
      }
     },
     {
@@ -207,6 +216,15 @@
        }
       ],
       "heat": 21
+     },
+     "runnerUp": {
+      "sym": "BA",
+      "name": "Boeing",
+      "price": "$237.16",
+      "change": "+1.57%",
+      "up": true,
+      "region": "us",
+      "line": "Rare 2-notch upgrade to Outperform ($300) — a defence/aero play you can actually get into now, no chasing."
      }
     },
     {

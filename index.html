@@ -90,6 +90,13 @@
   .card .lvls{display:flex;gap:6px;font-size:11px;color:var(--muted);border-top:1px dashed var(--line);padding-top:10px;flex-wrap:wrap}
   .lvls b{color:var(--ink)}
   .card .more{font-size:11px;font-weight:800;color:var(--broth);letter-spacing:.02em}
+  .runnerup{font-size:12px;color:var(--muted);border-top:1px dashed var(--line);padding-top:9px}
+  .runnerup b{color:var(--broth)}
+  .runnerup a{color:var(--ink);font-weight:800;text-decoration:none}
+  .runnerup a:hover{color:var(--broth)}
+  .mrunner{background:var(--surface-2);border:1px solid var(--line);border-radius:11px;padding:12px 13px;font-size:13px;line-height:1.5}
+  .mrunner .rh{font-weight:800;color:var(--broth);margin-bottom:4px}
+  .mrunner a{color:var(--ink);text-decoration:none}.mrunner a:hover{color:var(--broth)}
 
   /* JOURNEY */
   .chef-note{background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:12px 15px;font-size:14px;margin-bottom:14px;color:var(--ink)}
@@ -118,7 +125,9 @@
   .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:16px}
   @media(max-width:760px){.grid2{grid-template-columns:1fr}}
   .panel{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px}
-  .panel h3{font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:14px;font-weight:800}
+  .panel h3{font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;font-weight:800}
+  .panel .panelsub{font-size:12px;color:var(--faint);margin-bottom:12px;text-wrap:pretty}
+  .score .wl{font-size:12px;font-weight:800;color:var(--muted);letter-spacing:.06em;vertical-align:middle}
   .score{display:flex;gap:18px;align-items:center;margin-bottom:14px}
   .score .big{font-size:40px;font-weight:900;line-height:1}
   .score .sub{font-size:13px;color:var(--muted)}
@@ -215,6 +224,8 @@
   .shero .smood{font-size:clamp(26px,8vw,38px);font-weight:900;letter-spacing:-.02em;text-transform:uppercase;line-height:1;margin-bottom:10px}
   .shero .smood .hot{color:var(--broth)}
   .shero .schef{font-size:14.5px;color:var(--muted);margin:2px 0 12px;text-wrap:pretty;line-height:1.45}
+  .shero .meter{margin-top:14px}
+  .shero .riskwhat{font-size:13px;color:var(--muted);margin-top:10px;font-weight:600;text-wrap:pretty}
   .shero .schips{display:flex;gap:7px;flex-wrap:wrap}
   .sregion{display:inline-flex;background:var(--surface-2);border:1px solid var(--line);border-radius:11px;padding:4px;gap:4px;margin:2px 0}
   .sregion button{border:0;background:transparent;color:var(--muted);font-family:var(--font);font-weight:800;font-size:13px;padding:8px 16px;border-radius:8px;cursor:pointer}
@@ -381,6 +392,15 @@ var EMBEDDED = {
      "risk": "It's run hard already (RSI nearly 69). Chasing it here means paying full menu price. Be patient for the pullback.",
      "score": {
       "pending": true
+     },
+     "runnerUp": {
+      "sym": "LNW",
+      "name": "Light & Wonder",
+      "price": "A$118.00",
+      "change": "+3.96%",
+      "up": true,
+      "region": "au",
+      "line": "Earnings beat, +6.5% — the other multi-source Aussie result, and less overheated than PNI."
      }
     },
     {
@@ -512,6 +532,15 @@ var EMBEDDED = {
        }
       ],
       "heat": 21
+     },
+     "runnerUp": {
+      "sym": "BA",
+      "name": "Boeing",
+      "price": "$237.16",
+      "change": "+1.57%",
+      "up": true,
+      "region": "us",
+      "line": "Rare 2-notch upgrade to Outperform ($300) — a defence/aero play you can actually get into now, no chasing."
      }
     },
     {
@@ -889,6 +918,7 @@ function render(D,H){
         '<div class="tick"><span class="symwrap"><span class="sym">'+qlink(p.sym,rg.id)+'</span><span class="co">'+qlink(p.sym,rg.id,p.name)+' ↗</span></span>'+
         '<span class="px"><span class="p mono">'+esc(p.price)+'</span><br><span class="c mono '+(p.up?'up':'down')+'">'+esc(p.change)+'</span></span></div>'+
         '<p class="plain">'+p.plain+'</p><div class="lvls">'+p.levels+'</div>'+
+        (p.runnerUp?'<div class="runnerup">🥈 <b>Runner-up:</b> '+qlink(p.runnerUp.sym,p.runnerUp.region)+' '+esc(p.runnerUp.name)+' · '+esc(p.runnerUp.price)+'</div>':'')+
         '<div class="more">Tap for the full serve →</div></article>';
     }).join('');
     return '<div class="menu'+(i===0?'':' hidden')+'" id="menu-'+rg.id+'" role="tabpanel">'+cards+'</div>';
@@ -927,6 +957,8 @@ function render(D,H){
   }
 
   var sb=D.scoreboard||{};
+  var _rp=(sb.record||'').split(/[–-]/);
+  var recClear=(_rp.length===2)?'<div class="sub" style="color:var(--ink);font-weight:700">'+_rp[0].trim()+' win'+(_rp[0].trim()==='1'?'':'s')+' · '+_rp[1].trim()+' loss'+(_rp[1].trim()==='1'?'':'es')+'</div>':'';
   var recRows=(sb.closed||[]).map(function(c){var w=c.win;return '<div class="row"><span class="rsym">'+qlink(c.sym,'au')+'</span><div class="bar"><span class="fill" style="'+(w?'left:50%;width:26%;background:var(--buy)':'right:50%;width:22%;background:var(--dont)')+'"></span></div><span class="res '+(w?'up':'down')+'">'+esc(c.pct)+'</span></div>';}).join('');
   var openRows=(sb.open||[]).map(function(o){var reg=(D.regions&&D.regions[0]&&D.regions[0].picks.some(function(p){return p.sym===o.sym;}))?'au':'us';return '<div class="row"><span>'+esc(o.tf)+' '+qlink(o.sym,reg)+' <span style="color:var(--muted)">'+esc(o.period)+'</span></span><span class="st"'+(o.hot?' style="color:var(--hold)"':'')+'>'+esc(o.status)+'</span></div>';}).join('');
   function lines(arr,key){return (arr||[]).map(function(x){return '<div class="line"><span class="em">'+esc(x.em)+'</span><div class="txt">'+esc(x[key])+'<small>'+x.note+'</small></div><span class="tag '+esc(x.tclass)+'">'+esc(x.tag)+'</span></div>';}).join('');}
@@ -953,7 +985,30 @@ function render(D,H){
     '<p class="sec-sub">Three time horizons. Day = a quick feed. Week = simmer a few days. Long = slow-cooked. Tap a card for the full serve; tap a name for Yahoo.</p>'+
     '<div class="tabs" role="tablist" aria-label="Region" style="margin-bottom:14px">'+regionTabs+soon+'</div>'+menus+'</section>'+
 
-  '<section><div class="sec-head"><h2 class="display"><span class="k">02</span> Your watchlist</h2></div>'+
+  '<section><div class="sec-head"><h2 class="display"><span class="k">02</span> The journey</h2></div>'+
+    '<p class="sec-sub">Every run replaces the menu. Here\'s how it\'s moved — newest first. Each row: <b>⚡ Day · 📅 Week · 📈 Long</b>. <span style="color:var(--buy)">Green = kept</span>, <span style="color:var(--dont)">red/✕ = DROP</span>, NEW = fresh this run.</p>'+
+    '<div class="chef-note">'+note+'</div><div class="journey">'+journeyCols+'</div>'+
+    '<div class="grid2"><div class="panel"><h3>Closed calls · scored honestly</h3>'+
+    '<div class="score"><div><div class="big">'+esc(sb.record)+' <span class="wl">W–L</span></div>'+recClear+'<div class="sub">'+esc(sb.recordNote)+'</div></div></div>'+
+    '<div class="rec">'+recRows+'</div><p style="font-size:11px;color:var(--faint);margin-top:12px">'+esc(sb.closedNote)+'</p></div>'+
+    '<div class="panel"><h3>On the stove (open now)</h3><p class="panelsub">The picks we’re currently cooking — each tracked against the window we called it for (⚡ Day · 📅 Week · 📈 Long).</p><div class="cooking">'+openRows+'</div></div></div></section>'+
+
+  '<section><div class="sec-head"><h2 class="display"><span class="k">03</span> The full pot</h2></div>'+
+    '<p class="sec-sub">Everything the scan turned up tonight — the ones that didn\'t make the top 3. Colour = how appetising it looks. Tap any for Yahoo.</p>'+
+    '<div class="potlegend"><span><i style="background:var(--broth)"></i>🔥 sizzling</span><span><i style="background:var(--buy)"></i>✅ tasty</span><span><i style="background:var(--hold)"></i>➖ maybe</span><span><i style="background:var(--dont)"></i>⛔ send it back</span></div>'+
+    '<div class="pot">'+pot+'</div></section>'+
+
+  '<section><div class="sec-head"><h2 class="display"><span class="k">04</span> The world &amp; the sectors</h2></div>'+
+    '<p class="sec-sub">What\'s moving the pot, and which kitchens are hot vs which to skip.</p>'+
+    '<div class="cols"><div class="stack"><div class="eyebrow">🌍 Geopolitics</div>'+lines(D.geo,'title')+'</div>'+
+    '<div class="stack"><div class="eyebrow">🍳 Sectors — buy vs skip</div>'+lines(D.sectors,'title')+'</div></div></section>'+
+
+  '<section><div class="sec-head"><h2 class="display"><span class="k">05</span> Commodities — simple</h2></div>'+
+    '<p class="sec-sub">No jargon. Just: worth a look, emerging (🔥), or leave it.</p>'+
+    '<div class="cols"><div class="stack">'+lines((D.commodities||[]).slice(0,half),'name')+'</div>'+
+    '<div class="stack">'+lines((D.commodities||[]).slice(half),'name')+'</div></div></section>'+
+
+  '<section><div class="sec-head"><h2 class="display"><span class="k">06</span> Your watchlist</h2></div>'+
     '<p class="sec-sub">Tickers you want the Chef to keep an eye on. Saved in your browser — hit register to have us monitor them in future runs.</p>'+
     '<div class="wlbar"><input id="wlInput" placeholder="Add a ticker… e.g. BHP" maxlength="8" aria-label="Ticker to add">'+
       '<span class="wlseg" role="group" aria-label="Market"><button id="wlAu" aria-pressed="true">🇦🇺 AU</button><button id="wlUs" aria-pressed="false">🇺🇸 US</button></span>'+
@@ -963,29 +1018,6 @@ function render(D,H){
     '<button class="wlreg" id="wlReg">📩 Register these with the Chef</button>'+
     '<div class="wlstatus" id="wlStatus" role="status" aria-live="polite"></div>'+
     '<div class="wlnote">Your list is saved in this browser; Register sends it to us so we can add it to the live monitor. Sign-in &amp; cross-device sync are on the roadmap.</div></section>'+
-
-  '<section><div class="sec-head"><h2 class="display"><span class="k">03</span> The journey</h2></div>'+
-    '<p class="sec-sub">Every run replaces the menu. Here\'s how it\'s moved — newest first. Green = kept, red = dropped, NEW = fresh this run.</p>'+
-    '<div class="chef-note">'+note+'</div><div class="journey">'+journeyCols+'</div>'+
-    '<div class="grid2"><div class="panel"><h3>Closed calls · scored honestly</h3>'+
-    '<div class="score"><div><div class="big">'+esc(sb.record)+'</div><div class="sub">'+esc(sb.recordNote)+'</div></div></div>'+
-    '<div class="rec">'+recRows+'</div><p style="font-size:11px;color:var(--faint);margin-top:12px">'+esc(sb.closedNote)+'</p></div>'+
-    '<div class="panel"><h3>On the stove (open now)</h3><div class="cooking">'+openRows+'</div></div></div></section>'+
-
-  '<section><div class="sec-head"><h2 class="display"><span class="k">04</span> The full pot</h2></div>'+
-    '<p class="sec-sub">Everything the scan turned up tonight — the ones that didn\'t make the top 3. Colour = how appetising it looks. Tap any for Yahoo.</p>'+
-    '<div class="potlegend"><span><i style="background:var(--broth)"></i>🔥 sizzling</span><span><i style="background:var(--buy)"></i>✅ tasty</span><span><i style="background:var(--hold)"></i>➖ maybe</span><span><i style="background:var(--dont)"></i>⛔ send it back</span></div>'+
-    '<div class="pot">'+pot+'</div></section>'+
-
-  '<section><div class="sec-head"><h2 class="display"><span class="k">05</span> The world &amp; the sectors</h2></div>'+
-    '<p class="sec-sub">What\'s moving the pot, and which kitchens are hot vs which to skip.</p>'+
-    '<div class="cols"><div class="stack"><div class="eyebrow">🌍 Geopolitics</div>'+lines(D.geo,'title')+'</div>'+
-    '<div class="stack"><div class="eyebrow">🍳 Sectors — buy vs skip</div>'+lines(D.sectors,'title')+'</div></div></section>'+
-
-  '<section><div class="sec-head"><h2 class="display"><span class="k">06</span> Commodities — simple</h2></div>'+
-    '<p class="sec-sub">No jargon. Just: worth a look, emerging (🔥), or leave it.</p>'+
-    '<div class="cols"><div class="stack">'+lines((D.commodities||[]).slice(0,half),'name')+'</div>'+
-    '<div class="stack">'+lines((D.commodities||[]).slice(half),'name')+'</div></div></section>'+
 
   '<section><div class="sec-head"><h2 class="display"><span class="k">07</span> The archive</h2></div>'+
     '<p class="sec-sub">Every menu we\'ve served. Tap one to open that run\'s full report.</p>'+
@@ -1046,6 +1078,7 @@ function openModal(p,region,cur){
       '<p class="mtake"><span class="lead">Chef says:</span> '+esc(p.chefTake)+'</p>'+
       '<div><h4 style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:800;margin-bottom:10px">Why it\'s on the menu</h4><ul class="mcat">'+cats+'</ul></div>'+
       '<div class="mrisk"><b>Watch out:</b> '+esc(p.risk)+'</div>'+
+      (p.runnerUp?'<div class="mrunner"><div class="rh">🥈 Runner-up you can act on now: '+qlink(p.runnerUp.sym,p.runnerUp.region,p.runnerUp.sym+' · '+p.runnerUp.name)+'</div>'+esc(p.runnerUp.line)+' <span class="mono" style="white-space:nowrap">'+esc(p.runnerUp.price)+' <span class="'+(p.runnerUp.up?'up':'down')+'">'+esc(p.runnerUp.change)+'</span></span></div>':'')+
       '<div class="mfoot"><a class="mbtn" href="'+yf(p.sym,region)+'" target="_blank" rel="noopener">📈 Yahoo Finance ↗</a>'+
         '<a class="mbtn primary" href="'+esc(LAST.D.reportUrl)+'" target="_blank" rel="noopener">📖 Full report ↗</a></div>'+
     '</div>';
@@ -1152,6 +1185,10 @@ var BIG = {"Day":"⚡ TODAY","Week":"📅 THIS WEEK","Long":"📈 LONG GAME"};
 
 function renderSimple(D){
   var r = D.risk||{};
+  var btcUp = (r.btcChange||'').indexOf('-')<0;
+  var riskWhat = (r.label&&r.label.indexOf('OFF')>=0) ? "🔴 Risk-off — playing defence, smaller bets."
+               : (r.label&&r.label.indexOf('ON')>=0)  ? "🟢 Risk-on — leaning into growth."
+               : "⚪ Steady — we’re not dialling risk up or down tonight. The needle sits in the middle.";
   var region = (D.regions||[]).filter(function(x){return x.id===SREGION;})[0] || (D.regions||[])[0];
   var rid = region?region.id:'au';
   var regBtns = (D.regions||[]).map(function(rg){return '<button data-region="'+rg.id+'" aria-pressed="'+(rg.id===rid)+'">'+esc(rg.label)+'</button>';}).join('');
@@ -1162,10 +1199,11 @@ function renderSimple(D){
       '<div class="ssym">'+esc(p.sym)+' <span class="sverd '+esc(p.vclass)+'">'+esc(p.verdict)+'</span></div>'+
       '<div class="sname">'+esc(p.name)+' · '+esc(p.price)+' <span class="'+(p.up?'up':'down')+'">'+(p.up?'▲':'▼')+' '+esc(p.change)+'</span></div>'+
       '<div class="sline">'+esc(p.plain)+'</div>'+
+      (p.runnerUp?'<div class="runnerup">🥈 <b>Runner-up:</b> '+qlink(p.runnerUp.sym,p.runnerUp.region)+' '+esc(p.runnerUp.name)+' · '+esc(p.runnerUp.price)+'</div>':'')+
       '<div class="stap">Tap for the full serve →</div></article>';
   }).join('');
   function _grp(arr,key){var b=[],o=[],s=[];(arr||[]).forEach(function(x){var t=x.tclass,n=x[key];if(t==='t-dont')s.push(n);else if(t==='t-buy'||t==='t-hot')b.push(n);else o.push(n);});return {b:b,o:o,s:s};}
-  function _line(g){var p=[];if(g.b.length)p.push('<span class="qbuy">✅ '+g.b.map(esc).join(', ')+'</span>');if(g.o.length)p.push('<span class="qmeh">⚪ '+g.o.map(esc).join(', ')+'</span>');if(g.s.length)p.push('<span class="qskip">⛔ '+g.s.map(esc).join(', ')+'</span>');return p.join(' &nbsp;·&nbsp; ');}
+  function _line(g){var p=[];if(g.b.length)p.push('<span class="qbuy">✅ Buy: '+g.b.map(esc).join(', ')+'</span>');if(g.o.length)p.push('<span class="qmeh">⚪ Watch: '+g.o.map(esc).join(', ')+'</span>');if(g.s.length)p.push('<span class="qskip">⛔ Skip: '+g.s.map(esc).join(', ')+'</span>');return p.join('<br>');}
   var quick='<div class="squick">'+
     '<div><div class="qh">🌍 Geopolitics</div><div class="qrow">'+_line(_grp(D.geo,'title'))+'</div></div>'+
     '<div><div class="qh">🍳 Sectors — buy vs skip</div><div class="qrow">'+_line(_grp(D.sectors,'title'))+'</div></div>'+
@@ -1177,8 +1215,12 @@ function renderSimple(D){
       '<button class="chip toggle" id="themeBtn2" aria-label="Toggle theme">🌗</button></div></div>'+
       '<div class="smood">Tonight: <span class="hot">'+esc(D.headline.a)+'</span> &amp; <span class="hot">'+esc(D.headline.b)+'</span></div>'+
       (D.chefShort?'<p class="schef">'+esc(D.chefShort)+'</p>':'')+
-      '<div class="schips"><span class="chip"><span class="dot" style="background:var(--hold)"></span> '+esc(r.label)+'</span>'+
-      '<span class="chip mono">₿ '+esc(r.btcChange)+'</span><span class="chip mono">AUD '+esc(r.audusd)+'</span></div>'+
+      '<div class="schips"><span class="chip"><span class="dot" style="background:var(--hold)"></span> Risk: '+esc(r.label)+'</span>'+
+      '<span class="chip mono">₿ <span class="'+(btcUp?'up':'down')+'">'+(btcUp?'▲':'▼')+'</span> '+esc(r.btcChange)+'</span>'+
+      '<span class="chip mono">AUD '+esc(r.audusd)+'</span></div>'+
+      '<div class="meter"><div class="track"><div class="needle" id="sneedle"></div></div>'+
+      '<div class="lbls"><span>🔴 Hide the cash</span><span>⚪ Steady</span><span>🟢 Send it</span></div></div>'+
+      '<div class="riskwhat">'+esc(riskWhat)+'</div>'+
       '<div class="sregion" role="group" aria-label="Market">'+regBtns+'</div></div>'+
     cards+
     quick+
@@ -1198,6 +1240,8 @@ function wireSimple(D){
     c.addEventListener('click',open);
     c.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();open();}});
   });
+  var lvl=(D.risk&&D.risk.level!=null)?D.risk.level:50;
+  requestAnimationFrame(function(){var n=document.getElementById('sneedle');if(n)n.style.left=lvl+'%';});
 }
 
 boot(EMBEDDED,HIST_EMBED);
