@@ -253,6 +253,15 @@
   .trail .n{font-family:var(--mono);color:var(--broth);font-weight:800;font-size:13px;min-width:22px}
   .trail .st-txt{font-size:14px}
   .trail .st-txt small{color:var(--muted);display:block;margin-top:2px}
+  .funnel{background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--broth);border-radius:12px;padding:13px 16px;margin-bottom:14px}
+  .fnrow{font-size:15px;font-weight:800;color:var(--muted);display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+  .fnn{font-size:20px;font-weight:900;color:var(--ink);font-variant-numeric:tabular-nums}
+  .fnar{color:var(--broth);font-weight:900}
+  .dvdet{margin-top:10px}
+  .dvdet summary{cursor:pointer;font-size:12px;font-weight:800;color:var(--broth);width:fit-content}
+  .dvlist{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px}
+  .dvpill{background:var(--surface-2);border:1px solid var(--line);border-radius:999px;padding:5px 11px;font-size:12px}
+  .dvpill small{color:var(--muted)}
   .trailjump{color:var(--broth);font-weight:800;text-decoration:none;white-space:nowrap}
   .trailjump:hover{text-decoration:underline}
 
@@ -1652,6 +1661,14 @@ function ruCard(ru,region,idx){var da=(region!=null?' data-region="'+region+'" d
 function money(cur,n){return cur+(Math.abs(n%1)<1e-9?String(n):n.toFixed(2));}
 function clamp(x){return Math.max(3,Math.min(97,x));}
 // Action that moves with the ideal-buy price: at/below → get in, above → wait for the dip.
+// The real discovery funnel (only shown once a full run logs D.discovery — makes "48" real & inspectable)
+function discoveryFunnel(D){
+  var dv=D.discovery; if(!dv||!dv.scanned) return '';
+  var m=(D.candidates||[]).length;
+  var list=(dv.tickers||[]).map(function(t){return '<span class="dvpill"><b>'+esc(t.sym)+'</b>'+(t.signal?' <small>'+esc(t.signal)+'</small>':'')+'</span>';}).join('');
+  return '<div class="funnel"><div class="fnrow"><span class="fnn">'+dv.scanned+'</span> scanned <span class="fnar">→</span> <span class="fnn">'+m+'</span> shortlisted <span class="fnar">→</span> <span class="fnn">6</span> served</div>'+
+    (list?'<details class="dvdet"><summary>see the '+dv.scanned+' we scanned this run</summary><div class="dvlist">'+list+'</div></details>':'')+'</div>';
+}
 function buyState(p){ if(p.nEntry==null||p.nNow==null) return ''; var g=(p.nNow/p.nEntry-1)*100; return g<=1.5?'in':(g<=4?'close':'wait'); }
 function buyAction(p){
   var s=buyState(p); if(!s) return '';
@@ -1790,7 +1807,7 @@ function render(D,H){
     '<div class="archmore" id="archMore"></div></section>'+
 
   '<section><div class="sec-head"><h2 class="display"><span class="k">08</span> How we got here</h2></div>'+
-    '<p class="sec-sub">The recipe, in plain sight. No black box.</p><div class="panel trail">'+trail+'</div></section>'+
+    '<p class="sec-sub">The recipe, in plain sight. No black box.</p>'+discoveryFunnel(D)+'<div class="panel trail">'+trail+'</div></section>'+
 
   '<div class="cta"><a href="'+esc(D.reportUrl)+'">📖 Read the full report →</a></div>'+
   '<footer>Auto-generated for information only. <b>Not financial advice</b> — do your own research.<br>Stock Soup · '+esc(D.stamp||'')+(D.next?' · next pot ~'+esc(D.next):' · served hourly')+'</footer>';
