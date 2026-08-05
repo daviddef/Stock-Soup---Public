@@ -70,7 +70,7 @@
   .ceh{font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:12px}
   .cechartwrap{position:relative;padding-right:52px}
   .cechart{width:100%;height:120px;display:block}
-  .celab{position:absolute;right:0;transform:translateY(-50%);font-size:10.5px;font-weight:800;white-space:nowrap;font-variant-numeric:tabular-nums}
+  .celab{position:absolute;right:0;transform:translateY(-50%);font-size:11.5px;font-weight:900;white-space:nowrap;letter-spacing:.02em}
   .celegend{display:flex;flex-wrap:wrap;gap:12px;margin-top:12px;font-size:11px;font-weight:700}
   .celeg{display:inline-flex;align-items:center;gap:5px;color:var(--muted)}
   .celeg i{width:9px;height:9px;border-radius:2px;display:inline-block}
@@ -1533,13 +1533,16 @@ function renderChangeEnv(D, pulses){
     return '<polyline points="'+pts.join(' ')+'" fill="none" stroke="'+s.color+'" stroke-width="1.5" vector-effect="non-scaling-stroke"/>'+
       (last?'<circle cx="'+last[0]+'" cy="'+last[1]+'" r="2.4" fill="'+s.color+'"/>':'');
   }).join('');
-  var legend=series.map(function(s){return '<span class="celeg"><i style="background:'+s.color+'"></i>'+esc(s.sym)+'</span>';}).join('');
-  function pcol(v){return v>0.05?'var(--buy)':v<-0.05?'var(--dont)':'var(--muted)';}
-  var _labs=series.map(function(s){var lv=s.pct[s.pct.length-1];return {sym:s.sym,last:s.last,y:lv!=null?(Y(lv)/H*100):null};}).filter(function(x){return x.y!=null;});
-  var _flat=_labs.filter(function(l){return Math.abs(l.last)<0.15;}), _mov=_labs.filter(function(l){return Math.abs(l.last)>=0.15;});
-  var labHtml='';
-  if(_flat.length){labHtml+='<span class="celab" style="top:'+_flat[0].y.toFixed(1)+'%;color:var(--muted)">0.0%</span>';}
-  _mov.forEach(function(l){labHtml+='<span class="celab" style="top:'+l.y.toFixed(1)+'%;color:'+pcol(l.last)+'">'+(l.last>=0?'+':'')+l.last.toFixed(1)+'%</span>';});
+  // Endpoint labels = the ticker itself, on the line (replaces the bottom legend — saves the row).
+  // Nudge labels apart so lines that finish close together don't overlap.
+  var _labs=series.map(function(s){var lv=s.pct[s.pct.length-1];return {sym:s.sym,color:s.color,y:lv!=null?(Y(lv)/H*100):null};}).filter(function(x){return x.y!=null;});
+  _labs.sort(function(a,b){return a.y-b.y;});
+  var MINGAP=12;
+  for(var _i=1;_i<_labs.length;_i++){ if(_labs[_i].y-_labs[_i-1].y<MINGAP) _labs[_i].y=_labs[_i-1].y+MINGAP; }
+  var _over=(_labs.length?_labs[_labs.length-1].y:0)-96;
+  if(_over>0){ for(_i=0;_i<_labs.length;_i++) _labs[_i].y-=_over; }
+  if(_labs.length&&_labs[0].y<4){ var _d=4-_labs[0].y; for(_i=0;_i<_labs.length;_i++) _labs[_i].y+=_d; }
+  var labHtml=_labs.map(function(l){return '<span class="celab" style="top:'+l.y.toFixed(1)+'%;color:'+l.color+'">'+esc(l.sym)+'</span>';}).join('');
   var prox=picks.filter(function(pk){return pk.nEntry&&pk.now;}).sort(function(a,b){return (a.now/a.nEntry)-(b.now/b.nEntry);}).map(function(pk){
     var gap=(pk.now/pk.nEntry-1)*100;
     var st, lbl;
@@ -1556,8 +1559,7 @@ function renderChangeEnv(D, pulses){
   return '<section><div class="sec-head"><h2 class="display"><span class="k">01½</span> Change environment</h2></div>'+
     '<p class="sec-sub">How each pick moved across the last '+n+' runs (since '+esc(pulses[0].stamp)+'), and how close each is to its ideal buy — where to act.</p>'+
     '<div class="cenv"><div class="cetraj"><div class="ceh">📈 Trajectories · % from first run</div>'+
-      '<div class="cechartwrap"><svg class="cechart" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none">'+zero+lines+'</svg>'+labHtml+'</div>'+
-      '<div class="celegend">'+legend+'</div></div>'+
+      '<div class="cechartwrap"><svg class="cechart" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none">'+zero+lines+'</svg>'+labHtml+'</div></div>'+
       '<div class="ceprox"><div class="ceh">🎯 Ready to buy? · distance to ideal buy</div>'+(prox||'<div class="pxg">No entry levels.</div>')+
       '<div class="proxkey"><b style="color:var(--buy)">green</b> = at/below your buy price → act · <b>grey</b> = above → wait for it to dip to your entry. A “too late — wait” pick (e.g. PLTR) shows the dip it still needs.</div></div></div>'+
     '<div class="pulsebar" style="margin-top:14px"><div class="ph"><span class="pdot"></span>Latest read · '+esc(latest.stamp)+'</div>'+
