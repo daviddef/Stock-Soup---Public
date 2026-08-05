@@ -249,7 +249,7 @@
   .squick .qmeh{color:var(--muted);font-weight:600}
   .squick .qskip{color:var(--dont);font-weight:700}
   .squick .qdot{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--hold);vertical-align:middle;margin-right:3px}
-  .shero .seyebrow{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:700;margin:12px 0 2px}
+  .shero .seyebrow{font-size:10px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);font-weight:700;margin:12px 0 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .shero .seyebrow b{color:var(--broth)}
   .sbottom{font-size:14px;color:var(--muted);text-align:center;text-wrap:pretty;padding:2px 6px}
   .viewbtn{background:var(--surface-2);border:1px solid var(--line);color:var(--ink);font-family:var(--font);
@@ -1191,6 +1191,7 @@ var BIG = {"Day":"⚡ TODAY","Week":"📅 THIS WEEK","Long":"📈 LONG GAME"};
 
 function renderSimple(D){
   var r = D.risk||{};
+  var sStamp = (D.stamp||'').replace(/,?\s*20\d\d/,'').replace(/\s*AEST\b/,'');
   var btcUp = (r.btcChange||'').indexOf('-')<0;
   var riskWhat = (r.label&&r.label.indexOf('OFF')>=0) ? "🔴 Risk-off — playing defence, smaller bets."
                : (r.label&&r.label.indexOf('ON')>=0)  ? "🟢 Risk-on — leaning into growth."
@@ -1219,7 +1220,7 @@ function renderSimple(D){
     '<div class="simple"><div class="shero"><div class="brandrow"><div class="brand"><span class="bowl">🍲</span> Stock Soup</div>'+
       '<div style="display:flex;gap:8px;align-items:center"><button class="viewbtn" id="viewFull">📋 Full</button>'+
       '<button class="chip toggle" id="themeBtn2" aria-label="Toggle theme">🌗</button></div></div>'+
-      '<div class="seyebrow">'+esc(D.stamp||'')+(D.next?' · next <b>~'+esc(D.next)+'</b>':'')+'</div>'+
+      '<div class="seyebrow">'+esc(sStamp)+(D.next?' · next <b>~'+esc(D.next)+'</b>':'')+'</div>'+
       '<div class="smood">Tonight: <span class="hot">'+esc(D.headline.a)+'</span> &amp; <span class="hot">'+esc(D.headline.b)+'</span></div>'+
       (D.chefShort?'<p class="schef">'+esc(D.chefShort)+'</p>':'')+
       '<div class="schips"><span class="chip"><span class="dot" style="background:var(--hold)"></span> Risk: '+esc(r.label)+'</span>'+
