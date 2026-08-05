@@ -1025,8 +1025,8 @@
  "trail": [
   {
    "n": "01",
-   "text": "<b>Scanned the ASX + US feeds</b> and shortlisted every candidate below.",
-   "note": "Stockhead, Motley Fool, Yahoo, Benzinga upgrades.",
+   "text": "<b>Scanned the market</b> — a different-sized net every run, depending on the day's news — and shortlisted the strongest below.",
+   "note": "A live read of news, market movers and analyst actions.",
    "jump": "fullpot",
    "jumpLabel": "see all 16 →"
   },
@@ -1038,7 +1038,7 @@
   {
    "n": "03",
    "text": "<b>Pulled live prices</b> and checked the charts on the survivors.",
-   "note": "Direct from EODHD + Finnhub."
+   "note": "Straight from live market data — every candidate priced."
   },
   {
    "n": "04",
