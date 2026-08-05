@@ -214,6 +214,7 @@
   .shero .brand{margin-bottom:14px}
   .shero .smood{font-size:clamp(26px,8vw,38px);font-weight:900;letter-spacing:-.02em;text-transform:uppercase;line-height:1;margin-bottom:10px}
   .shero .smood .hot{color:var(--broth)}
+  .shero .schef{font-size:14.5px;color:var(--muted);margin:2px 0 12px;text-wrap:pretty;line-height:1.45}
   .shero .schips{display:flex;gap:7px;flex-wrap:wrap}
   .sregion{display:inline-flex;background:var(--surface-2);border:1px solid var(--line);border-radius:11px;padding:4px;gap:4px;margin:2px 0}
   .sregion button{border:0;background:transparent;color:var(--muted);font-family:var(--font);font-weight:800;font-size:13px;padding:8px 16px;border-radius:8px;cursor:pointer}
@@ -228,6 +229,12 @@
   .sname .up{color:var(--buy)} .sname .down{color:var(--dont)}
   .sline{font-size:16px;line-height:1.45;text-wrap:pretty}
   .stap{font-size:11px;font-weight:800;color:var(--broth);margin-top:12px;letter-spacing:.02em}
+  .squick{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:12px}
+  .squick .qh{font-size:11px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:var(--ink);margin-bottom:4px}
+  .squick .qrow{font-size:13px;line-height:1.5;text-wrap:pretty}
+  .squick .qbuy{color:var(--buy);font-weight:700}
+  .squick .qmeh{color:var(--muted);font-weight:600}
+  .squick .qskip{color:var(--dont);font-weight:700}
   .sbottom{font-size:14px;color:var(--muted);text-align:center;text-wrap:pretty;padding:2px 6px}
   .viewbtn{background:var(--surface-2);border:1px solid var(--line);color:var(--ink);font-family:var(--font);
     font-weight:800;font-size:12px;padding:6px 12px;border-radius:999px;cursor:pointer}
@@ -847,7 +854,8 @@ var EMBEDDED = {
    "text": "<b>Picked the top 3 each</b> for Australia and the world — no doubling up.",
    "note": "DUR had a $281m contract but no live price, so it sits out — no guessing."
   }
- ]
+ ],
+ "chefShort": "Calm night — robots & rockets are cooking. PLTR already bolted 29%, so don't chase it."
 }
 var HIST_EMBED = {
   "names":{"MND":"Monadelphous","PNI":"Pinnacle","EOS":"Electro Optic","KTOS":"Kratos Defense","PLTR":"Palantir","ETN":"Eaton","4DX":"4DMedical","PDN":"Paladin","ANET":"Arista","MRVL":"Marvell","DYL":"Deep Yellow","BOE":"Boss Energy","COIN":"Coinbase","VLO":"Valero","TEAM":"Atlassian","DRO":"DroneShield","CYL":"Catalyst Metals","ASB":"Austal","TLX":"Telix","MU":"Micron","NVDA":"Nvidia","RKLB":"Rocket Lab","AVAV":"AeroVironment"},
@@ -1156,15 +1164,24 @@ function renderSimple(D){
       '<div class="sline">'+esc(p.plain)+'</div>'+
       '<div class="stap">Tap for the full serve →</div></article>';
   }).join('');
+  function _grp(arr,key){var b=[],o=[],s=[];(arr||[]).forEach(function(x){var t=x.tclass,n=x[key];if(t==='t-dont')s.push(n);else if(t==='t-buy'||t==='t-hot')b.push(n);else o.push(n);});return {b:b,o:o,s:s};}
+  function _line(g){var p=[];if(g.b.length)p.push('<span class="qbuy">✅ '+g.b.map(esc).join(', ')+'</span>');if(g.o.length)p.push('<span class="qmeh">⚪ '+g.o.map(esc).join(', ')+'</span>');if(g.s.length)p.push('<span class="qskip">⛔ '+g.s.map(esc).join(', ')+'</span>');return p.join(' &nbsp;·&nbsp; ');}
+  var quick='<div class="squick">'+
+    '<div><div class="qh">🌍 Geopolitics</div><div class="qrow">'+_line(_grp(D.geo,'title'))+'</div></div>'+
+    '<div><div class="qh">🍳 Sectors — buy vs skip</div><div class="qrow">'+_line(_grp(D.sectors,'title'))+'</div></div>'+
+    '<div><div class="qh">🛢️ Commodities</div><div class="qrow">'+_line(_grp(D.commodities,'name'))+'</div></div>'+
+    '</div>';
   document.getElementById('app').innerHTML =
     '<div class="simple"><div class="shero"><div class="brandrow"><div class="brand"><span class="bowl">🍲</span> Stock Soup</div>'+
       '<div style="display:flex;gap:8px;align-items:center"><button class="viewbtn" id="viewFull">📋 Full</button>'+
       '<button class="chip toggle" id="themeBtn2" aria-label="Toggle theme">🌗</button></div></div>'+
       '<div class="smood">Tonight: <span class="hot">'+esc(D.headline.a)+'</span> &amp; <span class="hot">'+esc(D.headline.b)+'</span></div>'+
+      (D.chefShort?'<p class="schef">'+esc(D.chefShort)+'</p>':'')+
       '<div class="schips"><span class="chip"><span class="dot" style="background:var(--hold)"></span> '+esc(r.label)+'</span>'+
       '<span class="chip mono">₿ '+esc(r.btcChange)+'</span><span class="chip mono">AUD '+esc(r.audusd)+'</span></div>'+
       '<div class="sregion" role="group" aria-label="Market">'+regBtns+'</div></div>'+
     cards+
+    quick+
     '<div class="sbottom">'+esc(D.hotTags)+' — tap a card for the full story.</div>'+
     '<button class="sfull" id="viewFull2">Show me everything → the full menu</button>'+
     '<footer>Not financial advice — do your own research. · Stock Soup, served hot, hourly</footer></div>';
