@@ -205,6 +205,35 @@
   .acard .arisk{font-size:10px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--broth);margin-top:8px;display:inline-block}
   .archmore{text-align:center;color:var(--muted);font-size:12px;margin-top:12px}
 
+  /* SIMPLE (mobile-first) VIEW */
+  .simple{max-width:540px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+  .shero{background:radial-gradient(120% 140% at 100% 0%, rgba(255,107,26,.18), transparent 55%),var(--surface);
+    border:1px solid var(--line);border-radius:20px;padding:22px}
+  .shero .brand{margin-bottom:14px}
+  .shero .smood{font-size:clamp(26px,8vw,38px);font-weight:900;letter-spacing:-.02em;text-transform:uppercase;line-height:1;margin-bottom:10px}
+  .shero .smood .hot{color:var(--broth)}
+  .shero .schips{display:flex;gap:7px;flex-wrap:wrap}
+  .sregion{display:inline-flex;background:var(--surface-2);border:1px solid var(--line);border-radius:11px;padding:4px;gap:4px;margin:2px 0}
+  .sregion button{border:0;background:transparent;color:var(--muted);font-family:var(--font);font-weight:800;font-size:13px;padding:8px 16px;border-radius:8px;cursor:pointer}
+  .sregion button[aria-pressed="true"]{background:var(--broth);color:#1a0f06}
+  .scard{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:20px;cursor:pointer;box-shadow:var(--shadow);transition:transform .12s,border-color .15s}
+  .scard:hover{border-color:var(--broth)} .scard:active{transform:scale(.99)}
+  .scard:focus-visible{outline:2px solid var(--broth);outline-offset:3px}
+  .stf{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:800;margin-bottom:8px}
+  .ssym{font-size:clamp(30px,9vw,38px);font-weight:900;letter-spacing:-.02em;display:flex;align-items:center;gap:12px;flex-wrap:wrap;line-height:1}
+  .sverd{font-size:13px;font-weight:900;padding:5px 11px;border-radius:9px;text-transform:uppercase;letter-spacing:.03em}
+  .sname{color:var(--muted);font-size:14px;font-weight:700;margin:8px 0 12px}
+  .sname .up{color:var(--buy)} .sname .down{color:var(--dont)}
+  .sline{font-size:16px;line-height:1.45;text-wrap:pretty}
+  .stap{font-size:11px;font-weight:800;color:var(--broth);margin-top:12px;letter-spacing:.02em}
+  .sbottom{font-size:14px;color:var(--muted);text-align:center;text-wrap:pretty;padding:2px 6px}
+  .viewbtn{background:var(--surface-2);border:1px solid var(--line);color:var(--ink);font-family:var(--font);
+    font-weight:800;font-size:12px;padding:6px 12px;border-radius:999px;cursor:pointer}
+  .viewbtn:focus-visible{outline:2px solid var(--broth);outline-offset:2px}
+  .sfull{display:block;width:100%;text-align:center;background:transparent;border:1px dashed var(--line);color:var(--muted);
+    font-family:var(--font);font-weight:800;font-size:14px;padding:14px;border-radius:14px;cursor:pointer}
+  .sfull:hover{color:var(--broth);border-color:var(--broth)}
+
   /* MODAL */
   .overlay{position:fixed;inset:0;background:rgba(8,5,3,.74);backdrop-filter:blur(4px);display:none;
     align-items:flex-start;justify-content:center;padding:24px 16px;overflow-y:auto;z-index:50}
@@ -413,8 +442,9 @@ function render(D,H){
 
   document.getElementById('app').innerHTML=
   '<header class="hero"><div class="brandrow"><div class="brand"><span class="bowl">🍲</span> Stock&nbsp;Soup</div>'+
-    '<div style="display:flex;gap:10px;align-items:center"><span class="live"><span class="pulse"></span>LIVE</span>'+
-    '<button class="chip toggle" id="themeBtn" aria-label="Toggle theme">🌗 Theme</button></div></div>'+
+    '<div style="display:flex;gap:8px;align-items:center"><span class="live"><span class="pulse"></span>LIVE</span>'+
+    '<button class="viewbtn" id="viewBtn">😋 Simple</button>'+
+    '<button class="chip toggle" id="themeBtn" aria-label="Toggle theme">🌗</button></div></div>'+
     '<div class="eyebrow" style="margin-top:22px">'+esc(D.stamp)+' · Chef\'s hourly special</div>'+
     '<h1 class="display">Two pots on the boil:<br><span class="hot">'+esc(D.headline.a)+'</span> &amp; <span class="hot">'+esc(D.headline.b)+'</span>.</h1>'+
     '<p class="chef">'+D.chef+'</p>'+
@@ -523,6 +553,7 @@ function wire(D){
     var cur=root.getAttribute('data-theme')||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');
     root.setAttribute('data-theme',cur==='dark'?'light':'dark');
   });
+  var vb=document.getElementById('viewBtn'); if(vb) vb.onclick=function(){setView('simple');};
   var tabs=document.querySelectorAll('.tab[data-region]');
   tabs.forEach(function(t){t.addEventListener('click',function(){
     tabs.forEach(function(x){x.setAttribute('aria-selected','false');document.getElementById('menu-'+x.dataset.region).classList.add('hidden');});
@@ -574,12 +605,64 @@ document.addEventListener('keydown',function(e){if(e.key==='Escape')closeModal()
   else if(e.target&&e.target.id==='mClose'&&(e.key==='Enter'||e.key===' ')){e.preventDefault();closeModal();}});
 document.getElementById('overlay').addEventListener('click',function(e){if(e.target&&e.target.id==='mClose')closeModal();});
 
-render(EMBEDDED,HIST_EMBED);
+/* ---- View mode: simple (mobile default) vs full, with toggle ---- */
+var VIEW = null, SREGION = 'au';
+function setView(v){ VIEW = v; try{ localStorage.setItem('soup_view', v); }catch(e){} applyView(); }
+function applyView(){ if(!LAST) return; window.scrollTo(0,0); if(VIEW==='simple') renderSimple(LAST.D); else render(LAST.D, LAST.H); }
+function boot(D,H){
+  LAST = {D:D, H:H};
+  if(VIEW===null){ try{ VIEW=localStorage.getItem('soup_view'); }catch(e){} if(!VIEW) VIEW = (window.innerWidth<768?'simple':'full'); }
+  applyView();
+}
+var BIG = {"Day":"⚡ TODAY","Week":"📅 THIS WEEK","Long":"📈 LONG GAME"};
+
+function renderSimple(D){
+  var r = D.risk||{};
+  var region = (D.regions||[]).filter(function(x){return x.id===SREGION;})[0] || (D.regions||[])[0];
+  var rid = region?region.id:'au';
+  var regBtns = (D.regions||[]).map(function(rg){return '<button data-region="'+rg.id+'" aria-pressed="'+(rg.id===rid)+'">'+esc(rg.label)+'</button>';}).join('');
+  var cards = (region?region.picks:[]).map(function(p,idx){
+    var tf = (p.tf.split(' ')[1]||p.tf);
+    return '<article class="scard" tabindex="0" role="button" data-region="'+rid+'" data-idx="'+idx+'" aria-label="Details for '+esc(p.sym)+'">'+
+      '<div class="stf">'+esc(BIG[tf]||p.tf)+'</div>'+
+      '<div class="ssym">'+esc(p.sym)+' <span class="sverd '+esc(p.vclass)+'">'+esc(p.verdict)+'</span></div>'+
+      '<div class="sname">'+esc(p.name)+' · '+esc(p.price)+' <span class="'+(p.up?'up':'down')+'">'+(p.up?'▲':'▼')+' '+esc(p.change)+'</span></div>'+
+      '<div class="sline">'+esc(p.plain)+'</div>'+
+      '<div class="stap">Tap for the full serve →</div></article>';
+  }).join('');
+  document.getElementById('app').innerHTML =
+    '<div class="simple"><div class="shero"><div class="brandrow"><div class="brand"><span class="bowl">🍲</span> Stock Soup</div>'+
+      '<div style="display:flex;gap:8px;align-items:center"><button class="viewbtn" id="viewFull">📋 Full</button>'+
+      '<button class="chip toggle" id="themeBtn2" aria-label="Toggle theme">🌗</button></div></div>'+
+      '<div class="smood">Tonight: <span class="hot">'+esc(D.headline.a)+'</span> &amp; <span class="hot">'+esc(D.headline.b)+'</span></div>'+
+      '<div class="schips"><span class="chip"><span class="dot" style="background:var(--hold)"></span> '+esc(r.label)+'</span>'+
+      '<span class="chip mono">₿ '+esc(r.btcChange)+'</span><span class="chip mono">AUD '+esc(r.audusd)+'</span></div>'+
+      '<div class="sregion" role="group" aria-label="Market">'+regBtns+'</div></div>'+
+    cards+
+    '<div class="sbottom">'+esc(D.hotTags)+' — tap a card for the full story.</div>'+
+    '<button class="sfull" id="viewFull2">Show me everything → the full menu</button>'+
+    '<footer>Not financial advice — do your own research. · Stock Soup, served hot, hourly</footer></div>';
+  wireSimple(D);
+}
+function wireSimple(D){
+  var root=document.documentElement;
+  var t=document.getElementById('themeBtn2'); if(t) t.onclick=function(){var c=root.getAttribute('data-theme')||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');root.setAttribute('data-theme',c==='dark'?'light':'dark');};
+  ['viewFull','viewFull2'].forEach(function(id){var b=document.getElementById(id);if(b) b.onclick=function(){setView('full');};});
+  document.querySelectorAll('.sregion button').forEach(function(b){b.onclick=function(){SREGION=b.dataset.region;renderSimple(D);};});
+  function regionOf(id){return (D.regions||[]).filter(function(x){return x.id===id;})[0];}
+  document.querySelectorAll('.scard').forEach(function(c){
+    function open(){var rg=regionOf(c.dataset.region);if(rg){var p=rg.picks[+c.dataset.idx];if(p) openModal(p,rg.id,rg.cur||'$');}}
+    c.addEventListener('click',open);
+    c.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();open();}});
+  });
+}
+
+boot(EMBEDDED,HIST_EMBED);
 Promise.allSettled([
   fetch('latest.json',{cache:'no-store'}).then(function(r){return r.ok?r.json():null;}),
   fetch('menu-history.json',{cache:'no-store'}).then(function(r){return r.ok?r.json():null;})
 ]).then(function(res){
   var d=res[0].value, h=res[1].value;
-  if((d&&d.regions)||(h&&h.menus)) render(d&&d.regions?d:EMBEDDED, h&&h.menus?h:HIST_EMBED);
+  if((d&&d.regions)||(h&&h.menus)) boot(d&&d.regions?d:EMBEDDED, h&&h.menus?h:HIST_EMBED);
 }).catch(function(){});
 </script>
