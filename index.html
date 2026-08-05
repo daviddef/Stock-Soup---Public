@@ -1989,14 +1989,14 @@ function renderSimple(D){
       '<div style="display:flex;gap:8px;align-items:center"><button class="viewbtn" id="viewFull">📋 Full</button>'+
       '<button class="chip toggle" id="themeBtn2" aria-label="Toggle theme">🌗</button></div></div>'+
       '<div class="seyebrow">'+esc(sStamp)+(D.next?' · next <b>~'+esc(D.next)+'</b>':'')+'</div>'+
+      '<div class="sregion" role="group" aria-label="Market">'+regBtns+'</div>'+
       '<div class="smood">Tonight: <span class="hot">'+esc(D.headline.a)+'</span> &amp; <span class="hot">'+esc(D.headline.b)+'</span></div>'+
       (D.chefShort?'<p class="schef">'+esc(D.chefShort)+'</p>':'')+
       '<div class="schips"><span class="chip mono">₿ <span class="'+(btcUp?'up':'down')+'">'+(btcUp?'▲':'▼')+'</span> '+esc(r.btcChange)+'</span>'+
       '<span class="chip mono">AUD '+esc(r.audusd)+'</span></div>'+
       '<div class="meter"><div class="track"><div class="needle" id="sneedle"></div></div>'+
       '<div class="lbls"><span>🔴 Hide the cash</span><span>⚪ Steady</span><span>🟢 Send it</span></div></div>'+
-      '<div class="riskwhat">'+esc(riskWhat)+'</div>'+
-      '<div class="sregion" role="group" aria-label="Market">'+regBtns+'</div></div>'+
+      '<div class="riskwhat">'+esc(riskWhat)+'</div></div>'+
     cards+
     (PULSES?renderChangeEnv(D,PULSES):pulseBanner(D))+
     quick+
