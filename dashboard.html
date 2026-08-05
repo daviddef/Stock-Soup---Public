@@ -56,6 +56,14 @@
   .meter .needle{position:absolute;top:-5px;width:4px;height:20px;border-radius:2px;background:var(--ink);box-shadow:0 0 0 3px var(--surface);left:50%;transition:left .8s cubic-bezier(.2,.8,.2,1)}
   .meter .lbls{display:flex;justify-content:space-between;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);margin-top:6px;font-weight:700}
 
+  .pulsebar{background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--broth);border-radius:14px;padding:14px 16px}
+  .pulsebar .ph{font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;gap:7px;margin-bottom:7px}
+  .pdot{width:8px;height:8px;border-radius:50%;background:var(--broth);animation:pulse 2.4s infinite}
+  .psynth{font-size:14.5px;line-height:1.5;text-wrap:pretty;color:var(--muted)}
+  .psynth b{color:var(--ink)}
+  .pmovers{display:flex;flex-wrap:wrap;gap:8px;margin-top:9px}
+  .pmv{font-size:12px;font-weight:800;font-family:var(--mono);padding:3px 9px;border-radius:7px;background:var(--surface-2)}
+  .pmv.up{color:var(--buy)} .pmv.down{color:var(--dont)}
   .sec-head{display:flex;align-items:baseline;gap:12px;margin-bottom:2px}
   .sec-head h2{font-size:clamp(20px,3.4vw,30px)}
   .sec-head .k{color:var(--broth)}
@@ -1426,6 +1434,13 @@ var TFS=["⚡","📅","📈"];
 var LAST=null, LASTFOCUS=null;
 function yf(sym,region){var s=String(sym).replace(/\*$/,'');if(region==="au")s+=".AX";return "https://finance.yahoo.com/quote/"+encodeURIComponent(s);}
 function qlink(sym,region,label){return '<a class="q" href="'+yf(sym,region)+'" target="_blank" rel="noopener">'+esc(label==null?sym:label)+'</a>';}
+function pulseBanner(D){
+  var pu=D.pulse; if(!pu) return '';
+  var movers=(pu.movers||[]).map(function(m){return '<span class="pmv '+(m.up?'up':'down')+'">'+esc(m.sym)+' '+(m.up?'+':'')+m.since+'%</span>';}).join('');
+  return '<div class="pulsebar"><div class="ph"><span class="pdot"></span>Change environment · '+esc(pu.stamp)+' · since last hour</div>'+
+    '<div class="psynth">'+String(pu.synth||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/\*\*(.+?)\*\*/g,'<b>$1</b>')+'</div>'+
+    (movers?'<div class="pmovers">'+movers+'</div>':'')+'</div>';
+}
 function sparkSVG(vals){
   if(!vals||vals.length<2) return '';
   var w=100,h=30,mn=Math.min.apply(null,vals),mx=Math.max.apply(null,vals),rng=(mx-mn)||1;
@@ -1539,6 +1554,7 @@ function render(D,H){
     '<div class="meter"><div class="track"><div class="needle" id="needle"></div></div>'+
     '<div class="lbls"><span>🔴 Hide the cash</span><span>⚪ Steady</span><span>🟢 Send it</span></div></div></header>'+
 
+  pulseBanner(D)+
   '<section><div class="sec-head"><h2 class="display"><span class="k">01</span> Tonight\'s menu</h2></div>'+
     '<p class="sec-sub">Three time horizons. Day = a quick feed. Week = simmer a few days. Long = slow-cooked. Tap a card for the full serve; tap a name for Yahoo.</p>'+
     '<div class="tabs" role="tablist" aria-label="Region" style="margin-bottom:14px">'+regionTabs+soon+'</div>'+menus+'</section>'+
@@ -1790,13 +1806,13 @@ function renderSimple(D){
       '<div class="seyebrow">'+esc(sStamp)+(D.next?' · next <b>~'+esc(D.next)+'</b>':'')+'</div>'+
       '<div class="smood">Tonight: <span class="hot">'+esc(D.headline.a)+'</span> &amp; <span class="hot">'+esc(D.headline.b)+'</span></div>'+
       (D.chefShort?'<p class="schef">'+esc(D.chefShort)+'</p>':'')+
-      '<div class="schips"><span class="chip"><span class="dot" style="background:var(--hold)"></span> Risk: '+esc(r.label)+'</span>'+
-      '<span class="chip mono">₿ <span class="'+(btcUp?'up':'down')+'">'+(btcUp?'▲':'▼')+'</span> '+esc(r.btcChange)+'</span>'+
+      '<div class="schips"><span class="chip mono">₿ <span class="'+(btcUp?'up':'down')+'">'+(btcUp?'▲':'▼')+'</span> '+esc(r.btcChange)+'</span>'+
       '<span class="chip mono">AUD '+esc(r.audusd)+'</span></div>'+
       '<div class="meter"><div class="track"><div class="needle" id="sneedle"></div></div>'+
       '<div class="lbls"><span>🔴 Hide the cash</span><span>⚪ Steady</span><span>🟢 Send it</span></div></div>'+
       '<div class="riskwhat">'+esc(riskWhat)+'</div>'+
       '<div class="sregion" role="group" aria-label="Market">'+regBtns+'</div></div>'+
+    pulseBanner(D)+
     cards+
     quick+
     '<div class="sbottom">'+esc(D.hotTags)+' — tap a card for the full story.</div>'+
