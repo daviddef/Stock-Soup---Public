@@ -239,6 +239,8 @@
   .trail .n{font-family:var(--mono);color:var(--broth);font-weight:800;font-size:13px;min-width:22px}
   .trail .st-txt{font-size:14px}
   .trail .st-txt small{color:var(--muted);display:block;margin-top:2px}
+  .trailjump{color:var(--broth);font-weight:800;text-decoration:none;white-space:nowrap}
+  .trailjump:hover{text-decoration:underline}
 
   .cta{display:flex;justify-content:center;margin-top:4px}
   .cta a{background:var(--broth);color:#1a0f06;font-weight:900;text-decoration:none;padding:15px 30px;border-radius:12px;
@@ -1408,8 +1410,10 @@ var EMBEDDED = {
  "trail": [
   {
    "n": "01",
-   "text": "<b>Scanned ~48 stocks</b> across Aussie news feeds and US movers.",
-   "note": "Stockhead, Motley Fool, Yahoo, Benzinga upgrades."
+   "text": "<b>Scanned the ASX + US feeds</b> and shortlisted every candidate below.",
+   "note": "Stockhead, Motley Fool, Yahoo, Benzinga upgrades.",
+   "jump": "fullpot",
+   "jumpLabel": "see them all →"
   },
   {
    "n": "02",
@@ -1424,7 +1428,7 @@ var EMBEDDED = {
   {
    "n": "04",
    "text": "<b>Picked the top 3 each</b> for Australia and the world — no doubling up.",
-   "note": "DUR had a $281m contract but no live price, so it sits out — no guessing."
+   "note": "The rest — like DUR ($281m AUKUS) — are priced and sitting in The Full Pot, just outside the top 3."
   }
  ],
  "chefShort": "Calm night — robots & rockets are cooking. PLTR already bolted 29%, so don't chase it.",
@@ -1668,7 +1672,7 @@ function render(D,H){
     : '<div class="panel"><h3>Tonight\'s hourly runs</h3><p class="panelsub">Hourly pulses will appear here as they run.</p></div>';
   var pot=(D.candidates||[]).map(function(c){return '<a class="pill h-'+esc(c.heat)+'" href="'+yf(c.sym,c.region)+'" target="_blank" rel="noopener"><span class="ph"></span><b>'+esc(c.sym)+'</b>'+(c.price?' <span class="ppx '+(c.up?'up':'down')+'">'+esc(c.price)+'</span>':'')+' <small>'+esc(c.note)+'</small> <span class="flag">'+(c.region==='au'?'AU':'US')+'</span></a>';}).join('');
   var half=Math.ceil((D.commodities||[]).length/2);
-  var trail=(D.trail||[]).map(function(t){return '<div class="step"><span class="n">'+esc(t.n)+'</span><div class="st-txt">'+t.text+'<small>'+esc(t.note)+'</small></div></div>';}).join('');
+  var trail=(D.trail||[]).map(function(t){var jump=(t.jump?' <a class="trailjump" href="#'+esc(t.jump)+'">'+esc(t.jumpLabel||'see the list →')+'</a>':'');return '<div class="step"><span class="n">'+esc(t.n)+'</span><div class="st-txt">'+t.text+jump+'<small>'+esc(t.note)+'</small></div></div>';}).join('');
 
   document.getElementById('app').innerHTML=
   '<header class="hero"><div class="brandrow"><div class="brand"><span class="bowl">🍲</span> Stock&nbsp;Soup</div>'+
@@ -1699,8 +1703,8 @@ function render(D,H){
     '<button class="trackcta" id="trackCta">See the last month graded → 29 W · 31 L, what we learned, what we\'d change</button></div>'+
     story+'</div></section>'+
 
-  '<section><div class="sec-head"><h2 class="display"><span class="k">03</span> The full pot</h2></div>'+
-    '<p class="sec-sub">Everything the scan turned up tonight — the ones that didn\'t make the top 3. Colour = how appetising it looks. Tap any for Yahoo.</p>'+
+  '<section id="fullpot"><div class="sec-head"><h2 class="display"><span class="k">03</span> The full pot</h2></div>'+
+    '<p class="sec-sub">Every candidate the scan shortlisted tonight — <b>'+((D.candidates||[]).length)+' names</b>, priced and scored. These are the ones we chose from. Colour = how appetising it looks. Tap any for Yahoo.</p>'+
     '<div class="potlegend"><span><i style="background:var(--broth)"></i>🔥 sizzling</span><span><i style="background:var(--buy)"></i>✅ tasty</span><span><i style="background:var(--hold)"></i>➖ maybe</span><span><i style="background:var(--dont)"></i>⛔ send it back</span></div>'+
     '<div class="pot">'+pot+'</div></section>'+
 

@@ -1025,8 +1025,10 @@
  "trail": [
   {
    "n": "01",
-   "text": "<b>Scanned ~48 stocks</b> across Aussie news feeds and US movers.",
-   "note": "Stockhead, Motley Fool, Yahoo, Benzinga upgrades."
+   "text": "<b>Scanned the ASX + US feeds</b> and shortlisted every candidate below.",
+   "note": "Stockhead, Motley Fool, Yahoo, Benzinga upgrades.",
+   "jump": "fullpot",
+   "jumpLabel": "see all 16 →"
   },
   {
    "n": "02",
@@ -1041,7 +1043,7 @@
   {
    "n": "04",
    "text": "<b>Picked the top 3 each</b> for Australia and the world — no doubling up.",
-   "note": "DUR had a $281m contract but no live price, so it sits out — no guessing."
+   "note": "The rest — like DUR ($281m AUKUS) — are priced and sitting in The Full Pot, just outside the top 3."
   }
  ],
  "chefShort": "Calm night — robots & rockets are cooking. PLTR already bolted 29%, so don't chase it.",
