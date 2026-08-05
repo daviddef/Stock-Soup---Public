@@ -881,97 +881,145 @@
    "sym": "CMM",
    "region": "au",
    "heat": "hot",
-   "note": "Gold breakout +8.7% — pack running"
+   "note": "Gold breakout +8.7% — pack running",
+   "price": "A$14.19",
+   "up": true,
+   "change": "+8.74%"
   },
   {
    "sym": "GMD",
    "region": "au",
    "heat": "hot",
-   "note": "Gold +8.2%, riding the miner surge"
+   "note": "Gold +8.2%, riding the miner surge",
+   "price": "A$6.44",
+   "up": true,
+   "change": "+8.24%"
   },
   {
    "sym": "LNW",
    "region": "au",
    "heat": "good",
-   "note": "Earnings beat +6.5% — just missed the cut"
+   "note": "Earnings beat +6.5% — just missed the cut",
+   "price": "A$118.0",
+   "up": true,
+   "change": "+3.96%"
   },
   {
    "sym": "DUR",
    "region": "au",
    "heat": "good",
-   "note": "$281m AUKUS contract — no live price, verify"
+   "note": "$281m AUKUS contract",
+   "price": "A$2.17",
+   "up": true,
+   "change": "+0.0%"
   },
   {
    "sym": "MYE",
    "region": "au",
    "heat": "good",
-   "note": "$85m mining-services contract win"
+   "note": "$85m mining-services contract win",
+   "price": "A$0.52",
+   "up": true,
+   "change": "+25.61%"
   },
   {
    "sym": "BA",
    "region": "us",
    "heat": "good",
-   "note": "Rare 2-notch upgrade to Outperform ($300)"
+   "note": "Rare 2-notch upgrade to Outperform ($300)",
+   "price": "$240.19",
+   "up": true,
+   "change": "+1.28%"
   },
   {
    "sym": "AEHR",
    "region": "us",
    "heat": "good",
-   "note": "+19.8% semis breakout — a touch late"
+   "note": "+19.8% semis breakout — a touch late",
+   "price": "$98.78",
+   "up": false,
+   "change": "-10.11%"
   },
   {
    "sym": "NVDA",
    "region": "us",
    "heat": "good",
-   "note": "AI leader, heavy volume — always in the mix"
+   "note": "AI leader, heavy volume — always in the mix",
+   "price": "$219.22",
+   "up": true,
+   "change": "+3.43%"
   },
   {
    "sym": "E25",
    "region": "au",
    "heat": "mid",
-   "note": "Binding manganese offtake signed"
+   "note": "Binding manganese offtake signed",
+   "price": "A$0.27",
+   "up": false,
+   "change": "-1.82%"
   },
   {
    "sym": "MIN",
    "region": "au",
    "heat": "mid",
-   "note": "Broker upgrade to Buy (Morgans)"
+   "note": "Broker upgrade to Buy (Morgans)",
+   "price": "A$60.73",
+   "up": true,
+   "change": "+2.29%"
   },
   {
    "sym": "NEU",
    "region": "au",
    "heat": "mid",
-   "note": "+16% on results — already ran hard"
+   "note": "+16% on results — already ran hard",
+   "price": "A$21.64",
+   "up": true,
+   "change": "+16.28%"
   },
   {
    "sym": "ALNY",
    "region": "us",
    "heat": "mid",
-   "note": "Biotech upgrade to Strong Buy ($420)"
+   "note": "Biotech upgrade to Strong Buy ($420)",
+   "price": "$228.72",
+   "up": true,
+   "change": "+4.44%"
   },
   {
    "sym": "W",
    "region": "us",
    "heat": "cold",
-   "note": "+30% but squeeze-driven — don't chase"
+   "note": "+30% but squeeze-driven — don't chase",
+   "price": "$107.57",
+   "up": false,
+   "change": "-7.33%"
   },
   {
    "sym": "HLS",
    "region": "au",
    "heat": "cold",
-   "note": "−23% guidance cut — falling knife"
+   "note": "−23% guidance cut — falling knife",
+   "price": "A$0.41",
+   "up": true,
+   "change": "+0.0%"
   },
   {
    "sym": "BPT",
    "region": "au",
    "heat": "cold",
-   "note": "Downgraded to Sell — steer clear"
+   "note": "Downgraded to Sell — steer clear",
+   "price": "A$0.89",
+   "up": false,
+   "change": "-2.73%"
   },
   {
    "sym": "AMZN",
    "region": "us",
    "heat": "cold",
-   "note": "Selling on heavy volume — distribution"
+   "note": "Selling on heavy volume — distribution",
+   "price": "$272.65",
+   "up": false,
+   "change": "-1.72%"
   }
  ],
  "trail": [
@@ -1061,24 +1109,9 @@
   }
  ],
  "pulse": {
-  "stamp": "Thu 06:20",
-  "synth": "Since last hour the board is **flat ⚪** (avg -0.09%). Slipping: KTOS -0.72%, ETN -0.47%. (ASX closed — moves are US-led.)",
+  "stamp": "Thu 07:22",
+  "synth": "Since last hour the board is **flat ⚪** (avg +0.0%). Nothing moved much — quiet hour. (ASX closed — moves are US-led.)",
   "movers": [
-   {
-    "sym": "KTOS",
-    "since": -0.72,
-    "up": false
-   },
-   {
-    "sym": "ETN",
-    "since": -0.47,
-    "up": false
-   },
-   {
-    "sym": "PLTR",
-    "since": -0.23,
-    "up": false
-   },
    {
     "sym": "MND",
     "since": 0.0,
@@ -1091,6 +1124,21 @@
    },
    {
     "sym": "EOS",
+    "since": 0.0,
+    "up": true
+   },
+   {
+    "sym": "KTOS",
+    "since": 0.0,
+    "up": true
+   },
+   {
+    "sym": "PLTR",
+    "since": 0.0,
+    "up": true
+   },
+   {
+    "sym": "ETN",
     "since": 0.0,
     "up": true
    }
