@@ -334,8 +334,8 @@
      "vclass": "v-buy",
      "sym": "KTOS",
      "name": "Kratos Defense",
-     "price": "$58.29",
-     "change": "+12.38%",
+     "price": "$56.18",
+     "change": "+8.31%",
      "up": true,
      "rsi": 54.9,
      "plain": "Drones and target systems. A big broker just flipped bullish ($75 target) and 25 analysts say buy, zero say sell. That's a wall.",
@@ -428,9 +428,9 @@
      "vclass": "v-dont",
      "sym": "PLTR",
      "name": "Palantir",
-     "price": "$164.41",
-     "change": "+1.08%",
-     "up": true,
+     "price": "$161.66",
+     "change": "-0.61%",
+     "up": false,
      "rsi": 72.8,
      "plain": "Monster earnings, best day in 2 years. But it's up 29% today — chasing that is how you get burned. Wait for the hangover dip near $150.",
      "levels": "Watch <b>$150</b> · Target <b>$180</b> · Stop <b>$145</b>",
@@ -615,9 +615,9 @@
      "vclass": "v-buy",
      "sym": "ETN",
      "name": "Eaton",
-     "price": "$444.5",
-     "change": "-0.06%",
-     "up": false,
+     "price": "$450.24",
+     "change": "+1.23%",
+     "up": true,
      "rsi": 61.9,
      "plain": "The boring genius pick. Every AI data-centre needs power gear — Eaton sells the picks & shovels. Broker just upgraded to $502.",
      "levels": "In <b>$440</b> · Target <b>$500</b> · Stop <b>$410</b>",
@@ -1061,22 +1061,22 @@
   }
  ],
  "pulse": {
-  "stamp": "Wed 23:38",
-  "synth": "Since last hour the board is **flat ⚪** (avg +0.09%). Climbing: KTOS +1.5%. (ASX closed — moves are US-led.)",
+  "stamp": "Thu 00:38",
+  "synth": "Since last hour the board is **flat ⚪** (avg -0.25%). Climbing: ETN +1.29%. Slipping: KTOS -3.62%, PLTR -1.67%. (ASX closed — moves are US-led.)",
   "movers": [
    {
     "sym": "KTOS",
-    "since": 1.5,
-    "up": true
+    "since": -3.62,
+    "up": false
    },
    {
     "sym": "PLTR",
-    "since": -0.21,
+    "since": -1.67,
     "up": false
    },
    {
     "sym": "ETN",
-    "since": 0.09,
+    "since": 1.29,
     "up": true
    },
    {
