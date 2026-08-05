@@ -108,7 +108,11 @@
   .jrow .jname{color:var(--muted);font-size:11px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block}
   .jrow .jb{margin-left:auto;font-size:10px;font-weight:800;padding:1px 6px;border-radius:5px;flex:0 0 auto}
   .jb-new{background:rgba(255,107,26,.18);color:var(--broth)}
-  .jb-keep{color:var(--faint)}
+  .jb-drop{color:var(--dont)}
+  .jrow.keep,.jrow.drop{border-radius:7px;margin:2px -7px;padding:4px 7px}
+  .jrow.keep{background:rgba(35,194,103,.13)}
+  .jrow.drop{background:rgba(255,77,77,.10)}
+  .jrow.drop .jinfo a{color:var(--muted);text-decoration:line-through}
 
   .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:16px}
   @media(max-width:760px){.grid2{grid-template-columns:1fr}}
@@ -345,10 +349,17 @@ function render(D,H){
       var rows=(arr||[]).map(function(sym,idx){
         var isNew=olderSet?olderSet.indexOf(sym)<0:false;
         var nm=names[String(sym).replace(/\*$/,'')]||'';
-        var badge=older?('<span class="jb '+(isNew?'jb-new':'jb-keep')+'">'+(isNew?'NEW':'kept')+'</span>'):'';
-        return '<div class="jrow"><span class="jtf">'+TFS[idx]+'</span><span class="jinfo">'+qlink(sym,region)+(nm?'<span class="jname">'+esc(nm)+'</span>':'')+'</span>'+badge+'</div>';
-      }).join('');
-      return '<div class="jgrp">'+label+'</div>'+rows;
+        var rowcls='jrow'+(olderSet&&!isNew?' keep':'');
+        var badge=(olderSet&&isNew)?'<span class="jb jb-new">NEW</span>':'';
+        return '<div class="'+rowcls+'"><span class="jtf">'+TFS[idx]+'</span><span class="jinfo">'+qlink(sym,region)+(nm?'<span class="jname">'+esc(nm)+'</span>':'')+'</span>'+badge+'</div>';
+      });
+      if(olderSet){
+        olderSet.filter(function(s){return (arr||[]).indexOf(s)<0;}).forEach(function(sym){
+          var nm=names[String(sym).replace(/\*$/,'')]||'';
+          rows.push('<div class="jrow drop"><span class="jtf">×</span><span class="jinfo">'+qlink(sym,region)+(nm?'<span class="jname">'+esc(nm)+'</span>':'')+'</span><span class="jb jb-drop">dropped</span></div>');
+        });
+      }
+      return '<div class="jgrp">'+label+'</div>'+rows.join('');
     }
     return '<div class="jcol'+(isNow?' now':'')+'"><div class="jhead"><span class="when">'+esc(m.stamp)+'<small>'+esc(m.time)+' AEST</small></span>'+(isNow?'<span class="now-b">NOW</span>':'')+'</div>'+grp('🇦🇺 AU',m.au,'au')+grp('🌏 Intl',m.us,'us')+'</div>';
   }
