@@ -68,11 +68,10 @@
   @media(max-width:760px){.cenv{grid-template-columns:1fr}}
   .cetraj,.ceprox{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px}
   .ceh{font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:12px}
+  .cechartwrap{position:relative;padding-right:52px}
   .cechart{width:100%;height:120px;display:block}
-  .celegend{display:flex;flex-direction:column;gap:9px;margin-top:12px;font-size:11px;font-weight:700}
-  .celeggrp{display:flex;flex-wrap:wrap;align-items:center;gap:11px}
-  .cglbl{font-size:10px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;width:100%;margin-bottom:1px}
-  .cglbl.up{color:var(--buy)} .cglbl.down{color:var(--dont)}
+  .celab{position:absolute;right:0;transform:translateY(-50%);font-size:10.5px;font-weight:800;white-space:nowrap;font-variant-numeric:tabular-nums}
+  .celegend{display:flex;flex-wrap:wrap;gap:12px;margin-top:12px;font-size:11px;font-weight:700}
   .celeg{display:inline-flex;align-items:center;gap:5px;color:var(--muted)}
   .celeg i{width:9px;height:9px;border-radius:2px;display:inline-block}
   .celeg b.up{color:var(--buy)} .celeg b.down{color:var(--dont)}
@@ -275,6 +274,15 @@
   .acard .apicks{font-size:12px;color:var(--muted);line-height:1.5;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical}
   .acard .arisk{font-size:10px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--broth);margin-top:8px;display:inline-block}
   .archmore{text-align:center;color:var(--muted);font-size:12px;margin-top:12px}
+  .arch.archcollapsed .acard:nth-child(n+4){display:none}
+  .archtoggle{background:var(--surface-2);border:1px solid var(--line);color:var(--ink);font-family:var(--font);font-weight:800;font-size:12px;padding:8px 16px;border-radius:999px;cursor:pointer}
+  .archtoggle:hover{border-color:var(--broth);color:var(--broth)}
+  .pulselog{display:flex;flex-direction:column;max-height:280px;overflow-y:auto}
+  .plrow{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);font-size:12.5px;align-items:baseline}
+  .plrow:last-child{border-bottom:0}
+  .pltime{font-weight:800;width:74px;flex:0 0 auto;color:var(--muted);font-variant-numeric:tabular-nums}
+  .plmv{font-family:var(--mono);font-size:12px;font-variant-numeric:tabular-nums;display:flex;flex-wrap:wrap;gap:8px}
+  .plmv .up{color:var(--buy)} .plmv .down{color:var(--dont)}
 
   /* SIMPLE (mobile-first) VIEW */
   .simple{max-width:540px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
@@ -1484,11 +1492,13 @@ function renderChangeEnv(D, pulses){
     return '<polyline points="'+pts.join(' ')+'" fill="none" stroke="'+s.color+'" stroke-width="1.5" vector-effect="non-scaling-stroke"/>'+
       (last?'<circle cx="'+last[0]+'" cy="'+last[1]+'" r="2.4" fill="'+s.color+'"/>':'');
   }).join('');
-  function leg1(s){return '<span class="celeg"><i style="background:'+s.color+'"></i>'+esc(s.sym)+' <b class="'+(s.last>=0?'up':'down')+'">'+(s.last>=0?'+':'')+s.last.toFixed(1)+'%</b></span>';}
-  var _ups=series.filter(function(s){return s.last>=0;}).sort(function(a,b){return b.last-a.last;});
-  var _dns=series.filter(function(s){return s.last<0;}).sort(function(a,b){return a.last-b.last;});
-  var legend=(_ups.length?'<div class="celeggrp"><span class="cglbl up">▲ Above / gaining</span>'+_ups.map(leg1).join('')+'</div>':'')+
-             (_dns.length?'<div class="celeggrp"><span class="cglbl down">▼ Below / falling</span>'+_dns.map(leg1).join('')+'</div>':'');
+  var legend=series.map(function(s){return '<span class="celeg"><i style="background:'+s.color+'"></i>'+esc(s.sym)+'</span>';}).join('');
+  function pcol(v){return v>0.05?'var(--buy)':v<-0.05?'var(--dont)':'var(--muted)';}
+  var _labs=series.map(function(s){var lv=s.pct[s.pct.length-1];return {sym:s.sym,last:s.last,y:lv!=null?(Y(lv)/H*100):null};}).filter(function(x){return x.y!=null;});
+  var _flat=_labs.filter(function(l){return Math.abs(l.last)<0.15;}), _mov=_labs.filter(function(l){return Math.abs(l.last)>=0.15;});
+  var labHtml='';
+  if(_flat.length){labHtml+='<span class="celab" style="top:'+_flat[0].y.toFixed(1)+'%;color:var(--muted)">0.0%</span>';}
+  _mov.forEach(function(l){labHtml+='<span class="celab" style="top:'+l.y.toFixed(1)+'%;color:'+pcol(l.last)+'">'+(l.last>=0?'+':'')+l.last.toFixed(1)+'%</span>';});
   var prox=picks.filter(function(pk){return pk.nEntry&&pk.now;}).sort(function(a,b){return (a.now/a.nEntry)-(b.now/b.nEntry);}).map(function(pk){
     var gap=(pk.now/pk.nEntry-1)*100;
     var st, lbl;
@@ -1505,7 +1515,7 @@ function renderChangeEnv(D, pulses){
   return '<section><div class="sec-head"><h2 class="display"><span class="k">01½</span> Change environment</h2></div>'+
     '<p class="sec-sub">How each pick moved across the last '+n+' runs (since '+esc(pulses[0].stamp)+'), and how close each is to its ideal buy — where to act.</p>'+
     '<div class="cenv"><div class="cetraj"><div class="ceh">📈 Trajectories · % from first run</div>'+
-      '<svg class="cechart" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none">'+zero+lines+'</svg>'+
+      '<div class="cechartwrap"><svg class="cechart" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none">'+zero+lines+'</svg>'+labHtml+'</div>'+
       '<div class="celegend">'+legend+'</div></div>'+
       '<div class="ceprox"><div class="ceh">🎯 Ready to buy? · distance to ideal buy</div>'+(prox||'<div class="pxg">No entry levels.</div>')+
       '<div class="proxkey"><b style="color:var(--buy)">green</b> = at/below your buy price → act · <b>grey</b> = above → wait for it to dip to your entry. A “too late — wait” pick (e.g. PLTR) shows the dip it still needs.</div></div></div>'+
@@ -1602,17 +1612,13 @@ function render(D,H){
   var recRows=(sb.closed||[]).map(function(c){var w=c.win;return '<div class="row"><span class="rsym">'+qlink(c.sym,'au')+'</span><div class="bar"><span class="fill" style="'+(w?'left:50%;width:26%;background:var(--buy)':'right:50%;width:22%;background:var(--dont)')+'"></span></div><span class="res '+(w?'up':'down')+'">'+esc(c.pct)+'</span></div>';}).join('');
   var openRows=(sb.open||[]).map(function(o){var reg=(D.regions&&D.regions[0]&&D.regions[0].picks.some(function(p){return p.sym===o.sym;}))?'au':'us';return '<div class="row"><span>'+esc(o.tf)+' '+qlink(o.sym,reg)+' <span style="color:var(--muted)">'+esc(o.period)+'</span></span><span class="st"'+(o.hot?' style="color:var(--hold)"':'')+'>'+esc(o.status)+'</span></div>';}).join('');
   function lines(arr,key){return (arr||[]).map(function(x){return '<div class="line"><span class="em">'+esc(x.em)+'</span><div class="txt">'+esc(x[key])+'<small>'+x.note+'</small></div><span class="tag '+esc(x.tclass)+'">'+esc(x.tag)+'</span></div>';}).join('');}
-  var _ms=(H&&H.menus)||[], _freq={};
-  _ms.slice(0,6).forEach(function(m){(m.au||[]).concat(m.us||[]).forEach(function(t){_freq[t]=(_freq[t]||0)+1;});});
-  var _sticky=Object.keys(_freq).filter(function(t){return _freq[t]>=2;}).sort(function(a,b){return _freq[b]-_freq[a];}).slice(0,5);
-  var _cur=[]; (D.regions||[]).forEach(function(rg){(rg.picks||[]).forEach(function(p){_cur.push(p);});});
-  var _act=_cur.filter(function(p){return /get in/i.test(p.verdict);})[0]||_cur[0];
-  var _drop=[]; if(_ms.length>=2){var _now=(_ms[0].au||[]).concat(_ms[0].us||[]); _drop=(_ms[1].au||[]).concat(_ms[1].us||[]).filter(function(t){return _now.indexOf(t)<0;});}
-  var story='<div class="panel"><h3>The story so far · what\'s changing</h3>'+
-    '<p class="panelsub">What the last few runs are telling us — and the one move it points to.</p>'+
-    '<div class="storyrow"><span class="slbl">🔁 Sticky · high conviction</span><span>'+(_sticky.length?_sticky.join(', '):'—')+'</span></div>'+
-    (_drop.length?'<div class="storyrow"><span class="slbl">👋 Rotated out last run</span><span>'+_drop.join(', ')+'</span></div>':'')+
-    '<div class="storyrow"><span class="slbl">🎯 The move</span><span>'+(_act?'<b>'+esc(_act.sym)+'</b> — '+esc(_act.verdict)+'. '+esc((_act.plain||'').split('.')[0])+'.':'Sit tight — no clean entry this run.')+'</span></div></div>';
+  var story = (PULSES&&PULSES.length) ?
+    ('<div class="panel"><h3>Tonight\'s hourly runs</h3><p class="panelsub">Every hourly pulse — the change read at that moment ('+PULSES.length+' runs). Newest first.</p>'+
+     '<div class="pulselog">'+PULSES.slice().reverse().map(function(pu){
+        var mv=(pu.changes||[]).slice(0,3).map(function(c){return '<span class="'+(c[1]>0.05?'up':c[1]<-0.05?'down':'')+'">'+esc(c[0])+' '+(c[1]>=0?'+':'')+c[1]+'%</span>';}).join(' ');
+        return '<div class="plrow"><span class="pltime">'+esc(pu.stamp)+'</span><span class="plmv">'+(mv||'baseline set')+'</span></div>';
+      }).join('')+'</div></div>')
+    : '<div class="panel"><h3>Tonight\'s hourly runs</h3><p class="panelsub">Hourly pulses will appear here as they run.</p></div>';
   var pot=(D.candidates||[]).map(function(c){return '<a class="pill h-'+esc(c.heat)+'" href="'+yf(c.sym,c.region)+'" target="_blank" rel="noopener"><span class="ph"></span><b>'+esc(c.sym)+'</b> <small>'+esc(c.note)+'</small> <span class="flag">'+(c.region==='au'?'AU':'US')+'</span></a>';}).join('');
   var half=Math.ceil((D.commodities||[]).length/2);
   var trail=(D.trail||[]).map(function(t){return '<div class="step"><span class="n">'+esc(t.n)+'</span><div class="st-txt">'+t.text+'<small>'+esc(t.note)+'</small></div></div>';}).join('');
@@ -1821,11 +1827,17 @@ function wire(D){
   function renderArch(items){
     if(!arch)return;
     if(!items||!items.length){arch.innerHTML='<div class="wlempty">The full archive loads on the live site.</div>';return;}
-    arch.innerHTML=items.slice(0,12).map(function(e){
+    arch.innerHTML=items.map(function(e){
       var risk=e.riskOff?'⛔ Risk-off':'⚪ Neutral';
       return '<a class="acard" href="reports/'+esc(e.file)+'" target="_blank" rel="noopener"><div class="adate">'+esc(e.label||e.timestamp||e.file)+'</div><div class="apicks">'+esc((e.picks||'').slice(0,140))+'</div><span class="arisk">'+risk+'</span></a>';
     }).join('');
-    var more=document.getElementById('archMore');if(more&&items.length>12)more.textContent=items.length+' menus served in total.';
+    var more=document.getElementById('archMore');
+    if(items.length>3){
+      arch.classList.add('archcollapsed');
+      if(more){ more.innerHTML='<button class="archtoggle" id="archTog">Show '+(items.length-3)+' more →</button>';
+        document.getElementById('archTog').onclick=function(){ var c=arch.classList.toggle('archcollapsed'); this.textContent=c?('Show '+(items.length-3)+' more →'):'Show fewer ↑'; };
+      }
+    } else if(more){ more.textContent=''; }
   }
   fetch('reports/report-index.json',{cache:'no-store'}).then(function(r){return r.ok?r.json():null;}).then(function(j){renderArch(j);}).catch(function(){renderArch(null);});
 
