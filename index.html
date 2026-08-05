@@ -900,7 +900,7 @@ function render(D,H){
       if(olderSet){
         olderSet.filter(function(s){return (arr||[]).indexOf(s)<0;}).forEach(function(sym){
           var nm=names[String(sym).replace(/\*$/,'')]||'';
-          rows.push('<div class="jrow drop"><span class="jtf">×</span><span class="jinfo">'+qlink(sym,region)+(nm?'<span class="jname">'+esc(nm)+'</span>':'')+'</span><span class="jb jb-drop">dropped</span></div>');
+          rows.push('<div class="jrow drop"><span class="jtf">×</span><span class="jinfo">'+qlink(sym,region)+(nm?'<span class="jname">'+esc(nm)+'</span>':'')+'</span><span class="jb jb-drop">DROP</span></div>');
         });
       }
       return '<div class="jgrp">'+label+'</div>'+rows.join('');
