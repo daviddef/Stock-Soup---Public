@@ -25,6 +25,9 @@
   .display{font-weight:900;letter-spacing:-.02em;text-wrap:balance;line-height:.98;text-transform:uppercase}
   .eyebrow{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);font-weight:700}
   .mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  a.q{color:inherit;text-decoration:none;border-bottom:1px dotted transparent}
+  a.q:hover{color:var(--broth);border-bottom-color:var(--broth)}
+  a.q:focus-visible{outline:2px solid var(--broth);outline-offset:2px;border-radius:2px}
 
   .hero{background:radial-gradient(120% 140% at 100% 0%, rgba(255,107,26,.16), transparent 55%),var(--surface);
     border:1px solid var(--line);border-radius:20px;padding:clamp(20px,3.5vw,38px);position:relative;overflow:hidden}
@@ -33,7 +36,7 @@
   .bowl{width:38px;height:38px;border-radius:50%;background:conic-gradient(from 200deg,var(--broth),#FFB061,var(--broth));
     display:grid;place-items:center;font-size:20px;box-shadow:0 0 24px -4px var(--broth)}
   .live{font-size:11px;font-weight:800;letter-spacing:.08em;color:var(--muted);display:inline-flex;align-items:center;gap:6px}
-  .live .pulse{width:7px;height:7px;border-radius:50%;background:var(--buy);box-shadow:0 0 0 0 rgba(35,194,103,.6);animation:pulse 2.4s infinite}
+  .live .pulse{width:7px;height:7px;border-radius:50%;background:var(--buy);animation:pulse 2.4s infinite}
   @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(35,194,103,.55)}70%{box-shadow:0 0 0 8px rgba(35,194,103,0)}100%{box-shadow:0 0 0 0 rgba(35,194,103,0)}}
   .hero h1{font-size:clamp(34px,7vw,68px);margin:14px 0 6px}
   .hero h1 .hot{color:var(--broth)}
@@ -65,8 +68,9 @@
   .menu{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
   @media(max-width:760px){.menu{grid-template-columns:1fr}}
   .card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:12px;
-    box-shadow:var(--shadow);transition:transform .18s ease,border-color .18s ease}
+    box-shadow:var(--shadow);transition:transform .18s ease,border-color .18s ease;cursor:pointer}
   .card:hover{transform:translateY(-4px);border-color:var(--broth)}
+  .card:focus-visible{outline:2px solid var(--broth);outline-offset:3px}
   .card .tf{display:flex;align-items:center;justify-content:space-between}
   .tf .name{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);font-weight:800}
   .verdict{font-size:11px;font-weight:900;padding:5px 10px;border-radius:8px;letter-spacing:.04em;text-transform:uppercase}
@@ -74,17 +78,39 @@
   .v-hold{background:rgba(255,197,61,.16);color:var(--hold);border:1px solid rgba(255,197,61,.4)}
   .v-dont{background:rgba(255,77,77,.16);color:var(--dont);border:1px solid rgba(255,77,77,.4)}
   .card .tick{display:flex;align-items:baseline;gap:10px}
-  .tick .sym{font-size:30px;font-weight:900;letter-spacing:-.02em}
+  .tick .symwrap{display:flex;flex-direction:column}
+  .tick .sym{font-size:28px;font-weight:900;letter-spacing:-.02em;line-height:1}
+  .tick .co{font-size:12px;color:var(--muted);font-weight:700;margin-top:2px}
   .tick .px{margin-left:auto;text-align:right}
   .px .p{font-weight:800;font-size:17px}
   .px .c{font-size:12px;font-weight:700}
   .up{color:var(--buy)} .down{color:var(--dont)}
   .card .plain{font-size:14px;color:var(--ink);text-wrap:pretty}
-  .card .co{color:var(--broth);font-weight:800}
   .card .lvls{display:flex;gap:6px;font-size:11px;color:var(--muted);border-top:1px dashed var(--line);padding-top:10px;flex-wrap:wrap}
   .lvls b{color:var(--ink)}
+  .card .more{font-size:11px;font-weight:800;color:var(--broth);letter-spacing:.02em}
 
-  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  /* JOURNEY */
+  .chef-note{background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:12px 15px;font-size:14px;margin-bottom:14px;color:var(--ink)}
+  .chef-note b{color:var(--broth)}
+  .journey{display:flex;gap:12px;overflow-x:auto;padding-bottom:10px;scroll-snap-type:x proximity}
+  .jcol{min-width:196px;flex:0 0 auto;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;scroll-snap-align:start}
+  .jcol.now{border-color:var(--broth);box-shadow:0 0 0 1px var(--broth) inset}
+  .jhead{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;gap:8px}
+  .jhead .when{font-weight:800;font-size:13px}
+  .jhead .when small{display:block;color:var(--muted);font-weight:600;font-size:11px}
+  .now-b{font-size:10px;font-weight:900;background:var(--broth);color:#1a0f06;padding:2px 7px;border-radius:6px;letter-spacing:.06em}
+  .jgrp{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);font-weight:800;margin:9px 0 4px}
+  .jrow{display:flex;align-items:center;gap:7px;padding:4px 0;font-size:13px}
+  .jrow .jtf{width:15px;flex:0 0 auto}
+  .jrow .jinfo{min-width:0;flex:1}
+  .jrow .jinfo a{font-weight:800}
+  .jrow .jname{color:var(--muted);font-size:11px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block}
+  .jrow .jb{margin-left:auto;font-size:10px;font-weight:800;padding:1px 6px;border-radius:5px;flex:0 0 auto}
+  .jb-new{background:rgba(255,107,26,.18);color:var(--broth)}
+  .jb-keep{color:var(--faint)}
+
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:16px}
   @media(max-width:760px){.grid2{grid-template-columns:1fr}}
   .panel{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px}
   .panel h3{font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:14px;font-weight:800}
@@ -112,6 +138,25 @@
   .t-buy{background:rgba(35,194,103,.16);color:var(--buy)}
   .t-dont{background:rgba(255,77,77,.16);color:var(--dont)}
   .t-watch{background:rgba(255,197,61,.16);color:var(--hold)}
+  .t-hot{background:rgba(255,107,26,.18);color:var(--broth)}
+
+  /* FULL POT — candidate heatmap */
+  .potlegend{display:flex;gap:14px;flex-wrap:wrap;font-size:11px;color:var(--muted);font-weight:700;margin-bottom:12px}
+  .potlegend span{display:inline-flex;align-items:center;gap:5px}
+  .potlegend i{width:9px;height:9px;border-radius:50%;display:inline-block}
+  .pot{display:flex;flex-wrap:wrap;gap:8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;border-radius:999px;padding:7px 13px 7px 10px;font-size:13px;
+    border:1px solid var(--line);text-decoration:none;color:var(--ink);transition:transform .12s}
+  .pill:hover{transform:translateY(-2px)}
+  .pill:focus-visible{outline:2px solid var(--broth);outline-offset:2px}
+  .pill .ph{width:9px;height:9px;border-radius:50%;flex:0 0 auto}
+  .pill b{font-weight:800}
+  .pill small{color:var(--muted);font-size:12px}
+  .pill .flag{font-size:10px;color:var(--faint);font-weight:700}
+  .h-hot{background:rgba(255,107,26,.13);border-color:rgba(255,107,26,.45)} .h-hot .ph{background:var(--broth)}
+  .h-good{background:rgba(35,194,103,.11);border-color:rgba(35,194,103,.4)} .h-good .ph{background:var(--buy)}
+  .h-mid{background:rgba(255,197,61,.1);border-color:rgba(255,197,61,.4)} .h-mid .ph{background:var(--hold)}
+  .h-cold{background:rgba(255,77,77,.1);border-color:rgba(255,77,77,.38)} .h-cold .ph{background:var(--dont)}
 
   .trail .step{display:flex;gap:14px;padding:12px 0;border-bottom:1px solid var(--line)}
   .trail .step:last-child{border-bottom:0}
@@ -126,13 +171,60 @@
   .cta a:focus-visible{outline:2px solid var(--ink);outline-offset:3px}
   footer{text-align:center;color:var(--faint);font-size:11px;line-height:1.7;padding-top:6px}
   .hidden{display:none}
+
+  /* MODAL */
+  .overlay{position:fixed;inset:0;background:rgba(8,5,3,.74);backdrop-filter:blur(4px);display:none;
+    align-items:flex-start;justify-content:center;padding:24px 16px;overflow-y:auto;z-index:50}
+  .overlay.open{display:flex}
+  .modal{background:var(--surface);border:1px solid var(--line);border-radius:20px;max-width:560px;width:100%;
+    box-shadow:0 30px 90px -20px rgba(0,0,0,.85);overflow:hidden;margin:auto 0;transform:translateY(12px);opacity:0;transition:transform .22s ease,opacity .22s ease}
+  .overlay.open .modal{transform:none;opacity:1}
+  .mhead{padding:22px 22px 18px;position:relative}
+  .mhead.v-buy{background:linear-gradient(135deg,rgba(35,194,103,.24),transparent 70%)}
+  .mhead.v-hold{background:linear-gradient(135deg,rgba(255,197,61,.24),transparent 70%)}
+  .mhead.v-dont{background:linear-gradient(135deg,rgba(255,77,77,.26),transparent 70%)}
+  .mtf{font-size:11px;letter-spacing:.14em;text-transform:uppercase;font-weight:800;color:var(--muted)}
+  .mtop{display:flex;align-items:flex-end;gap:12px;margin-top:8px}
+  .mtop .msym{font-size:38px;font-weight:900;letter-spacing:-.03em;line-height:.9}
+  .mtop .mco{font-size:13px;color:var(--muted);font-weight:700}
+  .mtop .mpx{margin-left:auto;text-align:right}
+  .mpx .mp{font-size:22px;font-weight:900}
+  .mclose{position:absolute;top:14px;right:14px;background:var(--surface-2);border:1px solid var(--line);color:var(--ink);
+    width:34px;height:34px;border-radius:10px;cursor:pointer;font-size:16px;font-weight:800;line-height:1}
+  .mclose:focus-visible{outline:2px solid var(--broth);outline-offset:2px}
+  .mverd{display:inline-block;margin-top:12px;font-size:12px;font-weight:900;padding:6px 12px;border-radius:9px;text-transform:uppercase;letter-spacing:.04em}
+  .mbody{padding:20px 22px 24px;display:flex;flex-direction:column;gap:18px}
+  .viz{background:var(--surface-2);border:1px solid var(--line);border-radius:14px;padding:16px}
+  .viz h4{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:800;margin-bottom:16px}
+  .ladder{position:relative;height:8px;border-radius:999px;background:linear-gradient(90deg,rgba(255,77,77,.5),rgba(255,197,61,.4),rgba(35,194,103,.55));margin:26px 0 8px}
+  .ladder .mk{position:absolute;top:50%;transform:translate(-50%,-50%)}
+  .ladder .now{width:16px;height:16px;border-radius:50%;background:var(--ink);box-shadow:0 0 0 3px var(--surface);z-index:2}
+  .ladder .ent{width:3px;height:18px;background:var(--muted);border-radius:2px}
+  .ladder .cap{position:absolute;top:-22px;transform:translateX(-50%);font-size:10px;font-weight:800;color:var(--muted);white-space:nowrap}
+  .ladder .cap.now{color:var(--ink);width:auto;height:auto;border-radius:0;background:none;box-shadow:none}
+  .lends{display:flex;justify-content:space-between;font-size:11px;font-weight:700;color:var(--muted);margin-top:6px}
+  .lends .g{color:var(--buy)} .lends .r{color:var(--dont)}
+  .rsibar{position:relative;height:8px;border-radius:999px;background:linear-gradient(90deg,var(--buy),var(--hold) 55%,var(--dont));margin:24px 0 8px}
+  .rsibar .rn{position:absolute;top:50%;transform:translate(-50%,-50%);width:4px;height:18px;background:var(--ink);border-radius:2px;box-shadow:0 0 0 3px var(--surface)}
+  .rsibar .rcap{position:absolute;top:-22px;transform:translateX(-50%);font-size:10px;font-weight:800;color:var(--ink);white-space:nowrap}
+  .rsimeta{font-size:12px;color:var(--muted);margin-top:8px;text-align:center}
+  .mtake{font-size:15px;line-height:1.6;text-wrap:pretty}
+  .mtake .lead{color:var(--broth);font-weight:800}
+  .mcat{list-style:none;display:flex;flex-direction:column;gap:8px}
+  .mcat li{display:flex;gap:9px;font-size:13.5px;align-items:flex-start}
+  .mcat li::before{content:"🥄";flex:0 0 auto}
+  .mrisk{font-size:13px;background:rgba(255,77,77,.1);border:1px solid rgba(255,77,77,.3);color:var(--ink);border-radius:10px;padding:11px 13px}
+  .mrisk b{color:var(--dont)}
+  .mfoot{display:flex;gap:10px;flex-wrap:wrap}
+  .mbtn{flex:1;min-width:140px;text-align:center;text-decoration:none;font-weight:800;font-size:13px;padding:12px;border-radius:11px;border:1px solid var(--line);background:var(--surface-2);color:var(--ink)}
+  .mbtn.primary{background:var(--broth);color:#1a0f06;border-color:var(--broth)}
   @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 
 <div class="wrap" id="app"></div>
+<div class="overlay" id="overlay" aria-hidden="true"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="mTitle" id="modal"></div></div>
 
 <script>
-/* ---- Embedded fallback = tonight's data. On GitHub Pages, latest.json overrides it live. ---- */
 var EMBEDDED = {
   "generated":"2026-08-05T20:00:00+10:00","stamp":"Wed 5 Aug 2026 · 20:00 AEST",
   "reportUrl":"https://daviddef.github.io/Stock-Soup---Public/reports/2026-08-05-2000.html",
@@ -141,75 +233,150 @@ var EMBEDDED = {
   "chef":"<b>Righto, listen up.</b> The market's calm — crypto barely moved, nobody's panicking. Robots and rockets are what's cooking; everything else is garnish tonight. I've plated <b>3 Aussie picks</b> and <b>3 from overseas</b>. One of them (PLTR) already bolted 29% — you're late, don't chase the bus, wait for it to stop.",
   "hotTags":"🥇 Gold hot · 🛡️ Defence hot · 🤖 AI on fire",
   "regions":[
-    {"id":"au","label":"🇦🇺 Australia","active":true,"picks":[
-      {"tf":"⚡ Day","verdict":"Get in","vclass":"v-buy","sym":"MND","name":"Monadelphous","price":"A$30.30","change":"+1.07%","up":true,"plain":"Just landed a $200m BHP contract but the shares have barely twitched. That's the whole game — good news, price hasn't caught up yet.","levels":"In <b>A$30.00</b> · Target <b>A$34</b> · Stop <b>A$28.50</b>"},
-      {"tf":"📅 Week","verdict":"Wait for dip","vclass":"v-hold","sym":"PNI","name":"Pinnacle","price":"A$19.25","change":"+8.39%","up":true,"plain":"Cracking result, jumped 8%. Only catch — it's a bit hot right now. Let it cool and buy the pullback near A$18.50.","levels":"In <b>A$18.50</b> · Target <b>A$22</b> · Stop <b>A$17.20</b>"},
-      {"tf":"📈 Long","verdict":"Get in","vclass":"v-buy","sym":"EOS","name":"Electro Optic","price":"A$7.65","change":"+1.19%","up":true,"plain":"Lasers and drone-killers. AUKUS money is a multi-year tide. It's cheap vs its average — a patient buy, not a sprint.","levels":"In <b>A$7.50</b> · Target <b>A$9.50</b> · Stop <b>A$6.90</b>"}
+    {"id":"au","label":"🇦🇺 Australia","cur":"A$","picks":[
+      {"tf":"⚡ Day","verdict":"Get in","vclass":"v-buy","sym":"MND","name":"Monadelphous","price":"A$30.30","change":"+1.07%","up":true,"rsi":59,
+       "plain":"Just landed a $200m BHP contract but the shares have barely twitched. That's the whole game — good news, price hasn't caught up yet.",
+       "levels":"In <b>A$30.00</b> · Target <b>A$34</b> · Stop <b>A$28.50</b>","nStop":28.5,"nEntry":30.0,"nTarget":34.0,"nNow":30.30,
+       "chefTake":"Think of MND as the tradie who just landed a massive job but hasn't bragged about it at the pub yet. Contract's signed, money's coming, share price is still sitting there like nothing happened. That gap is the whole opportunity. Not a fireworks stock — more a reliable Sunday roast — but you want to be seated before the room smells it.",
+       "catalysts":["Just won a ~$200m contract from BHP — real money, confirmed","Shares up only +1.07% — the good news isn't priced in yet","Trading above its 50-day AND 200-day average (healthy trend)","Mining & engineering work booming with the resources rally"],
+       "risk":"Double-check the contract is actually today-dated before you jump in. It's a big, steady company — moves are measured, not explosive."},
+      {"tf":"📅 Week","verdict":"Wait for dip","vclass":"v-hold","sym":"PNI","name":"Pinnacle","price":"A$19.25","change":"+8.39%","up":true,"rsi":68.9,
+       "plain":"Cracking result, jumped 8%. Only catch — it's a bit hot right now. Let it cool and buy the pullback near A$18.50.",
+       "levels":"In <b>A$18.50</b> · Target <b>A$22</b> · Stop <b>A$17.20</b>","nStop":17.2,"nEntry":18.5,"nTarget":22.0,"nNow":19.25,
+       "chefTake":"PNI just served a cracker and the whole room clapped (+8%). Trouble is, everyone's now queuing. When a dish is this hot you don't burn your mouth — you wait for it to cool to about A$18.50, then tuck in. Cracking business; just don't pay the 'straight out of the oven' premium.",
+       "catalysts":["Big earnings result — money flooding into their funds","Two separate news sources flagged it (rare = strong signal)","Well above both its trend lines — momentum leader","Standing tall while rival fund managers cop 'sell' calls"],
+       "risk":"It's run hard already (RSI nearly 69). Chasing it here means paying full menu price. Be patient for the pullback."},
+      {"tf":"📈 Long","verdict":"Get in","vclass":"v-buy","sym":"EOS","name":"Electro Optic","price":"A$7.65","change":"+1.19%","up":true,"rsi":48.5,
+       "plain":"Lasers and drone-killers. AUKUS money is a multi-year tide. It's cheap vs its average — a patient buy, not a sprint.",
+       "levels":"In <b>A$7.50</b> · Target <b>A$9.50</b> · Stop <b>A$6.90</b>","nStop":6.9,"nEntry":7.5,"nTarget":9.5,"nNow":7.65,
+       "chefTake":"EOS is the slow-cooked brisket. Lasers, drone-zappers, the works — and governments are throwing AUKUS money at exactly this menu for years to come. Right now it's marked down below its usual price, which is precisely when you load the plate. Bring patience, not a stopwatch.",
+       "catalysts":["Fresh 'Buy' call from a broker — analyst conviction","Makes lasers & drone-killers — exactly what AUKUS funds","Counter-drone demand rising with global conflict","Cheap vs its own average — a recovery setup"],
+       "risk":"Defence contracts can be slow and lumpy. It's below its average price — make sure it's turning up before you back the truck."}
     ]},
-    {"id":"us","label":"🇺🇸 International","active":false,"picks":[
-      {"tf":"⚡ Day","verdict":"Get in","vclass":"v-buy","sym":"KTOS","name":"Kratos Defense","price":"$51.87","change":"+5.41%","up":true,"plain":"Drones and target systems. A big broker just flipped bullish ($75 target) and 25 analysts say buy, zero say sell. That's a wall.","levels":"In <b>$51</b> · Target <b>$58</b> · Stop <b>$48</b>"},
-      {"tf":"📅 Week","verdict":"Too late — wait","vclass":"v-dont","sym":"PLTR","name":"Palantir","price":"$162.66","change":"+29.5%","up":true,"plain":"Monster earnings, best day in 2 years. But it's up 29% <b>today</b> — chasing that is how you get burned. Wait for the hangover dip near $150.","levels":"Watch <b>$150</b> · Target <b>$180</b> · Stop <b>$145</b>"},
-      {"tf":"📈 Long","verdict":"Get in","vclass":"v-buy","sym":"ETN","name":"Eaton","price":"$444.77","change":"+1.49%","up":true,"plain":"The boring genius pick. Every AI data-centre needs power gear — Eaton sells the picks & shovels. Broker just upgraded to $502.","levels":"In <b>$440</b> · Target <b>$500</b> · Stop <b>$410</b>"}
+    {"id":"us","label":"🇺🇸 International","cur":"$","picks":[
+      {"tf":"⚡ Day","verdict":"Get in","vclass":"v-buy","sym":"KTOS","name":"Kratos Defense","price":"$51.87","change":"+5.41%","up":true,"rsi":54.9,
+       "plain":"Drones and target systems. A big broker just flipped bullish ($75 target) and 25 analysts say buy, zero say sell. That's a wall.",
+       "levels":"In <b>$51</b> · Target <b>$58</b> · Stop <b>$48</b>","nStop":48,"nEntry":51,"nTarget":58,"nNow":51.87,
+       "chefTake":"Kratos makes the drones AND the targets you shoot drones at — very on-theme. A big broker just banged the table ($75) and literally nobody on Wall Street is saying sell. That's about as close to a green light as this game hands out. Fresh off the pass, not overcooked yet.",
+       "catalysts":["A major broker just upgraded it (target $75, ~45% up)","25 analysts say buy, ZERO say sell — a wall of support","Rides the same defence wave as our Aussie picks","Up 5% today with room before it's overheated"],
+       "risk":"Still below its long-term average — the bigger downtrend isn't fully repaired. Defence orders can also be lumpy quarter to quarter."},
+      {"tf":"📅 Week","verdict":"Too late — wait","vclass":"v-dont","sym":"PLTR","name":"Palantir","price":"$162.66","change":"+29.5%","up":true,"rsi":72.8,
+       "plain":"Monster earnings, best day in 2 years. But it's up 29% today — chasing that is how you get burned. Wait for the hangover dip near $150.",
+       "levels":"Watch <b>$150</b> · Target <b>$180</b> · Stop <b>$145</b>","nStop":145,"nEntry":150,"nTarget":180,"nNow":162.66,
+       "chefTake":"PLTR just went nuclear (+29%) on a monster result. Everyone's screaming about it — which is exactly why you don't chase it now. It's the dish the whole room is Instagramming; the queue's out the door and the price is silly. Put your name down, wait for the hangover dip near $150, THEN eat. We check this one every single run as our 'how mad is the market' gauge.",
+       "catalysts":["Monster earnings — best single day in over two years","Deutsche Bank flipped to Buy ($200 target)","The AI + defence software leader — structural demand","⚠️ BUT: already ripped +29% today, RSI 73 = overheated"],
+       "risk":"Up 29% in ONE day and overbought (RSI 73). Classic 'chase it and get burned' setup. Wait for the dip — do not buy at $162."},
+      {"tf":"📈 Long","verdict":"Get in","vclass":"v-buy","sym":"ETN","name":"Eaton","price":"$444.77","change":"+1.49%","up":true,"rsi":61.9,
+       "plain":"The boring genius pick. Every AI data-centre needs power gear — Eaton sells the picks & shovels. Broker just upgraded to $502.",
+       "levels":"In <b>$440</b> · Target <b>$500</b> · Stop <b>$410</b>","nStop":410,"nEntry":440,"nTarget":500,"nNow":444.77,
+       "chefTake":"Everyone's betting on the flashy AI chip companies. Eaton quietly sells the power gear and wiring the whole circus plugs into — no data-centre runs without it. Boring? Yep. Boring makes money. A steady long-term serve while the flashier stuff gives you heartburn.",
+       "catalysts":["Broker upgrade to 'Outperform' ($502 target)","Every AI data-centre needs Eaton's power gear","Clean uptrend — above both moving averages","26 analysts on the buy side"],
+       "risk":"It's not cheap for an industrial. If the AI-spending mood sours, this de-rates along with the whole theme."}
     ]}
   ],
-  "scoreboard":{"record":"1–2","recordNote":"last 3 calls · being straight with you",
+  "scoreboard":{"record":"1–2","recordNote":"last 3 closed calls · being straight with you",
     "closed":[{"sym":"DRO","pct":"−5.4%","win":false},{"sym":"EOS*","pct":"−5.0%","win":false},{"sym":"VLO","pct":"+6.2%","win":true}],
     "closedNote":"*Stopped out in July, back on the menu tonight with a fresh thesis. We hold ourselves to the stop.",
     "open":[{"tf":"⚡","sym":"MND","period":"Day","status":"just plated","hot":false},{"tf":"📅","sym":"PNI","period":"Week","status":"simmering","hot":false},{"tf":"📈","sym":"EOS","period":"Long","status":"slow-cook","hot":false},{"tf":"⚡","sym":"KTOS","period":"Day","status":"just plated","hot":false},{"tf":"📅","sym":"PLTR","period":"Week","status":"too hot","hot":true},{"tf":"📈","sym":"ETN","period":"Long","status":"slow-cook","hot":false}]},
   "geo":[{"em":"🛡️","title":"AUKUS defence build-out","note":"Governments spending big — tailwind for KTOS, EOS, BA","tag":"Buy the theme","tclass":"t-buy"},{"em":"🤖","title":"AI capex super-cycle","note":"Every big tech co is still spending on chips & power","tag":"Buy the theme","tclass":"t-buy"},{"em":"☢️","title":"Uranium term price 18-yr high","note":"Macro bullish — but no clean ASX ticker surfaced tonight","tag":"Watch","tclass":"t-watch"}],
   "sectors":[{"em":"🤖","title":"AI / Semiconductors","note":"PLTR, NVDA, ETN — broad and strong 🔥🔥🔥🔥🔥","tag":"Buy","tclass":"t-buy"},{"em":"🛡️","title":"Defence / Aerospace","note":"KTOS, BA, EOS — upgrades stacking up 🔥🔥🔥🔥","tag":"Buy","tclass":"t-buy"},{"em":"🏥","title":"Healthcare (ASX)","note":"HLS crashed −23% on a guidance cut","tag":"Skip","tclass":"t-dont"}],
-  "commodities":[{"em":"🥇","name":"Gold","note":"Aussie miners broke out +8% — the pack is running","tag":"Buy","tclass":"t-buy"},{"em":"☢️","name":"Uranium","note":"Term price at 18-year high, supply getting cut","tag":"Buy","tclass":"t-buy"},{"em":"🛢️","name":"Oil","note":"~$83 and going nowhere fast tonight","tag":"Meh","tclass":"t-watch"},{"em":"🔩","name":"Copper","note":"Quiet — no fresh signal this run","tag":"Meh","tclass":"t-watch"}],
+  "commodities":[{"em":"🥇","name":"Gold","note":"Aussie miners broke out +8% — the pack is running","tag":"Buy","tclass":"t-buy"},{"em":"☢️","name":"Uranium","note":"Term price at 18-year high, supply getting cut","tag":"Buy","tclass":"t-buy"},{"em":"🧲","name":"Rare Earths","note":"AUKUS + supply-chain scramble — LYC, ILU in focus","tag":"Emerging","tclass":"t-hot"},{"em":"⛏️","name":"Tungsten","note":"Niche but hot — EQR posted record revenue","tag":"Emerging","tclass":"t-hot"},{"em":"🔋","name":"Lithium","note":"US incentives for domestic supply (ASN) — turning","tag":"Watch","tclass":"t-watch"},{"em":"🥈","name":"Silver","note":"Rides gold's coat-tails + solar demand","tag":"Watch","tclass":"t-watch"},{"em":"🛢️","name":"Oil","note":"~$83 and going nowhere fast tonight","tag":"Meh","tclass":"t-watch"},{"em":"🔩","name":"Copper","note":"Quiet — no fresh signal this run","tag":"Meh","tclass":"t-watch"}],
+  "candidates":[
+    {"sym":"CMM","region":"au","heat":"hot","note":"Gold breakout +8.7% — pack running"},
+    {"sym":"GMD","region":"au","heat":"hot","note":"Gold +8.2%, riding the miner surge"},
+    {"sym":"LNW","region":"au","heat":"good","note":"Earnings beat +6.5% — just missed the cut"},
+    {"sym":"DUR","region":"au","heat":"good","note":"$281m AUKUS contract — no live price, verify"},
+    {"sym":"MYE","region":"au","heat":"good","note":"$85m mining-services contract win"},
+    {"sym":"BA","region":"us","heat":"good","note":"Rare 2-notch upgrade to Outperform ($300)"},
+    {"sym":"AEHR","region":"us","heat":"good","note":"+19.8% semis breakout — a touch late"},
+    {"sym":"NVDA","region":"us","heat":"good","note":"AI leader, heavy volume — always in the mix"},
+    {"sym":"E25","region":"au","heat":"mid","note":"Binding manganese offtake signed"},
+    {"sym":"MIN","region":"au","heat":"mid","note":"Broker upgrade to Buy (Morgans)"},
+    {"sym":"NEU","region":"au","heat":"mid","note":"+16% on results — already ran hard"},
+    {"sym":"ALNY","region":"us","heat":"mid","note":"Biotech upgrade to Strong Buy ($420)"},
+    {"sym":"W","region":"us","heat":"cold","note":"+30% but squeeze-driven — don't chase"},
+    {"sym":"HLS","region":"au","heat":"cold","note":"−23% guidance cut — falling knife"},
+    {"sym":"BPT","region":"au","heat":"cold","note":"Downgraded to Sell — steer clear"},
+    {"sym":"AMZN","region":"us","heat":"cold","note":"Selling on heavy volume — distribution"}
+  ],
   "trail":[{"n":"01","text":"<b>Scanned ~48 stocks</b> across Aussie news feeds and US movers.","note":"Stockhead, Motley Fool, Yahoo, Benzinga upgrades."},{"n":"02","text":"<b>Scored every one</b> on fresh catalysts and penalised anything that already ran too far.","note":"PLTR lost points for being +29% and overheated."},{"n":"03","text":"<b>Pulled live prices</b> and checked the charts on the survivors.","note":"Direct from EODHD + Finnhub."},{"n":"04","text":"<b>Picked the top 3 each</b> for Australia and the world — no doubling up.","note":"DUR had a $281m contract but no live price, so it sits out — no guessing."}]
 };
+var HIST_EMBED = {
+  "names":{"MND":"Monadelphous","PNI":"Pinnacle","EOS":"Electro Optic","KTOS":"Kratos Defense","PLTR":"Palantir","ETN":"Eaton","4DX":"4DMedical","PDN":"Paladin","ANET":"Arista","MRVL":"Marvell","DYL":"Deep Yellow","BOE":"Boss Energy","COIN":"Coinbase","VLO":"Valero","TEAM":"Atlassian","DRO":"DroneShield","CYL":"Catalyst Metals","ASB":"Austal","TLX":"Telix","MU":"Micron","NVDA":"Nvidia","RKLB":"Rocket Lab","AVAV":"AeroVironment"},
+  "menus":[
+    {"stamp":"Wed 5 Aug","time":"20:00","au":["MND","PNI","EOS"],"us":["KTOS","PLTR","ETN"]},
+    {"stamp":"Wed 5 Aug","time":"16:00","au":["EOS","4DX","PDN"],"us":["ANET","MRVL","PLTR"]},
+    {"stamp":"Mon 14 Jul","time":"13:18","au":["DYL","PDN","BOE"],"us":["COIN","VLO","TEAM"]},
+    {"stamp":"Sun 6 Jul","time":"10:00","au":["DRO","CYL","ASB"],"us":["PLTR","AVAV","COIN"]},
+    {"stamp":"Mon 30 Jun","time":"09:00","au":["DRO","EOS","TLX"],"us":["MU","NVDA","RKLB"]}
+  ]
+};
 
-var FUTURE_REGIONS = [{"id":"asia","label":"🌏 Asia-Pac","soon":true},{"id":"eu","label":"🇪🇺 Europe","soon":true}];
-var esc = function(s){return String(s==null?"":s);};
+var esc=function(s){return String(s==null?"":s);};
+var TFS=["⚡","📅","📈"];
+var LAST=null, LASTFOCUS=null;
+function yf(sym,region){var s=String(sym).replace(/\*$/,'');if(region==="au")s+=".AX";return "https://finance.yahoo.com/quote/"+encodeURIComponent(s);}
+function qlink(sym,region,label){return '<a class="q" href="'+yf(sym,region)+'" target="_blank" rel="noopener">'+esc(label==null?sym:label)+'</a>';}
+function money(cur,n){return cur+(Math.abs(n%1)<1e-9?String(n):n.toFixed(2));}
+function clamp(x){return Math.max(3,Math.min(97,x));}
 
-function render(D){
-  var r = D.risk||{};
-  var regionTabs = (D.regions||[]).map(function(rg,i){
-    return '<button class="tab" role="tab" id="tab-'+rg.id+'" aria-selected="'+(i===0)+'" data-region="'+rg.id+'">'+esc(rg.label)+'</button>';
-  }).join('');
-  var soonTabs = FUTURE_REGIONS.map(function(f){return '<button class="tab" disabled title="Coming soon">'+esc(f.label)+' · soon</button>';}).join('');
+function render(D,H){
+  LAST={D:D,H:H};
+  var r=D.risk||{};
+  var regionTabs=(D.regions||[]).map(function(rg,i){return '<button class="tab" role="tab" id="tab-'+rg.id+'" aria-selected="'+(i===0)+'" data-region="'+rg.id+'">'+esc(rg.label)+'</button>';}).join('');
+  var soon='<button class="tab" disabled title="Coming soon">🌏 Asia-Pac · soon</button><button class="tab" disabled title="Coming soon">🇪🇺 Europe · soon</button>';
 
-  var menus = (D.regions||[]).map(function(rg,i){
-    var cards = (rg.picks||[]).map(function(p){
-      return '<article class="card"><div class="tf"><span class="name">'+esc(p.tf)+'</span>'+
-        '<span class="verdict '+esc(p.vclass)+'">'+esc(p.verdict)+'</span></div>'+
-        '<div class="tick"><span class="sym">'+esc(p.sym)+'</span><span class="px"><span class="p mono">'+esc(p.price)+'</span><br>'+
-        '<span class="c mono '+(p.up?'up':'down')+'">'+esc(p.change)+'</span></span></div>'+
-        '<p class="plain"><span class="co">'+esc(p.name)+'.</span> '+p.plain+'</p>'+
-        '<div class="lvls">'+p.levels+'</div></article>';
+  var menus=(D.regions||[]).map(function(rg,i){
+    var cards=(rg.picks||[]).map(function(p,idx){
+      return '<article class="card" tabindex="0" role="button" data-region="'+rg.id+'" data-idx="'+idx+'" aria-label="Details for '+esc(p.sym)+'">'+
+        '<div class="tf"><span class="name">'+esc(p.tf)+'</span><span class="verdict '+esc(p.vclass)+'">'+esc(p.verdict)+'</span></div>'+
+        '<div class="tick"><span class="symwrap"><span class="sym">'+qlink(p.sym,rg.id)+'</span><span class="co">'+qlink(p.sym,rg.id,p.name)+' ↗</span></span>'+
+        '<span class="px"><span class="p mono">'+esc(p.price)+'</span><br><span class="c mono '+(p.up?'up':'down')+'">'+esc(p.change)+'</span></span></div>'+
+        '<p class="plain">'+p.plain+'</p><div class="lvls">'+p.levels+'</div>'+
+        '<div class="more">Tap for the full serve →</div></article>';
     }).join('');
     return '<div class="menu'+(i===0?'':' hidden')+'" id="menu-'+rg.id+'" role="tabpanel">'+cards+'</div>';
   }).join('');
 
-  var sb = D.scoreboard||{};
-  var recRows = (sb.closed||[]).map(function(c){
-    var w=c.win; return '<div class="row"><span class="rsym">'+esc(c.sym)+'</span><div class="bar">'+
-      '<span class="fill" style="'+(w?'left:50%;width:26%;background:var(--buy)':'right:50%;width:22%;background:var(--dont)')+'"></span></div>'+
-      '<span class="res '+(w?'up':'down')+'">'+esc(c.pct)+'</span></div>';
-  }).join('');
-  var openRows = (sb.open||[]).map(function(o){
-    return '<div class="row"><span>'+esc(o.tf)+' '+esc(o.sym)+' <span style="color:var(--muted)">'+esc(o.period)+'</span></span>'+
-      '<span class="st"'+(o.hot?' style="color:var(--hold)"':'')+'>'+esc(o.status)+'</span></div>';
-  }).join('');
+  var names=(H&&H.names)||{}, ms=(H&&H.menus)||[];
+  function jcol(m,older,isNow){
+    function grp(label,arr,region){
+      var olderSet=older?older[region]:null;
+      var rows=(arr||[]).map(function(sym,idx){
+        var isNew=olderSet?olderSet.indexOf(sym)<0:false;
+        var nm=names[String(sym).replace(/\*$/,'')]||'';
+        var badge=older?('<span class="jb '+(isNew?'jb-new':'jb-keep')+'">'+(isNew?'🆕 new':'↩ kept')+'</span>'):'';
+        return '<div class="jrow"><span class="jtf">'+TFS[idx]+'</span><span class="jinfo">'+qlink(sym,region)+(nm?'<span class="jname">'+esc(nm)+'</span>':'')+'</span>'+badge+'</div>';
+      }).join('');
+      return '<div class="jgrp">'+label+'</div>'+rows;
+    }
+    return '<div class="jcol'+(isNow?' now':'')+'"><div class="jhead"><span class="when">'+esc(m.stamp)+'<small>'+esc(m.time)+' AEST</small></span>'+(isNow?'<span class="now-b">NOW</span>':'')+'</div>'+grp('🇦🇺 AU',m.au,'au')+grp('🌏 Intl',m.us,'us')+'</div>';
+  }
+  var journeyCols=ms.map(function(m,i){return jcol(m,ms[i+1],i===0);}).join('');
+  var note="This is the first menu on record — the journey starts here.";
+  if(ms.length>=2){
+    var a=ms[0],b=ms[1];
+    var chAu=(a.au||[]).filter(function(s){return (b.au||[]).indexOf(s)<0;}).length;
+    var chUs=(a.us||[]).filter(function(s){return (b.us||[]).indexOf(s)<0;}).length;
+    var tot=chAu+chUs, sameDay=a.stamp===b.stamp;
+    var mood=tot>=5?"a total menu overhaul 🔁":tot>=3?"a big shake-up 🌶️":tot>=1?"a couple of swaps":"steady — same menu as last run 😌";
+    note="<b>Since the last serve ("+esc(b.time)+"):</b> "+mood+" — "+tot+" of 6 picks changed"+(sameDay?" (second run today).":".")+" 🇦🇺 "+chAu+"/3 swapped · 🌏 "+chUs+"/3 swapped.";
+  }
 
-  function lines(arr,titleKey){return (arr||[]).map(function(x){
-    return '<div class="line"><span class="em">'+esc(x.em)+'</span><div class="txt">'+esc(x[titleKey])+
-      '<small>'+x.note+'</small></div><span class="tag '+esc(x.tclass)+'">'+esc(x.tag)+'</span></div>';
-  }).join('');}
+  var sb=D.scoreboard||{};
+  var recRows=(sb.closed||[]).map(function(c){var w=c.win;return '<div class="row"><span class="rsym">'+qlink(c.sym,'au')+'</span><div class="bar"><span class="fill" style="'+(w?'left:50%;width:26%;background:var(--buy)':'right:50%;width:22%;background:var(--dont)')+'"></span></div><span class="res '+(w?'up':'down')+'">'+esc(c.pct)+'</span></div>';}).join('');
+  var openRows=(sb.open||[]).map(function(o){var reg=(D.regions&&D.regions[0]&&D.regions[0].picks.some(function(p){return p.sym===o.sym;}))?'au':'us';return '<div class="row"><span>'+esc(o.tf)+' '+qlink(o.sym,reg)+' <span style="color:var(--muted)">'+esc(o.period)+'</span></span><span class="st"'+(o.hot?' style="color:var(--hold)"':'')+'>'+esc(o.status)+'</span></div>';}).join('');
+  function lines(arr,key){return (arr||[]).map(function(x){return '<div class="line"><span class="em">'+esc(x.em)+'</span><div class="txt">'+esc(x[key])+'<small>'+x.note+'</small></div><span class="tag '+esc(x.tclass)+'">'+esc(x.tag)+'</span></div>';}).join('');}
+  var pot=(D.candidates||[]).map(function(c){return '<a class="pill h-'+esc(c.heat)+'" href="'+yf(c.sym,c.region)+'" target="_blank" rel="noopener"><span class="ph"></span><b>'+esc(c.sym)+'</b> <small>'+esc(c.note)+'</small> <span class="flag">'+(c.region==='au'?'AU':'US')+'</span></a>';}).join('');
+  var half=Math.ceil((D.commodities||[]).length/2);
+  var trail=(D.trail||[]).map(function(t){return '<div class="step"><span class="n">'+esc(t.n)+'</span><div class="st-txt">'+t.text+'<small>'+esc(t.note)+'</small></div></div>';}).join('');
 
-  var trail = (D.trail||[]).map(function(t){
-    return '<div class="step"><span class="n">'+esc(t.n)+'</span><div class="st-txt">'+t.text+'<small>'+esc(t.note)+'</small></div></div>';
-  }).join('');
-
-  document.getElementById('app').innerHTML =
+  document.getElementById('app').innerHTML=
   '<header class="hero"><div class="brandrow"><div class="brand"><span class="bowl">🍲</span> Stock&nbsp;Soup</div>'+
     '<div style="display:flex;gap:10px;align-items:center"><span class="live"><span class="pulse"></span>LIVE</span>'+
     '<button class="chip toggle" id="themeBtn" aria-label="Toggle theme">🌗 Theme</button></div></div>'+
     '<div class="eyebrow" style="margin-top:22px">'+esc(D.stamp)+' · Chef\'s hourly special</div>'+
-    '<h1 class="display">Two pots on the boil:<br><span class="hot">'+esc(r.a||D.headline.a)+'</span> &amp; <span class="hot">'+esc(D.headline.b)+'</span>.</h1>'+
+    '<h1 class="display">Two pots on the boil:<br><span class="hot">'+esc(D.headline.a)+'</span> &amp; <span class="hot">'+esc(D.headline.b)+'</span>.</h1>'+
     '<p class="chef">'+D.chef+'</p>'+
     '<div class="metastrip"><span class="chip"><span class="dot" style="background:var(--hold)"></span> Risk: '+esc(r.label)+'</span>'+
     '<span class="chip mono">₿ '+esc(r.btc)+' <span class="up">'+esc(r.btcChange)+'</span></span>'+
@@ -219,36 +386,81 @@ function render(D){
     '<div class="lbls"><span>🔴 Hide the cash</span><span>⚪ Steady</span><span>🟢 Send it</span></div></div></header>'+
 
   '<section><div class="sec-head"><h2 class="display"><span class="k">01</span> Tonight\'s menu</h2></div>'+
-    '<p class="sec-sub">Three time horizons. Day = a quick feed. Week = simmer a few days. Long = slow-cooked.</p>'+
-    '<div class="tabs" role="tablist" aria-label="Region" style="margin-bottom:14px">'+regionTabs+soonTabs+'</div>'+menus+'</section>'+
+    '<p class="sec-sub">Three time horizons. Day = a quick feed. Week = simmer a few days. Long = slow-cooked. Tap a card for the full serve; tap a name for Yahoo.</p>'+
+    '<div class="tabs" role="tablist" aria-label="Region" style="margin-bottom:14px">'+regionTabs+soon+'</div>'+menus+'</section>'+
 
-  '<section><div class="sec-head"><h2 class="display"><span class="k">02</span> How\'d we do?</h2></div>'+
-    '<p class="sec-sub">No hiding. Closed picks scored honestly; open picks tracked against the horizon we promised.</p>'+
-    '<div class="grid2"><div class="panel"><h3>Recently plated (closed)</h3>'+
+  '<section><div class="sec-head"><h2 class="display"><span class="k">02</span> The journey</h2></div>'+
+    '<p class="sec-sub">Every run replaces the menu. Here\'s how it\'s moved — newest first. 🆕 = fresh on the menu, ↩ = held from last time.</p>'+
+    '<div class="chef-note">'+note+'</div><div class="journey">'+journeyCols+'</div>'+
+    '<div class="grid2"><div class="panel"><h3>Closed calls · scored honestly</h3>'+
     '<div class="score"><div><div class="big">'+esc(sb.record)+'</div><div class="sub">'+esc(sb.recordNote)+'</div></div></div>'+
-    '<div class="rec">'+recRows+'</div>'+
-    '<p style="font-size:11px;color:var(--faint);margin-top:12px">'+esc(sb.closedNote)+'</p></div>'+
+    '<div class="rec">'+recRows+'</div><p style="font-size:11px;color:var(--faint);margin-top:12px">'+esc(sb.closedNote)+'</p></div>'+
     '<div class="panel"><h3>On the stove (open now)</h3><div class="cooking">'+openRows+'</div></div></div></section>'+
 
-  '<section><div class="sec-head"><h2 class="display"><span class="k">03</span> The world &amp; the sectors</h2></div>'+
+  '<section><div class="sec-head"><h2 class="display"><span class="k">03</span> The full pot</h2></div>'+
+    '<p class="sec-sub">Everything the scan turned up tonight — the ones that didn\'t make the top 3. Colour = how appetising it looks. Tap any for Yahoo.</p>'+
+    '<div class="potlegend"><span><i style="background:var(--broth)"></i>🔥 sizzling</span><span><i style="background:var(--buy)"></i>✅ tasty</span><span><i style="background:var(--hold)"></i>➖ maybe</span><span><i style="background:var(--dont)"></i>⛔ send it back</span></div>'+
+    '<div class="pot">'+pot+'</div></section>'+
+
+  '<section><div class="sec-head"><h2 class="display"><span class="k">04</span> The world &amp; the sectors</h2></div>'+
     '<p class="sec-sub">What\'s moving the pot, and which kitchens are hot vs which to skip.</p>'+
     '<div class="cols"><div class="stack"><div class="eyebrow">🌍 Geopolitics</div>'+lines(D.geo,'title')+'</div>'+
     '<div class="stack"><div class="eyebrow">🍳 Sectors — buy vs skip</div>'+lines(D.sectors,'title')+'</div></div></section>'+
 
-  '<section><div class="sec-head"><h2 class="display"><span class="k">04</span> Commodities — simple</h2></div>'+
-    '<p class="sec-sub">No jargon. Just: worth a look, or leave it.</p>'+
-    '<div class="cols"><div class="stack">'+lines((D.commodities||[]).slice(0,2),'name')+'</div>'+
-    '<div class="stack">'+lines((D.commodities||[]).slice(2),'name')+'</div></div></section>'+
+  '<section><div class="sec-head"><h2 class="display"><span class="k">05</span> Commodities — simple</h2></div>'+
+    '<p class="sec-sub">No jargon. Just: worth a look, emerging (🔥), or leave it.</p>'+
+    '<div class="cols"><div class="stack">'+lines((D.commodities||[]).slice(0,half),'name')+'</div>'+
+    '<div class="stack">'+lines((D.commodities||[]).slice(half),'name')+'</div></div></section>'+
 
-  '<section><div class="sec-head"><h2 class="display"><span class="k">05</span> How we got here</h2></div>'+
-    '<p class="sec-sub">The recipe, in plain sight. No black box.</p>'+
-    '<div class="panel trail">'+trail+'</div></section>'+
+  '<section><div class="sec-head"><h2 class="display"><span class="k">06</span> How we got here</h2></div>'+
+    '<p class="sec-sub">The recipe, in plain sight. No black box.</p><div class="panel trail">'+trail+'</div></section>'+
 
   '<div class="cta"><a href="'+esc(D.reportUrl)+'">📖 Read the full report →</a></div>'+
-  '<footer>Auto-generated for information only. <b>Not financial advice</b> — do your own research.<br>'+
-    'Stock Soup · served hot, hourly · next pot ~21:00 AEST</footer>';
+  '<footer>Auto-generated for information only. <b>Not financial advice</b> — do your own research.<br>Stock Soup · served hot, hourly · next pot ~21:00 AEST</footer>';
 
   wire(D);
+}
+
+function openModal(p,region,cur){
+  LASTFOCUS=document.activeElement;
+  var span=(p.nTarget-p.nStop)||1;
+  var nowPct=clamp((p.nNow-p.nStop)/span*100);
+  var entPct=clamp((p.nEntry-p.nStop)/span*100);
+  var rsi=p.rsi!=null?p.rsi:50;
+  var rsiWord=rsi>=70?"🔥 hot — wait for it to cool":rsi<=35?"🧊 cheap — bargain zone":"😌 comfortable — not stretched";
+  var cats=(p.catalysts||[]).map(function(c){return '<li>'+esc(c)+'</li>';}).join('');
+  var m=document.getElementById('modal');
+  m.className='modal';
+  m.innerHTML=
+    '<div class="mhead '+esc(p.vclass)+'"><button class="mclose" id="mClose" aria-label="Close">✕</button>'+
+      '<div class="mtf">'+esc(p.tf)+' · '+(region==='au'?'🇦🇺 ASX':'🇺🇸 International')+'</div>'+
+      '<div class="mtop"><div><div class="msym" id="mTitle">'+esc(p.sym)+'</div><div class="mco">'+qlink(p.sym,region,p.name)+' ↗</div></div>'+
+        '<div class="mpx"><div class="mp mono">'+esc(p.price)+'</div><div class="mono '+(p.up?"up":"down")+'" style="font-weight:700;font-size:13px">'+esc(p.change)+'</div></div></div>'+
+      '<span class="mverd '+esc(p.vclass)+'">'+esc(p.verdict)+'</span></div>'+
+    '<div class="mbody">'+
+      '<div class="viz"><h4>Where the price sits · stop → target</h4>'+
+        '<div class="ladder"><span class="cap now" style="left:'+nowPct+'%">Now '+esc(p.price)+'</span>'+
+          '<span class="mk ent" style="left:'+entPct+'%"></span><span class="cap" style="left:'+entPct+'%">Buy</span>'+
+          '<span class="mk now" style="left:'+nowPct+'%"></span></div>'+
+        '<div class="lends"><span class="r">Stop '+money(cur,p.nStop)+'</span><span class="g">Target '+money(cur,p.nTarget)+'</span></div>'+
+        '<h4 style="margin-top:20px">How hot is it right now? · RSI</h4>'+
+        '<div class="rsibar"><span class="rcap" style="left:'+clamp(rsi)+'%">RSI '+esc(rsi)+'</span><span class="rn" style="left:'+clamp(rsi)+'%"></span></div>'+
+        '<div class="lends"><span class="g">Cheap</span><span class="r">Overheated</span></div>'+
+        '<div class="rsimeta">'+rsiWord+'</div></div>'+
+      '<p class="mtake"><span class="lead">Chef says:</span> '+esc(p.chefTake)+'</p>'+
+      '<div><h4 style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:800;margin-bottom:10px">Why it\'s on the menu</h4><ul class="mcat">'+cats+'</ul></div>'+
+      '<div class="mrisk"><b>Watch out:</b> '+esc(p.risk)+'</div>'+
+      '<div class="mfoot"><a class="mbtn" href="'+yf(p.sym,region)+'" target="_blank" rel="noopener">📈 Yahoo Finance ↗</a>'+
+        '<a class="mbtn primary" href="'+esc(LAST.D.reportUrl)+'" target="_blank" rel="noopener">📖 Full report ↗</a></div>'+
+    '</div>';
+  var ov=document.getElementById('overlay');
+  ov.classList.add('open');ov.setAttribute('aria-hidden','false');
+  document.getElementById('mClose').focus();
+}
+function closeModal(){
+  var ov=document.getElementById('overlay');
+  ov.classList.remove('open');ov.setAttribute('aria-hidden','true');
+  if(LASTFOCUS&&LASTFOCUS.focus)LASTFOCUS.focus();
 }
 
 function wire(D){
@@ -262,14 +474,27 @@ function wire(D){
     tabs.forEach(function(x){x.setAttribute('aria-selected','false');document.getElementById('menu-'+x.dataset.region).classList.add('hidden');});
     t.setAttribute('aria-selected','true');document.getElementById('menu-'+t.dataset.region).classList.remove('hidden');
   });});
+  function regionOf(id){var a=(D.regions||[]).filter(function(x){return x.id===id;});return a[0];}
+  function openFromEl(el){var rg=regionOf(el.dataset.region);if(!rg)return;var p=rg.picks[+el.dataset.idx];if(p)openModal(p,rg.id,rg.cur||'$');}
+  document.querySelectorAll('.card').forEach(function(c){
+    c.addEventListener('click',function(e){if(e.target.closest('a'))return;openFromEl(c);});
+    c.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();openFromEl(c);}});
+  });
   var lvl=(D.risk&&D.risk.level!=null)?D.risk.level:50;
   requestAnimationFrame(function(){var n=document.getElementById('needle');if(n)n.style.left=lvl+'%';});
 }
 
-/* Try live data (works on GitHub Pages); fall back to embedded (works anywhere, incl. preview). */
-render(EMBEDDED);
-try{
-  fetch('latest.json',{cache:'no-store'}).then(function(res){return res.ok?res.json():null;})
-    .then(function(j){if(j&&j.regions)render(j);}).catch(function(){});
-}catch(e){}
+document.getElementById('overlay').addEventListener('click',function(e){if(e.target===this)closeModal();});
+document.addEventListener('keydown',function(e){if(e.key==='Escape')closeModal();
+  else if(e.target&&e.target.id==='mClose'&&(e.key==='Enter'||e.key===' ')){e.preventDefault();closeModal();}});
+document.getElementById('overlay').addEventListener('click',function(e){if(e.target&&e.target.id==='mClose')closeModal();});
+
+render(EMBEDDED,HIST_EMBED);
+Promise.allSettled([
+  fetch('latest.json',{cache:'no-store'}).then(function(r){return r.ok?r.json():null;}),
+  fetch('menu-history.json',{cache:'no-store'}).then(function(r){return r.ok?r.json():null;})
+]).then(function(res){
+  var d=res[0].value, h=res[1].value;
+  if((d&&d.regions)||(h&&h.menus)) render(d&&d.regions?d:EMBEDDED, h&&h.menus?h:HIST_EMBED);
+}).catch(function(){});
 </script>

@@ -1,79 +1,475 @@
 {
-  "generated": "2026-08-05T20:00:00+10:00",
-  "stamp": "Wed 5 Aug 2026 · 20:00 AEST",
-  "reportUrl": "https://daviddef.github.io/Stock-Soup---Public/reports/2026-08-05-2000.html",
-  "risk": { "label": "NEUTRAL", "level": 52, "btc": "$64,176", "btcChange": "+0.97%", "audusd": "0.7049", "gold": "~$4,073" },
-  "headline": { "a": "AI", "b": "Defence" },
-  "chef": "<b>Righto, listen up.</b> The market's calm — crypto barely moved, nobody's panicking. Robots and rockets are what's cooking; everything else is garnish tonight. I've plated <b>3 Aussie picks</b> and <b>3 from overseas</b>. One of them (PLTR) already bolted 29% — you're late, don't chase the bus, wait for it to stop.",
-  "hotTags": "🥇 Gold hot · 🛡️ Defence hot · 🤖 AI on fire",
-  "regions": [
+ "generated": "2026-08-05T20:00:00+10:00",
+ "stamp": "Wed 5 Aug 2026 · 20:00 AEST",
+ "reportUrl": "https://daviddef.github.io/Stock-Soup---Public/reports/2026-08-05-2000.html",
+ "risk": {
+  "label": "NEUTRAL",
+  "level": 52,
+  "btc": "$64,176",
+  "btcChange": "+0.97%",
+  "audusd": "0.7049",
+  "gold": "~$4,073"
+ },
+ "headline": {
+  "a": "AI",
+  "b": "Defence"
+ },
+ "chef": "<b>Righto, listen up.</b> The market's calm — crypto barely moved, nobody's panicking. Robots and rockets are what's cooking; everything else is garnish tonight. I've plated <b>3 Aussie picks</b> and <b>3 from overseas</b>. One of them (PLTR) already bolted 29% — you're late, don't chase the bus, wait for it to stop.",
+ "hotTags": "🥇 Gold hot · 🛡️ Defence hot · 🤖 AI on fire",
+ "regions": [
+  {
+   "id": "au",
+   "label": "🇦🇺 Australia",
+   "cur": "A$",
+   "picks": [
     {
-      "id": "au", "label": "🇦🇺 Australia", "active": true,
-      "picks": [
-        { "tf": "⚡ Day", "verdict": "Get in", "vclass": "v-buy", "sym": "MND", "name": "Monadelphous", "price": "A$30.30", "change": "+1.07%", "up": true,
-          "plain": "Just landed a $200m BHP contract but the shares have barely twitched. That's the whole game — good news, price hasn't caught up yet.",
-          "levels": "In <b>A$30.00</b> · Target <b>A$34</b> · Stop <b>A$28.50</b>" },
-        { "tf": "📅 Week", "verdict": "Wait for dip", "vclass": "v-hold", "sym": "PNI", "name": "Pinnacle", "price": "A$19.25", "change": "+8.39%", "up": true,
-          "plain": "Cracking result, jumped 8%. Only catch — it's a bit hot right now. Let it cool and buy the pullback near A$18.50.",
-          "levels": "In <b>A$18.50</b> · Target <b>A$22</b> · Stop <b>A$17.20</b>" },
-        { "tf": "📈 Long", "verdict": "Get in", "vclass": "v-buy", "sym": "EOS", "name": "Electro Optic", "price": "A$7.65", "change": "+1.19%", "up": true,
-          "plain": "Lasers and drone-killers. AUKUS money is a multi-year tide. It's cheap vs its average — a patient buy, not a sprint.",
-          "levels": "In <b>A$7.50</b> · Target <b>A$9.50</b> · Stop <b>A$6.90</b>" }
-      ]
+     "tf": "⚡ Day",
+     "verdict": "Get in",
+     "vclass": "v-buy",
+     "sym": "MND",
+     "name": "Monadelphous",
+     "price": "A$30.30",
+     "change": "+1.07%",
+     "up": true,
+     "rsi": 59,
+     "plain": "Just landed a $200m BHP contract but the shares have barely twitched. That's the whole game — good news, price hasn't caught up yet.",
+     "levels": "In <b>A$30.00</b> · Target <b>A$34</b> · Stop <b>A$28.50</b>",
+     "nStop": 28.5,
+     "nEntry": 30.0,
+     "nTarget": 34.0,
+     "nNow": 30.3,
+     "chefTake": "Think of MND as the tradie who just landed a massive job but hasn't bragged about it at the pub yet. Contract's signed, money's coming, share price is still sitting there like nothing happened. That gap is the whole opportunity. Not a fireworks stock — more a reliable Sunday roast — but you want to be seated before the room smells it.",
+     "catalysts": [
+      "Just won a ~$200m contract from BHP — real money, confirmed",
+      "Shares up only +1.07% — the good news isn't priced in yet",
+      "Trading above its 50-day AND 200-day average (healthy trend)",
+      "Mining & engineering work booming with the resources rally"
+     ],
+     "risk": "Double-check the contract is actually today-dated before you jump in. It's a big, steady company — moves are measured, not explosive."
     },
     {
-      "id": "us", "label": "🇺🇸 International", "active": false,
-      "picks": [
-        { "tf": "⚡ Day", "verdict": "Get in", "vclass": "v-buy", "sym": "KTOS", "name": "Kratos Defense", "price": "$51.87", "change": "+5.41%", "up": true,
-          "plain": "Drones and target systems. A big broker just flipped bullish ($75 target) and 25 analysts say buy, zero say sell. That's a wall.",
-          "levels": "In <b>$51</b> · Target <b>$58</b> · Stop <b>$48</b>" },
-        { "tf": "📅 Week", "verdict": "Too late — wait", "vclass": "v-dont", "sym": "PLTR", "name": "Palantir", "price": "$162.66", "change": "+29.5%", "up": true,
-          "plain": "Monster earnings, best day in 2 years. But it's up 29% <b>today</b> — chasing that is how you get burned. Wait for the hangover dip near $150.",
-          "levels": "Watch <b>$150</b> · Target <b>$180</b> · Stop <b>$145</b>" },
-        { "tf": "📈 Long", "verdict": "Get in", "vclass": "v-buy", "sym": "ETN", "name": "Eaton", "price": "$444.77", "change": "+1.49%", "up": true,
-          "plain": "The boring genius pick. Every AI data-centre needs power gear — Eaton sells the picks &amp; shovels. Broker just upgraded to $502.",
-          "levels": "In <b>$440</b> · Target <b>$500</b> · Stop <b>$410</b>" }
-      ]
+     "tf": "📅 Week",
+     "verdict": "Wait for dip",
+     "vclass": "v-hold",
+     "sym": "PNI",
+     "name": "Pinnacle",
+     "price": "A$19.25",
+     "change": "+8.39%",
+     "up": true,
+     "rsi": 68.9,
+     "plain": "Cracking result, jumped 8%. Only catch — it's a bit hot right now. Let it cool and buy the pullback near A$18.50.",
+     "levels": "In <b>A$18.50</b> · Target <b>A$22</b> · Stop <b>A$17.20</b>",
+     "nStop": 17.2,
+     "nEntry": 18.5,
+     "nTarget": 22.0,
+     "nNow": 19.25,
+     "chefTake": "PNI just served a cracker and the whole room clapped (+8%). Trouble is, everyone's now queuing. When a dish is this hot you don't burn your mouth — you wait for it to cool to about A$18.50, then tuck in. Cracking business; just don't pay the 'straight out of the oven' premium.",
+     "catalysts": [
+      "Big earnings result — money flooding into their funds",
+      "Two separate news sources flagged it (rare = strong signal)",
+      "Well above both its trend lines — momentum leader",
+      "Standing tall while rival fund managers cop 'sell' calls"
+     ],
+     "risk": "It's run hard already (RSI nearly 69). Chasing it here means paying full menu price. Be patient for the pullback."
+    },
+    {
+     "tf": "📈 Long",
+     "verdict": "Get in",
+     "vclass": "v-buy",
+     "sym": "EOS",
+     "name": "Electro Optic",
+     "price": "A$7.65",
+     "change": "+1.19%",
+     "up": true,
+     "rsi": 48.5,
+     "plain": "Lasers and drone-killers. AUKUS money is a multi-year tide. It's cheap vs its average — a patient buy, not a sprint.",
+     "levels": "In <b>A$7.50</b> · Target <b>A$9.50</b> · Stop <b>A$6.90</b>",
+     "nStop": 6.9,
+     "nEntry": 7.5,
+     "nTarget": 9.5,
+     "nNow": 7.65,
+     "chefTake": "EOS is the slow-cooked brisket. Lasers, drone-zappers, the works — and governments are throwing AUKUS money at exactly this menu for years to come. Right now it's marked down below its usual price, which is precisely when you load the plate. Bring patience, not a stopwatch.",
+     "catalysts": [
+      "Fresh 'Buy' call from a broker — analyst conviction",
+      "Makes lasers & drone-killers — exactly what AUKUS funds",
+      "Counter-drone demand rising with global conflict",
+      "Cheap vs its own average — a recovery setup"
+     ],
+     "risk": "Defence contracts can be slow and lumpy. It's below its average price — make sure it's turning up before you back the truck."
     }
-  ],
-  "scoreboard": {
-    "record": "1–2",
-    "recordNote": "last 3 calls · being straight with you",
-    "closed": [
-      { "sym": "DRO", "pct": "−5.4%", "win": false },
-      { "sym": "EOS*", "pct": "−5.0%", "win": false },
-      { "sym": "VLO", "pct": "+6.2%", "win": true }
-    ],
-    "closedNote": "*Stopped out in July, back on the menu tonight with a fresh thesis. We hold ourselves to the stop.",
-    "open": [
-      { "tf": "⚡", "sym": "MND", "period": "Day", "status": "just plated", "hot": false },
-      { "tf": "📅", "sym": "PNI", "period": "Week", "status": "simmering", "hot": false },
-      { "tf": "📈", "sym": "EOS", "period": "Long", "status": "slow-cook", "hot": false },
-      { "tf": "⚡", "sym": "KTOS", "period": "Day", "status": "just plated", "hot": false },
-      { "tf": "📅", "sym": "PLTR", "period": "Week", "status": "too hot", "hot": true },
-      { "tf": "📈", "sym": "ETN", "period": "Long", "status": "slow-cook", "hot": false }
-    ]
+   ]
   },
-  "geo": [
-    { "em": "🛡️", "title": "AUKUS defence build-out", "note": "Governments spending big — tailwind for KTOS, EOS, BA", "tag": "Buy the theme", "tclass": "t-buy" },
-    { "em": "🤖", "title": "AI capex super-cycle", "note": "Every big tech co is still spending on chips &amp; power", "tag": "Buy the theme", "tclass": "t-buy" },
-    { "em": "☢️", "title": "Uranium term price 18-yr high", "note": "Macro bullish — but no clean ASX ticker surfaced tonight", "tag": "Watch", "tclass": "t-watch" }
+  {
+   "id": "us",
+   "label": "🇺🇸 International",
+   "cur": "$",
+   "picks": [
+    {
+     "tf": "⚡ Day",
+     "verdict": "Get in",
+     "vclass": "v-buy",
+     "sym": "KTOS",
+     "name": "Kratos Defense",
+     "price": "$51.87",
+     "change": "+5.41%",
+     "up": true,
+     "rsi": 54.9,
+     "plain": "Drones and target systems. A big broker just flipped bullish ($75 target) and 25 analysts say buy, zero say sell. That's a wall.",
+     "levels": "In <b>$51</b> · Target <b>$58</b> · Stop <b>$48</b>",
+     "nStop": 48,
+     "nEntry": 51,
+     "nTarget": 58,
+     "nNow": 51.87,
+     "chefTake": "Kratos makes the drones AND the targets you shoot drones at — very on-theme. A big broker just banged the table ($75) and literally nobody on Wall Street is saying sell. That's about as close to a green light as this game hands out. Fresh off the pass, not overcooked yet.",
+     "catalysts": [
+      "A major broker just upgraded it (target $75, ~45% up)",
+      "25 analysts say buy, ZERO say sell — a wall of support",
+      "Rides the same defence wave as our Aussie picks",
+      "Up 5% today with room before it's overheated"
+     ],
+     "risk": "Still below its long-term average — the bigger downtrend isn't fully repaired. Defence orders can also be lumpy quarter to quarter."
+    },
+    {
+     "tf": "📅 Week",
+     "verdict": "Too late — wait",
+     "vclass": "v-dont",
+     "sym": "PLTR",
+     "name": "Palantir",
+     "price": "$162.66",
+     "change": "+29.5%",
+     "up": true,
+     "rsi": 72.8,
+     "plain": "Monster earnings, best day in 2 years. But it's up 29% today — chasing that is how you get burned. Wait for the hangover dip near $150.",
+     "levels": "Watch <b>$150</b> · Target <b>$180</b> · Stop <b>$145</b>",
+     "nStop": 145,
+     "nEntry": 150,
+     "nTarget": 180,
+     "nNow": 162.66,
+     "chefTake": "PLTR just went nuclear (+29%) on a monster result. Everyone's screaming about it — which is exactly why you don't chase it now. It's the dish the whole room is Instagramming; the queue's out the door and the price is silly. Put your name down, wait for the hangover dip near $150, THEN eat. We check this one every single run as our 'how mad is the market' gauge.",
+     "catalysts": [
+      "Monster earnings — best single day in over two years",
+      "Deutsche Bank flipped to Buy ($200 target)",
+      "The AI + defence software leader — structural demand",
+      "⚠️ BUT: already ripped +29% today, RSI 73 = overheated"
+     ],
+     "risk": "Up 29% in ONE day and overbought (RSI 73). Classic 'chase it and get burned' setup. Wait for the dip — do not buy at $162."
+    },
+    {
+     "tf": "📈 Long",
+     "verdict": "Get in",
+     "vclass": "v-buy",
+     "sym": "ETN",
+     "name": "Eaton",
+     "price": "$444.77",
+     "change": "+1.49%",
+     "up": true,
+     "rsi": 61.9,
+     "plain": "The boring genius pick. Every AI data-centre needs power gear — Eaton sells the picks & shovels. Broker just upgraded to $502.",
+     "levels": "In <b>$440</b> · Target <b>$500</b> · Stop <b>$410</b>",
+     "nStop": 410,
+     "nEntry": 440,
+     "nTarget": 500,
+     "nNow": 444.77,
+     "chefTake": "Everyone's betting on the flashy AI chip companies. Eaton quietly sells the power gear and wiring the whole circus plugs into — no data-centre runs without it. Boring? Yep. Boring makes money. A steady long-term serve while the flashier stuff gives you heartburn.",
+     "catalysts": [
+      "Broker upgrade to 'Outperform' ($502 target)",
+      "Every AI data-centre needs Eaton's power gear",
+      "Clean uptrend — above both moving averages",
+      "26 analysts on the buy side"
+     ],
+     "risk": "It's not cheap for an industrial. If the AI-spending mood sours, this de-rates along with the whole theme."
+    }
+   ]
+  }
+ ],
+ "scoreboard": {
+  "record": "1–2",
+  "recordNote": "last 3 closed calls · being straight with you",
+  "closed": [
+   {
+    "sym": "DRO",
+    "pct": "−5.4%",
+    "win": false
+   },
+   {
+    "sym": "EOS*",
+    "pct": "−5.0%",
+    "win": false
+   },
+   {
+    "sym": "VLO",
+    "pct": "+6.2%",
+    "win": true
+   }
   ],
-  "sectors": [
-    { "em": "🤖", "title": "AI / Semiconductors", "note": "PLTR, NVDA, ETN — broad and strong 🔥🔥🔥🔥🔥", "tag": "Buy", "tclass": "t-buy" },
-    { "em": "🛡️", "title": "Defence / Aerospace", "note": "KTOS, BA, EOS — upgrades stacking up 🔥🔥🔥🔥", "tag": "Buy", "tclass": "t-buy" },
-    { "em": "🏥", "title": "Healthcare (ASX)", "note": "HLS crashed −23% on a guidance cut", "tag": "Skip", "tclass": "t-dont" }
-  ],
-  "commodities": [
-    { "em": "🥇", "name": "Gold", "note": "Aussie miners broke out +8% — the pack is running", "tag": "Buy", "tclass": "t-buy" },
-    { "em": "☢️", "name": "Uranium", "note": "Term price at 18-year high, supply getting cut", "tag": "Buy", "tclass": "t-buy" },
-    { "em": "🛢️", "name": "Oil", "note": "~$83 and going nowhere fast tonight", "tag": "Meh", "tclass": "t-watch" },
-    { "em": "🔩", "name": "Copper", "note": "Quiet — no fresh signal this run", "tag": "Meh", "tclass": "t-watch" }
-  ],
-  "trail": [
-    { "n": "01", "text": "<b>Scanned ~48 stocks</b> across Aussie news feeds and US movers.", "note": "Stockhead, Motley Fool, Yahoo, Benzinga upgrades." },
-    { "n": "02", "text": "<b>Scored every one</b> on fresh catalysts — contracts, upgrades, earnings — and penalised anything that already ran too far.", "note": "PLTR lost points for being +29% and overheated." },
-    { "n": "03", "text": "<b>Pulled live prices</b> and checked the charts (RSI/trend) on the survivors.", "note": "Direct from EODHD + Finnhub." },
-    { "n": "04", "text": "<b>Picked the top 3 each</b> for Australia and the world — best catalyst, cleanest entry, no doubling up.", "note": "DUR had a $281m contract but we couldn't get a live price, so it sits out — no guessing." }
+  "closedNote": "*Stopped out in July, back on the menu tonight with a fresh thesis. We hold ourselves to the stop.",
+  "open": [
+   {
+    "tf": "⚡",
+    "sym": "MND",
+    "period": "Day",
+    "status": "just plated",
+    "hot": false
+   },
+   {
+    "tf": "📅",
+    "sym": "PNI",
+    "period": "Week",
+    "status": "simmering",
+    "hot": false
+   },
+   {
+    "tf": "📈",
+    "sym": "EOS",
+    "period": "Long",
+    "status": "slow-cook",
+    "hot": false
+   },
+   {
+    "tf": "⚡",
+    "sym": "KTOS",
+    "period": "Day",
+    "status": "just plated",
+    "hot": false
+   },
+   {
+    "tf": "📅",
+    "sym": "PLTR",
+    "period": "Week",
+    "status": "too hot",
+    "hot": true
+   },
+   {
+    "tf": "📈",
+    "sym": "ETN",
+    "period": "Long",
+    "status": "slow-cook",
+    "hot": false
+   }
   ]
+ },
+ "geo": [
+  {
+   "em": "🛡️",
+   "title": "AUKUS defence build-out",
+   "note": "Governments spending big — tailwind for KTOS, EOS, BA",
+   "tag": "Buy the theme",
+   "tclass": "t-buy"
+  },
+  {
+   "em": "🤖",
+   "title": "AI capex super-cycle",
+   "note": "Every big tech co is still spending on chips & power",
+   "tag": "Buy the theme",
+   "tclass": "t-buy"
+  },
+  {
+   "em": "☢️",
+   "title": "Uranium term price 18-yr high",
+   "note": "Macro bullish — but no clean ASX ticker surfaced tonight",
+   "tag": "Watch",
+   "tclass": "t-watch"
+  }
+ ],
+ "sectors": [
+  {
+   "em": "🤖",
+   "title": "AI / Semiconductors",
+   "note": "PLTR, NVDA, ETN — broad and strong 🔥🔥🔥🔥🔥",
+   "tag": "Buy",
+   "tclass": "t-buy"
+  },
+  {
+   "em": "🛡️",
+   "title": "Defence / Aerospace",
+   "note": "KTOS, BA, EOS — upgrades stacking up 🔥🔥🔥🔥",
+   "tag": "Buy",
+   "tclass": "t-buy"
+  },
+  {
+   "em": "🏥",
+   "title": "Healthcare (ASX)",
+   "note": "HLS crashed −23% on a guidance cut",
+   "tag": "Skip",
+   "tclass": "t-dont"
+  }
+ ],
+ "commodities": [
+  {
+   "em": "🥇",
+   "name": "Gold",
+   "note": "Aussie miners broke out +8% — the pack is running",
+   "tag": "Buy",
+   "tclass": "t-buy"
+  },
+  {
+   "em": "☢️",
+   "name": "Uranium",
+   "note": "Term price at 18-year high, supply getting cut",
+   "tag": "Buy",
+   "tclass": "t-buy"
+  },
+  {
+   "em": "🧲",
+   "name": "Rare Earths",
+   "note": "AUKUS + supply-chain scramble — LYC, ILU in focus",
+   "tag": "Emerging",
+   "tclass": "t-hot"
+  },
+  {
+   "em": "⛏️",
+   "name": "Tungsten",
+   "note": "Niche but hot — EQR posted record revenue",
+   "tag": "Emerging",
+   "tclass": "t-hot"
+  },
+  {
+   "em": "🔋",
+   "name": "Lithium",
+   "note": "US incentives for domestic supply (ASN) — turning",
+   "tag": "Watch",
+   "tclass": "t-watch"
+  },
+  {
+   "em": "🥈",
+   "name": "Silver",
+   "note": "Rides gold's coat-tails + solar demand",
+   "tag": "Watch",
+   "tclass": "t-watch"
+  },
+  {
+   "em": "🛢️",
+   "name": "Oil",
+   "note": "~$83 and going nowhere fast tonight",
+   "tag": "Meh",
+   "tclass": "t-watch"
+  },
+  {
+   "em": "🔩",
+   "name": "Copper",
+   "note": "Quiet — no fresh signal this run",
+   "tag": "Meh",
+   "tclass": "t-watch"
+  }
+ ],
+ "candidates": [
+  {
+   "sym": "CMM",
+   "region": "au",
+   "heat": "hot",
+   "note": "Gold breakout +8.7% — pack running"
+  },
+  {
+   "sym": "GMD",
+   "region": "au",
+   "heat": "hot",
+   "note": "Gold +8.2%, riding the miner surge"
+  },
+  {
+   "sym": "LNW",
+   "region": "au",
+   "heat": "good",
+   "note": "Earnings beat +6.5% — just missed the cut"
+  },
+  {
+   "sym": "DUR",
+   "region": "au",
+   "heat": "good",
+   "note": "$281m AUKUS contract — no live price, verify"
+  },
+  {
+   "sym": "MYE",
+   "region": "au",
+   "heat": "good",
+   "note": "$85m mining-services contract win"
+  },
+  {
+   "sym": "BA",
+   "region": "us",
+   "heat": "good",
+   "note": "Rare 2-notch upgrade to Outperform ($300)"
+  },
+  {
+   "sym": "AEHR",
+   "region": "us",
+   "heat": "good",
+   "note": "+19.8% semis breakout — a touch late"
+  },
+  {
+   "sym": "NVDA",
+   "region": "us",
+   "heat": "good",
+   "note": "AI leader, heavy volume — always in the mix"
+  },
+  {
+   "sym": "E25",
+   "region": "au",
+   "heat": "mid",
+   "note": "Binding manganese offtake signed"
+  },
+  {
+   "sym": "MIN",
+   "region": "au",
+   "heat": "mid",
+   "note": "Broker upgrade to Buy (Morgans)"
+  },
+  {
+   "sym": "NEU",
+   "region": "au",
+   "heat": "mid",
+   "note": "+16% on results — already ran hard"
+  },
+  {
+   "sym": "ALNY",
+   "region": "us",
+   "heat": "mid",
+   "note": "Biotech upgrade to Strong Buy ($420)"
+  },
+  {
+   "sym": "W",
+   "region": "us",
+   "heat": "cold",
+   "note": "+30% but squeeze-driven — don't chase"
+  },
+  {
+   "sym": "HLS",
+   "region": "au",
+   "heat": "cold",
+   "note": "−23% guidance cut — falling knife"
+  },
+  {
+   "sym": "BPT",
+   "region": "au",
+   "heat": "cold",
+   "note": "Downgraded to Sell — steer clear"
+  },
+  {
+   "sym": "AMZN",
+   "region": "us",
+   "heat": "cold",
+   "note": "Selling on heavy volume — distribution"
+  }
+ ],
+ "trail": [
+  {
+   "n": "01",
+   "text": "<b>Scanned ~48 stocks</b> across Aussie news feeds and US movers.",
+   "note": "Stockhead, Motley Fool, Yahoo, Benzinga upgrades."
+  },
+  {
+   "n": "02",
+   "text": "<b>Scored every one</b> on fresh catalysts and penalised anything that already ran too far.",
+   "note": "PLTR lost points for being +29% and overheated."
+  },
+  {
+   "n": "03",
+   "text": "<b>Pulled live prices</b> and checked the charts on the survivors.",
+   "note": "Direct from EODHD + Finnhub."
+  },
+  {
+   "n": "04",
+   "text": "<b>Picked the top 3 each</b> for Australia and the world — no doubling up.",
+   "note": "DUR had a $281m contract but no live price, so it sits out — no guessing."
+  }
+ ]
 }
