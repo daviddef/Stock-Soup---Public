@@ -88,6 +88,8 @@
   .s-in .proxnow,.s-near .proxnow{background:var(--buy)} .s-in .pxst,.s-near .pxst{color:var(--buy)}
   .s-close .proxnow{background:var(--hold)} .s-close .pxst{color:var(--hold)}
   .s-wait .proxnow{background:var(--faint)}
+  .proxpct{position:absolute;bottom:14px;transform:translateX(-50%);font-size:10px;font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap;color:var(--muted)}
+  .s-in .proxpct,.s-near .proxpct{color:var(--buy)} .s-close .proxpct{color:var(--hold)} .s-wait .proxpct{color:var(--muted)}
   .proxkey{font-size:10px;color:var(--faint);margin-top:10px}
   .sec-head{display:flex;align-items:baseline;gap:12px;margin-bottom:2px}
   .sec-head h2{font-size:clamp(20px,3.4vw,30px)}
@@ -125,7 +127,11 @@
   .card .lvls{display:flex;gap:6px;font-size:11px;color:var(--muted);border-top:1px dashed var(--line);padding-top:10px;flex-wrap:wrap}
   .lvls b{color:var(--ink)}
   .card .more{font-size:11px;font-weight:800;color:var(--broth);letter-spacing:.02em}
-  .buyat{display:inline-flex;align-items:center;gap:6px;background:rgba(35,194,103,.13);border:1px solid rgba(35,194,103,.4);color:var(--buy);font-weight:800;font-size:13px;padding:6px 12px;border-radius:9px;align-self:flex-start}
+  .buyat{display:flex;align-items:center;gap:8px;background:var(--surface-2);border:1px solid var(--line);color:var(--ink);font-weight:800;font-size:13px;padding:6px 8px 6px 12px;border-radius:9px;width:100%;flex-wrap:wrap}
+  .buyat.ba-in{background:rgba(35,194,103,.11);border-color:rgba(35,194,103,.36);color:var(--buy)}
+  .buyat.ba-close{background:rgba(240,180,0,.10);border-color:rgba(240,180,0,.34);color:var(--hold)}
+  .buyat.ba-wait{background:var(--surface-2);border-color:var(--line);color:var(--muted)}
+  .baact{font-weight:800;font-size:12px}
   .buyat .bl{color:var(--muted);font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.05em}
   .storyrow{display:flex;flex-direction:column;gap:3px;padding:10px 0;border-bottom:1px solid var(--line);font-size:14px}
   .storyrow:last-child{border-bottom:0}
@@ -225,6 +231,8 @@
   .pill:hover{transform:translateY(-2px)}
   .pill:focus-visible{outline:2px solid var(--broth);outline-offset:2px}
   .pill .ph{width:9px;height:9px;border-radius:50%;flex:0 0 auto}
+  .pill .ph.no{background:none!important;width:auto;height:auto;border-radius:0;font-size:11px;line-height:1}
+  .legno{font-size:11px;line-height:1}
   .pill b{font-weight:800}
   .pill small{color:var(--muted);font-size:12px}
   .pill .ppx{font-family:var(--mono);font-size:11.5px;font-weight:800}
@@ -270,6 +278,25 @@
   .wlreg:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
   .wlstatus{font-size:13px;font-weight:700;margin-top:10px;min-height:18px}
   .wlnote{font-size:12px;color:var(--muted);margin-top:12px;max-width:60ch}
+  /* ＋Watch buttons (cards + modal) */
+  .watchbtn{cursor:pointer;font-family:var(--font);font-weight:800;white-space:nowrap}
+  .watchbtn.on{background:var(--broth)!important;border-color:var(--broth)!important;color:#fff!important}
+  .cardwatch{background:var(--surface);border:1px solid var(--line);color:var(--ink);font-size:12px;padding:5px 12px;border-radius:999px;margin-left:auto;flex:0 0 auto}
+  .cardwatch:hover{border-color:var(--broth);color:var(--broth)}
+  /* Smart-watchlist alert + rows */
+  .wlalert{background:rgba(35,194,103,.13);border:1px solid rgba(35,194,103,.5);color:var(--ink);border-radius:11px;padding:11px 14px;font-size:13.5px;font-weight:700;margin-bottom:14px;text-wrap:pretty}
+  .wrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--faint);border-radius:11px;padding:9px 12px;margin-bottom:8px}
+  .wrow.wt-in{border-left-color:var(--buy);background:rgba(35,194,103,.07)}
+  .wrow.wt-close{border-left-color:var(--hold)} .wrow.wt-wait{border-left-color:var(--faint)}
+  .wsym{font-weight:900;font-size:14px;text-decoration:none;color:var(--ink)}
+  .wsym .wflag{font-size:9px;color:var(--faint);font-weight:700}
+  .wpx{font-family:var(--mono);font-weight:800;font-size:13px}
+  .wpx.up{color:var(--buy)} .wpx.down{color:var(--dont)} .wpx.muted{color:var(--muted)}
+  .went{font-size:11.5px;color:var(--muted);font-weight:700}
+  .wst{margin-left:auto;font-size:12px;font-weight:800}
+  .wt-in .wst{color:var(--buy)} .wt-close .wst{color:var(--hold)} .wt-wait .wst{color:var(--muted)} .wt-none .wst{color:var(--faint)}
+  .wrm{background:none;border:0;color:var(--faint);cursor:pointer;font-size:14px;padding:2px 4px;line-height:1}
+  .wrm:hover{color:var(--dont)}
 
   /* ARCHIVE */
   .arch{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
@@ -1560,8 +1587,9 @@ function renderChangeEnv(D, pulses){
     else if(gap<=4){ st='close'; lbl=Math.round(gap)+'% to go'; }
     else { st='wait'; lbl='wait −'+Math.round(gap/(1+gap/100))+'%'; }
     var pos=Math.max(3,Math.min(97,(gap/8)*100));
+    var onLine=gap<=1.5?'✓':'−'+Math.round(gap)+'%';
     return '<div class="proxrow s-'+st+'"><span class="pxs">'+esc(pk.sym)+'</span>'+
-      '<div class="proxbar"><span class="proxzone"></span><span class="proxnow" style="left:'+pos.toFixed(0)+'%"></span></div>'+
+      '<div class="proxbar"><span class="proxzone"></span><span class="proxpct" style="left:'+pos.toFixed(0)+'%">'+onLine+'</span><span class="proxnow" style="left:'+pos.toFixed(0)+'%"></span></div>'+
       '<span class="pxg"><span class="pxbuy">Buy @ '+esc(pk.cur)+pk.nEntry+'</span><span class="pxst">'+lbl+'</span></span></div>';
   }).join('');
   var latest=pulses[pulses.length-1];
@@ -1601,9 +1629,18 @@ function ruCard(ru,region,idx){var da=(region!=null?' data-region="'+region+'" d
   return '<article class="rucard'+(region!=null?' tappable':'')+'"'+da+'><div class="rutag">🥈 Runner-up</div>'+
   '<div class="rutop"><span class="rusym">'+esc(ru.sym)+'</span>'+
   '<span class="runame">'+esc(ru.name)+'</span><span class="rupx">'+esc(ru.price)+' <span class="'+(ru.up?'up':'down')+'">'+(ru.up?'▲':'▼')+' '+esc(ru.change)+'</span></span></div>'+
-  '<div class="ruline">'+esc(ru.line)+'</div>'+(region!=null?'<div class="rumore">Tap for the full serve →</div>':'')+'</article>';}
+  '<div class="ruline">'+esc(ru.line)+'</div></article>';}
 function money(cur,n){return cur+(Math.abs(n%1)<1e-9?String(n):n.toFixed(2));}
 function clamp(x){return Math.max(3,Math.min(97,x));}
+// Action that moves with the ideal-buy price: at/below → get in, above → wait for the dip.
+function buyState(p){ if(p.nEntry==null||p.nNow==null) return ''; var g=(p.nNow/p.nEntry-1)*100; return g<=1.5?'in':(g<=4?'close':'wait'); }
+function buyAction(p){
+  var s=buyState(p); if(!s) return '';
+  var g=(p.nNow/p.nEntry-1)*100;
+  if(s==='in') return ' <span class="baact">· get in ✓</span>';
+  if(s==='close') return ' <span class="baact">· almost — wait −'+Math.round(g)+'%</span>';
+  return ' <span class="baact">· wait for the dip −'+Math.round(g)+'%</span>';
+}
 
 function render(D,H){
   LAST={D:D,H:H};
@@ -1617,7 +1654,7 @@ function render(D,H){
         '<div class="tf"><span class="name">'+esc(p.tf)+'</span><span class="verdict '+esc(p.vclass)+'">'+esc(p.verdict)+'</span></div>'+
         '<div class="tick"><span class="symwrap"><span class="sym">'+qlink(p.sym,rg.id)+'</span><span class="co">'+qlink(p.sym,rg.id,p.name)+' ↗</span></span>'+
         '<span class="px"><span class="p mono">'+esc(p.price)+'</span><br><span class="c mono '+(p.up?'up':'down')+'">'+esc(p.change)+'</span></span></div>'+
-        (p.nEntry?'<div class="buyat"><span class="bl">🎯 Ideal buy</span> ~'+esc(rg.cur||'$')+p.nEntry+'</div>':'')+
+        '<div class="buyat'+(p.nEntry?' ba-'+buyState(p):'')+'">'+(p.nEntry?'<span class="bl">🎯 Ideal buy</span> ~'+esc(rg.cur||'$')+p.nEntry+buyAction(p):'<span class="bl">Track this pick</span>')+'<button class="watchbtn cardwatch" data-sym="'+esc(p.sym)+'" data-region="'+esc(rg.id)+'" data-name="'+esc(p.name)+'"'+(p.nEntry!=null?' data-entry="'+p.nEntry+'"':'')+' aria-pressed="false">＋ Watch</button></div>'+
         '<p class="plain">'+p.plain+'</p><div class="lvls">'+p.levels+'</div>'+
         (p.spark?rangeBar(p.spark,rg.cur||'$'):'')+'</article>'+
         ((p.runnerUp && /wait|late|hold|skip|avoid|pass|don.t|steer/i.test(p.verdict||''))?ruCard(p.runnerUp,rg.id,idx):'')+'</div>';
@@ -1664,13 +1701,13 @@ function render(D,H){
   var openRows=(sb.open||[]).map(function(o){var reg=(D.regions&&D.regions[0]&&D.regions[0].picks.some(function(p){return p.sym===o.sym;}))?'au':'us';return '<div class="row"><span>'+esc(o.tf)+' '+qlink(o.sym,reg)+' <span style="color:var(--muted)">'+esc(o.period)+'</span></span><span class="st"'+(o.hot?' style="color:var(--hold)"':'')+'>'+esc(o.status)+'</span></div>';}).join('');
   function lines(arr,key){return (arr||[]).map(function(x){return '<div class="line"><span class="em">'+esc(x.em)+'</span><div class="txt">'+esc(x[key])+'<small>'+x.note+'</small></div><span class="tag '+esc(x.tclass)+'">'+esc(x.tag)+'</span></div>';}).join('');}
   var story = (PULSES&&PULSES.length) ?
-    ('<div class="panel"><h3>Tonight\'s hourly runs</h3><p class="panelsub">Every hourly pulse — the change read at that moment ('+PULSES.length+' runs). Newest first.</p>'+
+    ('<div class="panel"><h3>Tonight\'s hourly runs</h3><p class="panelsub"><b>Minor runs</b> — same menu, re-priced every hour ('+PULSES.length+' this session). The <b>major</b> menu changes are in The Journey. Newest first.</p>'+
      '<div class="pulselog">'+PULSES.slice().reverse().map(function(pu){
         var mv=(pu.changes||[]).slice(0,3).map(function(c){return '<span class="'+(c[1]>0.05?'up':c[1]<-0.05?'down':'')+'">'+esc(c[0])+' '+(c[1]>=0?'+':'')+c[1]+'%</span>';}).join(' ');
         return '<div class="plrow"><span class="pltime">'+esc(pu.stamp)+'</span><span class="plmv">'+(mv||'baseline set')+'</span></div>';
       }).join('')+'</div></div>')
     : '<div class="panel"><h3>Tonight\'s hourly runs</h3><p class="panelsub">Hourly pulses will appear here as they run.</p></div>';
-  var pot=(D.candidates||[]).map(function(c){return '<a class="pill h-'+esc(c.heat)+'" href="'+yf(c.sym,c.region)+'" target="_blank" rel="noopener"><span class="ph"></span><b>'+esc(c.sym)+'</b>'+(c.price?' <span class="ppx '+(c.up?'up':'down')+'">'+esc(c.price)+'</span>':'')+' <small>'+esc(c.note)+'</small> <span class="flag">'+(c.region==='au'?'AU':'US')+'</span></a>';}).join('');
+  var pot=(D.candidates||[]).map(function(c){return '<a class="pill h-'+esc(c.heat)+'" href="'+yf(c.sym,c.region)+'" target="_blank" rel="noopener">'+(c.heat==='cold'?'<span class="ph no">⛔</span>':'<span class="ph"></span>')+'<b>'+esc(c.sym)+'</b>'+(c.price?' <span class="ppx '+(c.up?'up':'down')+'">'+esc(c.price)+'</span>':'')+' <small>'+esc(c.note)+'</small> <span class="flag">'+(c.region==='au'?'AU':'US')+'</span></a>';}).join('');
   var half=Math.ceil((D.commodities||[]).length/2);
   var trail=(D.trail||[]).map(function(t){var jump=(t.jump?' <a class="trailjump" href="#'+esc(t.jump)+'">'+esc(t.jumpLabel||'see the list →')+'</a>':'');return '<div class="step"><span class="n">'+esc(t.n)+'</span><div class="st-txt">'+t.text+jump+'<small>'+esc(t.note)+'</small></div></div>';}).join('');
 
@@ -1695,7 +1732,7 @@ function render(D,H){
 
   (PULSES?renderChangeEnv(D,PULSES):pulseBanner(D))+
   '<section><div class="sec-head"><h2 class="display"><span class="k">02</span> The journey</h2></div>'+
-    '<p class="sec-sub">Every run replaces the menu. Here\'s how it\'s moved — newest first. Each row: <b>⚡ Day · 📅 Week · 📈 Long</b>. <span style="color:var(--buy)">Green = kept</span>, <span style="color:var(--dont)">red/✕ = DROP</span>, NEW = fresh this run.</p>'+
+    '<p class="sec-sub"><b>Major runs only</b> — each card is a full re-cook where the menu (the 6 picks) actually changes. Prices still update every hour in between — those minor re-prices live in <b>Tonight\'s hourly runs</b> below. Newest first. Each row: <b>⚡ Day · 📅 Week · 📈 Long</b>. <span style="color:var(--buy)">Green = kept</span>, <span style="color:var(--dont)">red/✕ = DROP</span>, NEW = fresh this run.</p>'+
     '<div class="chef-note">'+note+'</div><div class="journey">'+journeyCols+'</div>'+
     '<div class="grid2"><div class="panel"><div class="paneltop"><h3>Closed calls · scored honestly</h3><button class="trackbtn" id="trackBtn">📊 Full month →</button></div>'+
     '<div class="score"><div><div class="big">'+esc(sb.record)+' <span class="wl">W–L</span></div>'+recClear+'<div class="sub">'+esc(sb.recordNote)+'</div></div></div>'+
@@ -1705,7 +1742,7 @@ function render(D,H){
 
   '<section id="fullpot"><div class="sec-head"><h2 class="display"><span class="k">03</span> The full pot</h2></div>'+
     '<p class="sec-sub">Every candidate the scan shortlisted tonight — <b>'+((D.candidates||[]).length)+' names</b>, priced and scored. These are the ones we chose from. Colour = how appetising it looks. Tap any for Yahoo.</p>'+
-    '<div class="potlegend"><span><i style="background:var(--broth)"></i>🔥 sizzling</span><span><i style="background:var(--buy)"></i>✅ tasty</span><span><i style="background:var(--hold)"></i>➖ maybe</span><span><i style="background:var(--dont)"></i>⛔ send it back</span></div>'+
+    '<div class="potlegend"><span><i style="background:var(--broth)"></i>🔥 sizzling</span><span><i style="background:var(--buy)"></i>✅ tasty</span><span><i style="background:var(--hold)"></i>➖ maybe</span><span><span class="legno">⛔</span> send it back</span></div>'+
     '<div class="pot">'+pot+'</div></section>'+
 
   '<section><div class="sec-head"><h2 class="display"><span class="k">04</span> The world &amp; the sectors</h2></div>'+
@@ -1719,7 +1756,8 @@ function render(D,H){
     '<div class="stack">'+lines((D.commodities||[]).slice(half),'name')+'</div></div></section>'+
 
   '<section><div class="sec-head"><h2 class="display"><span class="k">06</span> Your watchlist</h2></div>'+
-    '<p class="sec-sub">Tickers you want the Chef to keep an eye on. Saved in your browser.</p>'+
+    '<p class="sec-sub">Tap <b>＋ Watch</b> on any pick to track it — we remember its ideal-buy price and flag it when it gets there. Or add your own below.</p>'+
+    '<div class="wlalert" id="wlAlert" role="status" aria-live="polite" style="display:none"></div>'+
     '<div class="wlbar"><input id="wlInput" placeholder="Add a ticker… e.g. BHP" maxlength="8" aria-label="Ticker to add">'+
       '<span class="wlseg" role="group" aria-label="Market"><button id="wlAu" aria-pressed="true">🇦🇺 AU</button><button id="wlUs" aria-pressed="false">🇺🇸 US</button></span>'+
       '<button class="wladd" id="wlAdd">Add</button></div>'+
@@ -1804,9 +1842,12 @@ function openModal(p,region,cur){
       '<div><h4 style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:800;margin-bottom:10px">Why it\'s on the menu</h4><ul class="mcat">'+cats+'</ul></div>'+
       '<div class="mrisk"><b>Watch out:</b> '+esc(p.risk)+'</div>'+
       altsHtml+
-      '<div class="mfoot"><a class="mbtn" href="'+yf(p.sym,region)+'" target="_blank" rel="noopener">📈 Yahoo Finance ↗</a>'+
-        '<a class="mbtn primary" href="'+esc(LAST.D.reportUrl)+'" target="_blank" rel="noopener">📖 Full report ↗</a></div>'+
+      '<div class="mfoot"><button class="mbtn watchbtn" data-sym="'+esc(p.sym)+'" data-region="'+esc(region)+'"'+(p.name?' data-name="'+esc(p.name)+'"':'')+(p.nEntry!=null?' data-entry="'+p.nEntry+'"':'')+' aria-pressed="false">＋ Watch</button>'+
+        '<a class="mbtn" href="'+yf(p.sym,region)+'" target="_blank" rel="noopener">📈 Yahoo ↗</a>'+
+        '<a class="mbtn primary" href="'+esc(LAST.D.reportUrl)+'" target="_blank" rel="noopener">📖 Report ↗</a></div>'+
     '</div>';
+  var _wb=m.querySelector('.watchbtn'); if(_wb) _wb.addEventListener('click',function(e){e.preventDefault();watchToggleFromEl(_wb);});
+  syncWatchButtons();
   var ov=document.getElementById('overlay');
   ov.classList.add('open');ov.setAttribute('aria-hidden','false');
   document.getElementById('mClose').focus();
@@ -1815,6 +1856,72 @@ function closeModal(){
   var ov=document.getElementById('overlay');
   ov.classList.remove('open');ov.setAttribute('aria-hidden','true');
   if(LASTFOCUS&&LASTFOCUS.focus)LASTFOCUS.focus();
+}
+
+// ---- Smart watchlist (per-browser localStorage; global so cards, modal & section all share it) ----
+var WLKEY='soup_watchlist';
+function wlGet(){try{return JSON.parse(localStorage.getItem(WLKEY)||'[]');}catch(e){return[];}}
+function wlSet(a){try{localStorage.setItem(WLKEY,JSON.stringify(a));}catch(e){}}
+function wlHas(sym,region){return wlGet().some(function(w){return w.sym===sym&&w.region===region;});}
+function wlAddItem(it){var a=wlGet();if(!a.some(function(w){return w.sym===it.sym&&w.region===it.region;})){a.push(it);wlSet(a);}}
+function wlRemove(sym,region){wlSet(wlGet().filter(function(w){return !(w.sym===sym&&w.region===region);}));}
+function wlToggle(it){if(wlHas(it.sym,it.region)){wlRemove(it.sym,it.region);return false;}wlAddItem(it);return true;}
+function wlNum(s){var v=(String(s==null?'':s)).match(/([\d.]+)/);return v?parseFloat(v[1]):null;}
+function wlPriceMap(D){
+  var m={};
+  function put(sym,region,price,up,change,entry){var p=wlNum(price);if(p==null)return;var k=sym+'|'+region;
+    if(!m[k])m[k]={price:p,cur:region==='au'?'A$':'$',up:!!up,change:change,entry:(entry!=null?entry:null)};
+    else if(entry!=null&&m[k].entry==null)m[k].entry=entry;}
+  (D.regions||[]).forEach(function(rg){(rg.picks||[]).forEach(function(p){put(p.sym,rg.id,p.price,p.up,p.change,p.nEntry);});});
+  (D.candidates||[]).forEach(function(c){put(c.sym,c.region,c.price,c.up,c.change,null);});
+  (D.defaultWatchlist||[]).forEach(function(w){put(w.sym,w.region,w.price,w.up,w.change,null);});
+  return m;
+}
+function renderWatchlist(){
+  var el=document.getElementById('wlPills'); if(!el) return;
+  var D=(LAST&&LAST.D)||{}, pm=wlPriceMap(D);
+  var rows=wlGet().map(function(w){
+    var info=pm[w.sym+'|'+w.region]||null;
+    var entry=(w.entry!=null?w.entry:(info&&info.entry!=null?info.entry:null));
+    var price=info?info.price:null, cur=info?info.cur:(w.region==='au'?'A$':'$');
+    var gap=(entry&&price)?(price/entry-1)*100:null;
+    return {w:w,price:price,cur:cur,up:info?info.up:null,change:info?info.change:null,entry:entry,gap:gap};
+  });
+  var triggered=rows.filter(function(r){return r.gap!=null&&r.gap<=0.5;});
+  rows.sort(function(x,y){var gx=x.gap==null?9999:x.gap,gy=y.gap==null?9999:y.gap;return gx-gy;});
+  var banner=document.getElementById('wlAlert');
+  if(banner){var t=triggered.map(function(r){return esc(r.w.sym);}).join(', ');
+    banner.innerHTML=triggered.length?('🎯 '+triggered.length+' watched '+(triggered.length===1?'stock is':'stocks are')+' at or below your buy price: <b>'+t+'</b> — go look.'):'';
+    banner.style.display=triggered.length?'':'none';}
+  if(!rows.length){el.innerHTML='<span class="wlempty">No tickers yet — add one above, or tap <b>＋ Watch</b> on any pick.</span>';return;}
+  el.innerHTML=rows.map(function(r){
+    var w=r.w,cls,lbl;
+    if(r.gap==null){cls='wt-none';lbl=(r.price==null?'tracking…':'no buy target');}
+    else if(r.gap<=0.5){cls='wt-in';lbl='at buy ✓';}
+    else if(r.gap<=4){cls='wt-close';lbl=Math.round(r.gap)+'% to go';}
+    else{cls='wt-wait';lbl=Math.round(r.gap)+'% above buy';}
+    var px=r.price!=null?'<span class="wpx '+(r.up?'up':'down')+'">'+r.cur+r.price+'</span>':'<span class="wpx muted">—</span>';
+    var ent=r.entry!=null?'<span class="went">buy @ '+r.cur+r.entry+'</span>':'';
+    return '<div class="wrow '+cls+'"><a class="wsym" href="'+yf(w.sym,w.region)+'" target="_blank" rel="noopener">'+esc(w.sym)+' <span class="wflag">'+(w.region==='au'?'AU':'US')+'</span></a>'+
+      px+ent+'<span class="wst">'+lbl+'</span>'+
+      '<button class="wrm" data-sym="'+esc(w.sym)+'" data-region="'+esc(w.region)+'" aria-label="Remove '+esc(w.sym)+'">✕</button></div>';
+  }).join('');
+  el.querySelectorAll('.wrm').forEach(function(b){b.addEventListener('click',function(){wlRemove(b.dataset.sym,b.dataset.region);renderWatchlist();syncWatchButtons();});});
+}
+// Reflect watch-state on any ＋Watch/✓Watching buttons currently in the DOM
+function syncWatchButtons(){
+  document.querySelectorAll('.watchbtn[data-sym]').forEach(function(b){
+    var on=wlHas(b.dataset.sym,b.dataset.region);
+    b.classList.toggle('on',on);
+    b.innerHTML=on?'✓ Watching':'＋ Watch';
+    b.setAttribute('aria-pressed',on?'true':'false');
+  });
+}
+function watchToggleFromEl(b){
+  var it={sym:b.dataset.sym,region:b.dataset.region};
+  if(b.dataset.name)it.name=b.dataset.name;
+  if(b.dataset.entry)it.entry=parseFloat(b.dataset.entry);
+  wlToggle(it); syncWatchButtons(); renderWatchlist();
 }
 
 function openTrackRecord(){
@@ -1877,24 +1984,19 @@ function wire(D){
     rc.addEventListener('click',function(e){if(e.target.closest('a'))return;openRu();});
     rc.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();openRu();}});
   });
-  // ---- Watchlist (localStorage) ----
-  var WLKEY='soup_watchlist', wlRegion='au';
-  function wlGet(){try{return JSON.parse(localStorage.getItem(WLKEY)||'[]');}catch(e){return[];}}
-  function wlSet(a){try{localStorage.setItem(WLKEY,JSON.stringify(a));}catch(e){}}
-  function wlRender(){
-    var a=wlGet(),el=document.getElementById('wlPills');if(!el)return;
-    el.innerHTML=a.length?a.map(function(w,i){return '<span class="wlpill"><a href="'+yf(w.sym,w.region)+'" target="_blank" rel="noopener">'+esc(w.sym)+'</a><button class="rm" data-i="'+i+'" aria-label="Remove '+esc(w.sym)+'">✕</button></span>';}).join(''):'<span class="wlempty">No tickers yet — add a few above.</span>';
-    el.querySelectorAll('.rm').forEach(function(b){b.addEventListener('click',function(){var a=wlGet();a.splice(+b.dataset.i,1);wlSet(a);wlRender();});});
-  }
+  // ---- Watchlist (uses the global smart-watchlist module) ----
+  var wlRegion='au';
   var wau=document.getElementById('wlAu'),wus=document.getElementById('wlUs');
   if(wau&&wus){wau.onclick=function(){wlRegion='au';wau.setAttribute('aria-pressed','true');wus.setAttribute('aria-pressed','false');};
     wus.onclick=function(){wlRegion='us';wus.setAttribute('aria-pressed','true');wau.setAttribute('aria-pressed','false');};}
-  function wlAdd(){var inp=document.getElementById('wlInput');if(!inp)return;var v=(inp.value||'').trim().toUpperCase().replace(/[^A-Z0-9.]/g,'');if(!v)return;var a=wlGet();if(!a.some(function(w){return w.sym===v&&w.region===wlRegion;}))a.push({sym:v,region:wlRegion});wlSet(a);inp.value='';wlRender();}
+  function wlAdd(){var inp=document.getElementById('wlInput');if(!inp)return;var v=(inp.value||'').trim().toUpperCase().replace(/[^A-Z0-9.]/g,'');if(!v)return;wlAddItem({sym:v,region:wlRegion});inp.value='';renderWatchlist();syncWatchButtons();}
   var ab=document.getElementById('wlAdd');if(ab)ab.onclick=wlAdd;
   var wi=document.getElementById('wlInput');if(wi)wi.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();wlAdd();}});
-  // Paste your Formspree endpoint here (e.g. "https://formspree.io/f/xxxxxxx") to make Register store submissions.
-  // Empty = graceful fallback to a pre-filled email.
-  // Registration removed for now — a dedicated registration page is planned separately.
+  // Wire every ＋Watch button (cards, modal, pot) to the shared toggle
+  document.querySelectorAll('.watchbtn[data-sym]').forEach(function(b){
+    b.addEventListener('click',function(e){e.preventDefault();e.stopPropagation();watchToggleFromEl(b);});
+  });
+  syncWatchButtons();
   // Seed the watchlist once from the user's published watchlist.json (their previously-advised tickers)
   try{
     if(!localStorage.getItem('soup_wl_seeded') && (D.defaultWatchlist||[]).length && !wlGet().length){
@@ -1902,7 +2004,7 @@ function wire(D){
     }
     if((D.defaultWatchlist||[]).length) localStorage.setItem('soup_wl_seeded','1');
   }catch(e){}
-  wlRender();
+  renderWatchlist();
 
   // ---- Archive (live report index) ----
   var arch=document.getElementById('archList');
@@ -1959,7 +2061,7 @@ function renderSimple(D){
       '<div class="stf">'+esc(BIG[tf]||p.tf)+'</div>'+
       '<div class="ssym">'+esc(p.sym)+' <span class="sverd '+esc(p.vclass)+'">'+esc(p.verdict)+'</span></div>'+
       '<div class="sname">'+esc(p.name)+' · '+esc(p.price)+' <span class="'+(p.up?'up':'down')+'">'+(p.up?'▲':'▼')+' '+esc(p.change)+'</span></div>'+
-      (p.nEntry?'<div class="buyat"><span class="bl">🎯 Ideal buy</span> ~'+esc(region.cur||'$')+p.nEntry+'</div>':'')+
+      '<div class="buyat'+(p.nEntry?' ba-'+buyState(p):'')+'">'+(p.nEntry?'<span class="bl">🎯 Ideal buy</span> ~'+esc(region.cur||'$')+p.nEntry+buyAction(p):'<span class="bl">Track this pick</span>')+'<button class="watchbtn cardwatch" data-sym="'+esc(p.sym)+'" data-region="'+esc(rid)+'" data-name="'+esc(p.name)+'"'+(p.nEntry!=null?' data-entry="'+p.nEntry+'"':'')+' aria-pressed="false">＋ Watch</button></div>'+
       '<div class="sline">'+esc(p.plain)+'</div>'+
       (p.spark?rangeBar(p.spark,(region.cur||'$')):'')+'</article>'+
       ((p.runnerUp && /wait|late|hold|skip|avoid|pass|don.t|steer/i.test(p.verdict||''))?ruCard(p.runnerUp,rid,idx):'');
@@ -2008,6 +2110,10 @@ function wireSimple(D){
     rc.addEventListener('click',function(e){if(e.target.closest('a'))return;openRu();});
     rc.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();openRu();}});
   });
+  document.querySelectorAll('.watchbtn[data-sym]').forEach(function(b){
+    b.addEventListener('click',function(e){e.preventDefault();e.stopPropagation();watchToggleFromEl(b);});
+  });
+  syncWatchButtons();
   var lvl=(D.risk&&D.risk.level!=null)?D.risk.level:50;
   requestAnimationFrame(function(){var n=document.getElementById('sneedle');if(n)n.style.left=lvl+'%';});
 }
