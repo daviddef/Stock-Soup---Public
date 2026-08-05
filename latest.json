@@ -1052,66 +1052,102 @@
   {
    "sym": "VTM",
    "region": "au",
-   "name": "Victory Metals"
+   "name": "Victory Metals",
+   "price": "A$1.45",
+   "up": false,
+   "change": "-2.36%"
   },
   {
    "sym": "PDN",
    "region": "au",
-   "name": "Paladin Energy"
+   "name": "Paladin Energy",
+   "price": "A$9.99",
+   "up": true,
+   "change": "+4.17%"
   },
   {
    "sym": "IEL",
    "region": "au",
-   "name": "IDP Education"
+   "name": "IDP Education",
+   "price": "A$2.4",
+   "up": true,
+   "change": "+2.13%"
   },
   {
    "sym": "TLX",
    "region": "au",
-   "name": "Telix Pharmaceuticals"
+   "name": "Telix Pharmaceuticals",
+   "price": "A$14.72",
+   "up": true,
+   "change": "+2.15%"
   },
   {
    "sym": "EOS",
    "region": "au",
-   "name": "Electro Optic Systems"
+   "name": "Electro Optic Systems",
+   "price": "A$7.65",
+   "up": true,
+   "change": "+1.19%"
   },
   {
    "sym": "NTU",
    "region": "au",
-   "name": "Northern Minerals"
+   "name": "Northern Minerals",
+   "price": "A$0.03",
+   "up": true,
+   "change": "+0%"
   },
   {
    "sym": "DYL",
    "region": "au",
-   "name": "Deep Yellow"
+   "name": "Deep Yellow",
+   "price": "A$1.41",
+   "up": true,
+   "change": "+4.06%"
   },
   {
    "sym": "DRO",
    "region": "au",
-   "name": "DroneShield"
+   "name": "DroneShield",
+   "price": "A$2.19",
+   "up": true,
+   "change": "+5.29%"
   },
   {
    "sym": "A2M",
    "region": "au",
-   "name": "A2 Milk"
+   "name": "A2 Milk",
+   "price": "A$6.89",
+   "up": true,
+   "change": "+0.73%"
   },
   {
    "sym": "SGH",
    "region": "au",
-   "name": "Sievert Larson Holdings"
+   "name": "Sievert Larson Holdings",
+   "price": "A$46.32",
+   "up": true,
+   "change": "+1.74%"
   },
   {
    "sym": "WTC",
    "region": "au",
-   "name": "WiseTech Global"
+   "name": "WiseTech Global",
+   "price": "A$39.91",
+   "up": true,
+   "change": "+5.41%"
   },
   {
    "sym": "PLTR",
    "region": "us",
-   "name": "Palantir Technologies"
+   "name": "Palantir Technologies",
+   "price": "$158.43",
+   "up": false,
+   "change": "-2.6%"
   }
  ],
  "pulse": {
-  "stamp": "Thu 07:22",
+  "stamp": "Thu 08:31",
   "synth": "Since last hour the board is **flat ⚪** (avg +0.0%). Nothing moved much — quiet hour. (ASX closed — moves are US-led.)",
   "movers": [
    {
