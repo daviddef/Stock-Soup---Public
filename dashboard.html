@@ -299,9 +299,19 @@
   .cardwatch:hover{border-color:var(--broth);color:var(--broth)}
   /* Smart-watchlist alert + rows */
   .wlalert{background:rgba(35,194,103,.13);border:1px solid rgba(35,194,103,.5);color:var(--ink);border-radius:11px;padding:11px 14px;font-size:13.5px;font-weight:700;margin-bottom:14px;text-wrap:pretty}
-  .wrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--faint);border-radius:11px;padding:9px 12px;margin-bottom:8px}
+  .wrow{background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--faint);border-radius:11px;padding:9px 12px;margin-bottom:8px}
+  .wtop{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
   .wrow.wt-in{border-left-color:var(--buy);background:rgba(35,194,103,.07)}
   .wrow.wt-close{border-left-color:var(--hold)} .wrow.wt-wait{border-left-color:var(--faint)}
+  .wintel{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:8px;padding-top:8px;border-top:1px dashed var(--line);font-size:11.5px}
+  .wic{background:var(--surface-2);border:1px solid var(--line);border-radius:999px;padding:3px 9px;font-weight:800;white-space:nowrap}
+  .wic.sc{border-color:rgba(255,122,26,.4);color:var(--broth)} .wic.tg{color:var(--ink)}
+  .wic.vd{text-transform:uppercase;font-size:10px;letter-spacing:.03em}
+  .wic.vd.buy{color:var(--buy);border-color:rgba(35,194,103,.4)} .wic.vd.hold{color:var(--hold)} .wic.vd.dont{color:var(--dont)}
+  .wic.none{border:0;background:none;color:var(--faint);font-weight:700;font-style:italic;white-space:normal}
+  .wicat{color:var(--muted);font-weight:600;flex:1 1 140px;min-width:120px}
+  .wview{margin-left:auto;background:var(--broth);border:0;color:#fff;font-family:var(--font);font-weight:800;font-size:11px;padding:5px 11px;border-radius:999px;cursor:pointer;white-space:nowrap}
+  .wview:hover{filter:brightness(1.08)}
   .wsym{font-weight:900;font-size:14px;text-decoration:none;color:var(--ink)}
   .wsym .wflag{font-size:9px;color:var(--faint);font-weight:700}
   .wpx{font-family:var(--mono);font-weight:800;font-size:13px}
@@ -330,6 +340,7 @@
   .pltime{font-weight:800;width:74px;flex:0 0 auto;color:var(--muted);font-variant-numeric:tabular-nums}
   .plmv{font-family:var(--mono);font-size:12px;font-variant-numeric:tabular-nums;display:flex;flex-wrap:wrap;gap:8px}
   .plmv .up{color:var(--buy)} .plmv .down{color:var(--dont)}
+  .plquiet{color:var(--faint);font-style:italic}
 
   /* SIMPLE (mobile-first) VIEW */
   .simple{max-width:540px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
@@ -1736,8 +1747,11 @@ function render(D,H){
   var story = (PULSES&&PULSES.length) ?
     ('<div class="panel"><h3>Tonight\'s hourly runs</h3><p class="panelsub"><b>Minor runs</b> — same menu, re-priced every hour ('+PULSES.length+' this session). The <b>major</b> menu changes are in The Journey. Newest first.</p>'+
      '<div class="pulselog">'+PULSES.slice().reverse().map(function(pu){
-        var mv=(pu.changes||[]).slice(0,3).map(function(c){return '<span class="'+(c[1]>0.05?'up':c[1]<-0.05?'down':'')+'">'+esc(c[0])+' '+(c[1]>=0?'+':'')+c[1]+'%</span>';}).join(' ');
-        return '<div class="plrow"><span class="pltime">'+esc(pu.stamp)+'</span><span class="plmv">'+(mv||'baseline set')+'</span></div>';
+        var ch=pu.changes||[];
+        var real=ch.filter(function(c){return Math.abs(c[1])>=0.05;});
+        var mv=real.slice(0,3).map(function(c){return '<span class="'+(c[1]>0?'up':'down')+'">'+esc(c[0])+' '+(c[1]>=0?'+':'')+c[1]+'%</span>';}).join(' ');
+        var body=mv?mv:'<span class="plquiet">'+(ch.length?'quiet · nothing moved':'baseline set')+'</span>';
+        return '<div class="plrow"><span class="pltime">'+esc(pu.stamp)+'</span><span class="plmv">'+body+'</span></div>';
       }).join('')+'</div></div>')
     : '<div class="panel"><h3>Tonight\'s hourly runs</h3><p class="panelsub">Hourly pulses will appear here as they run.</p></div>';
   var pot=(D.candidates||[]).map(function(c){return '<a class="pill h-'+esc(c.heat)+'" href="'+yf(c.sym,c.region)+'" target="_blank" rel="noopener">'+(c.heat==='cold'?'<span class="ph no">⛔</span>':'<span class="ph"></span>')+'<b>'+esc(c.sym)+'</b>'+(c.price?' <span class="ppx '+(c.up?'up':'down')+'">'+esc(c.price)+'</span>':'')+' <small>'+esc(c.note)+'</small> <span class="flag">'+(c.region==='au'?'AU':'US')+'</span></a>';}).join('');
@@ -1910,6 +1924,17 @@ function wlPriceMap(D){
   (D.defaultWatchlist||[]).forEach(function(w){put(w.sym,w.region,w.price,w.up,w.change,null);});
   return m;
 }
+// Smart overlay for a watched ticker: pull the richest intel we already hold.
+function wlIntel(w,D){
+  var pick=null,preg=null,pidx=null,pcur='$';
+  (D.regions||[]).forEach(function(rg){(rg.picks||[]).forEach(function(p,i){if(p.sym===w.sym&&rg.id===w.region){pick=p;preg=rg.id;pidx=i;pcur=rg.cur||'$';}});});
+  if(pick) return {kind:'pick',region:preg,idx:pidx,cur:pcur,
+    score:(pick.score&&!pick.score.pending?(pick.score.buy_now+'/100 · '+pick.score.band):null),
+    target:pick.nTarget,verdict:pick.verdict,vclass:pick.vclass,catalyst:(pick.catalysts||[])[0]||pick.plain};
+  var c=(D.candidates||[]).filter(function(x){return x.sym===w.sym&&x.region===w.region;})[0];
+  if(c) return {kind:'cand',note:c.note,heat:c.heat};
+  return {kind:'none'};
+}
 function renderWatchlist(){
   var el=document.getElementById('wlPills'); if(!el) return;
   var D=(LAST&&LAST.D)||{}, pm=wlPriceMap(D);
@@ -1918,7 +1943,7 @@ function renderWatchlist(){
     var entry=(w.entry!=null?w.entry:(info&&info.entry!=null?info.entry:null));
     var price=info?info.price:null, cur=info?info.cur:(w.region==='au'?'A$':'$');
     var gap=(entry&&price)?(price/entry-1)*100:null;
-    return {w:w,price:price,cur:cur,up:info?info.up:null,change:info?info.change:null,entry:entry,gap:gap};
+    return {w:w,price:price,cur:cur,up:info?info.up:null,change:info?info.change:null,entry:entry,gap:gap,intel:wlIntel(w,D)};
   });
   var triggered=rows.filter(function(r){return r.gap!=null&&r.gap<=0.5;});
   rows.sort(function(x,y){var gx=x.gap==null?9999:x.gap,gy=y.gap==null?9999:y.gap;return gx-gy;});
@@ -1927,19 +1952,34 @@ function renderWatchlist(){
     banner.innerHTML=triggered.length?('🎯 '+triggered.length+' watched '+(triggered.length===1?'stock is':'stocks are')+' at or below your buy price: <b>'+t+'</b> — go look.'):'';
     banner.style.display=triggered.length?'':'none';}
   if(!rows.length){el.innerHTML='<span class="wlempty">No tickers yet — add one above, or tap <b>＋ Watch</b> on any pick.</span>';return;}
+  var HEAT={hot:'🔥',good:'✅',mid:'➖',cold:'⛔'};
   el.innerHTML=rows.map(function(r){
     var w=r.w,cls,lbl;
-    if(r.gap==null){cls='wt-none';lbl=(r.price==null?'tracking…':'no buy target');}
+    if(r.gap==null){cls='wt-none';lbl=(r.price==null?'tracking…':'no target');}
     else if(r.gap<=0.5){cls='wt-in';lbl='at buy ✓';}
     else if(r.gap<=4){cls='wt-close';lbl=Math.round(r.gap)+'% to go';}
     else{cls='wt-wait';lbl=Math.round(r.gap)+'% above buy';}
     var px=r.price!=null?'<span class="wpx '+(r.up?'up':'down')+'">'+r.cur+r.price+'</span>':'<span class="wpx muted">—</span>';
     var ent=r.entry!=null?'<span class="went">buy @ '+r.cur+r.entry+'</span>':'';
-    return '<div class="wrow '+cls+'"><a class="wsym" href="'+yf(w.sym,w.region)+'" target="_blank" rel="noopener">'+esc(w.sym)+' <span class="wflag">'+(w.region==='au'?'AU':'US')+'</span></a>'+
+    var it=r.intel, intelHtml='';
+    if(it.kind==='pick'){
+      var chips='';
+      if(it.score) chips+='<span class="wic sc">🧮 '+esc(it.score)+'</span>';
+      if(it.target!=null) chips+='<span class="wic tg">🎯 target '+r.cur+it.target+'</span>';
+      chips+='<span class="wic vd '+esc(it.vclass)+'">'+esc(it.verdict)+'</span>';
+      intelHtml='<div class="wintel">'+chips+(it.catalyst?'<span class="wicat">'+esc(String(it.catalyst).slice(0,90))+'</span>':'')+
+        '<button class="wview" data-region="'+esc(it.region)+'" data-idx="'+it.idx+'">Open card →</button></div>';
+    } else if(it.kind==='cand'){
+      intelHtml='<div class="wintel"><span class="wic">'+(HEAT[it.heat]||'•')+' on our radar</span>'+(it.note?'<span class="wicat">'+esc(it.note)+'</span>':'')+'</div>';
+    } else {
+      intelHtml='<div class="wintel"><span class="wic none">Not in this run’s scan — we’ll assess it the next time it surfaces.</span></div>';
+    }
+    return '<div class="wrow '+cls+'"><div class="wtop"><a class="wsym" href="'+yf(w.sym,w.region)+'" target="_blank" rel="noopener">'+esc(w.sym)+' <span class="wflag">'+(w.region==='au'?'AU':'US')+'</span></a>'+
       px+ent+'<span class="wst">'+lbl+'</span>'+
-      '<button class="wrm" data-sym="'+esc(w.sym)+'" data-region="'+esc(w.region)+'" aria-label="Remove '+esc(w.sym)+'">✕</button></div>';
+      '<button class="wrm" data-sym="'+esc(w.sym)+'" data-region="'+esc(w.region)+'" aria-label="Remove '+esc(w.sym)+'">✕</button></div>'+intelHtml+'</div>';
   }).join('');
   el.querySelectorAll('.wrm').forEach(function(b){b.addEventListener('click',function(){wlRemove(b.dataset.sym,b.dataset.region);renderWatchlist();syncWatchButtons();});});
+  el.querySelectorAll('.wview').forEach(function(b){b.addEventListener('click',function(){var rg=(D.regions||[]).filter(function(x){return x.id===b.dataset.region;})[0];if(rg){var p=rg.picks[+b.dataset.idx];if(p)openModal(p,rg.id,rg.cur||'$');}});});
 }
 // Reflect watch-state on any ＋Watch/✓Watching buttons currently in the DOM
 function syncWatchButtons(){
