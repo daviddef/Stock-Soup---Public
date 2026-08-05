@@ -92,10 +92,15 @@
   .card .lvls{display:flex;gap:6px;font-size:11px;color:var(--muted);border-top:1px dashed var(--line);padding-top:10px;flex-wrap:wrap}
   .lvls b{color:var(--ink)}
   .card .more{font-size:11px;font-weight:800;color:var(--broth);letter-spacing:.02em}
-  .runnerup{font-size:12px;color:var(--muted);border-top:1px dashed var(--line);padding-top:9px}
-  .runnerup b{color:var(--broth)}
-  .runnerup a{color:var(--ink);font-weight:800;text-decoration:none}
-  .runnerup a:hover{color:var(--broth)}
+  .pickcol{display:flex;flex-direction:column;gap:12px}
+  .rucard{background:var(--surface-2);border:1px dashed var(--line);border-radius:14px;padding:13px 15px}
+  .rutag{font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--broth);margin-bottom:6px}
+  .rutop{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+  .rusym{font-size:18px;font-weight:900;text-decoration:none;color:var(--ink);letter-spacing:-.01em}
+  .rusym:hover{color:var(--broth)}
+  .runame{font-size:12px;color:var(--muted);font-weight:700}
+  .rupx{margin-left:auto;font-size:13px;font-weight:700;font-family:var(--mono);font-variant-numeric:tabular-nums}
+  .ruline{font-size:12.5px;color:var(--muted);margin-top:7px;text-wrap:pretty;line-height:1.45}
   .mrunner{background:var(--surface-2);border:1px solid var(--line);border-radius:11px;padding:12px 13px;font-size:13px;line-height:1.5}
   .mrunner .rh{font-weight:800;color:var(--broth);margin-bottom:4px}
   .mrunner a{color:var(--ink);text-decoration:none}.mrunner a:hover{color:var(--broth)}
@@ -228,7 +233,9 @@
   .shero .schef{font-size:14.5px;color:var(--muted);margin:2px 0 12px;text-wrap:pretty;line-height:1.45}
   .shero .meter{margin-top:14px}
   .shero .riskwhat{font-size:13px;color:var(--muted);margin-top:10px;font-weight:600;text-wrap:pretty}
-  .shero .schips{display:flex;gap:7px;flex-wrap:wrap}
+  .shero .schips{display:flex;gap:6px;flex-wrap:wrap}
+  .shero .schips .chip{padding:5px 9px;font-size:11px;white-space:nowrap}
+  .shero .schips .chip .dot{width:7px;height:7px}
   .sregion{display:inline-flex;background:var(--surface-2);border:1px solid var(--line);border-radius:11px;padding:4px;gap:4px;margin:2px 0}
   .sregion button{border:0;background:transparent;color:var(--muted);font-family:var(--font);font-weight:800;font-size:13px;padding:8px 16px;border-radius:8px;cursor:pointer}
   .sregion button[aria-pressed="true"]{background:var(--broth);color:#1a0f06}
@@ -908,6 +915,10 @@ var TFS=["⚡","📅","📈"];
 var LAST=null, LASTFOCUS=null;
 function yf(sym,region){var s=String(sym).replace(/\*$/,'');if(region==="au")s+=".AX";return "https://finance.yahoo.com/quote/"+encodeURIComponent(s);}
 function qlink(sym,region,label){return '<a class="q" href="'+yf(sym,region)+'" target="_blank" rel="noopener">'+esc(label==null?sym:label)+'</a>';}
+function ruCard(ru){return '<article class="rucard"><div class="rutag">🥈 Runner-up</div>'+
+  '<div class="rutop"><a class="rusym" href="'+yf(ru.sym,ru.region)+'" target="_blank" rel="noopener">'+esc(ru.sym)+'</a>'+
+  '<span class="runame">'+esc(ru.name)+'</span><span class="rupx">'+esc(ru.price)+' <span class="'+(ru.up?'up':'down')+'">'+(ru.up?'▲':'▼')+' '+esc(ru.change)+'</span></span></div>'+
+  '<div class="ruline">'+esc(ru.line)+'</div></article>';}
 function money(cur,n){return cur+(Math.abs(n%1)<1e-9?String(n):n.toFixed(2));}
 function clamp(x){return Math.max(3,Math.min(97,x));}
 
@@ -919,13 +930,12 @@ function render(D,H){
 
   var menus=(D.regions||[]).map(function(rg,i){
     var cards=(rg.picks||[]).map(function(p,idx){
-      return '<article class="card" tabindex="0" role="button" data-region="'+rg.id+'" data-idx="'+idx+'" aria-label="Details for '+esc(p.sym)+'">'+
+      return '<div class="pickcol"><article class="card" tabindex="0" role="button" data-region="'+rg.id+'" data-idx="'+idx+'" aria-label="Details for '+esc(p.sym)+'">'+
         '<div class="tf"><span class="name">'+esc(p.tf)+'</span><span class="verdict '+esc(p.vclass)+'">'+esc(p.verdict)+'</span></div>'+
         '<div class="tick"><span class="symwrap"><span class="sym">'+qlink(p.sym,rg.id)+'</span><span class="co">'+qlink(p.sym,rg.id,p.name)+' ↗</span></span>'+
         '<span class="px"><span class="p mono">'+esc(p.price)+'</span><br><span class="c mono '+(p.up?'up':'down')+'">'+esc(p.change)+'</span></span></div>'+
-        '<p class="plain">'+p.plain+'</p><div class="lvls">'+p.levels+'</div>'+
-        (p.runnerUp?'<div class="runnerup">🥈 <b>Runner-up:</b> '+qlink(p.runnerUp.sym,p.runnerUp.region)+' '+esc(p.runnerUp.name)+' · '+esc(p.runnerUp.price)+'</div>':'')+
-        '<div class="more">Tap for the full serve →</div></article>';
+        '<p class="plain">'+p.plain+'</p><div class="lvls">'+p.levels+'</div></article>'+
+        (p.runnerUp?ruCard(p.runnerUp):'')+'</div>';
     }).join('');
     return '<div class="menu'+(i===0?'':' hidden')+'" id="menu-'+rg.id+'" role="tabpanel">'+cards+'</div>';
   }).join('');
@@ -1205,9 +1215,8 @@ function renderSimple(D){
       '<div class="stf">'+esc(BIG[tf]||p.tf)+'</div>'+
       '<div class="ssym">'+esc(p.sym)+' <span class="sverd '+esc(p.vclass)+'">'+esc(p.verdict)+'</span></div>'+
       '<div class="sname">'+esc(p.name)+' · '+esc(p.price)+' <span class="'+(p.up?'up':'down')+'">'+(p.up?'▲':'▼')+' '+esc(p.change)+'</span></div>'+
-      '<div class="sline">'+esc(p.plain)+'</div>'+
-      (p.runnerUp?'<div class="runnerup">🥈 <b>Runner-up:</b> '+qlink(p.runnerUp.sym,p.runnerUp.region)+' '+esc(p.runnerUp.name)+' · '+esc(p.runnerUp.price)+'</div>':'')+
-      '<div class="stap">Tap for the full serve →</div></article>';
+      '<div class="sline">'+esc(p.plain)+'</div></article>'+
+      (p.runnerUp?ruCard(p.runnerUp):'');
   }).join('');
   function _grp(arr,key){var b=[],o=[],s=[];(arr||[]).forEach(function(x){var t=x.tclass,n=x[key];if(t==='t-dont')s.push(n);else if(t==='t-buy'||t==='t-hot')b.push(n);else o.push(n);});return {b:b,o:o,s:s};}
   function _line(g){var p=[];if(g.b.length)p.push('<span class="qbuy">✅ Buy: '+g.b.map(esc).join(', ')+'</span>');if(g.o.length)p.push('<span class="qmeh"><span class="qdot"></span> Watch: '+g.o.map(esc).join(', ')+'</span>');if(g.s.length)p.push('<span class="qskip">⛔ Skip: '+g.s.map(esc).join(', ')+'</span>');return p.join('<br>');}
