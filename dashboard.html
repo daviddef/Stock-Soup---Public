@@ -1,3 +1,4 @@
+<meta charset="utf-8">
 <title>Stock Soup — Tonight's Menu</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
@@ -175,6 +176,34 @@
   .cta a:focus-visible{outline:2px solid var(--ink);outline-offset:3px}
   footer{text-align:center;color:var(--faint);font-size:11px;line-height:1.7;padding-top:6px}
   .hidden{display:none}
+
+  /* WATCHLIST / REGISTER */
+  .wlbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+  .wlbar input{flex:1;min-width:150px;background:var(--surface);border:1px solid var(--line);color:var(--ink);
+    border-radius:10px;padding:11px 13px;font-family:var(--font);font-size:14px;text-transform:uppercase}
+  .wlbar input:focus-visible{outline:2px solid var(--broth);outline-offset:1px}
+  .wlseg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+  .wlseg button{background:var(--surface);border:0;color:var(--muted);font-family:var(--font);font-weight:800;font-size:13px;padding:0 14px;cursor:pointer}
+  .wlseg button[aria-pressed="true"]{background:var(--broth);color:#1a0f06}
+  .wladd{background:var(--broth);color:#1a0f06;border:0;font-family:var(--font);font-weight:800;border-radius:10px;padding:0 20px;cursor:pointer;font-size:14px}
+  .wlpills{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;min-height:8px}
+  .wlpill{display:inline-flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:6px 8px 6px 13px;font-size:13px}
+  .wlpill a{font-weight:800;color:var(--ink);text-decoration:none}
+  .wlpill a:hover{color:var(--broth)}
+  .wlpill .rm{background:var(--surface-2);border:1px solid var(--line);color:var(--muted);border-radius:50%;width:20px;height:20px;cursor:pointer;font-size:11px;line-height:1;padding:0}
+  .wlempty{color:var(--faint);font-size:13px}
+  .wlreg{display:inline-block;background:var(--buy);color:#04240f;font-weight:900;text-decoration:none;padding:12px 22px;border-radius:11px;font-size:14px}
+  .wlnote{font-size:12px;color:var(--muted);margin-top:12px;max-width:60ch}
+
+  /* ARCHIVE */
+  .arch{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
+  .acard{display:block;background:var(--surface);border:1px solid var(--line);border-radius:13px;padding:14px;text-decoration:none;color:var(--ink);transition:transform .15s,border-color .15s}
+  .acard:hover{transform:translateY(-3px);border-color:var(--broth)}
+  .acard:focus-visible{outline:2px solid var(--broth);outline-offset:2px}
+  .acard .adate{font-weight:800;font-size:13px;margin-bottom:6px}
+  .acard .apicks{font-size:12px;color:var(--muted);line-height:1.5;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical}
+  .acard .arisk{font-size:10px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--broth);margin-top:8px;display:inline-block}
+  .archmore{text-align:center;color:var(--muted);font-size:12px;margin-top:12px}
 
   /* MODAL */
   .overlay{position:fixed;inset:0;background:rgba(8,5,3,.74);backdrop-filter:blur(4px);display:none;
@@ -400,30 +429,44 @@ function render(D,H){
     '<p class="sec-sub">Three time horizons. Day = a quick feed. Week = simmer a few days. Long = slow-cooked. Tap a card for the full serve; tap a name for Yahoo.</p>'+
     '<div class="tabs" role="tablist" aria-label="Region" style="margin-bottom:14px">'+regionTabs+soon+'</div>'+menus+'</section>'+
 
-  '<section><div class="sec-head"><h2 class="display"><span class="k">02</span> The journey</h2></div>'+
-    '<p class="sec-sub">Every run replaces the menu. Here\'s how it\'s moved — newest first. 🆕 = fresh on the menu, ↩ = held from last time.</p>'+
+  '<section><div class="sec-head"><h2 class="display"><span class="k">02</span> Your watchlist</h2></div>'+
+    '<p class="sec-sub">Tickers you want the Chef to keep an eye on. Saved in your browser — hit register to have us monitor them in future runs.</p>'+
+    '<div class="wlbar"><input id="wlInput" placeholder="Add a ticker… e.g. BHP" maxlength="8" aria-label="Ticker to add">'+
+      '<span class="wlseg" role="group" aria-label="Market"><button id="wlAu" aria-pressed="true">🇦🇺 AU</button><button id="wlUs" aria-pressed="false">🇺🇸 US</button></span>'+
+      '<button class="wladd" id="wlAdd">Add</button></div>'+
+    '<div class="wlpills" id="wlPills"></div>'+
+    '<a class="wlreg" id="wlReg" href="#">📩 Register these with the Chef</a>'+
+    '<div class="wlnote">Right now your list lives in this browser, and “register” opens a pre-filled email so we can add them to the live monitor. A proper login/account can come later.</div></section>'+
+
+  '<section><div class="sec-head"><h2 class="display"><span class="k">03</span> The journey</h2></div>'+
+    '<p class="sec-sub">Every run replaces the menu. Here\'s how it\'s moved — newest first. Green = kept, red = dropped, NEW = fresh this run.</p>'+
     '<div class="chef-note">'+note+'</div><div class="journey">'+journeyCols+'</div>'+
     '<div class="grid2"><div class="panel"><h3>Closed calls · scored honestly</h3>'+
     '<div class="score"><div><div class="big">'+esc(sb.record)+'</div><div class="sub">'+esc(sb.recordNote)+'</div></div></div>'+
     '<div class="rec">'+recRows+'</div><p style="font-size:11px;color:var(--faint);margin-top:12px">'+esc(sb.closedNote)+'</p></div>'+
     '<div class="panel"><h3>On the stove (open now)</h3><div class="cooking">'+openRows+'</div></div></div></section>'+
 
-  '<section><div class="sec-head"><h2 class="display"><span class="k">03</span> The full pot</h2></div>'+
+  '<section><div class="sec-head"><h2 class="display"><span class="k">04</span> The full pot</h2></div>'+
     '<p class="sec-sub">Everything the scan turned up tonight — the ones that didn\'t make the top 3. Colour = how appetising it looks. Tap any for Yahoo.</p>'+
     '<div class="potlegend"><span><i style="background:var(--broth)"></i>🔥 sizzling</span><span><i style="background:var(--buy)"></i>✅ tasty</span><span><i style="background:var(--hold)"></i>➖ maybe</span><span><i style="background:var(--dont)"></i>⛔ send it back</span></div>'+
     '<div class="pot">'+pot+'</div></section>'+
 
-  '<section><div class="sec-head"><h2 class="display"><span class="k">04</span> The world &amp; the sectors</h2></div>'+
+  '<section><div class="sec-head"><h2 class="display"><span class="k">05</span> The world &amp; the sectors</h2></div>'+
     '<p class="sec-sub">What\'s moving the pot, and which kitchens are hot vs which to skip.</p>'+
     '<div class="cols"><div class="stack"><div class="eyebrow">🌍 Geopolitics</div>'+lines(D.geo,'title')+'</div>'+
     '<div class="stack"><div class="eyebrow">🍳 Sectors — buy vs skip</div>'+lines(D.sectors,'title')+'</div></div></section>'+
 
-  '<section><div class="sec-head"><h2 class="display"><span class="k">05</span> Commodities — simple</h2></div>'+
+  '<section><div class="sec-head"><h2 class="display"><span class="k">06</span> Commodities — simple</h2></div>'+
     '<p class="sec-sub">No jargon. Just: worth a look, emerging (🔥), or leave it.</p>'+
     '<div class="cols"><div class="stack">'+lines((D.commodities||[]).slice(0,half),'name')+'</div>'+
     '<div class="stack">'+lines((D.commodities||[]).slice(half),'name')+'</div></div></section>'+
 
-  '<section><div class="sec-head"><h2 class="display"><span class="k">06</span> How we got here</h2></div>'+
+  '<section><div class="sec-head"><h2 class="display"><span class="k">07</span> The archive</h2></div>'+
+    '<p class="sec-sub">Every menu we\'ve served. Tap one to open that run\'s full report.</p>'+
+    '<div class="arch" id="archList"><div class="wlempty">Loading past menus…</div></div>'+
+    '<div class="archmore" id="archMore"></div></section>'+
+
+  '<section><div class="sec-head"><h2 class="display"><span class="k">08</span> How we got here</h2></div>'+
     '<p class="sec-sub">The recipe, in plain sight. No black box.</p><div class="panel trail">'+trail+'</div></section>'+
 
   '<div class="cta"><a href="'+esc(D.reportUrl)+'">📖 Read the full report →</a></div>'+
@@ -491,6 +534,37 @@ function wire(D){
     c.addEventListener('click',function(e){if(e.target.closest('a'))return;openFromEl(c);});
     c.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();openFromEl(c);}});
   });
+  // ---- Watchlist (localStorage) ----
+  var WLKEY='soup_watchlist', wlRegion='au';
+  function wlGet(){try{return JSON.parse(localStorage.getItem(WLKEY)||'[]');}catch(e){return[];}}
+  function wlSet(a){try{localStorage.setItem(WLKEY,JSON.stringify(a));}catch(e){}}
+  function wlRender(){
+    var a=wlGet(),el=document.getElementById('wlPills');if(!el)return;
+    el.innerHTML=a.length?a.map(function(w,i){return '<span class="wlpill"><a href="'+yf(w.sym,w.region)+'" target="_blank" rel="noopener">'+esc(w.sym)+'</a><button class="rm" data-i="'+i+'" aria-label="Remove '+esc(w.sym)+'">✕</button></span>';}).join(''):'<span class="wlempty">No tickers yet — add a few above.</span>';
+    el.querySelectorAll('.rm').forEach(function(b){b.addEventListener('click',function(){var a=wlGet();a.splice(+b.dataset.i,1);wlSet(a);wlRender();});});
+  }
+  var wau=document.getElementById('wlAu'),wus=document.getElementById('wlUs');
+  if(wau&&wus){wau.onclick=function(){wlRegion='au';wau.setAttribute('aria-pressed','true');wus.setAttribute('aria-pressed','false');};
+    wus.onclick=function(){wlRegion='us';wus.setAttribute('aria-pressed','true');wau.setAttribute('aria-pressed','false');};}
+  function wlAdd(){var inp=document.getElementById('wlInput');if(!inp)return;var v=(inp.value||'').trim().toUpperCase().replace(/[^A-Z0-9.]/g,'');if(!v)return;var a=wlGet();if(!a.some(function(w){return w.sym===v&&w.region===wlRegion;}))a.push({sym:v,region:wlRegion});wlSet(a);inp.value='';wlRender();}
+  var ab=document.getElementById('wlAdd');if(ab)ab.onclick=wlAdd;
+  var wi=document.getElementById('wlInput');if(wi)wi.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();wlAdd();}});
+  var reg=document.getElementById('wlReg');if(reg)reg.addEventListener('click',function(e){e.preventDefault();var a=wlGet();var list=a.map(function(w){return w.sym+' ('+(w.region==='au'?'ASX':'US')+')';}).join(', ')||'(none yet — add some first)';location.href='mailto:thestocksoup@gmail.com?subject='+encodeURIComponent('Stock Soup — please monitor my watchlist')+'&body='+encodeURIComponent('Hi Chef, please add these to your monitoring list:\n\n'+list+'\n\nThanks!');});
+  wlRender();
+
+  // ---- Archive (live report index) ----
+  var arch=document.getElementById('archList');
+  function renderArch(items){
+    if(!arch)return;
+    if(!items||!items.length){arch.innerHTML='<div class="wlempty">The full archive loads on the live site.</div>';return;}
+    arch.innerHTML=items.slice(0,12).map(function(e){
+      var risk=e.riskOff?'⛔ Risk-off':'⚪ Neutral';
+      return '<a class="acard" href="reports/'+esc(e.file)+'" target="_blank" rel="noopener"><div class="adate">'+esc(e.label||e.timestamp||e.file)+'</div><div class="apicks">'+esc((e.picks||'').slice(0,140))+'</div><span class="arisk">'+risk+'</span></a>';
+    }).join('');
+    var more=document.getElementById('archMore');if(more&&items.length>12)more.textContent=items.length+' menus served in total.';
+  }
+  fetch('reports/report-index.json',{cache:'no-store'}).then(function(r){return r.ok?r.json():null;}).then(function(j){renderArch(j);}).catch(function(){renderArch(null);});
+
   var lvl=(D.risk&&D.risk.level!=null)?D.risk.level:50;
   requestAnimationFrame(function(){var n=document.getElementById('needle');if(n)n.style.left=lvl+'%';});
 }
