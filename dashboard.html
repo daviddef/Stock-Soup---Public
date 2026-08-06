@@ -41,8 +41,8 @@
   .live{font-size:11px;font-weight:800;letter-spacing:.08em;color:var(--muted);display:inline-flex;align-items:center;gap:6px}
   .live .pulse{width:7px;height:7px;border-radius:50%;background:var(--buy);animation:pulse 2.4s infinite}
   @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(35,194,103,.55)}70%{box-shadow:0 0 0 8px rgba(35,194,103,0)}100%{box-shadow:0 0 0 0 rgba(35,194,103,0)}}
-  .hero h1{font-size:clamp(34px,7vw,68px);margin:14px 0 6px}
-  .hero h1 .hot{color:var(--broth)}
+  .hero h1,.menuhead h1{font-size:clamp(34px,7vw,68px);margin:14px 0 6px}
+  .hero h1 .hot,.menuhead h1 .hot{color:var(--broth)}
   .chef{font-size:clamp(15px,2.2vw,19px);color:var(--muted);max-width:60ch;text-wrap:pretty}
   .chef b{color:var(--ink)}
   .metastrip{display:flex;flex-wrap:wrap;gap:8px;margin-top:20px}
@@ -143,6 +143,9 @@
   .tabstat .tk{color:var(--muted);font-weight:700}
   .tabstat .gd{color:var(--buy)} .tabstat .bd{color:var(--dont)}
   .menuhead{border-bottom:0;padding-top:14px}
+  .seat-label{font-size:12px;font-weight:900;letter-spacing:.05em;text-transform:uppercase;color:var(--ink);margin-bottom:6px}
+  .seat-label .k{color:var(--broth)}
+  .seat-sub{color:var(--muted);font-weight:700;text-transform:none;letter-spacing:0}
   .actions{margin:6px 0 4px}
   .axhead{font-size:12px;font-weight:900;letter-spacing:.03em;color:var(--ink);margin:0 0 10px;text-transform:uppercase}
   .axheadsub{color:var(--muted);font-weight:700;text-transform:none;letter-spacing:0}
@@ -1184,6 +1187,7 @@ function render(D,H){
   // ===== 🍲 TONIGHT'S MENU =====
   '<div class="tabview active" id="tab-menu">'+
     '<div class="tabhead menuhead">'+
+      '<div class="seat-label"><span class="k">01</span> Take your seat <span class="seat-sub">· get ready for today’s meals</span></div>'+
       '<div class="eyebrow schedlink" data-info="schedule" role="button" tabindex="0" title="How the run schedule works" style="letter-spacing:.06em">'+esc((D.stamp||'').replace(/,?\s*20\d\d/,'').replace(/\s*AEST\b/,''))+(D.next?' · next ~'+esc(D.next):'')+' <span class="schedi">i</span></div>'+
       '<h1 class="display">Two pots on the boil:<br><span class="hot">'+esc(hdl(D,'a'))+'</span> &amp; <span class="hot">'+esc(hdl(D,'b'))+'</span>.</h1>'+
       '<p class="chef">'+chefFor(D)+'</p>'+
@@ -1195,18 +1199,19 @@ function render(D,H){
       '<div class="meter"><div class="track"><div class="needle" id="needle"></div></div>'+
       '<div class="lbls"><span>🔴 Hide the cash</span><span>⚪ Steady</span><span>🟢 Send it</span></div></div>'+
     '</div>'+
-    actionsHtml(D)+
-    '<section><p class="sec-sub" style="margin-top:4px">Three time horizons — '+tfB('Day')+' a quick feed · '+tfB('Week')+' a few days · '+tfB('Long')+' slow-cooked. Tap a card for the full serve; tap a name for Yahoo. '+infoBtn('menu')+'</p>'+menus+'</section>'+
+    '<section><div class="sec-head"><h2 class="display"><span class="k">02</span> Serving today in '+(MKT==='us'?'the U.S.':'Australia')+'</h2>'+infoBtn('menu')+'</div>'+
+      actionsHtml(D)+
+      '<p class="sec-sub" style="margin-top:12px">Three time horizons — '+tfB('Day')+' a quick feed · '+tfB('Week')+' a few days · '+tfB('Long')+' slow-cooked. Tap a card for the full serve; tap a name for Yahoo.</p>'+menus+'</section>'+
     // Change-environment retired — its trajectory + "ready to buy" now live inside each pick card (miniTraj + buyat + rangeBar).
-    '<section><div class="sec-head"><h2 class="display"><span class="k">02</span> The world &amp; the sectors</h2>'+infoBtn('world')+'</div>'+
+    '<section><div class="sec-head"><h2 class="display"><span class="k">03</span> The world &amp; the sectors</h2>'+infoBtn('world')+'</div>'+
       '<p class="sec-sub">What\'s moving the pot, and which kitchens are hot vs which to skip.</p>'+
       '<div class="cols"><div class="stack"><div class="eyebrow">🌍 Geopolitics</div>'+lines(D.geo,'title','geo')+'</div>'+
       '<div class="stack"><div class="eyebrow">🍳 Sectors — buy vs skip</div>'+lines(D.sectors,'title','sectors')+'</div></div></section>'+
-    '<section><div class="sec-head"><h2 class="display"><span class="k">03</span> Commodities — simple</h2>'+infoBtn('commodities')+'</div>'+
+    '<section><div class="sec-head"><h2 class="display"><span class="k">04</span> Commodities — simple</h2>'+infoBtn('commodities')+'</div>'+
       '<p class="sec-sub">No jargon. Just: worth a look, emerging (🔥), or leave it.</p>'+
       '<div class="cols"><div class="stack">'+lines((D.commodities||[]).slice(0,half),'name','commodities',0)+'</div>'+
       '<div class="stack">'+lines((D.commodities||[]).slice(half),'name','commodities',half)+'</div></div></section>'+
-    '<section id="fullpot"><div class="sec-head"><h2 class="display"><span class="k">04</span> The full pot</h2>'+infoBtn('fullpot')+'</div>'+
+    '<section id="fullpot"><div class="sec-head"><h2 class="display"><span class="k">05</span> The full pot</h2>'+infoBtn('fullpot')+'</div>'+
       '<p class="sec-sub">Every '+(MKT==='au'?'🇦🇺 Australian':'🌏 international')+' candidate the scan shortlisted tonight — <b>'+_potN+' names</b>, priced and scored. These are the ones we chose from. Colour = how appetising it looks. <b>Tap any for the full read.</b></p>'+
       '<div class="potlegend"><span><i style="background:var(--broth)"></i>🔥 sizzling</span><span><i style="background:var(--buy)"></i>✅ tasty</span><span><i style="background:var(--hold)"></i>➖ maybe</span><span><span class="legno">⛔</span> send it back</span></div>'+
       '<div class="pot">'+pot+'</div>'+
