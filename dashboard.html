@@ -226,6 +226,19 @@
   @media(max-width:760px){.cols{grid-template-columns:1fr}}
   .stack{display:flex;flex-direction:column;gap:9px}
   .line{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:11px;padding:11px 13px;font-size:14px}
+  .clickline{cursor:pointer;transition:border-color .12s,transform .1s}
+  .clickline:hover{border-color:var(--broth)}
+  .clickline:active{transform:scale(.995)}
+  .themerow{display:flex;align-items:center;gap:10px;padding:9px 2px;border-bottom:1px solid var(--line)}
+  .themerow:last-of-type{border-bottom:0}
+  .themerow.tappable{cursor:pointer;margin:0 -8px;padding:9px 8px;border-radius:9px}
+  .themerow.tappable:hover{background:var(--surface-2)}
+  .trsym{font-weight:900;font-size:14px;text-decoration:none;color:var(--ink);flex:0 0 auto;min-width:48px}
+  .trln{flex:1;font-size:12.5px;color:var(--ink);line-height:1.4;text-wrap:pretty}
+  .trln .muted{color:var(--muted)}
+  .tvd{font-weight:800;text-transform:uppercase;font-size:10.5px}
+  .tvd.buy{color:var(--buy)} .tvd.hold{color:var(--hold)} .tvd.dont{color:var(--dont)}
+  .trcue{color:var(--broth);font-weight:800;font-size:11px;flex:0 0 auto}
   .line .em{font-size:18px}
   .line .txt{flex:1}
   .line .txt small{display:block;color:var(--muted);font-size:12px;margin-top:1px}
@@ -1770,7 +1783,7 @@ function render(D,H){
   var recClear=(_rp.length===2)?'<div class="sub" style="color:var(--ink);font-weight:700">'+_rp[0].trim()+' win'+(_rp[0].trim()==='1'?'':'s')+' · '+_rp[1].trim()+' loss'+(_rp[1].trim()==='1'?'':'es')+'</div>':'';
   var recRows=(sb.closed||[]).map(function(c){var w=c.win;return '<div class="row"><span class="rsym">'+qlink(c.sym,'au')+'</span><div class="bar"><span class="fill" style="'+(w?'left:50%;width:26%;background:var(--buy)':'right:50%;width:22%;background:var(--dont)')+'"></span></div><span class="res '+(w?'up':'down')+'">'+esc(c.pct)+'</span></div>';}).join('');
   var openRows=(sb.open||[]).map(function(o){var reg=(D.regions&&D.regions[0]&&D.regions[0].picks.some(function(p){return p.sym===o.sym;}))?'au':'us';return '<div class="row"><span>'+esc(o.tf)+' '+qlink(o.sym,reg)+' <span style="color:var(--muted)">'+esc(o.period)+'</span></span><span class="st"'+(o.hot?' style="color:var(--hold)"':'')+'>'+esc(o.status)+'</span></div>';}).join('');
-  function lines(arr,key){return (arr||[]).map(function(x){return '<div class="line"><span class="em">'+esc(x.em)+'</span><div class="txt">'+esc(x[key])+'<small>'+x.note+'</small></div><span class="tag '+esc(x.tclass)+'">'+esc(x.tag)+'</span></div>';}).join('');}
+  function lines(arr,key,src){return (arr||[]).map(function(x,i){return '<div class="line clickline" data-theme="'+esc(src)+'" data-ti="'+i+'" role="button" tabindex="0"><span class="em">'+esc(x.em)+'</span><div class="txt">'+esc(x[key])+'<small>'+x.note+'</small></div><span class="tag '+esc(x.tclass)+'">'+esc(x.tag)+'</span></div>';}).join('');}
   var story = (PULSES&&PULSES.length) ?
     ('<div class="panel"><h3>Tonight\'s hourly runs</h3><p class="panelsub"><b>Minor runs</b> — same menu, re-priced every hour ('+PULSES.length+' this session). The <b>major</b> menu changes are in The Journey. Newest first.</p>'+
      '<div class="pulselog">'+PULSES.slice().reverse().map(function(pu){
@@ -1821,8 +1834,8 @@ function render(D,H){
 
   '<section><div class="sec-head"><h2 class="display"><span class="k">04</span> The world &amp; the sectors</h2></div>'+
     '<p class="sec-sub">What\'s moving the pot, and which kitchens are hot vs which to skip.</p>'+
-    '<div class="cols"><div class="stack"><div class="eyebrow">🌍 Geopolitics</div>'+lines(D.geo,'title')+'</div>'+
-    '<div class="stack"><div class="eyebrow">🍳 Sectors — buy vs skip</div>'+lines(D.sectors,'title')+'</div></div></section>'+
+    '<div class="cols"><div class="stack"><div class="eyebrow">🌍 Geopolitics</div>'+lines(D.geo,'title','geo')+'</div>'+
+    '<div class="stack"><div class="eyebrow">🍳 Sectors — buy vs skip</div>'+lines(D.sectors,'title','sectors')+'</div></div></section>'+
 
   '<section><div class="sec-head"><h2 class="display"><span class="k">05</span> Commodities — simple</h2></div>'+
     '<p class="sec-sub">No jargon. Just: worth a look, emerging (🔥), or leave it.</p>'+
@@ -1963,6 +1976,49 @@ function openInfo(key){
   var ov=document.getElementById('overlay'); ov.classList.add('open'); ov.setAttribute('aria-hidden','false');
   document.getElementById('mClose').focus();
 }
+// ---- Theme drill-down: click a Geopolitics/Sector card → its leader tickers + our read ----
+function themeTickers(item){
+  if(item.tickers) return item.tickers;
+  var text=(item.title||item.name||'')+' '+(item.note||'');   // keep original case — real tickers are UPPERCASE
+  var STOP={ASX:1,AI:1,US:1,EU:1,UK:1,BUY:1,SKIP:1,WATCH:1,THE:1,AND:1,AUKUS:1,ETF:1,IPO:1,CEO:1,USD:1,AUD:1,RSI:1,NYSE:1,FDA:1,GDP:1,NEW:1,LOW:1,HIGH:1,BTC:1,EV:1};
+  var found=(text.match(/\b[A-Z]{2,5}\b/g)||[]).filter(function(t){return !STOP[t];});
+  var seen={},out=[]; found.forEach(function(t){if(!seen[t]){seen[t]=1;out.push(t);}}); return out;
+}
+function themeIntel(sym,D){
+  var res=null;
+  (D.regions||[]).forEach(function(rg){(rg.picks||[]).forEach(function(p,i){if(p.sym===sym&&!res)res={kind:'pick',p:p,region:rg.id,idx:i,cur:rg.cur||'$'};});});
+  if(res)return res;
+  var c=(D.candidates||[]).filter(function(x){return x.sym===sym;})[0]; if(c)return {kind:'cand',c:c};
+  var wi=(D.watchlistIntel||{})[sym]; if(wi&&!wi.error)return {kind:'intel',wi:wi};
+  return {kind:'none'};
+}
+function openTheme(src,idx){
+  var D=LAST.D||{}, arr=src==='geo'?D.geo:D.sectors, item=arr&&arr[idx]; if(!item)return;
+  LASTFOCUS=document.activeElement;
+  var syms=item.tickers||themeTickers(item);
+  var rows=syms.map(function(sym){
+    var it=themeIntel(sym,D), line='', reg='us', tapAttr=' class="themerow"';
+    if(it.kind==='pick'){ line='<span class="tvd '+esc(it.p.vclass)+'">'+esc(it.p.verdict)+'</span> · '+esc(it.p.price)+(it.p.nTarget!=null?' → target '+it.cur+it.p.nTarget:''); reg=it.region; tapAttr=' class="themerow tappable" data-region="'+esc(it.region)+'" data-idx="'+it.idx+'" role="button" tabindex="0"'; }
+    else if(it.kind==='cand'){ line='<span class="muted">on our radar</span> · '+esc(it.c.note||''); reg=it.c.region||'us'; }
+    else if(it.kind==='intel'){ line=(it.wi.verdict?esc(it.wi.verdict)+' · ':'')+(it.wi.target!=null?'target '+it.wi.cur+it.wi.target:'')+(it.wi.trend?' · <span class="muted">'+esc(it.wi.trend)+'</span>':''); reg=it.wi.region||'us'; }
+    else { line='<span class="muted">not covered this run</span>'; }
+    return '<div'+tapAttr+'><a class="trsym" href="'+yf(sym,reg)+'" target="_blank" rel="noopener">'+esc(sym)+'</a><span class="trln">'+line+'</span>'+(it.kind==='pick'?'<span class="trcue">card →</span>':'')+'</div>';
+  }).join('');
+  var vc=(item.tclass==='t-buy'||item.tclass==='t-hot')?'buy':(item.tclass==='t-dont'?'don':'hold');
+  var m=document.getElementById('modal'); m.className='modal';
+  m.innerHTML='<div class="mhead '+vc+'"><button class="mclose" id="mClose" aria-label="Close">✕</button>'+
+    '<div class="mtf">'+esc(item.em||'🎯')+' '+(src==='geo'?'Geopolitical theme':'Sector')+'</div>'+
+    '<div class="mtop"><div class="msym" style="font-size:23px;line-height:1.15">'+esc(item.title||item.name)+'</div></div>'+
+    '<span class="mverd '+vc+'">'+esc(item.tag)+'</span></div>'+
+    '<div class="mbody"><p class="mtake">'+esc(item.note)+'</p>'+
+    '<h4 style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:800;margin:4px 0 10px">Leaders in this theme</h4>'+
+    (rows||'<p class="muted">No clear ticker leaders surfaced for this theme tonight.</p>')+
+    '<p style="font-size:11px;color:var(--faint);margin-top:12px">Pulled from tonight\'s read — tap any ticker for Yahoo, or a pick to open its full card.</p></div>';
+  var ov=document.getElementById('overlay'); ov.classList.add('open'); ov.setAttribute('aria-hidden','false');
+  document.getElementById('mClose').focus();
+  m.querySelectorAll('.themerow.tappable').forEach(function(row){ row.addEventListener('click',function(e){ if(e.target.closest('a'))return; var rg=(D.regions||[]).filter(function(x){return x.id===row.dataset.region;})[0]; if(rg){var p=rg.picks[+row.dataset.idx]; if(p)openModal(p,rg.id,rg.cur||'$');} }); });
+}
+function wireThemes(){ document.querySelectorAll('.clickline[data-theme]').forEach(function(l){ l.onclick=function(){ openTheme(l.dataset.theme,+l.dataset.ti); }; l.onkeydown=function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); openTheme(l.dataset.theme,+l.dataset.ti); } }; }); }
 function wireInfo(){ document.querySelectorAll('[data-info]').forEach(function(b){
   b.onclick=function(e){ e.preventDefault(); openInfo(b.dataset.info); };
   b.onkeydown=function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); openInfo(b.dataset.info); } };
@@ -2122,6 +2178,7 @@ function wire(D){
   if(TRACK){ if(tb)tb.onclick=openTrackRecord; if(tc)tc.onclick=openTrackRecord; }
   else { if(tb)tb.style.display='none'; if(tc)tc.style.display='none'; }
   wireInfo();
+  wireThemes();
   var tabs=document.querySelectorAll('.tab[data-region]');
   tabs.forEach(function(t){t.addEventListener('click',function(){
     tabs.forEach(function(x){x.setAttribute('aria-selected','false');document.getElementById('menu-'+x.dataset.region).classList.add('hidden');});
