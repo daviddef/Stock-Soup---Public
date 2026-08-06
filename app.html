@@ -159,6 +159,12 @@
   .axtime{font-size:11.5px;font-weight:700;display:inline-flex;align-items:center;gap:5px;padding:4px 9px;border-radius:7px;line-height:1.35}
   .axt-open{background:rgba(245,166,35,.14);color:var(--hold)}
   .axt-wait{background:var(--surface-2);color:var(--muted)}
+  .axhead2{margin-top:18px}
+  .axv-buy{color:var(--buy)} .axv-sell{color:var(--dont)} .axv-warn{color:var(--hold)} .axv-hold{color:var(--muted)}
+  .axhold.ax-sell{border-color:rgba(255,77,77,.38);border-left-color:var(--dont);background:linear-gradient(180deg,rgba(255,77,77,.09),transparent 72%),var(--surface)}
+  .axhold.ax-warn{border-color:rgba(255,197,61,.4);border-left-color:var(--hold);background:linear-gradient(180deg,rgba(255,197,61,.09),transparent 72%),var(--surface)}
+  .axhold.ax-hold{border-color:var(--line);border-left-color:var(--muted);background:var(--surface)}
+  .ownbtn.owned{background:rgba(35,194,103,.14);border-color:rgba(35,194,103,.4);color:var(--buy)}
   .schedlink{cursor:pointer;display:inline-flex;align-items:center;gap:7px}
   .schedi{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;border:1.2px solid var(--muted);font-family:Georgia,serif;font-style:italic;font-size:9.5px;font-weight:700}
   .schedlink:hover .schedi{border-color:var(--broth);color:var(--broth)}
@@ -946,27 +952,53 @@ function timingLine(p){
   if(t.gap_capture>=0.4) return '<span class="axtime axt-open">🌅 Front-loaded — a night-before limit is the safer play</span>';
   return '<span class="axtime axt-wait">🕐 No rush — it mostly moves during the day, so you can watch and still buy in</span>';
 }
+// For something you OWN: hold / take-profit / reassess, from target + verdict + today's move.
+function holdingAction(sym,region,D){
+  var pm=wlPriceMap(D), pi=pm[sym+'|'+region]||{}, intel=themeIntel(sym,D);
+  var price=pi.price, chg=pi.change!=null?parseFloat(pi.change):null, verdict=null, target=null;
+  if(intel.kind==='pick'){verdict=intel.p.verdict;target=intel.p.nTarget;}
+  else if(intel.kind==='intel'){verdict=intel.wi.verdict;target=intel.wi.target;}
+  if(target!=null && price!=null && price>=target) return {verb:'TAKE PROFIT',cls:'sell',why:'it’s hit our target (~'+(pi.cur||'$')+target+') — lock some in'};
+  if(verdict && /late|wait|skip|pass|avoid|too late|steer/i.test(verdict)) return {verb:'REASSESS',cls:'warn',why:'our read has cooled to “'+verdict+'”'};
+  if(chg!=null && chg<=-8) return {verb:'REASSESS',cls:'warn',why:'down '+Math.round(chg)+'% — check the news before you add'};
+  return {verb:'HOLD',cls:'hold',why:'thesis intact — sit tight'};
+}
+// Open the richest view we hold for any ticker (pick modal > candidate > watch insight).
+function openSym(sym,region){
+  var it=themeIntel(sym,LAST.D||{});
+  if(it.kind==='pick'){var rg=((LAST.D||{}).regions||[]).filter(function(x){return x.id===it.region;})[0]; if(rg&&rg.picks[it.idx])openModal(rg.picks[it.idx],rg.id,rg.cur||'$'); return;}
+  if(it.kind==='cand'){openCandidate(it.idx); return;}
+  openWatchInsight(sym,region);
+}
 function actionsHtml(D){
   var ready=[];
   (D.regions||[]).forEach(function(rg){ if(rg.id!==MKT) return;
     (rg.picks||[]).forEach(function(p,idx){ if(pickAction(p)==='buy') ready.push({p:p,rg:rg,idx:idx}); }); });
   ready.sort(function(a,b){return (a.p.nNow/a.p.nEntry)-(b.p.nNow/b.p.nEntry);});
   ready=ready.slice(0,3);
-  if(!ready.length){
-    return '<div class="actions"><div class="axhead">🎯 Ready right now</div>'+
-      '<div class="axnone">No green lights this second — nothing’s dropped to its buy price yet. That’s fine; patience is the edge. We’ll flag it the moment one hits. 🍲</div></div>';
-  }
-  var cards=ready.map(function(it){
-    var p=it.p, cur=it.rg.cur||'$';
-    var why=(p.catalysts&&p.catalysts[0])||p.news||'';
+  var buyCards=ready.map(function(it){
+    var p=it.p, cur=it.rg.cur||'$', why=(p.catalysts&&p.catalysts[0])||p.news||'';
     return '<div class="axcard" data-region="'+esc(it.rg.id)+'" data-idx="'+it.idx+'" role="button" tabindex="0" aria-label="Buy '+esc(p.sym)+'">'+
-      '<div class="axtop"><span class="axverb">🟢 BUY</span>'+tfBW(p.tf)+'<span class="axsym">'+esc(p.sym)+'</span><span class="axpx mono">'+esc(p.price)+'</span></div>'+
+      '<div class="axtop"><span class="axverb axv-buy">🟢 BUY</span>'+tfBW(p.tf)+'<span class="axsym">'+esc(p.sym)+'</span><span class="axpx mono">'+esc(p.price)+'</span></div>'+
       '<div class="axprice">✓ At your price — ideal buy ~'+esc(cur)+esc(p.nEntry)+'</div>'+
       (why?'<div class="axwhy">'+esc(why)+'</div>':'')+
       (timingLine(p)?'<div class="axfoot">'+timingLine(p)+'</div>':'')+
     '</div>';
   }).join('');
-  return '<div class="actions"><div class="axhead">🎯 Ready right now <span class="axheadsub">— sensible, signalling, and finally at the price we’ve waited for</span></div>'+cards+'</div>';
+  var owned=[]; try{owned=wlGet().filter(function(w){return w.own;});}catch(e){}
+  var pm=wlPriceMap(D);
+  var holdCards=owned.slice(0,8).map(function(w){
+    var pi=pm[w.sym+'|'+w.region]||{}, a=holdingAction(w.sym,w.region,D);
+    var ic=a.cls==='sell'?'🎯':a.cls==='warn'?'⚠️':'🟢';
+    return '<div class="axcard axhold ax-'+a.cls+'" data-sym="'+esc(w.sym)+'" data-region="'+esc(w.region)+'" role="button" tabindex="0" aria-label="'+esc(a.verb)+' '+esc(w.sym)+'">'+
+      '<div class="axtop"><span class="axverb axv-'+a.cls+'">'+ic+' '+esc(a.verb)+'</span><span class="axsym">'+esc(w.sym)+'</span>'+(pi.price!=null?'<span class="axpx mono">'+esc(pi.cur||'$')+pi.price+(pi.change?' <span class="'+(pi.up?'up':'down')+'">'+(pi.up?'▲':'▼')+esc(pi.change)+'</span>':'')+'</span>':'')+'</div>'+
+      '<div class="axwhy">'+esc(a.why)+'</div></div>';
+  }).join('');
+  var out='';
+  if(buyCards) out+='<div class="axhead">🎯 Ready right now <span class="axheadsub">— sensible, signalling, and at the price we’ve waited for</span></div>'+buyCards;
+  if(holdCards) out+='<div class="axhead axhead2">📦 What to do with your holdings</div>'+holdCards;
+  if(!out) out='<div class="axhead">🎯 Ready right now</div><div class="axnone">No green lights this second — nothing’s dropped to its buy price yet. That’s fine; patience is the edge. Tap <b>📦 I own it</b> on anything you hold and its sell signals will show up here too. 🍲</div>';
+  return '<div class="actions">'+out+'</div>';
 }
 
 function render(D,H){
@@ -1269,10 +1301,12 @@ function openModal(p,region,cur){
       '<div class="mrisk"><b>Watch out:</b> '+esc(p.risk)+'</div>'+
       altsHtml+
       '<div class="mfoot"><button class="mbtn watchbtn" data-sym="'+esc(p.sym)+'" data-region="'+esc(region)+'"'+(p.name?' data-name="'+esc(p.name)+'"':'')+(p.nEntry!=null?' data-entry="'+p.nEntry+'"':'')+' aria-pressed="false">＋ Watch</button>'+
+        '<button class="mbtn ownbtn" data-sym="'+esc(p.sym)+'" data-region="'+esc(region)+'"'+(p.name?' data-name="'+esc(p.name)+'"':'')+' aria-pressed="false">📦 I own it</button>'+
         '<a class="mbtn" href="'+yf(p.sym,region)+'" target="_blank" rel="noopener">📈 Yahoo ↗</a>'+
         '<a class="mbtn primary" href="'+esc(LAST.D.reportUrl)+'" target="_blank" rel="noopener">📖 Report ↗</a></div>'+
     '</div>';
   var _wb=m.querySelector('.watchbtn'); if(_wb) _wb.addEventListener('click',function(e){e.preventDefault();watchToggleFromEl(_wb);});
+  var _ob=m.querySelector('.ownbtn'); if(_ob){ var _setOwn=function(on){_ob.textContent=on?'📦 Owned ✓':'📦 I own it';_ob.setAttribute('aria-pressed',on?'true':'false');_ob.classList.toggle('owned',on);}; _setOwn(wlOwns(p.sym,region)); _ob.addEventListener('click',function(e){e.preventDefault();var on=wlToggleOwn(p.sym,region,p.name);_setOwn(on);if(LAST&&LAST.D){var sc=window.pageYOffset;render(LAST.D,LAST.H);window.scrollTo(0,sc);}}); }
   syncWatchButtons();
   var ov=document.getElementById('overlay');
   ov.classList.add('open');ov.setAttribute('aria-hidden','false');
@@ -1705,6 +1739,10 @@ function wlHas(sym,region){return wlGet().some(function(w){return w.sym===sym&&w
 function wlAddItem(it){var a=wlGet();if(!a.some(function(w){return w.sym===it.sym&&w.region===it.region;})){a.push(it);wlSet(a);apiPush('POST','/me/watchlist',{sym:it.sym,region:it.region,entry:(wlNum(it.entry)||it.entry||null)});}}
 function wlRemove(sym,region){wlSet(wlGet().filter(function(w){return !(w.sym===sym&&w.region===region);}));apiPush('DELETE','/me/watchlist/'+region+'/'+sym);}
 function wlToggle(it){if(wlHas(it.sym,it.region)){wlRemove(it.sym,it.region);return false;}wlAddItem(it);return true;}
+// "I own it" — a holding. Marking own also keeps it on the watchlist so it syncs.
+function wlOwns(sym,region){return wlGet().some(function(w){return w.sym===sym&&w.region===region&&w.own;});}
+function wlSetOwn(sym,region,on,name){var a=wlGet(),found=false;a.forEach(function(w){if(w.sym===sym&&w.region===region){w.own=!!on;found=true;}});if(!found&&on)a.push({sym:sym,region:region,entry:null,own:true,name:name||null});wlSet(a);apiPush('POST','/me/watchlist',{sym:sym,region:region,own:!!on});}
+function wlToggleOwn(sym,region,name){var on=!wlOwns(sym,region);wlSetOwn(sym,region,on,name);return on;}
 function wlNum(s){var v=(String(s==null?'':s)).match(/([\d.]+)/);return v?parseFloat(v[1]):null;}
 function wlPriceMap(D){
   var m={};
@@ -1822,9 +1860,11 @@ function openWatchInsight(sym,region){
       (it.note?'<p class="mtake"><span class="lead">Why it\'s of interest:</span> '+esc(it.note)+'</p>':'')+
       (it.kind==='none'?'<div class="mrisk" style="background:var(--surface-2);border-color:var(--line)">Not in this run\'s scan yet — we track the price and will assess it fully when it next surfaces.</div>':'')+
       '<div class="mfoot"><button class="mbtn watchbtn" data-sym="'+esc(sym)+'" data-region="'+esc(region)+'" aria-pressed="true">✓ Watching</button>'+
+        '<button class="mbtn ownbtn" data-sym="'+esc(sym)+'" data-region="'+esc(region)+'" aria-pressed="false">📦 I own it</button>'+
         '<a class="mbtn primary" href="'+yf(sym,region)+'" target="_blank" rel="noopener">📈 Yahoo ↗</a></div>'+
     '</div>';
   var wb=m.querySelector('.watchbtn'); if(wb)wb.addEventListener('click',function(e){e.preventDefault();var was=wlHas(sym,region);watchToggleFromEl(wb);if(was)closeModal();});
+  var _ob=m.querySelector('.ownbtn'); if(_ob){ var _so=function(on){_ob.textContent=on?'📦 Owned ✓':'📦 I own it';_ob.setAttribute('aria-pressed',on?'true':'false');_ob.classList.toggle('owned',on);}; _so(wlOwns(sym,region)); _ob.addEventListener('click',function(e){e.preventDefault();var on=wlToggleOwn(sym,region);_so(on);if(LAST&&LAST.D){var sc=window.pageYOffset;render(LAST.D,LAST.H);window.scrollTo(0,sc);}}); }
   syncWatchButtons();
   var ov=document.getElementById('overlay'); ov.classList.add('open'); ov.setAttribute('aria-hidden','false');
   document.getElementById('mClose').focus();
@@ -2004,7 +2044,12 @@ function wire(D){
   });});
   function regionOf(id){var a=(D.regions||[]).filter(function(x){return x.id===id;});return a[0];}
   function openFromEl(el){var rg=regionOf(el.dataset.region);if(!rg)return;var p=rg.picks[+el.dataset.idx];if(p)openModal(p,rg.id,rg.cur||'$');}
-  document.querySelectorAll('.card, .axcard').forEach(function(c){
+  document.querySelectorAll('.axhold').forEach(function(c){
+    function go(){ openSym(c.dataset.sym, c.dataset.region); }
+    c.addEventListener('click',function(e){if(e.target.closest('a'))return;go();});
+    c.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();go();}});
+  });
+  document.querySelectorAll('.card, .axcard:not(.axhold)').forEach(function(c){
     c.addEventListener('click',function(e){if(e.target.closest('a'))return;openFromEl(c);});
     c.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();openFromEl(c);}});
   });
