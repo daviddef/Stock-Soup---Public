@@ -1972,7 +1972,9 @@ function render(D,H){
   }
   var _cands=(D.candidates||[]);
   var _keepIdx=[],_loseIdx=[];
-  _cands.forEach(function(c,i){ if(c.heat==='mid'||c.heat==='cold')_loseIdx.push(i); else _keepIdx.push(i); });
+  _cands.forEach(function(c,i){ if((c.region||'us')!==MKT) return;   // respect the global AU/US view
+    if(c.heat==='mid'||c.heat==='cold')_loseIdx.push(i); else _keepIdx.push(i); });
+  var _potN=_keepIdx.length+_loseIdx.length;
   var pot=_keepIdx.map(function(i){return potCard(_cands[i],i);}).join('');
   var potLose=_loseIdx.map(function(i){return potCard(_cands[i],i);}).join('');
   var half=Math.ceil((D.commodities||[]).length/2);
@@ -2015,7 +2017,7 @@ function render(D,H){
     story+'</div></section>'+
 
   '<section id="fullpot"><div class="sec-head"><h2 class="display"><span class="k">03</span> The full pot</h2>'+infoBtn('fullpot')+'</div>'+
-    '<p class="sec-sub">Every candidate the scan shortlisted tonight — <b>'+((D.candidates||[]).length)+' names</b>, priced and scored. These are the ones we chose from. Colour = how appetising it looks. <b>Tap any for the full read.</b></p>'+
+    '<p class="sec-sub">Every '+(MKT==='au'?'🇦🇺 Australian':'🌏 international')+' candidate the scan shortlisted tonight — <b>'+_potN+' names</b>, priced and scored. These are the ones we chose from. Colour = how appetising it looks. <b>Tap any for the full read.</b></p>'+
     '<div class="potlegend"><span><i style="background:var(--broth)"></i>🔥 sizzling</span><span><i style="background:var(--buy)"></i>✅ tasty</span><span><i style="background:var(--hold)"></i>➖ maybe</span><span><span class="legno">⛔</span> send it back</span></div>'+
     '<div class="pot">'+pot+'</div>'+
     (potLose?'<button class="potmore" id="potMore" aria-expanded="false">➖ '+_loseIdx.length+' more — maybes &amp; passes ▾</button>'+
