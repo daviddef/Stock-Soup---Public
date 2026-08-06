@@ -1542,6 +1542,24 @@ function themeTickers(item){
   var found=(text.match(/\b[A-Z]{2,5}\b/g)||[]).filter(function(t){return !STOP[t];});
   var seen={},out=[]; found.forEach(function(t){if(!seen[t]){seen[t]=1;out.push(t);}}); return out;
 }
+// Real, recommendation-backed leaders: our scored picks that fit the theme FIRST, then hot
+// full-pot candidates, then any names mentioned. So a theme leads with what we actually rate.
+function themeLeaders(item,src,D){
+  D=D||{};
+  var GEN={build:1,into:1,with:1,from:1,asx:1,the:1,and:1,for:1,out:1,play:1,plays:1,names:1,stock:1,stocks:1,theme:1,sector:1,tonight:1,this:1,that:1};
+  var kws=(((item.title||item.name||'')+'').toLowerCase().match(/[a-z]{4,}/g)||[]).filter(function(w){return !GEN[w];});
+  function matches(txt){txt=(txt||'').toLowerCase();return kws.some(function(k){return txt.indexOf(k)>=0;});}
+  var ordered=[],seen={};
+  function add(s){ if(s&&!seen[s]){seen[s]=1;ordered.push(s);} }
+  (D.regions||[]).forEach(function(rg){(rg.picks||[]).forEach(function(p){ if(matches((p.catalysts||[]).join(' ')+' '+(p.plain||'')+' '+(p.name||''))) add(p.sym); });});
+  var rank={hot:0,good:1,mid:2,cold:3};
+  (D.candidates||[]).filter(function(c){return matches((c.note||'')+' '+(c.name||''));})
+    .sort(function(a,b){return (rank[a.heat]==null?3:rank[a.heat])-(rank[b.heat]==null?3:rank[b.heat]);})
+    .forEach(function(c){add(c.sym);});
+  (item.tickers||[]).forEach(add);
+  themeTickers(item).forEach(add);
+  return ordered;
+}
 function themeIntel(sym,D){
   var res=null;
   (D.regions||[]).forEach(function(rg){(rg.picks||[]).forEach(function(p,i){if(p.sym===sym&&!res)res={kind:'pick',p:p,region:rg.id,idx:i,cur:rg.cur||'$'};});});
@@ -1569,7 +1587,7 @@ function hydrateThemeCards(m){
 function openTheme(src,idx){
   var D=LAST.D||{}, arr=src==='geo'?D.geo:(src==='commodities'?D.commodities:D.sectors), item=arr&&arr[idx]; if(!item)return;
   LASTFOCUS=document.activeElement;
-  var syms=item.tickers||themeTickers(item);
+  var syms=themeLeaders(item,src,D);
   if(src==='commodities' && !syms.length){         // commodities name no tickers → pull related names from the pot
     var nm=(item.name||'').toLowerCase().split(/[\s—·]/)[0];
     syms=(D.candidates||[]).filter(function(c){return nm && (c.note||'').toLowerCase().indexOf(nm)>=0;}).map(function(c){return c.sym;});
