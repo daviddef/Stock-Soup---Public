@@ -1851,7 +1851,7 @@ function renderWatchlist(){
     row.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();open();}});
   });
   el.querySelectorAll('.wrow.wclick-ins').forEach(function(row){
-    function open(){openWatchInsight(row.dataset.sym,row.dataset.wregion);}
+    function open(){openSym(row.dataset.sym,row.dataset.wregion);}   // unified: pick/candidate → full rich card; bare ticker → watch insight
     row.addEventListener('click',function(e){if(e.target.closest('a')||e.target.closest('.wrm'))return;open();});
     row.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();open();}});
   });
