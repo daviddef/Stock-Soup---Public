@@ -234,14 +234,23 @@
   .jhright{display:flex;align-items:center;gap:5px;flex:0 0 auto;margin-left:auto}
   .jtally{display:inline-flex;gap:4px;font-size:10.5px;font-weight:900;background:var(--surface-2);border:1px solid var(--line);border-radius:999px;padding:2px 6px}
   .jtally .jt-w{color:var(--buy)} .jtally .jt-l{color:var(--dont)} .jtally .jt-p{color:var(--faint)}
-  .runlog .rlgh{font-size:12px;font-weight:800;color:var(--ink);margin-bottom:6px}
-  .rlrow{display:grid;grid-template-columns:78px 1fr;gap:8px;align-items:baseline;padding:6px 0;border-bottom:1px solid var(--line);font-size:12.5px}
+  .runlog{margin-top:4px}
+  .rlrow{padding:9px 0 9px 11px;border-bottom:1px solid var(--line);border-left:2px solid transparent}
   .rlrow:last-child{border-bottom:0}
-  .rltype{font-size:10px;font-weight:800;padding:2px 6px;border-radius:6px;white-space:nowrap;text-align:center}
-  .rl-maj{background:var(--broth-soft,rgba(255,107,26,.12));color:var(--broth)} .rl-min{background:var(--surface-2);color:var(--muted)}
-  .rlwhen{font-weight:700;grid-column:2} .rlnote{grid-column:2;color:var(--muted);font-size:11.5px;line-height:1.5;text-wrap:pretty;display:flex;flex-wrap:wrap;align-items:center;gap:2px 0}
-  .rlpk{display:inline-flex;align-items:center;gap:3px;margin-right:7px;font-weight:700;color:var(--ink);white-space:nowrap}
-  .rlmkt{font-size:12px;margin-right:2px} .rldur{color:var(--faint);font-weight:600;font-size:10.5px;margin-left:4px}
+  .rlrow.rlmaj{border-left-color:var(--broth);background:linear-gradient(90deg,rgba(255,107,26,.09),transparent 62%)}
+  .rlrow.rlmin{border-left-color:var(--line)}
+  .rltop{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:4px}
+  .rltag{font-size:9.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase}
+  .rltag-maj{color:var(--broth)} .rltag-min{color:var(--faint)}
+  .rlwhen{font-weight:700;font-size:12.5px;color:var(--ink)}
+  .rldur{color:var(--faint);font-weight:600;font-size:10.5px}
+  .rlbody{display:flex;flex-direction:column;gap:4px}
+  .rlline{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;font-size:12px;color:var(--ink);line-height:1.4}
+  .rlflag{font-size:12.5px;flex:0 0 auto}
+  .rlpk{display:inline-flex;align-items:center;gap:3px;font-weight:700;color:var(--ink);white-space:nowrap}
+  .rlmovers{color:var(--muted);font-size:11.5px}
+  .rlmovers .up{color:var(--buy);font-weight:700} .rlmovers .dn{color:var(--dont);font-weight:700}
+  .rlmovers .qt{color:var(--faint)}
   .jhead .when{font-weight:800;font-size:13px}
   .jhead .when small{display:block;color:var(--muted);font-weight:600;font-size:11px}
   .now-b{font-size:10px;font-weight:900;background:var(--broth);color:#1a0f06;padding:2px 7px;border-radius:6px;letter-spacing:.06em}
@@ -1083,7 +1092,7 @@ function render(D,H){
 
   // ===== 👨‍🍳 INSIDE THE KITCHEN =====
   '<div class="tabview" id="tab-kitchen">'+
-    '<section id="runsched"><div class="sec-head"><h2 class="display">⏱️ Run schedule</h2></div>'+(INFO.schedule?INFO.schedule.body:'')+runLogHtml()+'</section>'+
+    '<section id="runsched"><div class="sec-head"><h2 class="display">⏱️ Run schedule</h2>'+infoBtn('schedule')+'</div>'+runLogHtml()+'</section>'+
     '<section><div class="sec-head"><h2 class="display">🗄️ The Archive</h2>'+infoBtn('archive')+'</div>'+
       '<p class="sec-sub">Every menu we\'ve served. Tap one to open that run\'s full report.</p>'+
       '<div class="arch" id="archList"><div class="wlempty">Loading past menus…</div></div>'+
@@ -1298,23 +1307,43 @@ var INFO={
 };
 function infoBtn(key){ return '<button class="infobtn" data-info="'+esc(key)+'" aria-label="What is this?">i</button>'; }
 function runLogHtml(){
-  var H=(LAST&&LAST.H)||{}, hh='font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--broth);font-weight:800;margin:18px 0 8px';
-  function pk(arr){return (arr||[]).map(function(s,i){return '<span class="rlpk">'+tfB(['Day','Week','Long'][i])+' '+esc(s)+'</span>';}).join('');}
-  function dur(ms){return ms?' <span class="rldur">· ran '+(ms/1000).toFixed(1)+'s</span>':'';}
-  var majors=(H.menus||[]).slice(0,8).map(function(m){
-    return '<div class="rlrow"><span class="rltype rl-maj">🍳 menu</span><span class="rlwhen">'+esc(m.stamp)+' · '+esc(m.time)+dur(m.durMs)+'</span>'+
-      '<span class="rlnote"><span class="rlmkt">🇦🇺</span> '+pk(m.au)+' <span class="rlmkt" style="margin-left:8px">🌏</span> '+pk(m.us)+'</span></div>';
+  var H=(LAST&&LAST.H)||{}, hh='font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--broth);font-weight:800;margin:18px 0 4px';
+  var WD=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'], MO=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  var Z2=function(n){return('0'+n).slice(-2);};
+  // one aligned datetime format for BOTH run types → "Wed 6 Aug · 16:10"
+  function fmtWhen(ts){var d=new Date(ts);return WD[d.getDay()]+' '+d.getDate()+' '+MO[d.getMonth()]+' · '+Z2(d.getHours())+':'+Z2(d.getMinutes());}
+  function majTs(m){
+    if(m.iso) return new Date(m.iso).getTime();
+    var mm=(m.stamp||'').match(/(\d{1,2})\s+([A-Za-z]{3})/), tm=(m.time||'').match(/(\d{1,2}):(\d{2})/);
+    if(!mm) return 0;
+    return new Date(new Date().getFullYear(), MO.indexOf(mm[2]), +mm[1], tm?+tm[1]:0, tm?+tm[2]:0).getTime();
+  }
+  function dur(ms){return ms?'<span class="rldur">· '+(ms/1000<10?(ms/1000).toFixed(1):Math.round(ms/1000))+'s</span>':'';}
+  function pkline(arr,flag,lbl){
+    var picks=(arr||[]).map(function(s,i){return '<span class="rlpk">'+tfB(['Day','Week','Long'][i])+' '+esc(s)+'</span>';}).join('');
+    return '<div class="rlline"><span class="rlflag" title="'+lbl+'">'+flag+'</span>'+picks+'</div>';
+  }
+  // unify majors (fresh menus) + minors (hourly re-prices) into one feed, newest execution first
+  var rows=[];
+  (H.menus||[]).slice(0,8).forEach(function(m){rows.push({t:'maj',ts:majTs(m),m:m});});
+  (PULSES||[]).forEach(function(pu){rows.push({t:'min',ts:new Date(pu.iso||0).getTime(),pu:pu});});
+  rows.sort(function(a,b){return b.ts-a.ts;});
+  var body=rows.slice(0,40).map(function(r){
+    if(r.t==='maj'){var m=r.m;
+      return '<div class="rlrow rlmaj"><div class="rltop"><span class="rltag rltag-maj">🍳 Menu · new picks</span>'+
+        '<span class="rlwhen">'+fmtWhen(r.ts)+'</span>'+dur(m.durMs)+'</div>'+
+        '<div class="rlbody">'+pkline(m.au,'🇦🇺','Australia')+pkline(m.us,'🇺🇸','United States')+'</div></div>';
+    }
+    var pu=r.pu, ch=(pu.changes||[]).filter(function(c){return Math.abs(c[1])>=0.05;})
+      .sort(function(a,b){return Math.abs(b[1])-Math.abs(a[1]);}).slice(0,3);
+    var mv=ch.map(function(c){var up=c[1]>=0;return '<span class="'+(up?'up':'dn')+'">'+esc(c[0])+' '+(up?'+':'')+c[1]+'%</span>';}).join(' · ');
+    return '<div class="rlrow rlmin"><div class="rltop"><span class="rltag rltag-min">⏱ Re-price · same picks</span>'+
+      '<span class="rlwhen">'+fmtWhen(r.ts)+'</span>'+dur(pu.durMs)+'</div>'+
+      '<div class="rlbody"><div class="rlline rlmovers">'+(mv||'<span class="qt">quiet hour — nothing moved much</span>')+'</div></div></div>';
   }).join('');
-  var mins=(PULSES||[]).slice().reverse().slice(0,30).map(function(pu){
-    var ch=(pu.changes||[]).filter(function(c){return Math.abs(c[1])>=0.05;});
-    var mv=ch.slice(0,3).map(function(c){return esc(c[0])+' '+(c[1]>=0?'+':'')+c[1]+'%';}).join(' · ');
-    return '<div class="rlrow"><span class="rltype rl-min">⏱ re-price</span><span class="rlwhen">'+esc(pu.stamp)+dur(pu.durMs)+'</span><span class="rlnote">'+(mv||'<span class="muted">quiet</span>')+'</span></div>';
-  }).join('');
-  return '<h4 style="'+hh+'">Every run — newest first</h4><p style="font-size:12.5px;color:var(--muted);margin:0 0 10px">🍳 <b>menu</b> = a full re-cook (new picks). ⏱ <b>re-price</b> = same menu, fresh numbers.</p>'+
-    '<div class="runlog">'+
-      '<div class="rlgh">🍳 Major runs — fresh menus <span class="muted">(last 8)</span></div>'+(majors||'<p class="muted">None yet.</p>')+
-      '<div class="rlgh" style="margin-top:14px">⏱ Minor runs — hourly re-prices <span class="muted">(this session)</span></div>'+(mins||'<p class="muted">None yet this session.</p>')+
-    '</div>';
+  return '<h4 style="'+hh+'">Every run — newest first</h4>'+
+    '<p style="font-size:12px;color:var(--muted);margin:0 0 8px"><b style="color:var(--broth)">Menu</b> = a full re-cook (six new picks, timed ~30&nbsp;min before an open). <b>Re-price</b> = same picks, fresh numbers each hour.</p>'+
+    '<div class="runlog">'+(body||'<p class="muted">No runs yet.</p>')+'</div>';
 }
 function openInfo(key){
   var i=INFO[key]; if(!i) return;
