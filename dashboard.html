@@ -109,6 +109,13 @@
   .toast.show{opacity:1;transform:translate(-50%,0)}
   .infobtn{flex:0 0 auto;width:20px;height:20px;border-radius:50%;border:1.5px solid var(--muted);background:none;color:var(--muted);font-family:Georgia,'Times New Roman',serif;font-style:italic;font-weight:700;font-size:12px;line-height:1;cursor:pointer;align-self:center;transition:border-color .12s,color .12s}
   .infobtn:hover{border-color:var(--broth);color:var(--broth)}
+  .mktbar{display:flex;gap:8px;margin:16px 0 2px;flex-wrap:wrap}
+  .mktbtn{display:inline-flex;flex-direction:column;align-items:flex-start;gap:2px;background:var(--surface-2);border:1.5px solid var(--line);border-radius:13px;padding:8px 16px;cursor:pointer;font-family:var(--font);transition:border-color .12s,background .12s}
+  .mktbtn .mktlbl{font-weight:800;font-size:14.5px;color:var(--ink)}
+  .mktbtn.active{border-color:var(--broth);background:var(--broth-soft,rgba(255,107,26,.12))}
+  .mktbtn.active .mktlbl{color:var(--broth)}
+  .mktst{font-size:10.5px;font-weight:700;letter-spacing:.02em}
+  .mktst.mon{color:var(--buy)} .mktst.moff{color:var(--faint)}
   .schedlink{cursor:pointer;display:inline-flex;align-items:center;gap:7px}
   .schedi{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;border:1.2px solid var(--muted);font-family:Georgia,serif;font-style:italic;font-size:9.5px;font-weight:700}
   .schedlink:hover .schedi{border-color:var(--broth);color:var(--broth)}
@@ -704,6 +711,25 @@ var _TFB={Day:['d','D'],Week:['w','W'],Long:['m','M']};
 function tfB(tf){var m=_TFB[tf]||_TFB[tfNorm(tf)];return m?'<span class="tfb tfb-'+m[0]+'">'+m[1]+'</span>':'';}
 function tfBW(tf){var n=tfNorm(tf),w={Day:'Day',Week:'Week',Long:'Long'}[n]||'';return tfB(n)+(w?' '+w:'');}
 var TFS=[tfB('Day'),tfB('Week'),tfB('Long')];
+// Rough market open/closed by AEST clock (user is in AU). ASX 10:00–16:00; US ~23:30–06:00 AEST.
+function marketStatus(region){
+  var d=new Date(), day=d.getDay(), h=d.getHours()+d.getMinutes()/60, wd=day>=1&&day<=5;
+  if(region==='au'){
+    if(wd&&h>=10&&h<16) return {open:true,txt:'open'};
+    if(wd&&h<10) return {open:false,txt:'opens '+Math.max(1,Math.round(10-h))+'h'};
+    if(wd&&h>=16) return {open:false,txt:'closed'};
+    return {open:false,txt:'closed · wknd'};
+  }
+  if(h>=23.5||h<6) return {open:true,txt:'open'};
+  if(h>=6&&h<23.5) return {open:false,txt:'opens tonight'};
+  return {open:false,txt:'closed'};
+}
+function mktBarHtml(D){
+  return '<div class="mktbar" role="tablist" aria-label="Market">'+(D.regions||[]).map(function(rg){
+    var st=marketStatus(rg.id);
+    return '<button class="tab mktbtn'+(rg.id===MKT?' active':'')+'" role="tab" data-region="'+esc(rg.id)+'" aria-selected="'+(rg.id===MKT)+'"><span class="mktlbl">'+esc(rg.label)+'</span><span class="mktst '+(st.open?'mon':'moff')+'">'+(st.open?'● ':'○ ')+esc(st.txt)+'</span></button>';
+  }).join('')+'</div>';
+}
 var LAST=null, LASTFOCUS=null;
 function yf(sym,region){var s=String(sym).replace(/\*$/,'');if(region==="au")s+=".AX";return "https://finance.yahoo.com/quote/"+encodeURIComponent(s);}
 function qlink(sym,region,label){return '<a class="q" href="'+yf(sym,region)+'" target="_blank" rel="noopener">'+esc(label==null?sym:label)+'</a>';}
@@ -977,6 +1003,7 @@ function render(D,H){
     '<button class="viewbtn" id="viewBtn">😋 Simple</button>'+
     '<button class="chip toggle" id="themeBtn" aria-label="Toggle theme">🌗</button></div></div>'+
     '<div class="eyebrow schedlink" data-info="schedule" role="button" tabindex="0" title="How the run schedule works" style="margin-top:22px;letter-spacing:.06em">'+esc((D.stamp||'').replace(/,?\s*20\d\d/,'').replace(/\s*AEST\b/,''))+(D.next?' · next ~'+esc(D.next):'')+' <span class="schedi">i</span></div>'+
+    mktBarHtml(D)+
     '<h1 class="display">Two pots on the boil:<br><span class="hot">'+esc(D.headline.a)+'</span> &amp; <span class="hot">'+esc(D.headline.b)+'</span>.</h1>'+
     '<p class="chef">'+D.chef+'</p>'+
     '<div class="metastrip"><span class="chip clickchip" data-mchip="risk" role="button" tabindex="0"><span class="dot" style="background:var(--hold)"></span> Risk: '+esc(r.label)+' <span class="chipi">i</span></span>'+
@@ -1043,14 +1070,13 @@ function render(D,H){
 
   // ===== 👨‍🍳 INSIDE THE KITCHEN =====
   '<div class="tabview" id="tab-kitchen">'+
-    '<section><div class="sec-head"><h2 class="display">⏱️ Run schedule</h2></div>'+(INFO.schedule?INFO.schedule.body:'')+runLogHtml()+'</section>'+
+    '<section id="runsched"><div class="sec-head"><h2 class="display">⏱️ Run schedule</h2></div>'+(INFO.schedule?INFO.schedule.body:'')+runLogHtml()+'</section>'+
     '<section><div class="sec-head"><h2 class="display">🗄️ The Archive</h2>'+infoBtn('archive')+'</div>'+
       '<p class="sec-sub">Every menu we\'ve served. Tap one to open that run\'s full report.</p>'+
       '<div class="arch" id="archList"><div class="wlempty">Loading past menus…</div></div>'+
       '<div class="archmore" id="archMore"></div></section>'+
     '<section><div class="sec-head"><h2 class="display">📋 How we got here</h2></div>'+
       '<p class="sec-sub">The recipe, in plain sight. No black box.</p>'+discoveryFunnel(D)+'<div class="panel trail">'+trail+'</div></section>'+
-    '<div class="cta"><a href="'+esc(D.reportUrl)+'">📖 Read the full report →</a></div>'+
   '</div>'+
 
   '<footer>Auto-generated for information only. <b>Not financial advice</b> — do your own research.<br>Stock Soup · '+esc(D.stamp||'')+(D.next?' · next pot ~'+esc(D.next):' · served hourly')+'</footer>';
@@ -1266,7 +1292,7 @@ function runLogHtml(){
     return '<div class="rlrow"><span class="rltype rl-maj">🍳 menu</span><span class="rlwhen">'+esc(m.stamp)+' · '+esc(m.time)+dur(m.durMs)+'</span>'+
       '<span class="rlnote"><span class="rlmkt">🇦🇺</span> '+pk(m.au)+' <span class="rlmkt" style="margin-left:8px">🌏</span> '+pk(m.us)+'</span></div>';
   }).join('');
-  var mins=(PULSES||[]).slice().reverse().slice(0,12).map(function(pu){
+  var mins=(PULSES||[]).slice().reverse().slice(0,30).map(function(pu){
     var ch=(pu.changes||[]).filter(function(c){return Math.abs(c[1])>=0.05;});
     var mv=ch.slice(0,3).map(function(c){return esc(c[0])+' '+(c[1]>=0?'+':'')+c[1]+'%';}).join(' · ');
     return '<div class="rlrow"><span class="rltype rl-min">⏱ re-price</span><span class="rlwhen">'+esc(pu.stamp)+dur(pu.durMs)+'</span><span class="rlnote">'+(mv||'<span class="muted">quiet</span>')+'</span></div>';
@@ -1783,7 +1809,8 @@ function wire(D){
   var pm=document.getElementById('potMore'), pl=document.getElementById('potLose');
   if(pm&&pl){ pm.onclick=function(){ var open=pl.hasAttribute('hidden'); if(open)pl.removeAttribute('hidden'); else pl.setAttribute('hidden',''); pm.setAttribute('aria-expanded',open?'true':'false'); pm.innerHTML=(open?'▴ Hide the maybes &amp; passes':'➖ '+pl.children.length+' more — maybes &amp; passes ▾'); }; }
   var lu=document.getElementById('lastUpd');
-  if(lu){ if(PULSES&&PULSES.length){ lu.textContent='updated '+timeAgo(PULSES[PULSES.length-1].iso); lu.onclick=openPulseLog; } else { lu.style.display='none'; } }
+  if(lu){ if(PULSES&&PULSES.length){ lu.textContent='updated '+timeAgo(PULSES[PULSES.length-1].iso); lu.onclick=goRunSchedule; } else { lu.style.display='none'; } }
+  document.querySelectorAll('.schedlink').forEach(function(s){ s.removeAttribute('data-info'); s.onclick=goRunSchedule; });
   var tb=document.getElementById('trackBtn'), tc=document.getElementById('trackCta');
   if(TRACK){ if(tb)tb.onclick=openTrackRecord; if(tc)tc.onclick=openTrackRecord; }
   else { if(tb)tb.style.display='none'; if(tc)tc.style.display='none'; }
@@ -1868,6 +1895,7 @@ function switchTab(t){
   document.querySelectorAll('.tabview').forEach(function(v){ v.classList.toggle('active', v.id==='tab-'+t); });
   window.scrollTo(0,0);
 }
+function goRunSchedule(){ switchTab('kitchen'); setTimeout(function(){ var s=document.getElementById('runsched'); if(s) s.scrollIntoView({behavior:'smooth',block:'start'}); },80); }
 function setView(v){ VIEW = v; try{ localStorage.setItem('soup_view', v); }catch(e){} applyView(); }
 function applyView(){ if(!LAST) return; window.scrollTo(0,0); if(VIEW==='simple') renderSimple(LAST.D); else render(LAST.D, LAST.H); }
 function boot(D,H){
