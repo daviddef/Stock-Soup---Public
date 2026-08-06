@@ -2873,12 +2873,14 @@ function wire(D){
     b.addEventListener('click',function(e){e.preventDefault();e.stopPropagation();watchToggleFromEl(b);});
   });
   syncWatchButtons();
-  // Seed the watchlist once from the user's published watchlist.json (their previously-advised tickers)
+  // The seeded 'smart watching' list belongs to the ADMIN only — new users start with an empty watchlist.
   try{
-    if(!localStorage.getItem('soup_wl_seeded') && (D.defaultWatchlist||[]).length && !wlGet().length){
-      wlSet(D.defaultWatchlist.map(function(w){return {sym:w.sym,region:w.region};}));
+    if(isAdmin() && !localStorage.getItem('soup_wl_seeded') && (D.defaultWatchlist||[]).length && !wlGet().length){
+      var seed=D.defaultWatchlist.map(function(w){return {sym:w.sym,region:w.region};});
+      wlSet(seed);
+      if(signedIn()) apiPush('POST','/me/import',{items:seed});   // → David's backend account, syncs across his devices
     }
-    if((D.defaultWatchlist||[]).length) localStorage.setItem('soup_wl_seeded','1');
+    if(isAdmin() && (D.defaultWatchlist||[]).length) localStorage.setItem('soup_wl_seeded','1');
   }catch(e){}
   renderWatchlist();
 
