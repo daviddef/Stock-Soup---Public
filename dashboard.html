@@ -83,7 +83,9 @@
   .proxzone{position:absolute;left:0;top:0;bottom:0;width:19%;background:rgba(35,194,103,.32);border-radius:999px}
   .proxnow{position:absolute;top:50%;transform:translate(-50%,-50%);width:11px;height:11px;border-radius:50%;box-shadow:0 0 0 2px var(--surface)}
   .pxg{min-width:92px;display:flex;flex-direction:column;align-items:flex-end;gap:1px;font-variant-numeric:tabular-nums}
-  .pxbuy{font-size:12px;font-weight:800;color:var(--ink)}
+  .pxnow{font-size:13px;font-weight:800;color:var(--ink)}
+  .s-in .pxnow,.s-near .pxnow{color:var(--buy)} .s-close .pxnow{color:var(--hold)}
+  .pxbuy{font-size:11px;font-weight:700;color:var(--muted)}
   .pxst{font-size:10px;font-weight:800;color:var(--muted)}
   .s-in .proxnow,.s-near .proxnow{background:var(--buy)} .s-in .pxst,.s-near .pxst{color:var(--buy)}
   .s-close .proxnow{background:var(--hold)} .s-close .pxst{color:var(--hold)}
@@ -92,6 +94,10 @@
   .s-in .proxpct,.s-near .proxpct{color:var(--buy)} .s-close .proxpct{color:var(--hold)} .s-wait .proxpct{color:var(--muted)}
   .proxkey{font-size:10px;color:var(--faint);margin-top:10px}
   .sec-head{display:flex;align-items:baseline;gap:12px;margin-bottom:2px}
+  .refreshbtn{width:30px;height:30px;border-radius:50%;border:1px solid var(--line);background:var(--surface-2);color:var(--muted);font-size:15px;line-height:1;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;padding:0}
+  .refreshbtn:hover{border-color:var(--broth);color:var(--broth)}
+  .refreshbtn.spinning{animation:spin .8s linear infinite;color:var(--broth)}
+  @keyframes spin{to{transform:rotate(360deg)}}
   .infobtn{flex:0 0 auto;width:20px;height:20px;border-radius:50%;border:1.5px solid var(--muted);background:none;color:var(--muted);font-family:Georgia,'Times New Roman',serif;font-style:italic;font-weight:700;font-size:12px;line-height:1;cursor:pointer;align-self:center;transition:border-color .12s,color .12s}
   .infobtn:hover{border-color:var(--broth);color:var(--broth)}
   .schedlink{cursor:pointer;display:inline-flex;align-items:center;gap:7px}
@@ -1664,7 +1670,7 @@ function renderChangeEnv(D, pulses, mkt){
     var onLine=gap<=1.5?'✓':'−'+Math.round(gap)+'%';
     return '<div class="proxrow s-'+st+'"><span class="pxs">'+esc(pk.sym)+'</span>'+
       '<div class="proxbar"><span class="proxzone"></span><span class="proxpct" style="left:'+pos.toFixed(0)+'%">'+onLine+'</span><span class="proxnow" style="left:'+pos.toFixed(0)+'%"></span></div>'+
-      '<span class="pxg"><span class="pxbuy">Buy @ '+esc(pk.cur)+pk.nEntry+'</span></span></div>';
+      '<span class="pxg">'+(pk.now!=null?'<span class="pxnow">now '+esc(pk.cur)+pk.now+'</span>':'')+'<span class="pxbuy">Buy @ '+esc(pk.cur)+pk.nEntry+'</span></span></div>';
   }).join('');
   var latest=pulses[pulses.length-1];
   return '<section><div class="sec-head"><h2 class="display"><span class="k">01½</span> Change environment</h2>'+infoBtn('changeenv')+'</div>'+
@@ -1836,6 +1842,7 @@ function render(D,H){
   document.getElementById('app').innerHTML=
   '<header class="hero"><div class="brandrow"><div class="brand"><span class="bowl">🍲</span> Stock&nbsp;Soup</div>'+
     '<div style="display:flex;gap:8px;align-items:center"><span class="live"><span class="pulse"></span>LIVE</span>'+
+    '<button class="refreshbtn" id="refreshBtn" title="Pull the latest published prices" aria-label="Refresh prices">↻</button>'+
     '<button class="viewbtn" id="viewBtn">😋 Simple</button>'+
     '<button class="chip toggle" id="themeBtn" aria-label="Toggle theme">🌗</button></div></div>'+
     '<div class="eyebrow schedlink" data-info="schedule" role="button" tabindex="0" title="How the run schedule works" style="margin-top:22px;letter-spacing:.06em">'+esc((D.stamp||'').replace(/,?\s*20\d\d/,'').replace(/\s*AEST\b/,''))+(D.next?' · next ~'+esc(D.next):'')+' <span class="schedi">i</span></div>'+
@@ -1843,7 +1850,8 @@ function render(D,H){
     '<p class="chef">'+D.chef+'</p>'+
     '<div class="metastrip"><span class="chip"><span class="dot" style="background:var(--hold)"></span> Risk: '+esc(r.label)+'</span>'+
     '<span class="chip mono">₿ '+esc(r.btc)+' <span class="up">'+esc(r.btcChange)+'</span></span>'+
-    '<span class="chip mono">AUD/USD '+esc(r.audusd)+'</span><span class="chip mono">Gold '+esc(r.gold)+'</span>'+
+    '<span class="chip mono">AUD/USD '+esc(r.audusd)+(r.audusdChange?' <span class="'+(r.audusdUp?'up':'down')+'">'+(r.audusdUp?'▲':'▼')+esc(r.audusdChange)+'</span>':'')+'</span>'+
+    '<span class="chip mono">Gold '+esc(r.gold)+(r.goldChange?' <span class="'+(r.goldUp?'up':'down')+'">'+(r.goldUp?'▲':'▼')+esc(r.goldChange)+'</span>':'')+'</span>'+
     '<span class="chip">'+esc(D.hotTags)+'</span></div>'+
     '<div class="meter"><div class="track"><div class="needle" id="needle"></div></div>'+
     '<div class="lbls"><span>🔴 Hide the cash</span><span>⚪ Steady</span><span>🟢 Send it</span></div></div></header>'+
@@ -2263,6 +2271,7 @@ function wire(D){
     root.setAttribute('data-theme',cur==='dark'?'light':'dark');
   });
   var vb=document.getElementById('viewBtn'); if(vb) vb.onclick=function(){setView('simple');};
+  var rb=document.getElementById('refreshBtn'); if(rb) rb.onclick=function(){refreshPrices(rb);};
   var tb=document.getElementById('trackBtn'), tc=document.getElementById('trackCta');
   if(TRACK){ if(tb)tb.onclick=openTrackRecord; if(tc)tc.onclick=openTrackRecord; }
   else { if(tb)tb.style.display='none'; if(tc)tc.style.display='none'; }
@@ -2386,7 +2395,7 @@ function renderSimple(D){
       '<div class="smood">Tonight: <span class="hot">'+esc(D.headline.a)+'</span> &amp; <span class="hot">'+esc(D.headline.b)+'</span></div>'+
       (D.chefShort?'<p class="schef">'+esc(D.chefShort)+'</p>':'')+
       '<div class="schips"><span class="chip mono">₿ <span class="'+(btcUp?'up':'down')+'">'+(btcUp?'▲':'▼')+'</span> '+esc(r.btcChange)+'</span>'+
-      '<span class="chip mono">AUD '+esc(r.audusd)+'</span></div>'+
+      '<span class="chip mono">AUD '+esc(r.audusd)+(r.audusdChange?' <span class="'+(r.audusdUp?'up':'down')+'">'+(r.audusdUp?'▲':'▼')+esc(r.audusdChange)+'</span>':'')+'</span></div>'+
       '<div class="meter"><div class="track"><div class="needle" id="sneedle"></div></div>'+
       '<div class="lbls"><span>🔴 Hide the cash</span><span>⚪ Steady</span><span>🟢 Send it</span></div></div>'+
       '<div class="riskwhat">'+esc(riskWhat)+'</div></div>'+
@@ -2423,6 +2432,22 @@ function wireSimple(D){
   requestAnimationFrame(function(){var n=document.getElementById('sneedle');if(n)n.style.left=lvl+'%';});
 }
 
+function refreshPrices(btn){
+  if(btn){ btn.classList.add('spinning'); }
+  return Promise.allSettled([
+    fetch('latest.json',{cache:'no-store'}).then(function(r){return r.ok?r.json():null;}),
+    fetch('menu-history.json',{cache:'no-store'}).then(function(r){return r.ok?r.json():null;}),
+    fetch('reports/pulse-history.json',{cache:'no-store'}).then(function(r){return r.ok?r.json():null;}),
+    fetch('reports/track-record.json',{cache:'no-store'}).then(function(r){return r.ok?r.json():null;})
+  ]).then(function(res){
+    var d=res[0].value, h=res[1].value, pu=res[2].value, tr=res[3].value;
+    if(pu&&pu.pulses&&pu.pulses.length>1) PULSES=pu.pulses;
+    if(tr&&tr.record) TRACK=tr;
+    var sc=window.pageYOffset;
+    boot(d&&d.regions?d:EMBEDDED, h&&h.menus?h:HIST_EMBED);   // re-renders (button rebuilt fresh)
+    window.scrollTo(0,sc);
+  });
+}
 boot(EMBEDDED,HIST_EMBED);
 Promise.allSettled([
   fetch('latest.json',{cache:'no-store'}).then(function(r){return r.ok?r.json():null;}),
