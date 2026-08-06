@@ -196,6 +196,25 @@
   .docsbody{flex:1;overflow:hidden}
   .docsframe{width:100%;height:100%;border:0;background:var(--ground)}
   .docsload{padding:44px 20px;text-align:center;color:var(--muted)}
+  .anload{padding:34px 6px;text-align:center;color:var(--muted);font-size:14px}
+  .anchips{display:flex;flex-wrap:wrap;gap:7px;margin:2px 0 10px}
+  .anchip{display:inline-flex;align-items:center;gap:5px;background:var(--surface-2);border:1px solid var(--line);border-radius:9px;padding:6px 10px;font-size:12px;font-weight:800;color:var(--ink)}
+  .anchip .ank{color:var(--muted);font-weight:700}
+  .anchip.gd{border-color:rgba(35,194,103,.4);color:var(--buy)} .anchip.bd{border-color:rgba(255,77,77,.4);color:var(--dont)}
+  .anzones{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:4px}
+  .anz{border-radius:11px;padding:10px 12px;font-weight:800;font-size:13px;border:1px solid var(--line)}
+  .anz .ank{display:block;font-size:10px;font-weight:800;letter-spacing:.03em;margin-bottom:2px}
+  .anz-buy{background:rgba(35,194,103,.1);border-color:rgba(35,194,103,.34);color:var(--buy)}
+  .anz-sell{background:rgba(255,77,77,.09);border-color:rgba(255,77,77,.32);color:var(--dont)}
+  .anlist h4{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:2px 0 6px} .anlist ul{margin:0;padding-left:18px} .anlist li{margin:4px 0;font-size:13.5px;color:var(--ink);line-height:1.45}
+  .anrisk li{color:var(--muted)}
+  .askbar{display:flex;gap:8px;margin:2px 0 16px}
+  .askbar input{flex:1;min-width:0;background:var(--surface-2);border:1px solid var(--line);border-radius:11px;padding:11px 14px;color:var(--ink);font-family:var(--font);font-size:14px}
+  .askbar input:focus{outline:2px solid var(--broth);outline-offset:1px}
+  .askbtn{background:var(--broth);color:#1a0f06;border:0;font-weight:900;padding:0 16px;border-radius:11px;cursor:pointer;white-space:nowrap;font-family:var(--font)}
+  .askseg{display:inline-flex;border:1px solid var(--line);border-radius:11px;overflow:hidden}
+  .askseg button{border:0;background:var(--surface-2);color:var(--muted);font-weight:800;font-size:12px;padding:0 11px;cursor:pointer;font-family:var(--font)}
+  .askseg button[aria-pressed="true"]{background:var(--broth);color:#1a0f06}
   .schedlink{cursor:pointer;display:inline-flex;align-items:center;gap:7px}
   .schedi{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;border:1.2px solid var(--muted);font-family:Georgia,serif;font-style:italic;font-size:9.5px;font-weight:700}
   .schedlink:hover .schedi{border-color:var(--broth);color:var(--broth)}
@@ -1295,6 +1314,9 @@ function render(D,H){
   // ===== ⭐ YOUR FAVOURITES =====
   '<div class="tabview" id="tab-faves">'+
     favesHead()+
+    '<div class="askbar"><input id="anAsk" placeholder="🧠 What would you do? Ask about any ticker… e.g. PLTR" maxlength="8" aria-label="Ask the analyst about a ticker">'+
+      '<span class="askseg" role="group" aria-label="Market"><button id="anAu" aria-pressed="false">🇦🇺</button><button id="anUs" aria-pressed="true">🇺🇸</button></span>'+
+      '<button class="askbtn" id="anGo">Ask</button></div>'+
     '<section><p class="sec-sub" style="margin-top:4px">Tap <b>＋ Watch</b> on any pick to track it — we remember its ideal-buy price and flag it when it gets there. Or add your own below. '+infoBtn('watchlist')+'</p>'+
       '<div class="wlalert" id="wlAlert" role="status" aria-live="polite" style="display:none"></div>'+
       '<div class="wlbar"><input id="wlInput" placeholder="Add a ticker… e.g. BHP" maxlength="8" aria-label="Ticker to add">'+
@@ -1552,9 +1574,10 @@ function reviewsHead(){
   var verdict=wr>=55?'Cooking with gas 🔥':wr>=45?'Honest and middling':'A humbling month — nothing hidden';
   return tabHead('🍽️ The scorecard',verdict,'We check <b>every</b> pick after its own timeframe — a day-trade the next day, a week pick after a week, a month pick after a month. Tap any call below for the story.',stats);
 }
+function updateOwnCount(){ var el=document.getElementById('ownCount'); if(el){ try{ el.textContent=wlGet().filter(function(w){return w.own;}).length; }catch(e){} } }
 function favesHead(){
-  var n=0; try{n=wlGet().length;}catch(e){}
-  var stats=[tstat('Watching',n),tstat('You own','0'),tstat('Price alerts','on')];
+  var n=0,owned=0; try{var a=wlGet(); n=a.length; owned=a.filter(function(w){return w.own;}).length;}catch(e){}
+  var stats=[tstat('Watching',n),'<span class="tabstat"><span class="tk">You own</span> <b id="ownCount">'+owned+'</b></span>',tstat('Price alerts','on')];
   var t=n?('You\'re watching '+n+(n===1?' name':' names')):'Your table is empty — for now';
   return tabHead('⭐ Your table',t,'Tap <b>＋ Watch</b> on any pick and we\'ll remember its ideal-buy price, then flag it the moment it gets there. Add your own below too.',n?stats:[]);
 }
@@ -1754,6 +1777,7 @@ function openCandidate(idx){
       (c.short!=null?'<div class="mshort">🩳 <span class="lead">Short interest:</span> <b>'+c.short+'%</b> of shares sold short'+(c.short>=8?' — <b>elevated</b> (squeeze fuel / bearish crowd)':c.short>=4?' — moderate':' — light')+'</div>':'')+
       '<div class="mrisk" style="background:var(--surface-2);border-color:var(--line)"><b>Didn\'t make the top 3</b> — it\'s on the radar, not a pick this run.</div>'+
       '<div class="mfoot"><button class="mbtn watchbtn" data-sym="'+esc(c.sym)+'" data-region="'+esc(c.region)+'"'+(c.name?' data-name="'+esc(c.name)+'"':'')+' aria-pressed="false">＋ Watch</button>'+
+        '<button class="mbtn anbtn" data-sym="'+esc(c.sym)+'" data-region="'+esc(c.region)+'">🧠 What would you do?</button>'+
         '<a class="mbtn primary" href="'+yf(c.sym,c.region)+'" target="_blank" rel="noopener">📈 Yahoo ↗</a></div>'+
     '</div>';
   var _wb=m.querySelector('.watchbtn'); if(_wb)_wb.addEventListener('click',function(e){e.preventDefault();watchToggleFromEl(_wb);});
@@ -1824,6 +1848,42 @@ function wireInfo(){ document.querySelectorAll('[data-info]').forEach(function(b
   b.onkeydown=function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); openInfo(b.dataset.info); } };
 }); }
 
+// 🧠 Virtual analyst — "What would you do?" for any ticker (fetches the Worker /analyst verdict).
+function openAnalyst(sym,region){
+  sym=String(sym||'').toUpperCase().replace(/[^A-Z0-9.]/g,''); region=region||'us'; if(!sym) return;
+  LASTFOCUS=document.activeElement;
+  var m=document.getElementById('modal'); m.className='modal';
+  m.innerHTML='<div class="mhead v-hold"><button class="mclose" id="mClose" aria-label="Close">✕</button><div class="mtf">🧠 What would you do?</div>'+
+    '<div class="mtop"><div><div class="msym">'+esc(sym)+'</div><div class="mco">the analyst is reading the tape…</div></div></div></div>'+
+    '<div class="mbody"><div class="anload">Crunching trend (ADX), momentum (RSI), volatility (ATR) &amp; the buy/sell zones…</div></div>';
+  var ov=document.getElementById('overlay'); ov.classList.add('open'); ov.setAttribute('aria-hidden','false');
+  document.getElementById('mClose').onclick=closeModal;
+  fetch(API_BASE+'/analyst?sym='+encodeURIComponent(sym)+'&region='+encodeURIComponent(region),{headers:{'Authorization':'Bearer '+sessGet()}})
+    .then(function(r){ return r.json().then(function(j){ if(!r.ok) throw j; return j; }); })
+    .then(function(a){ renderAnalyst(a); })
+    .catch(function(e){ var b=m.querySelector('.mbody'); if(b) b.innerHTML='<div class="anload">'+esc((e&&e.error)||('Couldn’t get a read on '+sym+' — double-check the ticker &amp; market.'))+'</div>'; });
+}
+function renderAnalyst(a){
+  var m=document.getElementById('modal'), tc='v-'+(a.tone==='buy'?'buy':a.tone==='dont'?'dont':'hold'), s=a.signals||{};
+  function chip(k,v,cls){ return v==null?'':'<span class="anchip '+(cls||'')+'"><span class="ank">'+k+'</span> '+esc(v)+'</span>'; }
+  var trend= s.trend? '<span class="anchip '+(/up/.test(s.trend)?'gd':/down/.test(s.trend)?'bd':'')+'"><span class="ank">Trend</span> '+esc(s.trend)+(s.adx!=null?' · ADX '+s.adx:'')+'</span>':'';
+  var rsi= s.rsi!=null? '<span class="anchip '+(s.rsi>70?'bd':s.rsi<30?'gd':'')+'"><span class="ank">RSI</span> '+s.rsi+(s.rsi>70?' hot':s.rsi<30?' cold':'')+'</span>':'';
+  m.innerHTML='<div class="mhead '+tc+'"><button class="mclose" id="mClose" aria-label="Close">✕</button>'+
+    '<div class="mtf">🧠 What would you do?</div>'+
+    '<div class="mtop"><div><div class="msym">'+esc(a.sym)+'</div><div class="mco">'+esc(a.cur+a.price)+'</div></div><span class="mverd '+tc+'" style="align-self:flex-start">'+esc(a.verdict)+'</span></div></div>'+
+    '<div class="mbody">'+
+      '<p class="mtake"><span class="lead">'+esc(a.headline)+'.</span> '+a.action+'</p>'+
+      '<div class="anchips">'+trend+rsi+chip('Volatility', s.atrPct!=null?('~'+s.atrPct+'%/day'):null)+chip('vs 20-day', s.ext20!=null?((s.ext20>=0?'+':'')+s.ext20+'%'):null, s.ext20>=15?'bd':'')+chip('52wk', s.near52!=null?(Math.round(s.near52*100)+'% of high'):null)+'</div>'+
+      (s.support!=null?'<div class="anzones"><div class="anz anz-buy"><span class="ank">🟢 Buying zone</span> '+esc(a.cur+s.support)+'</div><div class="anz anz-sell"><span class="ank">🔴 Selling zone</span> '+esc(a.cur+s.resistance)+'</div></div>':'')+
+      (a.drivers&&a.drivers.length?'<div class="anlist"><h4>Why</h4><ul>'+a.drivers.map(function(d){return '<li>'+d+'</li>';}).join('')+'</ul></div>':'')+
+      (a.risks&&a.risks.length?'<div class="anlist anrisk"><h4>Watch out for</h4><ul>'+a.risks.map(function(d){return '<li>'+esc(d)+'</li>';}).join('')+'</ul></div>':'')+
+      '<div class="mfoot"><button class="mbtn watchbtn" data-sym="'+esc(a.sym)+'" data-region="'+esc(a.region)+'" aria-pressed="false">＋ Watch</button>'+
+        '<a class="mbtn primary" href="'+yf(a.sym,a.region)+'" target="_blank" rel="noopener">📈 Yahoo ↗</a></div>'+
+      '<p class="infofoot">A transparent, rules-based read straight off the price action — <b>not</b> a recommendation to trade. The call is yours.</p>'+
+    '</div>';
+  document.getElementById('mClose').onclick=closeModal;
+  var wb=m.querySelector('.watchbtn'); if(wb)wb.addEventListener('click',function(e){e.preventDefault();watchToggleFromEl(wb);}); syncWatchButtons();
+}
 // Admin methodology docs — fetched privately from the Worker (admin-gated), shown in an isolated iframe.
 function openDocs(){
   var ov=document.getElementById('docsOverlay');
@@ -1957,7 +2017,7 @@ function renderWatchlist(){
   el.innerHTML=group('🧠 Smart watching','These are in tonight\'s picks or full-pot scan, so we have a <b>live scored read</b> — buy zone, target, verdict, trend.',smart)+
                group('📌 Also tracked','On your list but <b>not in tonight\'s scan yet</b> — we watch the price and give it the full scored read the moment it resurfaces.',plain);
   el.querySelectorAll('.wrm').forEach(function(b){b.addEventListener('click',function(e){e.stopPropagation();wlRemove(b.dataset.sym,b.dataset.region);renderWatchlist();syncWatchButtons();});});
-  el.querySelectorAll('.wown').forEach(function(b){b.addEventListener('click',function(e){e.stopPropagation();var on=wlToggleOwn(b.dataset.sym,b.dataset.region);b.classList.toggle('owned',on);b.setAttribute('title',on?'You own this ✓ — tap to unflag':'I own it');renderWatchlist();});});
+  el.querySelectorAll('.wown').forEach(function(b){b.addEventListener('click',function(e){e.stopPropagation();var on=wlToggleOwn(b.dataset.sym,b.dataset.region);b.classList.toggle('owned',on);b.setAttribute('title',on?'You own this ✓ — tap to unflag':'I own it');renderWatchlist();updateOwnCount();});});
   el.querySelectorAll('.wmon').forEach(function(b){b.addEventListener('click',function(e){e.stopPropagation();
     var sym=b.dataset.sym, reg=b.dataset.region, wc=b.closest('.wcard'), host=wc?wc.querySelector('.wc-monspark'):null;
     b.classList.add('on');
@@ -2010,6 +2070,7 @@ function openWatchInsight(sym,region){
       (it.kind==='none'?'<div class="mrisk" style="background:var(--surface-2);border-color:var(--line)">Not in this run\'s scan yet — we track the price and will assess it fully when it next surfaces.</div>':'')+
       '<div class="mfoot"><button class="mbtn watchbtn" data-sym="'+esc(sym)+'" data-region="'+esc(region)+'" aria-pressed="true">✓ Watching</button>'+
         '<button class="mbtn ownbtn" data-sym="'+esc(sym)+'" data-region="'+esc(region)+'" aria-pressed="false">📦 I own it</button>'+
+        '<button class="mbtn anbtn" data-sym="'+esc(sym)+'" data-region="'+esc(region)+'">🧠 What would you do?</button>'+
         '<a class="mbtn primary" href="'+yf(sym,region)+'" target="_blank" rel="noopener">📈 Yahoo ↗</a></div>'+
     '</div>';
   var wb=m.querySelector('.watchbtn'); if(wb)wb.addEventListener('click',function(e){e.preventDefault();var was=wlHas(sym,region);watchToggleFromEl(wb);if(was)closeModal();});
@@ -2178,6 +2239,13 @@ function wire(D){
     bm.querySelectorAll('.bmitem,.bmupd').forEach(function(it){ it.addEventListener('click',closeBM); });
   }
   var db=document.getElementById('docsBtn'); if(db){ if(isAdmin()){ db.style.display=''; db.onclick=openDocs; } else { db.style.display='none'; } }
+  (function(){ var go=document.getElementById('anGo'), ask=document.getElementById('anAsk'), au=document.getElementById('anAu'), us=document.getElementById('anUs'), reg={r:'us'};
+    function set(r){ reg.r=r; if(au)au.setAttribute('aria-pressed',r==='au'); if(us)us.setAttribute('aria-pressed',r==='us'); }
+    if(au)au.onclick=function(){set('au');}; if(us)us.onclick=function(){set('us');};
+    function doAsk(){ var v=(ask&&ask.value||'').trim(); if(v) openAnalyst(v,reg.r); }
+    if(go)go.onclick=doAsk; if(ask)ask.addEventListener('keydown',function(e){ if(e.key==='Enter'){ e.preventDefault(); doAsk(); } });
+  })();
+  document.addEventListener('click',function(e){ var b=e.target.closest&&e.target.closest('.anbtn'); if(b){ e.preventDefault(); openAnalyst(b.dataset.sym,b.dataset.region); } });
   document.querySelectorAll('.schedlink').forEach(function(s){ s.removeAttribute('data-info'); s.onclick=goRunSchedule; });
   var tb=document.getElementById('trackBtn'), tc=document.getElementById('trackCta');
   if(TRACK){ if(tb)tb.onclick=openTrackRecord; if(tc)tc.onclick=openTrackRecord; }
