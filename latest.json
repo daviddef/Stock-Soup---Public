@@ -30,8 +30,8 @@
      "vclass": "v-buy",
      "sym": "MND",
      "name": "Monadelphous",
-     "price": "A$30.41",
-     "change": "+0.36%",
+     "price": "A$30.47",
+     "change": "+0.56%",
      "up": true,
      "rsi": 59,
      "plain": "Just landed a $200m BHP contract but the shares have barely twitched. That's the whole game — good news, price hasn't caught up yet.",
@@ -106,8 +106,8 @@
      "vclass": "v-hold",
      "sym": "PNI",
      "name": "Pinnacle",
-     "price": "A$19.32",
-     "change": "+0.36%",
+     "price": "A$19.78",
+     "change": "+2.75%",
      "up": true,
      "rsi": 68.9,
      "plain": "Cracking result, jumped 8%. Only catch — it's a bit hot right now. Let it cool and buy the pullback near A$18.50.",
@@ -259,9 +259,9 @@
      "vclass": "v-buy",
      "sym": "EOS",
      "name": "Electro Optic",
-     "price": "A$7.52",
-     "change": "-1.7%",
-     "up": false,
+     "price": "A$7.81",
+     "change": "+2.09%",
+     "up": true,
      "rsi": 48.5,
      "plain": "Lasers and drone-killers. AUKUS money is a multi-year tide. It's cheap vs its average — a patient buy, not a sprint.",
      "levels": "In <b>A$7.50</b> · Target <b>A$9.50</b> · Stop <b>A$6.90</b>",
@@ -617,7 +617,7 @@
       125.65,
       162.66
      ],
-     "news": "AI Trailblazers Nvidia, Palantir, Alphabet, and Meta Are Shaking Wall Street to Its Core With This $3.4 Billion Warning"
+     "news": "Palantir Says Companies Are Paying to Give Away Their 'Most Important Secrets'"
     },
     {
      "tf": "📈 Long",
@@ -3017,7 +3017,7 @@
     211.94,
     219.22
    ],
-   "news": "Disney Reaffirms Double-Digit Earnings Growth, Targets $9 Billion in Buybacks. Here’s What Investors Need to Know."
+   "news": "This Stock Keeps Raising Its Dividend No Matter What the Market Does -- and Wall Street Thinks It's a Buy Right Now"
   },
   {
    "sym": "E25",
@@ -5149,7 +5149,7 @@
     277.42,
     272.65
    ],
-   "news": "Amazon and Alphabet Just Crushed Expectations. Which Is the Better Buy Now?"
+   "news": "2 Brilliant Growth Stocks That Just Hit All-Time Highs With Plenty of Room to Run"
   }
  ],
  "trail": [
@@ -5177,7 +5177,7 @@
   }
  ],
  "chefShort": "Calm night — robots & rockets are cooking. PLTR already bolted 29%, so don't chase it.",
- "next": "12:30 AEST",
+ "next": "23:00 AEST",
  "defaultWatchlist": [
   {
    "sym": "VTM",
@@ -5215,9 +5215,9 @@
    "sym": "EOS",
    "region": "au",
    "name": "Electro Optic Systems",
-   "price": "A$7.52",
-   "up": false,
-   "change": "-1.7%"
+   "price": "A$7.81",
+   "up": true,
+   "change": "+2.09%"
   },
   {
    "sym": "NTU",
@@ -5277,37 +5277,37 @@
   }
  ],
  "pulse": {
-  "stamp": "Thu 11:41",
-  "synth": "Since last hour the board is **flat ⚪** (avg +0.22%). Climbing: VTM +3.25%, WTC +0.86%, DRO +0.47%, MND +0.36%. Slipping: DYL -0.73%, EOS -0.66%, PDN -0.5%.",
+  "stamp": "Thu 13:04",
+  "synth": "Since last hour the board is **risk-on 🟢** (avg +1.07%). Climbing: EOS +3.86%, PNI +2.38%.",
   "movers": [
    {
-    "sym": "VTM",
-    "since": 3.25,
-    "up": true
-   },
-   {
-    "sym": "WTC",
-    "since": 0.86,
-    "up": true
-   },
-   {
-    "sym": "DYL",
-    "since": -0.73,
-    "up": false
-   },
-   {
     "sym": "EOS",
-    "since": -0.66,
-    "up": false
+    "since": 3.86,
+    "up": true
    },
    {
-    "sym": "PDN",
-    "since": -0.5,
-    "up": false
+    "sym": "PNI",
+    "since": 2.38,
+    "up": true
    },
    {
-    "sym": "DRO",
-    "since": 0.47,
+    "sym": "MND",
+    "since": 0.2,
+    "up": true
+   },
+   {
+    "sym": "KTOS",
+    "since": 0.0,
+    "up": true
+   },
+   {
+    "sym": "PLTR",
+    "since": 0.0,
+    "up": true
+   },
+   {
+    "sym": "ETN",
+    "since": 0.0,
     "up": true
    }
   ]
