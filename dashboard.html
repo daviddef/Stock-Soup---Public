@@ -270,6 +270,7 @@
   .potcard{display:flex;flex-direction:column;gap:6px;border:1px solid var(--line);border-radius:13px;padding:12px 13px;text-decoration:none;color:var(--ink);cursor:pointer;transition:transform .12s,border-color .12s}
   .pmc-short{font-size:10px;font-weight:800;font-family:var(--mono);color:var(--dont);background:rgba(255,77,77,.12);border-radius:999px;padding:1px 6px}
   .mnews{font-size:13.5px;line-height:1.5;background:var(--surface-2);border:1px solid var(--line);border-radius:11px;padding:11px 13px;text-wrap:pretty}
+  .mfound{font-size:12px;color:var(--muted);margin-top:6px;line-height:1.45}
   .mshort{font-size:13px;line-height:1.5;color:var(--ink)}
   .potcard:hover{transform:translateY(-2px)}
   .potcard:focus-visible{outline:2px solid var(--broth);outline-offset:2px}
@@ -1985,7 +1986,7 @@ function openModal(p,region,cur){
       '<p class="mtake"><span class="lead">Chef says:</span> '+esc(p.chefTake)+'</p>'+
       (p.news?'<div class="mnews">📰 <span class="lead">In the news:</span> '+esc(p.news)+'</div>':'')+
       (p.short!=null?'<div class="mshort">🩳 <span class="lead">Short interest:</span> <b>'+p.short+'%</b>'+(p.short>=8?' — elevated (squeeze fuel)':p.short>=4?' — moderate':' — light')+'</div>':'')+
-      '<div><h4 style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:800;margin-bottom:10px">Why it\'s on the menu</h4><ul class="mcat">'+cats+'</ul></div>'+
+      '<div><h4 style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:800;margin-bottom:10px">🔎 How we found it · why it\'s on the menu</h4><div class="mfound" style="margin:-2px 0 9px">Surfaced in tonight\'s wide-net scan (news · movers · analyst actions), then scored to the top 6. The signals:</div><ul class="mcat">'+cats+'</ul></div>'+
       '<div class="mrisk"><b>Watch out:</b> '+esc(p.risk)+'</div>'+
       altsHtml+
       '<div class="mfoot"><button class="mbtn watchbtn" data-sym="'+esc(p.sym)+'" data-region="'+esc(region)+'"'+(p.name?' data-name="'+esc(p.name)+'"':'')+(p.nEntry!=null?' data-entry="'+p.nEntry+'"':'')+' aria-pressed="false">＋ Watch</button>'+
@@ -2143,7 +2144,7 @@ function openCandidate(idx){
     '<span class="mverd '+vc+'">'+esc(HEAT[c.heat]||c.heat)+'</span></div>'+
     '<div class="mbody">'+
       (spk?'<div class="viz"><h4>Recent trend · last ~6 weeks</h4>'+spk+'</div>':'')+
-      '<p class="mtake"><span class="lead">Why it\'s in the pot:</span> '+esc(c.note||'')+'</p>'+
+      '<div class="mnews">🔎 <span class="lead">How we picked it up:</span> '+esc(c.note||'a signal in tonight\'s scan')+'<div class="mfound">Caught by our wide-net scan — live news, market movers and analyst actions — then priced &amp; scored into the pot.</div></div>'+
       (c.news?'<div class="mnews">📰 <span class="lead">In the news:</span> '+esc(c.news)+'</div>':'')+
       (c.short!=null?'<div class="mshort">🩳 <span class="lead">Short interest:</span> <b>'+c.short+'%</b> of shares sold short'+(c.short>=8?' — <b>elevated</b> (squeeze fuel / bearish crowd)':c.short>=4?' — moderate':' — light')+'</div>':'')+
       '<div class="mrisk" style="background:var(--surface-2);border-color:var(--line)"><b>Didn\'t make the top 3</b> — it\'s on the radar, not a pick this run.</div>'+
