@@ -94,6 +94,11 @@
   .s-in .proxpct,.s-near .proxpct{color:var(--buy)} .s-close .proxpct{color:var(--hold)} .s-wait .proxpct{color:var(--muted)}
   .proxkey{font-size:10px;color:var(--faint);margin-top:10px}
   .sec-head{display:flex;align-items:baseline;gap:12px;margin-bottom:2px}
+  .clickchip{cursor:pointer;transition:box-shadow .12s,transform .1s}
+  .clickchip:hover{box-shadow:0 0 0 1.5px var(--broth) inset} .clickchip:active{transform:scale(.98)}
+  .chipi{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:50%;border:1px solid currentColor;opacity:.55;font-family:Georgia,serif;font-style:italic;font-size:9px;font-weight:700;margin-left:3px}
+  .lastupd{background:none;border:0;color:var(--muted);font-family:var(--font);font-size:11px;font-weight:700;cursor:pointer;text-decoration:underline;text-decoration-style:dotted;text-underline-offset:2px;padding:0 2px;white-space:nowrap}
+  .lastupd:hover{color:var(--broth)}
   .refreshbtn{width:30px;height:30px;border-radius:50%;border:1px solid var(--line);background:var(--surface-2);color:var(--muted);font-size:15px;line-height:1;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;padding:0}
   .refreshbtn:hover{border-color:var(--broth);color:var(--broth)}
   .refreshbtn.spinning{animation:spin .8s linear infinite;color:var(--broth)}
@@ -1842,16 +1847,17 @@ function render(D,H){
   document.getElementById('app').innerHTML=
   '<header class="hero"><div class="brandrow"><div class="brand"><span class="bowl">🍲</span> Stock&nbsp;Soup</div>'+
     '<div style="display:flex;gap:8px;align-items:center"><span class="live"><span class="pulse"></span>LIVE</span>'+
+    '<button class="lastupd" id="lastUpd" title="Minor-run price log">updated…</button>'+
     '<button class="refreshbtn" id="refreshBtn" title="Pull the latest published prices" aria-label="Refresh prices">↻</button>'+
     '<button class="viewbtn" id="viewBtn">😋 Simple</button>'+
     '<button class="chip toggle" id="themeBtn" aria-label="Toggle theme">🌗</button></div></div>'+
     '<div class="eyebrow schedlink" data-info="schedule" role="button" tabindex="0" title="How the run schedule works" style="margin-top:22px;letter-spacing:.06em">'+esc((D.stamp||'').replace(/,?\s*20\d\d/,'').replace(/\s*AEST\b/,''))+(D.next?' · next ~'+esc(D.next):'')+' <span class="schedi">i</span></div>'+
     '<h1 class="display">Two pots on the boil:<br><span class="hot">'+esc(D.headline.a)+'</span> &amp; <span class="hot">'+esc(D.headline.b)+'</span>.</h1>'+
     '<p class="chef">'+D.chef+'</p>'+
-    '<div class="metastrip"><span class="chip"><span class="dot" style="background:var(--hold)"></span> Risk: '+esc(r.label)+'</span>'+
-    '<span class="chip mono">₿ '+esc(r.btc)+' <span class="up">'+esc(r.btcChange)+'</span></span>'+
-    '<span class="chip mono">AUD/USD '+esc(r.audusd)+(r.audusdChange?' <span class="'+(r.audusdUp?'up':'down')+'">'+(r.audusdUp?'▲':'▼')+esc(r.audusdChange)+'</span>':'')+'</span>'+
-    '<span class="chip mono">Gold '+esc(r.gold)+(r.goldChange?' <span class="'+(r.goldUp?'up':'down')+'">'+(r.goldUp?'▲':'▼')+esc(r.goldChange)+'</span>':'')+'</span>'+
+    '<div class="metastrip"><span class="chip clickchip" data-mchip="risk" role="button" tabindex="0"><span class="dot" style="background:var(--hold)"></span> Risk: '+esc(r.label)+' <span class="chipi">i</span></span>'+
+    '<span class="chip mono clickchip" data-mchip="btc" role="button" tabindex="0">₿ '+esc(r.btc)+' <span class="up">'+esc(r.btcChange)+'</span></span>'+
+    '<span class="chip mono clickchip" data-mchip="aud" role="button" tabindex="0">AUD/USD '+esc(r.audusd)+(r.audusdChange?' <span class="'+(r.audusdUp?'up':'down')+'">'+(r.audusdUp?'▲':'▼')+esc(r.audusdChange)+'</span>':'')+'</span>'+
+    '<span class="chip mono clickchip" data-mchip="gold" role="button" tabindex="0">Gold '+esc(r.gold)+(r.goldChange?' <span class="'+(r.goldUp?'up':'down')+'">'+(r.goldUp?'▲':'▼')+esc(r.goldChange)+'</span>':'')+'</span>'+
     '<span class="chip">'+esc(D.hotTags)+'</span></div>'+
     '<div class="meter"><div class="track"><div class="needle" id="needle"></div></div>'+
     '<div class="lbls"><span>🔴 Hide the cash</span><span>⚪ Steady</span><span>🟢 Send it</span></div></div></header>'+
@@ -2024,9 +2030,11 @@ var INFO={
     '<p>It only advances on a <b>major</b> run (new picks). Hourly re-prices are the <b>minor</b> runs below it. Tap the time up top for the full schedule.</p>'},
   fullpot:{icon:'🍲',title:'The Full Pot',body:
     '<p>Every candidate the scan <b>shortlisted</b> this run — the names we chose the 6 picks from. Each is priced, charted and scored.</p>'+
+    '<h4>How candidates are sourced</h4><p>Each run casts a wide net across the same set of feeds — <b>live news, market movers, analyst upgrades/downgrades</b> — plus your watchlists. The queries use <b>signal words</b> (upgrade, contract, breakout, squeeze…), never ticker names, so we surface what\'s <i>actually moving</i>, not a fixed list. Every distinct ticker they turn up goes into the raw pool.</p>'+
+    '<h4>How they\'re chosen</h4><p>The raw pool is scored 0–100 by the <b>Buy-Now engine</b> (fresh catalyst, earnings surprise, analyst moves, 52-week-high proximity, volume, trend — minus an overheating penalty). The strongest survive into <b>this pot</b>; the very top become the <b>6 picks</b>. So: <i>wide scan → shortlist (here) → picks</i>.</p>'+
     '<h4>The colour</h4><ul class="infoul"><li>🔥 <b>sizzling</b> — hottest setups</li><li>✅ <b>tasty</b> — solid</li><li>➖ <b>maybe</b> — mixed</li><li>⛔ <b>send it back</b> — avoid (falling knife / downgrade)</li></ul>'+
-    '<p>Tap any for the full read — company, day move, ~6-week chart, the news, and (for ASX) short interest.</p>'+
-    '<p class="infofoot">These are the shortlist, not the wider raw scan — see "How we got here".</p>'},
+    '<p>Tap any card for the full read — company, day move, ~6-week chart, the news, and (for ASX) short interest.</p>'+
+    '<p class="infofoot">The exact scan → shortlist → served funnel is in "How we got here".</p>'},
   world:{icon:'🌍',title:'World & Sectors',body:
     '<p>The <b>macro backdrop</b> — geopolitical themes and sector heat that tilt the picks.</p>'+
     '<p>Each card is a <b>Buy the theme / Watch / Skip</b> call with the tickers leading it. <b>Tap one</b> to see the leaders and our read on each. These themes feed the "why" behind individual picks (e.g. AUKUS → defence names).</p>'},
@@ -2047,6 +2055,23 @@ function openInfo(key){
   document.getElementById('mClose').focus();
 }
 // ---- Theme drill-down: click a Geopolitics/Sector card → its leader tickers + our read ----
+// The lower-risk way to play a theme: 1–2 ETFs that hold the whole basket.
+var THEME_ETFS=[
+  {m:/defen|aukus|aerospace|military/i, e:[{s:'ITA',n:'US Aerospace & Defense'},{s:'PPA',n:'Aerospace & Defense'}]},
+  {m:/\bai\b|semi|chip|nvidia|compute/i, e:[{s:'SMH',n:'Semiconductors'},{s:'BOTZ',n:'Robotics & AI'}]},
+  {m:/uranium|nuclear/i, e:[{s:'URA',n:'Uranium Miners'},{s:'URNM',n:'Uranium Miners (pure-play)'}]},
+  {m:/gold|miner/i, e:[{s:'GDX',n:'Gold Miners'},{s:'GDXJ',n:'Junior Gold Miners'}]},
+  {m:/rare earth|critical mineral|magnet/i, e:[{s:'REMX',n:'Rare Earth / Strategic Metals'}]},
+  {m:/lithium|battery|EV\b/i, e:[{s:'LIT',n:'Lithium & Battery Tech'}]},
+  {m:/energy|oil|gas|LNG/i, e:[{s:'XLE',n:'US Energy'}]},
+  {m:/health|biotech|pharma/i, e:[{s:'XBI',n:'Biotech'}]},
+  {m:/copper|base metal/i, e:[{s:'COPX',n:'Copper Miners'}]}
+];
+function themeETFs(item){
+  var text=(item.title||item.name||'')+' '+(item.note||'');
+  for(var i=0;i<THEME_ETFS.length;i++){ if(THEME_ETFS[i].m.test(text)) return THEME_ETFS[i].e; }
+  return [];
+}
 function themeTickers(item){
   if(item.tickers) return item.tickers;
   var text=(item.title||item.name||'')+' '+(item.note||'');   // keep original case — real tickers are UPPERCASE
@@ -2074,6 +2099,10 @@ function openTheme(src,idx){
     else { line='<span class="muted">not covered this run</span>'; }
     return '<div'+tapAttr+'><a class="trsym" href="'+yf(sym,reg)+'" target="_blank" rel="noopener">'+esc(sym)+'</a><span class="trln">'+line+'</span>'+(it.kind==='pick'?'<span class="trcue">card →</span>':'')+'</div>';
   }).join('');
+  var etfs=themeETFs(item);
+  var etfHtml=etfs.length?'<h4 style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--broth);font-weight:800;margin:18px 0 4px">🧺 Prefer the basket? · ETFs</h4>'+
+    '<p style="font-size:12px;color:var(--muted);margin:0 0 10px">The whole theme in one ticker — diversified, lower single-stock risk.</p>'+
+    etfs.map(function(e){return '<div class="themerow"><a class="trsym" href="'+yf(e.s,'us')+'" target="_blank" rel="noopener">'+esc(e.s)+'</a><span class="trln">'+esc(e.n)+' <span class="trcue">↗</span></span></div>';}).join(''):'';
   var vc=(item.tclass==='t-buy'||item.tclass==='t-hot')?'buy':(item.tclass==='t-dont'?'don':'hold');
   var m=document.getElementById('modal'); m.className='modal';
   m.innerHTML='<div class="mhead '+vc+'"><button class="mclose" id="mClose" aria-label="Close">✕</button>'+
@@ -2082,8 +2111,8 @@ function openTheme(src,idx){
     '<span class="mverd '+vc+'">'+esc(item.tag)+'</span></div>'+
     '<div class="mbody"><p class="mtake">'+esc(item.note)+'</p>'+
     '<h4 style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:800;margin:4px 0 10px">Leaders in this theme</h4>'+
-    (rows||'<p class="muted">No clear ticker leaders surfaced for this theme tonight.</p>')+
-    '<p style="font-size:11px;color:var(--faint);margin-top:12px">Pulled from tonight\'s read — tap any ticker for Yahoo, or a pick to open its full card.</p></div>';
+    (rows||'<p class="muted">No clear ticker leaders surfaced for this theme tonight.</p>')+etfHtml+
+    '<p style="font-size:11px;color:var(--faint);margin-top:12px">Individual names from tonight\'s read; ETFs are the diversified way to play the theme. Tap any for Yahoo.</p></div>';
   var ov=document.getElementById('overlay'); ov.classList.add('open'); ov.setAttribute('aria-hidden','false');
   document.getElementById('mClose').focus();
   m.querySelectorAll('.themerow.tappable').forEach(function(row){ row.addEventListener('click',function(e){ if(e.target.closest('a'))return; var rg=(D.regions||[]).filter(function(x){return x.id===row.dataset.region;})[0]; if(rg){var p=rg.picks[+row.dataset.idx]; if(p)openModal(p,rg.id,rg.cur||'$');} }); });
@@ -2114,7 +2143,63 @@ function openCandidate(idx){
   var ov=document.getElementById('overlay'); ov.classList.add('open'); ov.setAttribute('aria-hidden','false');
   document.getElementById('mClose').focus();
 }
+function timeAgo(iso){
+  if(!iso) return '';
+  try{ var mins=Math.round((Date.now()-new Date(iso).getTime())/60000);
+    if(mins<1) return 'just now'; if(mins<60) return mins+'m ago';
+    var h=Math.floor(mins/60); return h+'h '+(mins%60)+'m ago'; }catch(e){ return ''; }
+}
+function _mchipModal(icon,mtf,title,bodyHtml){
+  LASTFOCUS=document.activeElement;
+  var m=document.getElementById('modal'); m.className='modal';
+  m.innerHTML='<div class="mhead"><button class="mclose" id="mClose" aria-label="Close">✕</button><div class="mtf">'+esc(icon)+' '+esc(mtf)+'</div>'+
+    '<div class="mtop"><div class="msym" style="font-size:23px;line-height:1.15">'+esc(title)+'</div></div></div>'+
+    '<div class="mbody infobody">'+bodyHtml+'</div>';
+  var ov=document.getElementById('overlay'); ov.classList.add('open'); ov.setAttribute('aria-hidden','false');
+  document.getElementById('mClose').focus();
+}
+function openMarketChip(key){
+  var D=LAST.D||{}, r=D.risk||{};
+  if(key==='risk'){
+    var lvl=r.level!=null?r.level:50;
+    _mchipModal('🎛️','Market context','Risk appetite',
+      '<p>Our read on <b>how aggressive to be</b> right now — currently <b>'+esc(r.label||'Neutral')+'</b> ('+lvl+'/100).</p>'+
+      '<h4>How it\'s set</h4><p>Driven mainly by <b>Bitcoin\'s 24h move</b> as a live risk-sentiment gauge:</p>'+
+      '<ul class="infoul"><li>🟢 BTC &gt; +2% → <b>Risk-on</b> — lean into momentum.</li><li>⚪ −3% to +2% → <b>Neutral</b> — no change.</li><li>🔴 BTC &lt; −3% → <b>Risk-off</b> — trim conviction, favour safety.</li></ul>'+
+      '<p class="infofoot">The needle below the chips shows where we sit. It sets the <i>tone</i> — it doesn\'t pick stocks.</p>');
+  } else if(key==='btc'){
+    _mchipModal('₿','Market context','Bitcoin — the risk gauge',
+      '<p><b>'+esc(r.btc||'')+'</b> <span class="'+(/-/.test(r.btcChange||'')?'down':'up')+'">'+esc(r.btcChange||'')+'</span> over 24 hours.</p>'+
+      '<p>We use Bitcoin as a <b>live proxy for risk appetite</b>. When crypto is ripping, the market\'s in a risk-on mood and momentum picks tend to work; when it\'s bleeding, we get defensive. It sets the tone for the whole run.</p>');
+  } else if(key==='aud'){
+    _mchipModal('🇦🇺','Market context','AUD / USD',
+      '<p><b>'+esc(r.audusd||'')+'</b>'+(r.audusdChange?' <span class="'+(r.audusdUp?'up':'down')+'">'+esc(r.audusdChange)+'</span>':'')+'.</p>'+
+      '<p>The exchange rate cuts two ways: a <b>weaker AUD</b> flatters Aussie exporters (miners, energy) and lifts the AUD value of your US holdings; a <b>stronger AUD</b> does the reverse. It\'s also how the US picks\' prices convert for you.</p>');
+  } else if(key==='gold'){
+    var g=(D.commodities||[]).filter(function(c){return (c.name||'').toLowerCase().indexOf('gold')>=0;})[0];
+    var miners=(D.candidates||[]).filter(function(c){return /gold/i.test(c.note||'');}).map(function(c){return c.sym;});
+    _mchipModal('🥇','Market context','Gold',
+      '<p><b>'+esc(r.gold||'')+'</b>'+(r.goldChange?' <span class="'+(r.goldUp?'up':'down')+'">'+esc(r.goldChange)+'</span>':'')+'.</p>'+
+      (g?'<p><b>Our read:</b> '+esc(g.note)+' <b>('+esc(g.tag)+')</b>.</p>':'')+
+      (miners.length?'<p><b>Riding it in the pot:</b> '+esc(miners.join(', '))+'.</p>':'')+
+      '<p class="infofoot">Australia is resource-heavy, so gold\'s move often drives the ASX picks.</p>');
+  }
+}
+function openPulseLog(){
+  if(!PULSES||!PULSES.length) return;
+  var rows=PULSES.slice().reverse().map(function(pu){
+    var real=(pu.changes||[]).filter(function(c){return Math.abs(c[1])>=0.05;});
+    var mv=real.slice(0,4).map(function(c){return '<span class="'+(c[1]>0?'up':'down')+'">'+esc(c[0])+' '+(c[1]>=0?'+':'')+c[1]+'%</span>';}).join(' ');
+    return '<div class="plrow"><span class="pltime">'+esc(pu.stamp)+'</span><span class="plmv">'+(mv||'<span class="plquiet">quiet · nothing moved</span>')+'</span></div>';
+  }).join('');
+  var last=PULSES[PULSES.length-1];
+  _mchipModal('⏱️','Minor runs','Price log · '+PULSES.length+' runs',
+    '<p class="mtake" style="border:0;padding:0">Every hourly <b>re-price</b> this session — same menu, fresh numbers. Newest first.</p>'+
+    '<div class="pulselog" style="max-height:none">'+rows+'</div>'+
+    '<p class="infofoot">Last updated '+timeAgo(last.iso)+'. The <b>major</b> (menu) changes are in The Journey.</p>');
+}
 function wireThemes(){ document.querySelectorAll('.clickline[data-theme]').forEach(function(l){ l.onclick=function(){ openTheme(l.dataset.theme,+l.dataset.ti); }; l.onkeydown=function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); openTheme(l.dataset.theme,+l.dataset.ti); } }; });
+  document.querySelectorAll('[data-mchip]').forEach(function(c){ c.onclick=function(){ openMarketChip(c.dataset.mchip); }; c.onkeydown=function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); openMarketChip(c.dataset.mchip); } }; });
   document.querySelectorAll('.potcard[data-ci]').forEach(function(p){ p.onclick=function(e){ if(e.target.closest('a'))return; openCandidate(+p.dataset.ci); }; p.onkeydown=function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); openCandidate(+p.dataset.ci); } }; }); }
 function wireInfo(){ document.querySelectorAll('[data-info]').forEach(function(b){
   b.onclick=function(e){ e.preventDefault(); openInfo(b.dataset.info); };
@@ -2272,6 +2357,8 @@ function wire(D){
   });
   var vb=document.getElementById('viewBtn'); if(vb) vb.onclick=function(){setView('simple');};
   var rb=document.getElementById('refreshBtn'); if(rb) rb.onclick=function(){refreshPrices(rb);};
+  var lu=document.getElementById('lastUpd');
+  if(lu){ if(PULSES&&PULSES.length){ lu.textContent='updated '+timeAgo(PULSES[PULSES.length-1].iso); lu.onclick=openPulseLog; } else { lu.style.display='none'; } }
   var tb=document.getElementById('trackBtn'), tc=document.getElementById('trackCta');
   if(TRACK){ if(tb)tb.onclick=openTrackRecord; if(tc)tc.onclick=openTrackRecord; }
   else { if(tb)tb.style.display='none'; if(tc)tc.style.display='none'; }
