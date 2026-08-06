@@ -8,7 +8,7 @@
   "ETN": "Eaton",
   "4DX": "4DMedical",
   "PDN": "Paladin",
-  "ANET": "Arista",
+  "ANET": "Arista Networks",
   "MRVL": "Marvell",
   "DYL": "Deep Yellow",
   "BOE": "Boss Energy",
@@ -22,9 +22,27 @@
   "MU": "Micron",
   "NVDA": "Nvidia",
   "RKLB": "Rocket Lab",
-  "AVAV": "AeroVironment"
+  "AVAV": "AeroVironment",
+  "CQR": "Charter Hall Retail",
+  "MIN": "Mineral Resources",
+  "CVS": "CVS Health",
+  "LLY": "Eli Lilly"
  },
  "menus": [
+  {
+   "stamp": "Wed 6 Aug",
+   "time": "16:10",
+   "au": [
+    "CQR",
+    "MIN",
+    "PNI"
+   ],
+   "us": [
+    "CVS",
+    "ANET",
+    "LLY"
+   ]
+  },
   {
    "stamp": "Wed 5 Aug",
    "time": "20:00",
