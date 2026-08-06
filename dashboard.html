@@ -78,11 +78,11 @@
   .celeg i{width:9px;height:9px;border-radius:2px;display:inline-block}
   .celeg b.up{color:var(--buy)} .celeg b.down{color:var(--dont)}
   .proxrow{display:flex;align-items:center;gap:10px;padding:6px 0}
-  .pxs{font-weight:800;font-size:13px;width:52px}
+  .pxs{font-weight:800;font-size:13px;flex:0 0 auto;min-width:120px;display:flex;gap:6px;align-items:baseline}
   .proxbar{flex:1;position:relative;height:8px;border-radius:999px;background:var(--surface-2)}
   .proxzone{position:absolute;left:0;top:0;bottom:0;width:19%;background:rgba(35,194,103,.32);border-radius:999px}
   .proxnow{position:absolute;top:50%;transform:translate(-50%,-50%);width:11px;height:11px;border-radius:50%;box-shadow:0 0 0 2px var(--surface)}
-  .pxg{min-width:92px;display:flex;flex-direction:column;align-items:flex-end;gap:1px;font-variant-numeric:tabular-nums}
+  .pxg{min-width:78px;display:flex;flex-direction:column;align-items:flex-end;gap:1px;font-variant-numeric:tabular-nums}
   .pxnow{font-size:13px;font-weight:800;color:var(--ink)}
   .s-in .pxnow,.s-near .pxnow{color:var(--buy)} .s-close .pxnow{color:var(--hold)}
   .pxbuy{font-size:11px;font-weight:700;color:var(--muted)}
@@ -196,10 +196,19 @@
   /* JOURNEY */
   .chef-note{background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:12px 15px;font-size:14px;margin-bottom:14px;color:var(--ink)}
   .chef-note b{color:var(--broth)}
-  .journey{display:flex;gap:12px;overflow-x:auto;padding-bottom:10px;scroll-snap-type:x proximity}
-  .jcol{min-width:196px;flex:0 0 auto;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;scroll-snap-align:start}
+  .journey{display:flex;gap:12px;overflow-x:auto;padding-bottom:10px;scroll-snap-type:x mandatory}
+  .jcol{flex:0 0 calc((100% - 24px)/3);min-width:150px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;scroll-snap-align:start}  /* 3 across, scroll for the rest (max 8) */
   .jcol.now{border-color:var(--broth);box-shadow:0 0 0 1px var(--broth) inset}
-  .jhead{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;gap:8px}
+  .jhead{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px;gap:6px}
+  .jhright{display:flex;align-items:center;gap:5px;flex:0 0 auto}
+  .jtally{display:inline-flex;gap:4px;font-size:11px;font-weight:900;background:var(--surface-2);border:1px solid var(--line);border-radius:999px;padding:2px 7px}
+  .jtally .jt-w{color:var(--buy)} .jtally .jt-l{color:var(--dont)} .jtally .jt-p{color:var(--faint)}
+  .runlog .rlgh{font-size:12px;font-weight:800;color:var(--ink);margin-bottom:6px}
+  .rlrow{display:grid;grid-template-columns:78px 1fr;gap:8px;align-items:baseline;padding:6px 0;border-bottom:1px solid var(--line);font-size:12.5px}
+  .rlrow:last-child{border-bottom:0}
+  .rltype{font-size:10px;font-weight:800;padding:2px 6px;border-radius:6px;white-space:nowrap;text-align:center}
+  .rl-maj{background:var(--broth-soft,rgba(255,107,26,.12));color:var(--broth)} .rl-min{background:var(--surface-2);color:var(--muted)}
+  .rlwhen{font-weight:700;grid-column:2} .rlnote{grid-column:2;color:var(--muted);font-size:11.5px;line-height:1.35;text-wrap:pretty}
   .jhead .when{font-weight:800;font-size:13px}
   .jhead .when small{display:block;color:var(--muted);font-weight:600;font-size:11px}
   .now-b{font-size:10px;font-weight:900;background:var(--broth);color:#1a0f06;padding:2px 7px;border-radius:6px;letter-spacing:.06em}
@@ -212,6 +221,22 @@
   .jrow .jb{margin-left:auto;font-size:10px;font-weight:800;padding:1px 6px;border-radius:5px;flex:0 0 auto}
   .jb-new{background:rgba(255,107,26,.18);color:var(--broth)}
   .jb-drop{color:var(--dont)}
+  .jrow .jg{font-size:12px;font-weight:900;flex:0 0 auto;cursor:pointer;padding:0 3px;border-radius:5px;transition:background .12s}
+  .jrow .jg:hover{background:var(--surface-2)}
+  .jg-win{color:var(--buy)} .jg-loss{color:var(--dont)} .jg-pend{color:var(--faint);font-weight:700}
+  .tfscore{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0 4px}
+  .tfs{background:var(--surface-2);border:1px solid var(--line);border-radius:11px;padding:9px 6px;text-align:center}
+  .tfs .tft{font-size:11px;font-weight:800;color:var(--muted)}
+  .tfs .tfv{font-size:20px;font-weight:850;font-variant-numeric:tabular-nums;margin-top:2px;line-height:1}
+  .tfs .tfn{font-size:10px;color:var(--faint);margin-top:2px}
+  .tfs.good .tfv{color:var(--buy)} .tfs.mid .tfv{color:var(--hold)} .tfs.bad .tfv{color:var(--dont)}
+  .idxbeat{color:var(--broth);font-weight:800;font-size:.8em;background:var(--broth-soft,rgba(255,107,26,.12));padding:1px 5px;border-radius:5px;margin-left:3px}
+  .graderow{cursor:pointer;border-radius:8px;margin:0 -6px;padding:2px 6px;transition:background .12s}
+  .graderow:hover{background:var(--surface-2)}
+  .gexp{background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:14px 16px;font-size:14px;line-height:1.55}
+  .gexp p{margin:0 0 10px;text-wrap:pretty} .gexp p:last-child{margin-bottom:0}
+  .gexp .up{color:var(--buy)} .gexp .down{color:var(--dont)}
+  .gverdict{border-top:1px dashed var(--line);padding-top:10px;color:var(--muted)}
   .jrow.keep,.jrow.drop{border-radius:7px;margin:2px -7px;padding:4px 7px}
   .jrow.keep{background:rgba(35,194,103,.13)}
   .jrow.drop{background:rgba(255,77,77,.10)}
@@ -253,6 +278,20 @@
   .tvd{font-weight:800;text-transform:uppercase;font-size:10.5px}
   .tvd.buy{color:var(--buy)} .tvd.hold{color:var(--hold)} .tvd.dont{color:var(--dont)}
   .trcue{color:var(--broth);font-weight:800;font-size:11px;flex:0 0 auto}
+  .tsgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(158px,1fr));gap:10px}
+  .tscard{border:1px solid var(--line);border-radius:13px;padding:11px 12px;display:flex;flex-direction:column;gap:6px;background:var(--surface-2)}
+  .tscard.tappable{cursor:pointer;transition:transform .12s,border-color .12s}
+  .tscard.tappable:hover{transform:translateY(-2px);border-color:var(--broth)}
+  .tsc-top{display:flex;align-items:center;gap:7px}
+  .tsc-pxrow{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+  .tsc-px{font-weight:800;font-size:14px;font-variant-numeric:tabular-nums}
+  .tsc-chg{font-size:12px;font-weight:800}
+  .tsc-chg.up{color:var(--buy)} .tsc-chg.down{color:var(--dont)}
+  .tsc-spark{margin:1px 0}
+  .tsc-why{font-size:12px;color:var(--ink);line-height:1.42;text-wrap:pretty}
+  .tsc-why .muted{color:var(--muted)}
+  .tsc-news{font-size:11.5px;color:var(--muted);line-height:1.4;border-top:1px dashed var(--line);padding-top:6px;text-wrap:pretty}
+  .tsc-cue{color:var(--broth);font-weight:800;font-size:10.5px;margin-top:1px}
   .line .em{font-size:18px}
   .line .txt{flex:1}
   .line .txt small{display:block;color:var(--muted);font-size:12px;margin-top:1px}
@@ -267,6 +306,17 @@
   .potlegend span{display:inline-flex;align-items:center;gap:5px}
   .potlegend i{width:9px;height:9px;border-radius:50%;display:inline-block}
   .pot{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
+  @media(max-width:640px){
+    .pot{grid-template-columns:1fr 1fr;gap:8px}          /* 2-up on mobile — real-estate optimisation */
+    .potcard{padding:10px 11px;gap:5px;border-radius:11px}
+    .pmc-sym{font-size:15px} .pmc-name{font-size:10.5px}
+    .pmc-price{font-size:13px} .pmc-chg{font-size:11px}
+    .pmc-note{font-size:10.5px;line-height:1.35}
+  }
+  .potmore{margin:12px auto 0;display:block;background:var(--surface-2);border:1px solid var(--line);color:var(--muted);font-weight:800;font-size:12.5px;padding:9px 16px;border-radius:10px;cursor:pointer;letter-spacing:.01em}
+  .potmore:hover{border-color:var(--hold);color:var(--ink)}
+  .potlose{margin-top:12px}
+  .potlose[hidden]{display:none}
   .potcard{display:flex;flex-direction:column;gap:6px;border:1px solid var(--line);border-radius:13px;padding:12px 13px;text-decoration:none;color:var(--ink);cursor:pointer;transition:transform .12s,border-color .12s}
   .pmc-short{font-size:10px;font-weight:800;font-family:var(--mono);color:var(--dont);background:rgba(255,77,77,.12);border-radius:999px;padding:1px 6px}
   .mnews{font-size:13.5px;line-height:1.5;background:var(--surface-2);border:1px solid var(--line);border-radius:11px;padding:11px 13px;text-wrap:pretty}
@@ -337,7 +387,7 @@
   .wlseg button{background:var(--surface);border:0;color:var(--muted);font-family:var(--font);font-weight:800;font-size:13px;padding:0 14px;cursor:pointer}
   .wlseg button[aria-pressed="true"]{background:var(--broth);color:#1a0f06}
   .wladd{background:var(--broth);color:#1a0f06;border:0;font-family:var(--font);font-weight:800;border-radius:10px;padding:0 20px;cursor:pointer;font-size:14px}
-  .wlpills{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;min-height:8px}
+  .wlpills{display:flex;flex-direction:column;gap:8px;margin-bottom:16px;min-height:8px}
   .wlpill{display:inline-flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:6px 8px 6px 13px;font-size:13px}
   .wlpill a{font-weight:800;color:var(--ink);text-decoration:none}
   .wlpill a:hover{color:var(--broth)}
@@ -347,6 +397,18 @@
   .wlreg:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
   .wlstatus{font-size:13px;font-weight:700;margin-top:10px;min-height:18px}
   .wlnote{font-size:12px;color:var(--muted);margin-top:12px;max-width:60ch}
+  .wlauth{margin-top:14px}
+  .authrow{border:1px solid var(--line);border-radius:14px;padding:14px 16px;background:var(--surface)}
+  .authrow.in{display:flex;align-items:center;gap:12px;justify-content:space-between;flex-wrap:wrap;font-size:13px;color:var(--muted)}
+  .authpitch{font-size:13px;color:var(--muted);line-height:1.5;margin-bottom:10px;max-width:64ch}
+  .authpitch b{color:var(--ink)}
+  .authform{display:flex;gap:8px;flex-wrap:wrap}
+  .authform input{flex:1;min-width:180px;padding:10px 13px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);font-size:14px}
+  .authform input:focus{outline:2px solid var(--broth);outline-offset:1px}
+  .authbtn{background:var(--broth);color:#fff;border:0;font-weight:800;font-size:14px;padding:10px 18px;border-radius:10px;cursor:pointer;white-space:nowrap}
+  .authbtn.ghost{background:transparent;color:var(--muted);border:1px solid var(--line);padding:7px 14px;font-size:13px}
+  .authbtn:hover{filter:brightness(1.05)}
+  .authmsg{font-size:12.5px;color:var(--muted);margin-top:9px;min-height:1px}
   /* ＋Watch buttons (cards + modal) */
   .watchbtn{cursor:pointer;font-family:var(--font);font-weight:800;white-space:nowrap}
   .watchbtn.on{background:var(--broth)!important;border-color:var(--broth)!important;color:#fff!important}
@@ -1677,9 +1739,9 @@ function renderChangeEnv(D, pulses, mkt){
     var st = gap<=0?'in':(gap<=1.5?'near':(gap<=4?'close':'wait'));
     var pos=Math.max(3,Math.min(97,(gap/8)*100));
     var onLine=gap<=1.5?'✓':'−'+Math.round(gap)+'%';
-    return '<div class="proxrow s-'+st+'"><span class="pxs">'+esc(pk.sym)+'</span>'+
+    return '<div class="proxrow s-'+st+'"><span class="pxs">'+esc(pk.sym)+(pk.now!=null?' <span class="pxnow">'+esc(pk.cur)+pk.now+'</span>':'')+'</span>'+
       '<div class="proxbar"><span class="proxzone"></span><span class="proxpct" style="left:'+pos.toFixed(0)+'%">'+onLine+'</span><span class="proxnow" style="left:'+pos.toFixed(0)+'%"></span></div>'+
-      '<span class="pxg">'+(pk.now!=null?'<span class="pxnow">now '+esc(pk.cur)+pk.now+'</span>':'')+'<span class="pxbuy">Buy @ '+esc(pk.cur)+pk.nEntry+'</span></span></div>';
+      '<span class="pxg"><span class="pxbuy">Buy @ '+esc(pk.cur)+pk.nEntry+'</span></span></div>';
   }).join('');
   var latest=pulses[pulses.length-1];
   return '<section><div class="sec-head"><h2 class="display"><span class="k">01½</span> Change environment</h2>'+infoBtn('changeenv')+'</div>'+
@@ -1792,6 +1854,15 @@ function render(D,H){
   }).join('');
 
   var names=(H&&H.names)||{}, ms=(H&&H.menus)||[];
+  function gradeBadge(sym){
+    var key=String(sym).replace(/\*$/,'');
+    var o=OUTCOMES&&OUTCOMES.outcomes&&OUTCOMES.outcomes[key];
+    if(!o) return '';
+    if(o.status!=='graded') return '<span class="jg jg-pend" data-gsym="'+esc(key)+'" role="button" tabindex="0" title="tap — still open, not scored yet">⏳</span>';
+    var pct=(o.ret>=0?'+':'')+(Math.round(o.ret*1000)/10)+'%';
+    var tip=(o.correct?'✓ we got this right':'✗ this one missed')+' · '+pct+' — tap to see what happened';
+    return '<span class="jg '+(o.correct?'jg-win':'jg-loss')+'" data-gsym="'+esc(key)+'" role="button" tabindex="0" title="'+esc(tip)+'">'+(o.correct?'✓':'✗')+'</span>';
+  }
   function jcol(m,older,isNow){
     function grp(label,arr,region){
       var olderSet=older?older[region]:null;
@@ -1800,19 +1871,27 @@ function render(D,H){
         var nm=names[String(sym).replace(/\*$/,'')]||'';
         var rowcls='jrow'+(olderSet&&!isNew?' keep':'');
         var badge=(olderSet&&isNew)?'<span class="jb jb-new">NEW</span>':'';
-        return '<div class="'+rowcls+'"><span class="jtf">'+TFS[idx]+'</span><span class="jinfo">'+qlink(sym,region)+(nm?'<span class="jname">'+esc(nm)+'</span>':'')+'</span>'+badge+'</div>';
+        return '<div class="'+rowcls+'"><span class="jtf">'+TFS[idx]+'</span><span class="jinfo">'+qlink(sym,region)+(nm?'<span class="jname">'+esc(nm)+'</span>':'')+'</span>'+gradeBadge(sym)+badge+'</div>';
       });
       if(olderSet){
         olderSet.filter(function(s){return (arr||[]).indexOf(s)<0;}).forEach(function(sym){
           var nm=names[String(sym).replace(/\*$/,'')]||'';
-          rows.push('<div class="jrow drop"><span class="jtf">×</span><span class="jinfo">'+qlink(sym,region)+(nm?'<span class="jname">'+esc(nm)+'</span>':'')+'</span><span class="jb jb-drop">DROP</span></div>');
+          rows.push('<div class="jrow drop"><span class="jtf">×</span><span class="jinfo">'+qlink(sym,region)+(nm?'<span class="jname">'+esc(nm)+'</span>':'')+'</span>'+gradeBadge(sym)+'<span class="jb jb-drop">DROP</span></div>');
         });
       }
       return '<div class="jgrp">'+label+'</div>'+rows.join('');
     }
-    return '<div class="jcol'+(isNow?' now':'')+'"><div class="jhead"><span class="when">'+esc(m.stamp)+'<small>'+esc(m.time)+' AEST</small></span>'+(isNow?'<span class="now-b">NOW</span>':'')+'</div>'+(MKT==='us'?grp('🌏 Intl',m.us,'us'):grp('🇦🇺 AU',m.au,'au'))+'</div>';
+    function tally(arr){
+      var w=0,l=0,p=0;
+      (arr||[]).forEach(function(sym){var o=OUTCOMES&&OUTCOMES.outcomes&&OUTCOMES.outcomes[String(sym).replace(/\*$/,'')];if(!o)return;if(o.status!=='graded')p++;else if(o.correct)w++;else l++;});
+      if(!(w+l+p))return '';
+      var pt=[];if(w)pt.push('<span class="jt-w">✓'+w+'</span>');if(l)pt.push('<span class="jt-l">✗'+l+'</span>');if(p)pt.push('<span class="jt-p">⏳'+p+'</span>');
+      return '<span class="jtally" title="How this run\'s picks scored — tap a tick for the story">'+pt.join('')+'</span>';
+    }
+    var arr=(MKT==='us'?m.us:m.au), region=MKT, label=(MKT==='us'?'🌏 Intl':'🇦🇺 AU');
+    return '<div class="jcol'+(isNow?' now':'')+'"><div class="jhead"><span class="when">'+esc(m.stamp)+'<small>'+esc(m.time)+' AEST</small></span><span class="jhright">'+tally(arr)+(isNow?'<span class="now-b">NOW</span>':'')+'</span></div>'+grp(label,arr,region)+'</div>';
   }
-  var journeyCols=ms.map(function(m,i){return jcol(m,ms[i+1],i===0);}).join('');
+  var journeyCols=ms.slice(0,8).map(function(m,i){return jcol(m,ms[i+1],i===0);}).join('');   // last 8 runs, 3 visible across
   var note="This is the first menu on record — the journey starts here.";
   if(ms.length>=2){
     var a=ms[0],b=ms[1];
@@ -1828,6 +1907,19 @@ function render(D,H){
   var recClear=(_rp.length===2)?'<div class="sub" style="color:var(--ink);font-weight:700">'+_rp[0].trim()+' win'+(_rp[0].trim()==='1'?'':'s')+' · '+_rp[1].trim()+' loss'+(_rp[1].trim()==='1'?'':'es')+'</div>':'';
   var recRows=(sb.closed||[]).map(function(c){var w=c.win;return '<div class="row"><span class="rsym">'+qlink(c.sym,'au')+'</span><div class="bar"><span class="fill" style="'+(w?'left:50%;width:26%;background:var(--buy)':'right:50%;width:22%;background:var(--dont)')+'"></span></div><span class="res '+(w?'up':'down')+'">'+esc(c.pct)+'</span></div>';}).join('');
   var openRows=(sb.open||[]).map(function(o){var reg=(D.regions&&D.regions[0]&&D.regions[0].picks.some(function(p){return p.sym===o.sym;}))?'au':'us';return '<div class="row"><span>'+esc(o.tf)+' '+qlink(o.sym,reg)+' <span style="color:var(--muted)">'+esc(o.period)+'</span></span><span class="st"'+(o.hot?' style="color:var(--hold)"':'')+'>'+esc(o.status)+'</span></div>';}).join('');
+  // real accountability from the grader (outcomes.json) — replaces the placeholder when present
+  var ocOn=!!(OUTCOMES&&OUTCOMES.outcomes);
+  var tfBadge={Day:'⚡',Week:'📅',Long:'📈'};
+  var ocRecord=ocOn?OUTCOMES.record:sb.record;
+  var _rp2=(ocRecord||'').split(/[–-]/);
+  var recClear2=(_rp2.length===2)?'<div class="sub" style="color:var(--ink);font-weight:700">'+_rp2[0].trim()+' win'+(_rp2[0].trim()==='1'?'':'s')+' · '+_rp2[1].trim()+' loss'+(_rp2[1].trim()==='1'?'':'es')+'</div>':recClear;
+  var ocGraded=ocOn?Object.keys(OUTCOMES.outcomes).map(function(k){return OUTCOMES.outcomes[k];}).filter(function(o){return o.status==='graded';}):[];
+  var ocRows=ocGraded.slice().sort(function(a,b){return (b.date||'').localeCompare(a.date||'');}).slice(0,6).map(function(o){
+    var w=o.correct, pct=(o.ret>=0?'+':'')+(Math.round(o.ret*1000)/10)+'%';
+    return '<div class="row graderow" data-gsym="'+esc(o.sym)+'" role="button" tabindex="0" title="Tap to see what happened with '+esc(o.sym)+'"><span class="rsym">'+(tfBadge[o.tf]||'')+' '+esc(o.sym)+'</span><div class="bar"><span class="fill" style="'+(w?'left:50%;width:26%;background:var(--buy)':'right:50%;width:22%;background:var(--dont)')+'"></span></div><span class="res '+(w?'up':'down')+'">'+esc(pct)+(o.correctVsIndex?' <span class="idxbeat" title="also did better than the market">beat mkt</span>':'')+'</span></div>';
+  }).join('');
+  var tfLabel={Day:'⚡ Day trades',Week:'📅 Week holds',Long:'📈 Long holds'};
+  var ocScorecard=(ocOn&&OUTCOMES.byTimeframe)?'<div class="tfscore">'+['Day','Week','Long'].map(function(tf){var a=OUTCOMES.byTimeframe[tf]||{};var wr=a.n?Math.round((a.winRate||0)*100):null;var cls=wr==null?'':(wr>=60?'good':wr>=40?'mid':'bad');return '<div class="tfs '+cls+'"><div class="tft">'+tfLabel[tf]+'</div><div class="tfv">'+(wr==null?'—':wr+'%')+'</div><div class="tfn">'+(a.n?'right '+Math.round((a.winRate||0)*a.n)+' of '+a.n:'—')+'</div></div>';}).join('')+'</div>':'';
   function lines(arr,key,src,off){off=off||0;return (arr||[]).map(function(x,i){return '<div class="line clickline" data-theme="'+esc(src)+'" data-ti="'+(off+i)+'" role="button" tabindex="0"><span class="em">'+esc(x.em)+'</span><div class="txt">'+esc(x[key])+'<small>'+x.note+'</small></div><span class="tag '+esc(x.tclass)+'">'+esc(x.tag)+'</span></div>';}).join('');}
   var story = (PULSES&&PULSES.length) ?
     ('<div class="panel"><h3>Tonight\'s hourly runs</h3><p class="panelsub"><b>Minor runs</b> — same menu, re-priced every hour ('+PULSES.length+' this session). The <b>major</b> menu changes are in The Journey. Newest first.</p>'+
@@ -1839,7 +1931,7 @@ function render(D,H){
         return '<div class="plrow"><span class="pltime">'+esc(pu.stamp)+'</span><span class="plmv">'+body+'</span></div>';
       }).join('')+'</div></div>')
     : '<div class="panel"><h3>Tonight\'s hourly runs</h3><p class="panelsub">Hourly pulses will appear here as they run.</p></div>';
-  var pot=(D.candidates||[]).map(function(c,i){
+  function potCard(c,i){
     var spk=(c.spark&&c.spark.length>2)?sparkSVG(c.spark.slice(-30)):'';
     var chg=c.change?'<span class="pmc-chg '+(c.up?'up':'down')+'">'+(c.up?'▲':'▼')+' '+esc(c.change)+'</span>':'';
     var shortChip=(c.short!=null&&c.short>=4)?'<span class="pmc-short">🩳 '+c.short+'%</span>':'';
@@ -1849,7 +1941,12 @@ function render(D,H){
       '<div class="pmc-px">'+(c.price?'<span class="pmc-price">'+esc(c.price)+'</span>':'')+chg+'</div>'+
       (spk?'<div class="pmc-spark">'+spk+'</div>':'')+
       '<div class="pmc-note">'+esc(c.news||c.note)+'</div></div>';
-  }).join('');
+  }
+  var _cands=(D.candidates||[]);
+  var _keepIdx=[],_loseIdx=[];
+  _cands.forEach(function(c,i){ if(c.heat==='mid'||c.heat==='cold')_loseIdx.push(i); else _keepIdx.push(i); });
+  var pot=_keepIdx.map(function(i){return potCard(_cands[i],i);}).join('');
+  var potLose=_loseIdx.map(function(i){return potCard(_cands[i],i);}).join('');
   var half=Math.ceil((D.commodities||[]).length/2);
   var trail=(D.trail||[]).map(function(t){var jump=(t.jump?' <a class="trailjump" href="#'+esc(t.jump)+'">'+esc(t.jumpLabel||'see the list →')+'</a>':'');return '<div class="step"><span class="n">'+esc(t.n)+'</span><div class="st-txt">'+t.text+jump+'<small>'+esc(t.note)+'</small></div></div>';}).join('');
 
@@ -1880,15 +1977,21 @@ function render(D,H){
     '<p class="sec-sub"><b>Major runs only</b> — each card is a full re-cook where the menu (the 6 picks) actually changes. Prices still update every hour in between — those minor re-prices live in <b>Tonight\'s hourly runs</b> below. Newest first. Each row: <b>⚡ Day · 📅 Week · 📈 Long</b>. <span style="color:var(--buy)">Green = kept</span>, <span style="color:var(--dont)">red/✕ = DROP</span>, NEW = fresh this run.</p>'+
     '<div class="chef-note">'+note+'</div><div class="journey">'+journeyCols+'</div>'+
     '<div class="grid2"><div class="panel"><div class="paneltop"><h3>Closed calls · scored honestly</h3><button class="trackbtn" id="trackBtn">📊 Full month →</button></div>'+
-    '<div class="score"><div><div class="big">'+esc(sb.record)+' <span class="wl">W–L</span></div>'+recClear+'<div class="sub">'+esc(sb.recordNote)+'</div></div></div>'+
-    '<div class="rec">'+recRows+'</div><p style="font-size:11px;color:var(--faint);margin-top:12px">'+esc(sb.closedNote)+'</p>'+
-    '<button class="trackcta" id="trackCta">See the last month graded → 29 W · 31 L, what we learned, what we\'d change</button></div>'+
+    '<div class="score"><div><div class="big">'+esc(ocRecord||'—')+' <span class="wl">W–L</span></div>'+recClear2+'<div class="sub">'+(ocOn?'How our past tips actually did. <b>Tap any</b> to see the story.':esc(sb.recordNote||''))+'</div></div></div>'+
+    ocScorecard+
+    '<div class="rec">'+(ocOn?ocRows:recRows)+'</div>'+
+    (ocOn?'<p style="font-size:11.5px;color:var(--muted);margin-top:12px;line-height:1.5">We check every pick after <b>its own timeframe</b> — a day-trade the next day, a week pick after a week, a long hold after a month. <span style="color:var(--buy);font-weight:700">Green = it made money.</span> <b>“beat mkt”</b> means it also did better than the whole market. Tap any row for the full story.</p>'
+         :'<p style="font-size:11px;color:var(--faint);margin-top:12px">'+esc(sb.closedNote||'')+'</p>')+
+    '<button class="trackcta" id="trackCta">See the full month graded → what we learned, what we\'d change</button></div>'+
     story+'</div></section>'+
 
   '<section id="fullpot"><div class="sec-head"><h2 class="display"><span class="k">03</span> The full pot</h2>'+infoBtn('fullpot')+'</div>'+
     '<p class="sec-sub">Every candidate the scan shortlisted tonight — <b>'+((D.candidates||[]).length)+' names</b>, priced and scored. These are the ones we chose from. Colour = how appetising it looks. <b>Tap any for the full read.</b></p>'+
     '<div class="potlegend"><span><i style="background:var(--broth)"></i>🔥 sizzling</span><span><i style="background:var(--buy)"></i>✅ tasty</span><span><i style="background:var(--hold)"></i>➖ maybe</span><span><span class="legno">⛔</span> send it back</span></div>'+
-    '<div class="pot">'+pot+'</div></section>'+
+    '<div class="pot">'+pot+'</div>'+
+    (potLose?'<button class="potmore" id="potMore" aria-expanded="false">➖ '+_loseIdx.length+' more — maybes &amp; passes ▾</button>'+
+      '<div class="pot potlose" id="potLose" hidden>'+potLose+'</div>':'')+
+    '</section>'+
 
   '<section><div class="sec-head"><h2 class="display"><span class="k">04</span> The world &amp; the sectors</h2>'+infoBtn('world')+'</div>'+
     '<p class="sec-sub">What\'s moving the pot, and which kitchens are hot vs which to skip.</p>'+
@@ -1907,7 +2010,7 @@ function render(D,H){
       '<span class="wlseg" role="group" aria-label="Market"><button id="wlAu" aria-pressed="true">🇦🇺 AU</button><button id="wlUs" aria-pressed="false">🇺🇸 US</button></span>'+
       '<button class="wladd" id="wlAdd">Add</button></div>'+
     '<div class="wlpills" id="wlPills"></div>'+
-    '<div class="wlnote">Saved in this browser only. Cross-device sync &amp; price alerts are coming.</div></section>'+
+    '<div class="wlauth" id="wlAuth"></div></section>'+
 
   '<section><div class="sec-head"><h2 class="display"><span class="k">07</span> The archive</h2>'+infoBtn('archive')+'</div>'+
     '<p class="sec-sub">Every menu we\'ve served. Tap one to open that run\'s full report.</p>'+
@@ -2004,6 +2107,42 @@ function closeModal(){
   ov.classList.remove('open');ov.setAttribute('aria-hidden','true');
   if(LASTFOCUS&&LASTFOCUS.focus)LASTFOCUS.focus();
 }
+function fmtDate(iso){var p=String(iso||'').split('-');if(p.length!==3)return iso||'';var mo=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];return (+p[2])+' '+(mo[(+p[1])-1]||'')+' '+p[0];}
+// Plain-English "what happened" for one graded call — the honesty of that exact pick on that run.
+function openGrade(sym){
+  sym=String(sym).replace(/\*$/,'');
+  var o=OUTCOMES&&OUTCOMES.outcomes&&OUTCOMES.outcomes[sym]; if(!o)return;
+  LASTFOCUS=document.activeElement;
+  var nm=((LAST&&LAST.H&&LAST.H.names)||{})[sym]||'';
+  var cur=o.region==='au'?'A$':'$', mkt=o.region==='au'?'the ASX 200':'the S&P 500';
+  var tfWord={Day:'a <b>day-trade</b> — checked the very next trading day',
+              Week:'a <b>week pick</b> — checked after about a week',
+              Long:'a <b>long hold</b> — checked after about a month'};
+  var tfEmoji={Day:'⚡',Week:'📅',Long:'📈'}[o.tf]||'';
+  var vc,verd,body;
+  var line1='We put <b>'+esc(sym)+'</b>'+(nm?' ('+esc(nm)+')':'')+' on the menu as '+tfWord[o.tf]+', on <b>'+esc(fmtDate(o.date))+'</b>'+(o.entry!=null?' at <b>'+cur+o.entry+'</b>':'')+'.';
+  if(o.status!=='graded'){
+    vc='v-hold'; verd='⏳ Still cooking';
+    body='<p class="mtake">'+line1+'</p><div class="gexp"><p>Its window hasn\'t finished yet, so we <b>haven\'t marked it right or wrong</b>. That\'s the whole point of doing this honestly — no scoring a pick until its clock is actually up.</p></div>';
+  }else{
+    var up=o.ret>=0, retPct=Math.abs(Math.round(o.ret*1000)/10);
+    vc=o.correct?'v-buy':'v-dont'; verd=o.correct?'✓ We got this one right':'✗ This one didn\'t work';
+    var line2='When its time was up'+(o.exitDate?', on <b>'+esc(fmtDate(o.exitDate))+'</b>':'')+', it was'+(o.exit!=null?' <b>'+cur+o.exit+'</b> — ':' ')+'<b class="'+(up?'up':'down')+'">'+(up?'up ':'down ')+retPct+'%</b> from where we called it.';
+    var line3='';
+    if(o.excess!=null){var bret=Math.round((o.ret-o.excess)*1000)/10, exc=Math.abs(Math.round(o.excess*1000)/10);
+      line3='<p>Over the same days '+mkt+' '+(bret>=0?'went up':'went down')+' '+Math.abs(bret)+'%, so this pick <b>'+(o.correctVsIndex?'did better than the market':'did worse than the market')+'</b> by '+exc+'%.</p>';}
+    var line4='<p class="gverdict">'+(o.correct?'It <b>made money</b> over its window → counts as a <b>win ✓</b>.':'It <b>lost money</b> over its window → counts as a <b>loss ✗</b>.')+' We only call a pick right if it actually went up in its own timeframe — win or lose, it goes on the record.</p>';
+    body='<p class="mtake">'+line1+'</p><div class="gexp"><p>'+line2+'</p>'+line3+line4+'</div>';
+  }
+  var m=document.getElementById('modal'); m.className='modal';
+  m.innerHTML='<div class="mhead '+(vc==='v-buy'?'buy':vc==='v-dont'?'don':'hold')+'"><button class="mclose" id="mClose" aria-label="Close">✕</button>'+
+    '<div class="mtf">'+tfEmoji+' '+(o.region==='au'?'🇦🇺 ASX':'🌏 International')+' · scored honestly</div>'+
+    '<div class="mtop"><div class="msym">'+esc(sym)+'</div></div>'+
+    '<span class="mverd '+vc+'">'+esc(verd)+'</span></div>'+
+    '<div class="mbody">'+body+'</div>';
+  var ov=document.getElementById('overlay'); ov.classList.add('open'); ov.setAttribute('aria-hidden','false');
+  document.getElementById('mClose').focus();
+}
 
 // ---- Reusable ⓘ explainers (no black box) ----
 var INFO={
@@ -2053,13 +2192,30 @@ var INFO={
     '<p>Every menu we\'ve served, newest first — tap one to open that run\'s full report snapshot. Shows the last 3; expand for the rest. Each records that run\'s 6 picks and the risk read at the time.</p>'}
 };
 function infoBtn(key){ return '<button class="infobtn" data-info="'+esc(key)+'" aria-label="What is this?">i</button>'; }
+function runLogHtml(){
+  var H=(LAST&&LAST.H)||{}, hh='font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--broth);font-weight:800;margin:18px 0 8px';
+  var majors=(H.menus||[]).slice(0,8).map(function(m){
+    var names=[].concat(m.au||[],m.us||[]).join(' · ');
+    return '<div class="rlrow"><span class="rltype rl-maj">🍳 menu</span><span class="rlwhen">'+esc(m.stamp)+' · '+esc(m.time)+'</span><span class="rlnote">'+esc(names)+'</span></div>';
+  }).join('');
+  var mins=(PULSES||[]).slice().reverse().slice(0,12).map(function(pu){
+    var ch=(pu.changes||[]).filter(function(c){return Math.abs(c[1])>=0.05;});
+    var mv=ch.slice(0,3).map(function(c){return esc(c[0])+' '+(c[1]>=0?'+':'')+c[1]+'%';}).join(' · ');
+    return '<div class="rlrow"><span class="rltype rl-min">⏱ re-price</span><span class="rlwhen">'+esc(pu.stamp)+'</span><span class="rlnote">'+(mv||'<span class="muted">quiet</span>')+'</span></div>';
+  }).join('');
+  return '<h4 style="'+hh+'">Every run — newest first</h4><p style="font-size:12.5px;color:var(--muted);margin:0 0 10px">🍳 <b>menu</b> = a full re-cook (new picks). ⏱ <b>re-price</b> = same menu, fresh numbers.</p>'+
+    '<div class="runlog">'+
+      '<div class="rlgh">🍳 Major runs — fresh menus <span class="muted">(last 8)</span></div>'+(majors||'<p class="muted">None yet.</p>')+
+      '<div class="rlgh" style="margin-top:14px">⏱ Minor runs — hourly re-prices <span class="muted">(this session)</span></div>'+(mins||'<p class="muted">None yet this session.</p>')+
+    '</div>';
+}
 function openInfo(key){
   var i=INFO[key]; if(!i) return;
   LASTFOCUS=document.activeElement;
   var m=document.getElementById('modal'); m.className='modal';
   m.innerHTML='<div class="mhead"><button class="mclose" id="mClose" aria-label="Close">✕</button><div class="mtf">'+esc(i.icon||'ⓘ')+' Explainer</div>'+
     '<div class="mtop"><div class="msym" style="font-size:24px;line-height:1.1">'+esc(i.title)+'</div></div></div>'+
-    '<div class="mbody infobody">'+i.body+'</div>';
+    '<div class="mbody infobody">'+i.body+(key==='schedule'?runLogHtml():'')+'</div>';
   var ov=document.getElementById('overlay'); ov.classList.add('open'); ov.setAttribute('aria-hidden','false');
   document.getElementById('mClose').focus();
 }
@@ -2092,7 +2248,7 @@ function themeIntel(sym,D){
   var res=null;
   (D.regions||[]).forEach(function(rg){(rg.picks||[]).forEach(function(p,i){if(p.sym===sym&&!res)res={kind:'pick',p:p,region:rg.id,idx:i,cur:rg.cur||'$'};});});
   if(res)return res;
-  var c=(D.candidates||[]).filter(function(x){return x.sym===sym;})[0]; if(c)return {kind:'cand',c:c};
+  var ci=-1,c=null; (D.candidates||[]).forEach(function(x,i){ if(x.sym===sym&&!c){c=x;ci=i;} }); if(c)return {kind:'cand',c:c,idx:ci};
   var wi=(D.watchlistIntel||{})[sym]; if(wi&&!wi.error)return {kind:'intel',wi:wi};
   return {kind:'none'};
 }
@@ -2104,14 +2260,27 @@ function openTheme(src,idx){
     var nm=(item.name||'').toLowerCase().split(/[\s—·]/)[0];
     syms=(D.candidates||[]).filter(function(c){return nm && (c.note||'').toLowerCase().indexOf(nm)>=0;}).map(function(c){return c.sym;});
   }
-  var rows=syms.map(function(sym){
-    var it=themeIntel(sym,D), line='', reg='us', tapAttr=' class="themerow"';
-    if(it.kind==='pick'){ line='<span class="tvd '+esc(it.p.vclass)+'">'+esc(it.p.verdict)+'</span> · '+esc(it.p.price)+(it.p.nTarget!=null?' → target '+it.cur+it.p.nTarget:''); reg=it.region; tapAttr=' class="themerow tappable" data-region="'+esc(it.region)+'" data-idx="'+it.idx+'" role="button" tabindex="0"'; }
-    else if(it.kind==='cand'){ line='<span class="muted">on our radar</span> · '+esc(it.c.note||''); reg=it.c.region||'us'; }
-    else if(it.kind==='intel'){ line=(it.wi.verdict?esc(it.wi.verdict)+' · ':'')+(it.wi.target!=null?'target '+it.wi.cur+it.wi.target:'')+(it.wi.trend?' · <span class="muted">'+esc(it.wi.trend)+'</span>':''); reg=it.wi.region||'us'; }
-    else { line='<span class="muted">not covered this run</span>'; }
-    return '<div'+tapAttr+'><a class="trsym" href="'+yf(sym,reg)+'" target="_blank" rel="noopener">'+esc(sym)+'</a><span class="trln">'+line+'</span>'+(it.kind==='pick'?'<span class="trcue">card →</span>':'')+'</div>';
-  }).join('');
+  var pm=wlPriceMap(D);
+  function tcard(sym){
+    var it=themeIntel(sym,D), reg='us', verd='', vcl='hold', why='', news='', cue='', tap='';
+    if(it.kind==='pick'){ reg=it.region; verd=it.p.verdict; vcl=it.p.vclass||'v-hold'; var cat=(it.p.catalysts&&it.p.catalysts[0])||it.p.note||''; why='<b>In tonight\'s picks.</b> '+esc(cat); news=it.p.news||''; cue='card →'; tap=' data-kind="pick" data-region="'+esc(it.region)+'" data-idx="'+it.idx+'" role="button" tabindex="0"'; }
+    else if(it.kind==='cand'){ reg=it.c.region||'us'; verd='On the radar'; vcl='v-hold'; why='<b>Shortlisted in the full pot.</b> '+esc(it.c.note||''); news=it.c.news||''; cue='full read →'; tap=' data-kind="cand" data-ci="'+it.idx+'" role="button" tabindex="0"'; }
+    else if(it.kind==='intel'){ reg=it.wi.region||'us'; verd=it.wi.verdict||'Tracked'; vcl=/get in|buy/i.test(verd)?'v-buy':/late|wait|skip/i.test(verd)?'v-dont':'v-hold'; why='<b>On the watchlist.</b> '+esc(it.wi.trend||(it.wi.target!=null?'ideal buy near '+(it.wi.cur||'$')+it.wi.target:'we score it each run')); news=''; }
+    else { reg=(src==='commodities')?'au':'us'; verd='Not covered'; vcl='v-hold'; why='<span class="muted">Named in the theme but not scored this run.</span>'; }
+    var pi=pm[sym+'|'+reg]||pm[sym+'|au']||pm[sym+'|us']||{};
+    var px=pi.price?'<span class="tsc-px">'+esc(pi.price)+'</span>':'';
+    var chg=pi.change?'<span class="tsc-chg '+(pi.up?'up':'down')+'">'+(pi.up?'▲':'▼')+' '+esc(pi.change)+'</span>':'';
+    var spk=(pi.spark&&pi.spark.length>2)?'<div class="tsc-spark">'+sparkSVG(pi.spark.slice(-30))+'</div>':'';
+    var nh=news?'<div class="tsc-news">📰 '+esc(news)+'</div>':'';
+    return '<div class="tscard'+(tap?' tappable':'')+'"'+tap+'>'+
+      '<div class="tsc-top"><a class="trsym" href="'+yf(sym,reg)+'" target="_blank" rel="noopener">'+esc(sym)+'</a>'+
+        '<span class="pmc-flag">'+(reg==='au'?'AU':'US')+'</span>'+
+        (verd?'<span class="mverd '+esc(vcl)+'" style="margin-left:auto;font-size:10px;padding:3px 8px">'+esc(verd)+'</span>':'')+'</div>'+
+      (px||chg?'<div class="tsc-pxrow">'+px+chg+'</div>':'')+spk+
+      '<div class="tsc-why">'+why+'</div>'+nh+
+      (cue?'<div class="tsc-cue">'+cue+'</div>':'')+'</div>';
+  }
+  var rows=syms.length?'<div class="tsgrid">'+syms.map(tcard).join('')+'</div>':'';
   var etfs=themeETFs(item);
   var etfHtml=etfs.length?'<h4 style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--broth);font-weight:800;margin:18px 0 4px">🧺 Prefer the basket? · ETFs</h4>'+
     '<p style="font-size:12px;color:var(--muted);margin:0 0 10px">The whole theme in one ticker — diversified, lower single-stock risk.</p>'+
@@ -2128,7 +2297,11 @@ function openTheme(src,idx){
     '<p style="font-size:11px;color:var(--faint);margin-top:12px">Individual names from tonight\'s read; ETFs are the diversified way to play the theme. Tap any for Yahoo.</p></div>';
   var ov=document.getElementById('overlay'); ov.classList.add('open'); ov.setAttribute('aria-hidden','false');
   document.getElementById('mClose').focus();
-  m.querySelectorAll('.themerow.tappable').forEach(function(row){ row.addEventListener('click',function(e){ if(e.target.closest('a'))return; var rg=(D.regions||[]).filter(function(x){return x.id===row.dataset.region;})[0]; if(rg){var p=rg.picks[+row.dataset.idx]; if(p)openModal(p,rg.id,rg.cur||'$');} }); });
+  m.querySelectorAll('.tscard.tappable').forEach(function(row){
+    function open(){ if(row.dataset.kind==='cand'){ openCandidate(+row.dataset.ci); return; } var rg=(D.regions||[]).filter(function(x){return x.id===row.dataset.region;})[0]; if(rg){var p=rg.picks[+row.dataset.idx]; if(p)openModal(p,rg.id,rg.cur||'$');} }
+    row.addEventListener('click',function(e){ if(e.target.closest('a'))return; open(); });
+    row.addEventListener('keydown',function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); open(); } });
+  });
 }
 function openCandidate(idx){
   var D=LAST.D||{}, c=(D.candidates||[])[idx]; if(!c)return;
@@ -2219,13 +2392,35 @@ function wireInfo(){ document.querySelectorAll('[data-info]').forEach(function(b
   b.onkeydown=function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); openInfo(b.dataset.info); } };
 }); }
 
-// ---- Smart watchlist (per-browser localStorage; global so cards, modal & section all share it) ----
+// ---- Accounts / cross-device sync (Cloudflare backend) ----
+var API_BASE='https://stocksoup-api.defranceski.workers.dev';
+var SKEY='soup_session', EKEY='soup_email';
+function sessGet(){try{return localStorage.getItem(SKEY)||'';}catch(e){return'';}}
+function sessSet(t){try{t?localStorage.setItem(SKEY,t):localStorage.removeItem(SKEY);}catch(e){}}
+function signedIn(){return !!sessGet();}
+function apiHdr(){return {'Authorization':'Bearer '+sessGet(),'Content-Type':'application/json'};}
+function apiPush(method,path,body){ if(!signedIn())return; try{fetch(API_BASE+path,{method:method,headers:apiHdr(),body:body?JSON.stringify(body):undefined}).then(function(r){if(r.status===401){sessSet('');}}).catch(function(){});}catch(e){} }
+// Pull the server list on sign-in; merge any device-only items up first (nothing lost), then mirror down.
+function syncFromBackend(cb){
+  if(!signedIn()){cb&&cb();return;}
+  fetch(API_BASE+'/me/watchlist',{headers:apiHdr()}).then(function(r){ if(r.status===401){sessSet('');throw 0;} return r.ok?r.json():null; }).then(function(j){
+    if(j&&j.watchlist){
+      var server=j.watchlist.map(function(w){return {sym:w.sym,region:w.region,entry:w.entry};});
+      var have={}; server.forEach(function(w){have[w.sym+'|'+w.region]=1;});
+      var missing=wlGet().filter(function(w){return !have[w.sym+'|'+w.region];});
+      if(missing.length){ apiPush('POST','/me/import',{items:missing.map(function(w){return {sym:w.sym,region:w.region,entry:wlNum(w.entry)||null};})}); server=server.concat(missing); }
+      wlSet(server);
+    }
+    cb&&cb();
+  }).catch(function(){cb&&cb();});
+}
+// ---- Smart watchlist (localStorage source-of-truth; write-through to backend when signed in) ----
 var WLKEY='soup_watchlist';
 function wlGet(){try{return JSON.parse(localStorage.getItem(WLKEY)||'[]');}catch(e){return[];}}
 function wlSet(a){try{localStorage.setItem(WLKEY,JSON.stringify(a));}catch(e){}}
 function wlHas(sym,region){return wlGet().some(function(w){return w.sym===sym&&w.region===region;});}
-function wlAddItem(it){var a=wlGet();if(!a.some(function(w){return w.sym===it.sym&&w.region===it.region;})){a.push(it);wlSet(a);}}
-function wlRemove(sym,region){wlSet(wlGet().filter(function(w){return !(w.sym===sym&&w.region===region);}));}
+function wlAddItem(it){var a=wlGet();if(!a.some(function(w){return w.sym===it.sym&&w.region===it.region;})){a.push(it);wlSet(a);apiPush('POST','/me/watchlist',{sym:it.sym,region:it.region,entry:(wlNum(it.entry)||it.entry||null)});}}
+function wlRemove(sym,region){wlSet(wlGet().filter(function(w){return !(w.sym===sym&&w.region===region);}));apiPush('DELETE','/me/watchlist/'+region+'/'+sym);}
 function wlToggle(it){if(wlHas(it.sym,it.region)){wlRemove(it.sym,it.region);return false;}wlAddItem(it);return true;}
 function wlNum(s){var v=(String(s==null?'':s)).match(/([\d.]+)/);return v?parseFloat(v[1]):null;}
 function wlPriceMap(D){
@@ -2368,6 +2563,34 @@ function watchToggleFromEl(b){
   wlToggle(it); syncWatchButtons(); renderWatchlist();
 }
 
+// ---- sign-in bar under the watchlist ----
+function renderAuth(){
+  var el=document.getElementById('wlAuth'); if(!el)return;
+  if(signedIn()){
+    var email=''; try{email=localStorage.getItem(EKEY)||'';}catch(e){}
+    el.innerHTML='<div class="authrow in"><span>✓ <b>Synced'+(email?' as '+esc(email):'')+'</b> — your list follows you across devices, and we\'ll email you when a stock hits its buy price.</span>'+
+      '<button class="authbtn ghost" id="signOut">Sign out</button></div>';
+    document.getElementById('signOut').onclick=function(){ sessSet(''); try{localStorage.removeItem(EKEY);}catch(e){} renderAuth(); flashToast('Signed out — list is now on this device only'); };
+  }else{
+    el.innerHTML='<div class="authrow out"><div class="authpitch">🔒 <b>Saved on this device only.</b> Sign in with just your email to sync your watchlist everywhere and get a heads-up when a stock hits your buy price.</div>'+
+      '<form class="authform" id="signInForm"><input id="siEmail" type="email" placeholder="you@email.com" aria-label="Email" required>'+
+      '<button class="authbtn" type="submit">Sign in →</button></form><div class="authmsg" id="authMsg"></div></div>';
+    document.getElementById('signInForm').onsubmit=function(e){ e.preventDefault(); doSignIn(); };
+  }
+}
+function doSignIn(){
+  var inp=document.getElementById('siEmail'), msg=document.getElementById('authMsg');
+  var email=(inp.value||'').trim().toLowerCase(); if(!email||email.indexOf('@')<0){msg.textContent='Enter a valid email.';return;}
+  try{localStorage.setItem(EKEY,email);}catch(e){}
+  msg.textContent='Sending your sign-in link…';
+  fetch(API_BASE+'/auth/request',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:email})})
+    .then(function(r){return r.json();}).then(function(j){
+      if(j&&j.magic_link){ msg.textContent='Signing you in…'; window.location.href=API_BASE+j.magic_link; }   // DEV_MODE: follow the link (redirects back signed-in)
+      else if(j&&j.sent_to){ msg.innerHTML='📧 <b>Check your email</b> — we sent a sign-in link to '+esc(j.sent_to)+'.'; }
+      else { msg.textContent='Something went wrong — try again.'; }
+    }).catch(function(){ msg.textContent='Couldn\'t reach the server — try again.'; });
+}
+
 function openTrackRecord(){
   var T=TRACK; if(!T)return;
   LASTFOCUS=document.activeElement;
@@ -2410,6 +2633,14 @@ function wire(D){
   });
   var vb=document.getElementById('viewBtn'); if(vb) vb.onclick=function(){setView('simple');};
   var rb=document.getElementById('refreshBtn'); if(rb) rb.onclick=function(){refreshPrices(rb);};
+  document.querySelectorAll('[data-gsym]').forEach(function(el){
+    function go(e){ if(e.target.closest('a'))return; e.stopPropagation(); openGrade(el.dataset.gsym); }
+    el.addEventListener('click',go);
+    el.addEventListener('keydown',function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); go(e); } });
+  });
+  renderAuth();
+  var pm=document.getElementById('potMore'), pl=document.getElementById('potLose');
+  if(pm&&pl){ pm.onclick=function(){ var open=pl.hasAttribute('hidden'); if(open)pl.removeAttribute('hidden'); else pl.setAttribute('hidden',''); pm.setAttribute('aria-expanded',open?'true':'false'); pm.innerHTML=(open?'▴ Hide the maybes &amp; passes':'➖ '+pl.children.length+' more — maybes &amp; passes ▾'); }; }
   var lu=document.getElementById('lastUpd');
   if(lu){ if(PULSES&&PULSES.length){ lu.textContent='updated '+timeAgo(PULSES[PULSES.length-1].iso); lu.onclick=openPulseLog; } else { lu.style.display='none'; } }
   var tb=document.getElementById('trackBtn'), tc=document.getElementById('trackCta');
@@ -2487,7 +2718,7 @@ document.addEventListener('keydown',function(e){if(e.key==='Escape')closeModal()
 document.getElementById('overlay').addEventListener('click',function(e){if(e.target&&e.target.id==='mClose')closeModal();});
 
 /* ---- View mode: simple (mobile default) vs full, with toggle ---- */
-var VIEW = null, SREGION = 'au', PULSES = null, TRACK = null, MKT = 'au';
+var VIEW = null, SREGION = 'au', PULSES = null, TRACK = null, MKT = 'au', OUTCOMES = null;
 function setView(v){ VIEW = v; try{ localStorage.setItem('soup_view', v); }catch(e){} applyView(); }
 function applyView(){ if(!LAST) return; window.scrollTo(0,0); if(VIEW==='simple') renderSimple(LAST.D); else render(LAST.D, LAST.H); }
 function boot(D,H){
@@ -2588,11 +2819,13 @@ function refreshPrices(btn){
     fetch('latest.json',{cache:'no-store'}).then(function(r){return r.ok?r.json():null;}),
     fetch('menu-history.json',{cache:'no-store'}).then(function(r){return r.ok?r.json():null;}),
     fetch('reports/pulse-history.json',{cache:'no-store'}).then(function(r){return r.ok?r.json():null;}),
-    fetch('reports/track-record.json',{cache:'no-store'}).then(function(r){return r.ok?r.json():null;})
+    fetch('reports/track-record.json',{cache:'no-store'}).then(function(r){return r.ok?r.json():null;}),
+    fetch('reports/outcomes.json',{cache:'no-store'}).then(function(r){return r.ok?r.json():null;})
   ]).then(function(res){
-    var d=res[0].value, h=res[1].value, pu=res[2].value, tr=res[3].value;
+    var d=res[0].value, h=res[1].value, pu=res[2].value, tr=res[3].value, oc=res[4].value;
     if(pu&&pu.pulses&&pu.pulses.length>1) PULSES=pu.pulses;
     if(tr&&tr.record) TRACK=tr;
+    if(oc&&oc.outcomes) OUTCOMES=oc;
     var afterIso=(PULSES&&PULSES.length)?PULSES[PULSES.length-1].iso:null;
     var fresh=afterIso&&afterIso!==beforeIso;
     // keep the spin visible for at least a beat so it reads as an action
@@ -2605,16 +2838,21 @@ function refreshPrices(btn){
     }, Math.max(0, 450-(Date.now()-started)));
   });
 }
+// capture the magic-link session handed back in the redirect hash (#session=…), then sync the list
+(function(){var m=(location.hash||'').match(/session=([^&]+)/);if(m){sessSet(decodeURIComponent(m[1]));try{history.replaceState(null,'',location.pathname+location.search);}catch(e){}}})();
+if(signedIn()) syncFromBackend(function(){ if(document.getElementById('wlPills')){renderWatchlist();syncWatchButtons();} });
 boot(EMBEDDED,HIST_EMBED);
 Promise.allSettled([
   fetch('latest.json',{cache:'no-store'}).then(function(r){return r.ok?r.json():null;}),
   fetch('menu-history.json',{cache:'no-store'}).then(function(r){return r.ok?r.json():null;}),
   fetch('reports/pulse-history.json',{cache:'no-store'}).then(function(r){return r.ok?r.json():null;}),
-  fetch('reports/track-record.json',{cache:'no-store'}).then(function(r){return r.ok?r.json():null;})
+  fetch('reports/track-record.json',{cache:'no-store'}).then(function(r){return r.ok?r.json():null;}),
+  fetch('reports/outcomes.json',{cache:'no-store'}).then(function(r){return r.ok?r.json():null;})
 ]).then(function(res){
-  var d=res[0].value, h=res[1].value, pu=res[2].value, tr=res[3].value;
+  var d=res[0].value, h=res[1].value, pu=res[2].value, tr=res[3].value, oc=res[4].value;
   if(pu&&pu.pulses&&pu.pulses.length>1) PULSES=pu.pulses;
   if(tr&&tr.record) TRACK=tr;
-  if((d&&d.regions)||(h&&h.menus)||PULSES||TRACK) boot(d&&d.regions?d:EMBEDDED, h&&h.menus?h:HIST_EMBED);
+  if(oc&&oc.outcomes) OUTCOMES=oc;
+  if((d&&d.regions)||(h&&h.menus)||PULSES||TRACK||OUTCOMES) boot(d&&d.regions?d:EMBEDDED, h&&h.menus?h:HIST_EMBED);
 }).catch(function(){});
 </script>

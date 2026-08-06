@@ -78,11 +78,11 @@
   .celeg i{width:9px;height:9px;border-radius:2px;display:inline-block}
   .celeg b.up{color:var(--buy)} .celeg b.down{color:var(--dont)}
   .proxrow{display:flex;align-items:center;gap:10px;padding:6px 0}
-  .pxs{font-weight:800;font-size:13px;width:52px}
+  .pxs{font-weight:800;font-size:13px;flex:0 0 auto;min-width:120px;display:flex;gap:6px;align-items:baseline}
   .proxbar{flex:1;position:relative;height:8px;border-radius:999px;background:var(--surface-2)}
   .proxzone{position:absolute;left:0;top:0;bottom:0;width:19%;background:rgba(35,194,103,.32);border-radius:999px}
   .proxnow{position:absolute;top:50%;transform:translate(-50%,-50%);width:11px;height:11px;border-radius:50%;box-shadow:0 0 0 2px var(--surface)}
-  .pxg{min-width:92px;display:flex;flex-direction:column;align-items:flex-end;gap:1px;font-variant-numeric:tabular-nums}
+  .pxg{min-width:78px;display:flex;flex-direction:column;align-items:flex-end;gap:1px;font-variant-numeric:tabular-nums}
   .pxnow{font-size:13px;font-weight:800;color:var(--ink)}
   .s-in .pxnow,.s-near .pxnow{color:var(--buy)} .s-close .pxnow{color:var(--hold)}
   .pxbuy{font-size:11px;font-weight:700;color:var(--muted)}
@@ -196,10 +196,19 @@
   /* JOURNEY */
   .chef-note{background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:12px 15px;font-size:14px;margin-bottom:14px;color:var(--ink)}
   .chef-note b{color:var(--broth)}
-  .journey{display:flex;gap:12px;overflow-x:auto;padding-bottom:10px;scroll-snap-type:x proximity}
-  .jcol{min-width:196px;flex:0 0 auto;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;scroll-snap-align:start}
+  .journey{display:flex;gap:12px;overflow-x:auto;padding-bottom:10px;scroll-snap-type:x mandatory}
+  .jcol{flex:0 0 calc((100% - 24px)/3);min-width:150px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;scroll-snap-align:start}  /* 3 across, scroll for the rest (max 8) */
   .jcol.now{border-color:var(--broth);box-shadow:0 0 0 1px var(--broth) inset}
-  .jhead{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;gap:8px}
+  .jhead{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px;gap:6px}
+  .jhright{display:flex;align-items:center;gap:5px;flex:0 0 auto}
+  .jtally{display:inline-flex;gap:4px;font-size:11px;font-weight:900;background:var(--surface-2);border:1px solid var(--line);border-radius:999px;padding:2px 7px}
+  .jtally .jt-w{color:var(--buy)} .jtally .jt-l{color:var(--dont)} .jtally .jt-p{color:var(--faint)}
+  .runlog .rlgh{font-size:12px;font-weight:800;color:var(--ink);margin-bottom:6px}
+  .rlrow{display:grid;grid-template-columns:78px 1fr;gap:8px;align-items:baseline;padding:6px 0;border-bottom:1px solid var(--line);font-size:12.5px}
+  .rlrow:last-child{border-bottom:0}
+  .rltype{font-size:10px;font-weight:800;padding:2px 6px;border-radius:6px;white-space:nowrap;text-align:center}
+  .rl-maj{background:var(--broth-soft,rgba(255,107,26,.12));color:var(--broth)} .rl-min{background:var(--surface-2);color:var(--muted)}
+  .rlwhen{font-weight:700;grid-column:2} .rlnote{grid-column:2;color:var(--muted);font-size:11.5px;line-height:1.35;text-wrap:pretty}
   .jhead .when{font-weight:800;font-size:13px}
   .jhead .when small{display:block;color:var(--muted);font-weight:600;font-size:11px}
   .now-b{font-size:10px;font-weight:900;background:var(--broth);color:#1a0f06;padding:2px 7px;border-radius:6px;letter-spacing:.06em}
@@ -1730,9 +1739,9 @@ function renderChangeEnv(D, pulses, mkt){
     var st = gap<=0?'in':(gap<=1.5?'near':(gap<=4?'close':'wait'));
     var pos=Math.max(3,Math.min(97,(gap/8)*100));
     var onLine=gap<=1.5?'✓':'−'+Math.round(gap)+'%';
-    return '<div class="proxrow s-'+st+'"><span class="pxs">'+esc(pk.sym)+'</span>'+
+    return '<div class="proxrow s-'+st+'"><span class="pxs">'+esc(pk.sym)+(pk.now!=null?' <span class="pxnow">'+esc(pk.cur)+pk.now+'</span>':'')+'</span>'+
       '<div class="proxbar"><span class="proxzone"></span><span class="proxpct" style="left:'+pos.toFixed(0)+'%">'+onLine+'</span><span class="proxnow" style="left:'+pos.toFixed(0)+'%"></span></div>'+
-      '<span class="pxg">'+(pk.now!=null?'<span class="pxnow">now '+esc(pk.cur)+pk.now+'</span>':'')+'<span class="pxbuy">Buy @ '+esc(pk.cur)+pk.nEntry+'</span></span></div>';
+      '<span class="pxg"><span class="pxbuy">Buy @ '+esc(pk.cur)+pk.nEntry+'</span></span></div>';
   }).join('');
   var latest=pulses[pulses.length-1];
   return '<section><div class="sec-head"><h2 class="display"><span class="k">01½</span> Change environment</h2>'+infoBtn('changeenv')+'</div>'+
@@ -1872,9 +1881,17 @@ function render(D,H){
       }
       return '<div class="jgrp">'+label+'</div>'+rows.join('');
     }
-    return '<div class="jcol'+(isNow?' now':'')+'"><div class="jhead"><span class="when">'+esc(m.stamp)+'<small>'+esc(m.time)+' AEST</small></span>'+(isNow?'<span class="now-b">NOW</span>':'')+'</div>'+(MKT==='us'?grp('🌏 Intl',m.us,'us'):grp('🇦🇺 AU',m.au,'au'))+'</div>';
+    function tally(arr){
+      var w=0,l=0,p=0;
+      (arr||[]).forEach(function(sym){var o=OUTCOMES&&OUTCOMES.outcomes&&OUTCOMES.outcomes[String(sym).replace(/\*$/,'')];if(!o)return;if(o.status!=='graded')p++;else if(o.correct)w++;else l++;});
+      if(!(w+l+p))return '';
+      var pt=[];if(w)pt.push('<span class="jt-w">✓'+w+'</span>');if(l)pt.push('<span class="jt-l">✗'+l+'</span>');if(p)pt.push('<span class="jt-p">⏳'+p+'</span>');
+      return '<span class="jtally" title="How this run\'s picks scored — tap a tick for the story">'+pt.join('')+'</span>';
+    }
+    var arr=(MKT==='us'?m.us:m.au), region=MKT, label=(MKT==='us'?'🌏 Intl':'🇦🇺 AU');
+    return '<div class="jcol'+(isNow?' now':'')+'"><div class="jhead"><span class="when">'+esc(m.stamp)+'<small>'+esc(m.time)+' AEST</small></span><span class="jhright">'+tally(arr)+(isNow?'<span class="now-b">NOW</span>':'')+'</span></div>'+grp(label,arr,region)+'</div>';
   }
-  var journeyCols=ms.map(function(m,i){return jcol(m,ms[i+1],i===0);}).join('');
+  var journeyCols=ms.slice(0,8).map(function(m,i){return jcol(m,ms[i+1],i===0);}).join('');   // last 8 runs, 3 visible across
   var note="This is the first menu on record — the journey starts here.";
   if(ms.length>=2){
     var a=ms[0],b=ms[1];
@@ -1899,7 +1916,7 @@ function render(D,H){
   var ocGraded=ocOn?Object.keys(OUTCOMES.outcomes).map(function(k){return OUTCOMES.outcomes[k];}).filter(function(o){return o.status==='graded';}):[];
   var ocRows=ocGraded.slice().sort(function(a,b){return (b.date||'').localeCompare(a.date||'');}).slice(0,6).map(function(o){
     var w=o.correct, pct=(o.ret>=0?'+':'')+(Math.round(o.ret*1000)/10)+'%';
-    return '<div class="row graderow" data-gsym="'+esc(o.sym)+'" role="button" tabindex="0" title="Tap to see what happened with '+esc(o.sym)+'"><span class="rsym">'+(tfBadge[o.tf]||'')+' '+qlink(o.sym,o.region||'us')+'</span><div class="bar"><span class="fill" style="'+(w?'left:50%;width:26%;background:var(--buy)':'right:50%;width:22%;background:var(--dont)')+'"></span></div><span class="res '+(w?'up':'down')+'">'+esc(pct)+(o.correctVsIndex?' <span class="idxbeat" title="also did better than the market">beat mkt</span>':'')+'</span></div>';
+    return '<div class="row graderow" data-gsym="'+esc(o.sym)+'" role="button" tabindex="0" title="Tap to see what happened with '+esc(o.sym)+'"><span class="rsym">'+(tfBadge[o.tf]||'')+' '+esc(o.sym)+'</span><div class="bar"><span class="fill" style="'+(w?'left:50%;width:26%;background:var(--buy)':'right:50%;width:22%;background:var(--dont)')+'"></span></div><span class="res '+(w?'up':'down')+'">'+esc(pct)+(o.correctVsIndex?' <span class="idxbeat" title="also did better than the market">beat mkt</span>':'')+'</span></div>';
   }).join('');
   var tfLabel={Day:'⚡ Day trades',Week:'📅 Week holds',Long:'📈 Long holds'};
   var ocScorecard=(ocOn&&OUTCOMES.byTimeframe)?'<div class="tfscore">'+['Day','Week','Long'].map(function(tf){var a=OUTCOMES.byTimeframe[tf]||{};var wr=a.n?Math.round((a.winRate||0)*100):null;var cls=wr==null?'':(wr>=60?'good':wr>=40?'mid':'bad');return '<div class="tfs '+cls+'"><div class="tft">'+tfLabel[tf]+'</div><div class="tfv">'+(wr==null?'—':wr+'%')+'</div><div class="tfn">'+(a.n?'right '+Math.round((a.winRate||0)*a.n)+' of '+a.n:'—')+'</div></div>';}).join('')+'</div>':'';
@@ -2175,13 +2192,30 @@ var INFO={
     '<p>Every menu we\'ve served, newest first — tap one to open that run\'s full report snapshot. Shows the last 3; expand for the rest. Each records that run\'s 6 picks and the risk read at the time.</p>'}
 };
 function infoBtn(key){ return '<button class="infobtn" data-info="'+esc(key)+'" aria-label="What is this?">i</button>'; }
+function runLogHtml(){
+  var H=(LAST&&LAST.H)||{}, hh='font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--broth);font-weight:800;margin:18px 0 8px';
+  var majors=(H.menus||[]).slice(0,8).map(function(m){
+    var names=[].concat(m.au||[],m.us||[]).join(' · ');
+    return '<div class="rlrow"><span class="rltype rl-maj">🍳 menu</span><span class="rlwhen">'+esc(m.stamp)+' · '+esc(m.time)+'</span><span class="rlnote">'+esc(names)+'</span></div>';
+  }).join('');
+  var mins=(PULSES||[]).slice().reverse().slice(0,12).map(function(pu){
+    var ch=(pu.changes||[]).filter(function(c){return Math.abs(c[1])>=0.05;});
+    var mv=ch.slice(0,3).map(function(c){return esc(c[0])+' '+(c[1]>=0?'+':'')+c[1]+'%';}).join(' · ');
+    return '<div class="rlrow"><span class="rltype rl-min">⏱ re-price</span><span class="rlwhen">'+esc(pu.stamp)+'</span><span class="rlnote">'+(mv||'<span class="muted">quiet</span>')+'</span></div>';
+  }).join('');
+  return '<h4 style="'+hh+'">Every run — newest first</h4><p style="font-size:12.5px;color:var(--muted);margin:0 0 10px">🍳 <b>menu</b> = a full re-cook (new picks). ⏱ <b>re-price</b> = same menu, fresh numbers.</p>'+
+    '<div class="runlog">'+
+      '<div class="rlgh">🍳 Major runs — fresh menus <span class="muted">(last 8)</span></div>'+(majors||'<p class="muted">None yet.</p>')+
+      '<div class="rlgh" style="margin-top:14px">⏱ Minor runs — hourly re-prices <span class="muted">(this session)</span></div>'+(mins||'<p class="muted">None yet this session.</p>')+
+    '</div>';
+}
 function openInfo(key){
   var i=INFO[key]; if(!i) return;
   LASTFOCUS=document.activeElement;
   var m=document.getElementById('modal'); m.className='modal';
   m.innerHTML='<div class="mhead"><button class="mclose" id="mClose" aria-label="Close">✕</button><div class="mtf">'+esc(i.icon||'ⓘ')+' Explainer</div>'+
     '<div class="mtop"><div class="msym" style="font-size:24px;line-height:1.1">'+esc(i.title)+'</div></div></div>'+
-    '<div class="mbody infobody">'+i.body+'</div>';
+    '<div class="mbody infobody">'+i.body+(key==='schedule'?runLogHtml():'')+'</div>';
   var ov=document.getElementById('overlay'); ov.classList.add('open'); ov.setAttribute('aria-hidden','false');
   document.getElementById('mClose').focus();
 }
