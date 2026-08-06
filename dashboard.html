@@ -281,6 +281,13 @@
   .potlegend span{display:inline-flex;align-items:center;gap:5px}
   .potlegend i{width:9px;height:9px;border-radius:50%;display:inline-block}
   .pot{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
+  @media(max-width:640px){
+    .pot{grid-template-columns:1fr 1fr;gap:8px}          /* 2-up on mobile — real-estate optimisation */
+    .potcard{padding:10px 11px;gap:5px;border-radius:11px}
+    .pmc-sym{font-size:15px} .pmc-name{font-size:10.5px}
+    .pmc-price{font-size:13px} .pmc-chg{font-size:11px}
+    .pmc-note{font-size:10.5px;line-height:1.35}
+  }
   .potmore{margin:12px auto 0;display:block;background:var(--surface-2);border:1px solid var(--line);color:var(--muted);font-weight:800;font-size:12.5px;padding:9px 16px;border-radius:10px;cursor:pointer;letter-spacing:.01em}
   .potmore:hover{border-color:var(--hold);color:var(--ink)}
   .potlose{margin-top:12px}
