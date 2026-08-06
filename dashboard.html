@@ -100,6 +100,8 @@
   .lastupd{background:none;border:0;color:var(--muted);font-family:var(--font);font-size:11px;font-weight:700;cursor:pointer;text-decoration:underline;text-decoration-style:dotted;text-underline-offset:2px;padding:0 2px;white-space:nowrap}
   .lastupd:hover{color:var(--broth)}
   .refreshbtn{width:30px;height:30px;border-radius:50%;border:1px solid var(--line);background:var(--surface-2);color:var(--muted);font-size:15px;line-height:1;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;padding:0}
+  .signinbtn{background:var(--broth);color:#fff;border:0;font-weight:800;font-size:12.5px;padding:7px 13px;border-radius:999px;cursor:pointer;white-space:nowrap}
+  .signinbtn:hover{filter:brightness(1.05)}
   .refreshbtn:hover{border-color:var(--broth);color:var(--broth)}
   .refreshbtn.spinning{animation:spin .8s linear infinite;color:var(--broth)}
   @keyframes spin{to{transform:rotate(360deg)}}
@@ -303,6 +305,9 @@
   .tsc-chg{font-size:12px;font-weight:800}
   .tsc-chg.up{color:var(--buy)} .tsc-chg.down{color:var(--dont)}
   .tsc-spark{margin:1px 0}
+  .tsc-sparkslot{min-height:22px}
+  .tsc-load{color:var(--faint);letter-spacing:2px;font-size:12px;animation:tscpulse 1.2s ease-in-out infinite}
+  @keyframes tscpulse{0%,100%{opacity:.35}50%{opacity:.8}}
   .tsc-why{font-size:12px;color:var(--ink);line-height:1.42;text-wrap:pretty}
   .tsc-why .muted{color:var(--muted)}
   .tsc-news{font-size:11.5px;color:var(--muted);line-height:1.4;border-top:1px dashed var(--line);padding-top:6px;text-wrap:pretty}
@@ -1970,6 +1975,7 @@ function render(D,H){
     '<div style="display:flex;gap:8px;align-items:center"><span class="live"><span class="pulse"></span>LIVE</span>'+
     '<button class="lastupd" id="lastUpd" title="Minor-run price log">updated…</button>'+
     '<button class="refreshbtn" id="refreshBtn" title="Pull the latest published prices" aria-label="Refresh prices">↻</button>'+
+    '<button class="signinbtn" id="signInTop" title="Sync your watchlist + get price alerts">👤 Sign in</button>'+
     '<button class="viewbtn" id="viewBtn">😋 Simple</button>'+
     '<button class="chip toggle" id="themeBtn" aria-label="Toggle theme">🌗</button></div></div>'+
     '<div class="eyebrow schedlink" data-info="schedule" role="button" tabindex="0" title="How the run schedule works" style="margin-top:22px;letter-spacing:.06em">'+esc((D.stamp||'').replace(/,?\s*20\d\d/,'').replace(/\s*AEST\b/,''))+(D.next?' · next ~'+esc(D.next):'')+' <span class="schedi">i</span></div>'+
@@ -2301,6 +2307,22 @@ function themeIntel(sym,D){
   var wi=(D.watchlistIntel||{})[sym]; if(wi&&!wi.error)return {kind:'intel',wi:wi};
   return {kind:'none'};
 }
+// Fill theme cards that lack price/spark with a LIVE quote + sparkline from the backend proxy.
+function hydrateThemeCards(m){
+  m.querySelectorAll('.tscard[data-hydrate]').forEach(function(card){
+    var sym=card.dataset.sym, reg=card.dataset.region, cur=(reg==='au'?'A$':'$');
+    fetch(API_BASE+'/quote?sym='+encodeURIComponent(sym)+'&region='+encodeURIComponent(reg)).then(function(r){return r.ok?r.json():null;}).then(function(q){
+      var slot=card.querySelector('.tsc-slot'); if(!slot||!q||q.price==null)return;
+      var up=(q.change_p||0)>=0;
+      slot.classList.remove('tsc-slot');
+      slot.innerHTML='<span class="tsc-px">'+cur+(+q.price).toFixed(2)+'</span><span class="tsc-chg '+(up?'up':'down')+'">'+(up?'▲':'▼')+' '+(q.change_p>=0?'+':'')+(+q.change_p).toFixed(1)+'%</span>';
+    }).catch(function(){});
+    fetch(API_BASE+'/history?sym='+encodeURIComponent(sym)+'&region='+encodeURIComponent(reg)).then(function(r){return r.ok?r.json():null;}).then(function(h){
+      var slot=card.querySelector('.tsc-sparkslot'); if(!slot||!h||!h.closes||h.closes.length<3)return;
+      slot.innerHTML=sparkSVG(h.closes.slice(-30)); slot.classList.remove('tsc-sparkslot');
+    }).catch(function(){});
+  });
+}
 function openTheme(src,idx){
   var D=LAST.D||{}, arr=src==='geo'?D.geo:(src==='commodities'?D.commodities:D.sectors), item=arr&&arr[idx]; if(!item)return;
   LASTFOCUS=document.activeElement;
@@ -2315,17 +2337,19 @@ function openTheme(src,idx){
     if(it.kind==='pick'){ reg=it.region; verd=it.p.verdict; vcl=it.p.vclass||'v-hold'; var cat=(it.p.catalysts&&it.p.catalysts[0])||it.p.note||''; why='<b>In tonight\'s picks.</b> '+esc(cat); news=it.p.news||''; cue='card →'; tap=' data-kind="pick" data-region="'+esc(it.region)+'" data-idx="'+it.idx+'" role="button" tabindex="0"'; }
     else if(it.kind==='cand'){ reg=it.c.region||'us'; verd='On the radar'; vcl='v-hold'; why='<b>Shortlisted in the full pot.</b> '+esc(it.c.note||''); news=it.c.news||''; cue='full read →'; tap=' data-kind="cand" data-ci="'+it.idx+'" role="button" tabindex="0"'; }
     else if(it.kind==='intel'){ reg=it.wi.region||'us'; verd=it.wi.verdict||'Tracked'; vcl=/get in|buy/i.test(verd)?'v-buy':/late|wait|skip/i.test(verd)?'v-dont':'v-hold'; why='<b>On the watchlist.</b> '+esc(it.wi.trend||(it.wi.target!=null?'ideal buy near '+(it.wi.cur||'$')+it.wi.target:'we score it each run')); news=''; }
-    else { reg=(src==='commodities')?'au':'us'; verd='Not covered'; vcl='v-hold'; why='<span class="muted">Named in the theme but not scored this run.</span>'; }
+    else { reg=(src==='commodities')?'au':'us'; verd='Live'; vcl='v-hold'; why='<span class="muted">Live price &amp; trend below — not one of tonight\'s scored picks.</span>'; }
     var pi=pm[sym+'|'+reg]||pm[sym+'|au']||pm[sym+'|us']||{};
-    var px=pi.price?'<span class="tsc-px">'+esc(pi.price)+'</span>':'';
-    var chg=pi.change?'<span class="tsc-chg '+(pi.up?'up':'down')+'">'+(pi.up?'▲':'▼')+' '+esc(pi.change)+'</span>':'';
-    var spk=(pi.spark&&pi.spark.length>2)?'<div class="tsc-spark">'+sparkSVG(pi.spark.slice(-30))+'</div>':'';
+    var hasPx=pi.price!=null, hasSpk=(pi.spark&&pi.spark.length>2);
+    var pxrow = hasPx ? '<div class="tsc-pxrow"><span class="tsc-px">'+esc(pi.price)+'</span>'+(pi.change?'<span class="tsc-chg '+(pi.up?'up':'down')+'">'+(pi.up?'▲':'▼')+' '+esc(pi.change)+'</span>':'')+'</div>'
+                      : '<div class="tsc-pxrow tsc-slot"><span class="tsc-load">·····</span></div>';
+    var spk = hasSpk ? '<div class="tsc-spark">'+sparkSVG(pi.spark.slice(-30))+'</div>' : '<div class="tsc-spark tsc-sparkslot"></div>';
     var nh=news?'<div class="tsc-news">📰 '+esc(news)+'</div>':'';
-    return '<div class="tscard'+(tap?' tappable':'')+'"'+tap+'>'+
+    var hy=(!hasPx||!hasSpk)?' data-hydrate="1"':'';
+    return '<div class="tscard'+(tap?' tappable':'')+'" data-sym="'+esc(sym)+'" data-region="'+esc(reg)+'"'+hy+tap+'>'+
       '<div class="tsc-top"><a class="trsym" href="'+yf(sym,reg)+'" target="_blank" rel="noopener">'+esc(sym)+'</a>'+
         '<span class="pmc-flag">'+(reg==='au'?'AU':'US')+'</span>'+
         (verd?'<span class="mverd '+esc(vcl)+'" style="margin-left:auto;font-size:10px;padding:3px 8px">'+esc(verd)+'</span>':'')+'</div>'+
-      (px||chg?'<div class="tsc-pxrow">'+px+chg+'</div>':'')+spk+
+      pxrow+spk+
       '<div class="tsc-why">'+why+'</div>'+nh+
       (cue?'<div class="tsc-cue">'+cue+'</div>':'')+'</div>';
   }
@@ -2346,6 +2370,7 @@ function openTheme(src,idx){
     '<p style="font-size:11px;color:var(--faint);margin-top:12px">Individual names from tonight\'s read; ETFs are the diversified way to play the theme. Tap any for Yahoo.</p></div>';
   var ov=document.getElementById('overlay'); ov.classList.add('open'); ov.setAttribute('aria-hidden','false');
   document.getElementById('mClose').focus();
+  hydrateThemeCards(m);
   m.querySelectorAll('.tscard.tappable').forEach(function(row){
     function open(){ if(row.dataset.kind==='cand'){ openCandidate(+row.dataset.ci); return; } var rg=(D.regions||[]).filter(function(x){return x.id===row.dataset.region;})[0]; if(rg){var p=rg.picks[+row.dataset.idx]; if(p)openModal(p,rg.id,rg.cur||'$');} }
     row.addEventListener('click',function(e){ if(e.target.closest('a'))return; open(); });
@@ -2693,6 +2718,9 @@ function wire(D){
     el.addEventListener('keydown',function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); go(); } });
   });
   renderAuth();
+  var sit=document.getElementById('signInTop');
+  if(sit){ sit.textContent=signedIn()?'👤 Account':'👤 Sign in';
+    sit.onclick=function(){ var a=document.getElementById('wlAuth'); if(a){ a.scrollIntoView({behavior:'smooth',block:'center'}); var inp=document.getElementById('siEmail'); if(inp) setTimeout(function(){inp.focus();},450); } }; }
   var pm=document.getElementById('potMore'), pl=document.getElementById('potLose');
   if(pm&&pl){ pm.onclick=function(){ var open=pl.hasAttribute('hidden'); if(open)pl.removeAttribute('hidden'); else pl.setAttribute('hidden',''); pm.setAttribute('aria-expanded',open?'true':'false'); pm.innerHTML=(open?'▴ Hide the maybes &amp; passes':'➖ '+pl.children.length+' more — maybes &amp; passes ▾'); }; }
   var lu=document.getElementById('lastUpd');
