@@ -935,6 +935,10 @@ function buyAction(p){
   return ' <span class="baact">· '+Math.round(g)+'% above</span>';   // close + wait — colour carries the nuance
 }
 
+// Market-aware header: prefer a per-market headline/chef when the run provides one
+// (D.headline[MKT] / D.chefByMkt[MKT]), else fall back to the single shared version.
+function hdl(D,k){var h=(D&&D.headline)||{}; if(h[MKT]&&h[MKT][k]!=null)return h[MKT][k]; return h[k]!=null?h[k]:'';}
+function chefFor(D){ if(D&&D.chefByMkt&&D.chefByMkt[MKT])return D.chefByMkt[MKT]; return (D&&D.chef)||''; }
 // ── ACTIONS layer: "what do I actually DO tonight?" ─────────────────────────
 // A pick is BUY-ready when the model likes it (verdict isn't wait/late/skip) AND
 // it's at/under the ideal-buy price we've been waiting for (buyState 'in').
@@ -1160,8 +1164,8 @@ function render(D,H){
   '<div class="tabview active" id="tab-menu">'+
     '<div class="tabhead menuhead">'+
       '<div class="eyebrow schedlink" data-info="schedule" role="button" tabindex="0" title="How the run schedule works" style="letter-spacing:.06em">'+esc((D.stamp||'').replace(/,?\s*20\d\d/,'').replace(/\s*AEST\b/,''))+(D.next?' · next ~'+esc(D.next):'')+' <span class="schedi">i</span></div>'+
-      '<h1 class="display">Two pots on the boil:<br><span class="hot">'+esc(D.headline.a)+'</span> &amp; <span class="hot">'+esc(D.headline.b)+'</span>.</h1>'+
-      '<p class="chef">'+D.chef+'</p>'+
+      '<h1 class="display">Two pots on the boil:<br><span class="hot">'+esc(hdl(D,'a'))+'</span> &amp; <span class="hot">'+esc(hdl(D,'b'))+'</span>.</h1>'+
+      '<p class="chef">'+chefFor(D)+'</p>'+
       '<div class="metastrip"><span class="chip clickchip" data-mchip="risk" role="button" tabindex="0"><span class="dot" style="background:var(--hold)"></span> Risk: '+esc(r.label)+' <span class="chipi">i</span></span>'+
       '<span class="chip mono clickchip" data-mchip="btc" role="button" tabindex="0">₿ '+esc(r.btc)+' <span class="up">'+esc(r.btcChange)+'</span></span>'+
       '<span class="chip mono clickchip" data-mchip="aud" role="button" tabindex="0">AUD/USD '+esc(r.audusd)+(r.audusdChange?' <span class="'+(r.audusdUp?'up':'down')+'">'+(r.audusdUp?'▲':'▼')+esc(r.audusdChange)+'</span>':'')+'</span>'+
@@ -1593,6 +1597,7 @@ function openTheme(src,idx){
     syms=(D.candidates||[]).filter(function(c){return nm && (c.note||'').toLowerCase().indexOf(nm)>=0;}).map(function(c){return c.sym;});
   }
   var pm=wlPriceMap(D);
+  var pickSyms=syms.filter(function(s){return themeIntel(s,D).kind==='pick';});
   function tcard(sym){
     var it=themeIntel(sym,D), reg='us', verd='', vcl='hold', why='', news='', cue='', tap='';
     if(it.kind==='pick'){ reg=it.region; verd=it.p.verdict; vcl=it.p.vclass||'v-hold'; var cat=(it.p.catalysts&&it.p.catalysts[0])||it.p.note||''; why='<b>In tonight\'s picks.</b> '+esc(cat); news=it.p.news||''; cue='card →'; tap=' data-kind="pick" data-region="'+esc(it.region)+'" data-idx="'+it.idx+'" role="button" tabindex="0"'; }
@@ -1625,7 +1630,7 @@ function openTheme(src,idx){
     '<div class="mtf">'+esc(item.em||'🎯')+' '+(src==='geo'?'Geopolitical theme':(src==='commodities'?'Commodity':'Sector'))+'</div>'+
     '<div class="mtop"><div class="msym" style="font-size:23px;line-height:1.15">'+esc(item.title||item.name)+'</div></div>'+
     '<span class="mverd '+vc+'">'+esc(item.tag)+'</span></div>'+
-    '<div class="mbody"><p class="mtake">'+esc(item.note)+'</p>'+
+    '<div class="mbody"><p class="mtake"><span class="lead">Why this call:</span> '+esc(item.note)+(pickSyms.length?' <b>'+pickSyms.length+' of tonight’s picks sit in this theme</b> ('+pickSyms.map(esc).join(', ')+') — that’s our skin in the game.':' No scored pick here this run — it’s a watch, not a buy yet.')+'</p>'+
     '<h4 style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:800;margin:4px 0 10px">Leaders in this theme</h4>'+
     (rows||'<p class="muted">No clear ticker leaders surfaced for this theme tonight.</p>')+etfHtml+
     '<p style="font-size:11px;color:var(--faint);margin-top:14px;line-height:1.6"><b style="color:var(--muted)">What the tags mean:</b> a verdict like <b>Get in</b>/<b>Wait</b> = it\'s one of tonight\'s scored picks · <b>Shortlisted</b> = we considered it, didn\'t pick it · <b>On your watchlist</b> = you\'re tracking it · <b>Live price</b> = shown for reference only. ETFs are the diversified way to play the theme.</p></div>';
@@ -2181,7 +2186,7 @@ function renderSimple(D){
       '<button class="chip toggle" id="themeBtn2" aria-label="Toggle theme">🌗</button></div></div>'+
       '<div class="seyebrow schedlink" data-info="schedule" role="button" tabindex="0" title="How the run schedule works">'+esc(sStamp)+(D.next?' · next <b>~'+esc(D.next)+'</b>':'')+' <span class="schedi">i</span></div>'+
       '<div class="sregion" role="group" aria-label="Market">'+regBtns+'</div>'+
-      '<div class="smood">Tonight: <span class="hot">'+esc(D.headline.a)+'</span> &amp; <span class="hot">'+esc(D.headline.b)+'</span></div>'+
+      '<div class="smood">Tonight: <span class="hot">'+esc(hdl(D,'a'))+'</span> &amp; <span class="hot">'+esc(hdl(D,'b'))+'</span></div>'+
       (D.chefShort?'<p class="schef">'+esc(D.chefShort)+'</p>':'')+
       '<div class="schips"><span class="chip mono">₿ <span class="'+(btcUp?'up':'down')+'">'+(btcUp?'▲':'▼')+'</span> '+esc(r.btcChange)+'</span>'+
       '<span class="chip mono">AUD '+esc(r.audusd)+(r.audusdChange?' <span class="'+(r.audusdUp?'up':'down')+'">'+(r.audusdUp?'▲':'▼')+esc(r.audusdChange)+'</span>':'')+'</span></div>'+
