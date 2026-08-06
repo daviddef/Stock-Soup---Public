@@ -436,6 +436,23 @@
   .wlstatus{font-size:13px;font-weight:700;margin-top:10px;min-height:18px}
   .wlnote{font-size:12px;color:var(--muted);margin-top:12px;max-width:60ch}
   .wlauth{margin-top:14px}
+  /* account panel */
+  .acctrow{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid var(--line);font-size:14px}
+  .acctk{color:var(--muted);font-weight:700;font-size:13px}
+  .acctv{font-weight:700;text-align:right}
+  .adminbadge{background:var(--broth);color:#fff;font-size:9px;font-weight:900;padding:2px 6px;border-radius:5px;letter-spacing:.06em;vertical-align:middle}
+  .themeseg{display:inline-flex;gap:4px;background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:3px}
+  .tseg{background:none;border:0;padding:6px 11px;border-radius:8px;font-size:12.5px;font-weight:700;cursor:pointer;color:var(--muted);font-family:inherit}
+  .tseg.on{background:var(--broth);color:#fff}
+  .acctadmin{margin:14px 0;padding:14px 0;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:8px}
+  .acctbtn{display:block;width:100%;text-align:left;background:var(--surface-2);border:1px solid var(--line);color:var(--ink);font-weight:700;font-size:14px;padding:12px 14px;border-radius:11px;cursor:pointer;font-family:inherit}
+  .acctbtn:hover{border-color:var(--broth)}
+  .acctfoot{display:flex;gap:10px;margin-top:18px}
+  .acctbtn.ghost{flex:1;text-align:center;background:none}
+  .acctbtn.danger{flex:1;text-align:center;background:none;color:var(--dont);border-color:rgba(255,77,77,.4)}
+  .acctbtn.danger:hover{background:rgba(255,77,77,.08);border-color:var(--dont)}
+  .acctmsg{font-size:12.5px;color:var(--muted);margin-top:10px;text-align:center;min-height:1px}
+  .authlink{background:none;border:0;color:var(--broth);font-weight:800;cursor:pointer;font-size:inherit;padding:0;font-family:inherit;text-decoration:underline;white-space:nowrap}
   .authrow{border:1px solid var(--line);border-radius:14px;padding:14px 16px;background:var(--surface)}
   .authrow.in{display:flex;align-items:center;gap:12px;justify-content:space-between;flex-wrap:wrap;font-size:13px;color:var(--muted)}
   .authpitch{font-size:13px;color:var(--muted);line-height:1.5;margin-bottom:10px;max-width:64ch}
@@ -2687,13 +2704,56 @@ function watchToggleFromEl(b){
 }
 
 // ---- sign-in bar under the watchlist ----
+var ADMIN_EMAIL='david.defranceski@gmail.com';
+function myEmail(){try{return (localStorage.getItem(EKEY)||'').toLowerCase();}catch(e){return '';}}
+function isAdmin(){return signedIn() && myEmail()===ADMIN_EMAIL;}
+function curTheme(){return document.documentElement.getAttribute('data-theme')||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');}
+function setTheme(t){document.documentElement.setAttribute('data-theme',t);try{localStorage.setItem('soup_theme',t);}catch(e){}}
+// The header 👤 button → real account-management panel (settings, not the watchlist).
+function openAccount(){
+  LASTFOCUS=document.activeElement;
+  var m=document.getElementById('modal'); m.className='modal';
+  var signed=signedIn(), email=myEmail(), th=curTheme();
+  function seg(){return '<span class="themeseg"><button class="tseg'+(th==='light'?' on':'')+'" data-th="light">☀️ Light</button><button class="tseg'+(th==='dark'?' on':'')+'" data-th="dark">🌙 Dark</button></span>';}
+  var body;
+  if(signed){
+    body='<div class="acctrow"><span class="acctk">Signed in</span><span class="acctv">'+esc(email||'—')+(isAdmin()?' <span class="adminbadge">ADMIN</span>':'')+'</span></div>'+
+      '<div class="acctrow"><span class="acctk">Sync</span><span class="acctv">✓ across your devices + price alerts</span></div>'+
+      '<div class="acctrow"><span class="acctk">Appearance</span>'+seg()+'</div>'+
+      (isAdmin()?'<div class="acctadmin"><div class="acctk" style="margin-bottom:8px">🛠 Admin</div><button class="acctbtn" id="acctArch">📐 Architecture &amp; data flow</button><button class="acctbtn" id="acctHealth">💓 Data-source health</button></div>':'')+
+      '<div class="acctfoot"><button class="acctbtn ghost" id="acctSignOut">Sign out</button><button class="acctbtn danger" id="acctDelete">Delete account</button></div>'+
+      '<div class="acctmsg" id="acctMsg"></div>';
+  }else{
+    body='<p class="mtake">Sign in with just your email — no password. We\'ll send a one-tap link.</p>'+
+      '<form class="authform" id="acctSignInForm"><input id="acctEmail" type="email" placeholder="you@email.com" required><button class="authbtn" type="submit">Sign in →</button></form><div class="authmsg" id="acctSignInMsg"></div>'+
+      '<div class="acctrow" style="margin-top:16px"><span class="acctk">Appearance</span>'+seg()+'</div>';
+  }
+  m.innerHTML='<div class="mhead"><button class="mclose" id="mClose" aria-label="Close">✕</button><div class="mtf">👤 Account</div><div class="mtop"><div class="msym" style="font-size:23px">Your account</div></div></div><div class="mbody">'+body+'</div>';
+  var ov=document.getElementById('overlay'); ov.classList.add('open'); ov.setAttribute('aria-hidden','false');
+  document.getElementById('mClose').focus();
+  m.querySelectorAll('.tseg').forEach(function(b){ b.onclick=function(){ setTheme(b.dataset.th); m.querySelectorAll('.tseg').forEach(function(x){x.classList.toggle('on',x===b);}); }; });
+  var so=document.getElementById('acctSignOut'); if(so) so.onclick=function(){ sessSet(''); try{localStorage.removeItem(EKEY);}catch(e){} closeModal(); location.replace('index.html'); };
+  var del=document.getElementById('acctDelete'); if(del) del.onclick=function(){
+    if(del.dataset.c!=='1'){ del.dataset.c='1'; del.textContent='⚠ Tap again to permanently delete'; return; }
+    fetch(API_BASE+'/me',{method:'DELETE',headers:apiHdr()}).then(function(){ sessSet(''); try{localStorage.removeItem(EKEY);localStorage.removeItem(WLKEY);}catch(e){} closeModal(); location.replace('index.html'); })
+      .catch(function(){ document.getElementById('acctMsg').textContent='Couldn\'t delete — try again.'; });
+  };
+  var f=document.getElementById('acctSignInForm'); if(f) f.onsubmit=function(e){ e.preventDefault();
+    var em=(document.getElementById('acctEmail').value||'').trim().toLowerCase(), mg=document.getElementById('acctSignInMsg');
+    if(em.indexOf('@')<1){ mg.textContent='Enter a valid email.'; return; }
+    try{localStorage.setItem(EKEY,em);}catch(e){} mg.textContent='Sending your link…';
+    fetch(API_BASE+'/auth/request',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:em})}).then(function(r){return r.json();}).then(function(j){
+      if(j&&j.magic_link){ mg.textContent='Signing you in…'; location.href=API_BASE+j.magic_link; } else if(j&&j.sent_to){ mg.innerHTML='📧 Check your email.'; }
+    }).catch(function(){ mg.textContent='Try again.'; }); };
+  var ar=document.getElementById('acctArch'); if(ar) ar.onclick=function(){ flashToast('Architecture &amp; data-flow view — landing in the admin pass'); };
+  var ah=document.getElementById('acctHealth'); if(ah) ah.onclick=function(){ flashToast('Data-source health board — landing in the admin pass'); };
+}
 function renderAuth(){
   var el=document.getElementById('wlAuth'); if(!el)return;
   if(signedIn()){
     var email=''; try{email=localStorage.getItem(EKEY)||'';}catch(e){}
-    el.innerHTML='<div class="authrow in"><span>✓ <b>Synced'+(email?' as '+esc(email):'')+'</b> — your list follows you across devices, and we\'ll email you when a stock hits its buy price.</span>'+
-      '<button class="authbtn ghost" id="signOut">Sign out</button></div>';
-    document.getElementById('signOut').onclick=function(){ sessSet(''); try{localStorage.removeItem(EKEY);}catch(e){} renderAuth(); flashToast('Signed out — list is now on this device only'); };
+    el.innerHTML='<div class="authrow in"><span>✓ <b>Synced'+(email?' as '+esc(email):'')+'</b> — your list follows you across devices, and we\'ll email you when a stock hits its buy price. <button class="authlink" id="wlAcct">Manage account →</button></span></div>';
+    var wa=document.getElementById('wlAcct'); if(wa)wa.onclick=openAccount;
   }else{
     el.innerHTML='<div class="authrow out"><div class="authpitch">🔒 <b>Saved on this device only.</b> Sign in with just your email to sync your watchlist everywhere and get a heads-up when a stock hits your buy price.</div>'+
       '<form class="authform" id="signInForm"><input id="siEmail" type="email" placeholder="you@email.com" aria-label="Email" required>'+
@@ -2755,7 +2815,7 @@ function wire(D){
     root.setAttribute('data-theme',cur==='dark'?'light':'dark');
   });
   var vb=document.getElementById('viewBtn'); if(vb) vb.onclick=function(){setView('simple');};
-  var rb=document.getElementById('refreshBtn'); if(rb) rb.onclick=function(){refreshPrices(rb);};
+  var rb=document.getElementById('refreshBtn'); if(rb){ if(!isAdmin()){ rb.style.display='none'; } else { rb.onclick=function(){refreshPrices(rb);}; } }
   document.querySelectorAll('[data-gsym]').forEach(function(el){
     function go(e){ if(e.target.closest('a'))return; e.stopPropagation(); openGrade(el.dataset.gsym); }
     el.addEventListener('click',go);
@@ -2771,8 +2831,7 @@ function wire(D){
   document.querySelectorAll('.tabbtn[data-tab]').forEach(function(b){ b.onclick=function(){ switchTab(b.dataset.tab); }; });
   if(TAB && TAB!=='menu'){ document.querySelectorAll('.tabbtn').forEach(function(b){ b.classList.toggle('active', b.dataset.tab===TAB); }); document.querySelectorAll('.tabview').forEach(function(v){ v.classList.toggle('active', v.id==='tab-'+TAB); }); }
   var sit=document.getElementById('signInTop');
-  if(sit){ sit.textContent=signedIn()?'👤 Account':'👤 Sign in';
-    sit.onclick=function(){ var a=document.getElementById('wlAuth'); if(a){ a.scrollIntoView({behavior:'smooth',block:'center'}); var inp=document.getElementById('siEmail'); if(inp) setTimeout(function(){inp.focus();},450); } }; }
+  if(sit){ sit.textContent=signedIn()?'👤 Account':'👤 Sign in'; sit.onclick=openAccount; }
   var pm=document.getElementById('potMore'), pl=document.getElementById('potLose');
   if(pm&&pl){ pm.onclick=function(){ var open=pl.hasAttribute('hidden'); if(open)pl.removeAttribute('hidden'); else pl.setAttribute('hidden',''); pm.setAttribute('aria-expanded',open?'true':'false'); pm.innerHTML=(open?'▴ Hide the maybes &amp; passes':'➖ '+pl.children.length+' more — maybes &amp; passes ▾'); }; }
   var lu=document.getElementById('lastUpd');
