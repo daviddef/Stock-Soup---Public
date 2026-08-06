@@ -196,12 +196,14 @@
   /* JOURNEY */
   .chef-note{background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:12px 15px;font-size:14px;margin-bottom:14px;color:var(--ink)}
   .chef-note b{color:var(--broth)}
-  .journey{display:flex;gap:12px;overflow-x:auto;padding-bottom:10px;scroll-snap-type:x mandatory}
-  .jcol{flex:0 0 calc((100% - 24px)/3);min-width:150px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;scroll-snap-align:start}  /* 3 across, scroll for the rest (max 8) */
+  .journey{display:flex;align-items:flex-start;gap:12px;overflow-x:auto;padding-bottom:10px;scroll-snap-type:x mandatory}  /* flex-start = cards size to content, no dead space */
+  .jcol{flex:0 0 calc((100% - 24px)/3);background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;scroll-snap-align:start}  /* 3 across on desktop */
+  @media(max-width:640px){ .jcol{flex-basis:calc((100% - 12px)/2);padding:12px} }  /* 2 across on mobile */
   .jcol.now{border-color:var(--broth);box-shadow:0 0 0 1px var(--broth) inset}
-  .jhead{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px;gap:6px}
-  .jhright{display:flex;align-items:center;gap:5px;flex:0 0 auto}
-  .jtally{display:inline-flex;gap:4px;font-size:11px;font-weight:900;background:var(--surface-2);border:1px solid var(--line);border-radius:999px;padding:2px 7px}
+  .jhead{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px;gap:6px;flex-wrap:wrap;row-gap:5px}
+  .jhead .when{white-space:nowrap}
+  .jhright{display:flex;align-items:center;gap:5px;flex:0 0 auto;margin-left:auto}
+  .jtally{display:inline-flex;gap:4px;font-size:10.5px;font-weight:900;background:var(--surface-2);border:1px solid var(--line);border-radius:999px;padding:2px 6px}
   .jtally .jt-w{color:var(--buy)} .jtally .jt-l{color:var(--dont)} .jtally .jt-p{color:var(--faint)}
   .runlog .rlgh{font-size:12px;font-weight:800;color:var(--ink);margin-bottom:6px}
   .rlrow{display:grid;grid-template-columns:78px 1fr;gap:8px;align-items:baseline;padding:6px 0;border-bottom:1px solid var(--line);font-size:12.5px}
@@ -230,6 +232,19 @@
   .tfs .tfv{font-size:20px;font-weight:850;font-variant-numeric:tabular-nums;margin-top:2px;line-height:1}
   .tfs .tfn{font-size:10px;color:var(--faint);margin-top:2px}
   .tfs.good .tfv{color:var(--buy)} .tfs.mid .tfv{color:var(--hold)} .tfs.bad .tfv{color:var(--dont)}
+  .tfs.tappable{cursor:pointer;transition:transform .12s,border-color .12s}
+  .tfs.tappable:hover{transform:translateY(-2px);border-color:var(--broth)}
+  .tflist{display:flex;flex-direction:column;margin-top:4px}
+  .tfrow{display:grid;grid-template-columns:24px 1fr auto auto;gap:10px;align-items:baseline;padding:9px 4px;border-bottom:1px solid var(--line)}
+  .tfrow:last-child{border-bottom:0}
+  .tfrow.graderow{cursor:pointer;border-radius:8px;margin:0 -6px;padding:9px 10px}
+  .tfrow.graderow:hover{background:var(--surface-2)}
+  .tfr-v{font-weight:900;font-size:15px;text-align:center}
+  .tfr-sym{font-weight:800;font-size:14px}
+  .tfr-date{color:var(--muted);font-size:12px}
+  .tfr-ret{font-weight:800;font-size:13px;font-variant-numeric:tabular-nums;text-align:right}
+  .tfr-ret.up{color:var(--buy)} .tfr-ret.down{color:var(--dont)}
+  .tfpend-h{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);font-weight:800;margin:12px 0 2px}
   .idxbeat{color:var(--broth);font-weight:800;font-size:.8em;background:var(--broth-soft,rgba(255,107,26,.12));padding:1px 5px;border-radius:5px;margin-left:3px}
   .graderow{cursor:pointer;border-radius:8px;margin:0 -6px;padding:2px 6px;transition:background .12s}
   .graderow:hover{background:var(--surface-2)}
@@ -1919,7 +1934,7 @@ function render(D,H){
     return '<div class="row graderow" data-gsym="'+esc(o.sym)+'" role="button" tabindex="0" title="Tap to see what happened with '+esc(o.sym)+'"><span class="rsym">'+(tfBadge[o.tf]||'')+' '+esc(o.sym)+'</span><div class="bar"><span class="fill" style="'+(w?'left:50%;width:26%;background:var(--buy)':'right:50%;width:22%;background:var(--dont)')+'"></span></div><span class="res '+(w?'up':'down')+'">'+esc(pct)+(o.correctVsIndex?' <span class="idxbeat" title="also did better than the market">beat mkt</span>':'')+'</span></div>';
   }).join('');
   var tfLabel={Day:'⚡ Day trades',Week:'📅 Week holds',Long:'📈 Long holds'};
-  var ocScorecard=(ocOn&&OUTCOMES.byTimeframe)?'<div class="tfscore">'+['Day','Week','Long'].map(function(tf){var a=OUTCOMES.byTimeframe[tf]||{};var wr=a.n?Math.round((a.winRate||0)*100):null;var cls=wr==null?'':(wr>=60?'good':wr>=40?'mid':'bad');return '<div class="tfs '+cls+'"><div class="tft">'+tfLabel[tf]+'</div><div class="tfv">'+(wr==null?'—':wr+'%')+'</div><div class="tfn">'+(a.n?'right '+Math.round((a.winRate||0)*a.n)+' of '+a.n:'—')+'</div></div>';}).join('')+'</div>':'';
+  var ocScorecard=(ocOn&&OUTCOMES.byTimeframe)?'<div class="tfscore">'+['Day','Week','Long'].map(function(tf){var a=OUTCOMES.byTimeframe[tf]||{};var wr=a.n?Math.round((a.winRate||0)*100):null;var cls=wr==null?'':(wr>=60?'good':wr>=40?'mid':'bad');return '<div class="tfs '+cls+(a.n?' tappable':'')+'"'+(a.n?' data-tf="'+tf+'" role="button" tabindex="0" title="See every '+tf+' call"':'')+'><div class="tft">'+tfLabel[tf]+'</div><div class="tfv">'+(wr==null?'—':wr+'%')+'</div><div class="tfn">'+(a.n?'right '+Math.round((a.winRate||0)*a.n)+' of '+a.n:'—')+'</div></div>';}).join('')+'</div>':'';
   function lines(arr,key,src,off){off=off||0;return (arr||[]).map(function(x,i){return '<div class="line clickline" data-theme="'+esc(src)+'" data-ti="'+(off+i)+'" role="button" tabindex="0"><span class="em">'+esc(x.em)+'</span><div class="txt">'+esc(x[key])+'<small>'+x.note+'</small></div><span class="tag '+esc(x.tclass)+'">'+esc(x.tag)+'</span></div>';}).join('');}
   var story = (PULSES&&PULSES.length) ?
     ('<div class="panel"><h3>Tonight\'s hourly runs</h3><p class="panelsub"><b>Minor runs</b> — same menu, re-priced every hour ('+PULSES.length+' this session). The <b>major</b> menu changes are in The Journey. Newest first.</p>'+
@@ -2142,6 +2157,40 @@ function openGrade(sym){
     '<div class="mbody">'+body+'</div>';
   var ov=document.getElementById('overlay'); ov.classList.add('open'); ov.setAttribute('aria-hidden','false');
   document.getElementById('mClose').focus();
+}
+// Tap a Day/Week/Long tile → every win & loss in that timeframe.
+function openTimeframe(tf){
+  if(!(OUTCOMES&&OUTCOMES.outcomes))return;
+  LASTFOCUS=document.activeElement;
+  var all=Object.keys(OUTCOMES.outcomes).map(function(k){return OUTCOMES.outcomes[k];}).filter(function(o){return o.tf===tf;});
+  var graded=all.filter(function(o){return o.status==='graded';}).sort(function(a,b){return (b.date||'').localeCompare(a.date||'');});
+  var pending=all.filter(function(o){return o.status!=='graded';});
+  var wins=graded.filter(function(o){return o.correct;}).length, n=graded.length;
+  var TL={Day:'⚡ Day trades',Week:'📅 Week holds',Long:'📈 Long holds'};
+  var TW={Day:'each checked the next trading day',Week:'each checked after about a week',Long:'each checked after about a month'};
+  var wr=n?Math.round(wins/n*100):0, vc=wr>=60?'buy':wr>=40?'hold':'don';
+  function row(o){
+    var pct=(o.ret>=0?'+':'')+(Math.round(o.ret*1000)/10)+'%';
+    if(o.status!=='graded') return '<div class="tfrow"><span class="tfr-v jg-pend">⏳</span><span class="tfr-sym">'+esc(o.sym)+'</span><span class="tfr-date">'+esc(fmtDate(o.date))+'</span><span class="tfr-ret muted">still open</span></div>';
+    return '<div class="tfrow graderow" data-gsym="'+esc(o.sym)+'" role="button" tabindex="0" title="Tap for the full story"><span class="tfr-v '+(o.correct?'jg-win':'jg-loss')+'">'+(o.correct?'✓':'✗')+'</span><span class="tfr-sym">'+esc(o.sym)+'</span><span class="tfr-date">'+esc(fmtDate(o.date))+'</span><span class="tfr-ret '+(o.ret>=0?'up':'down')+'">'+esc(pct)+(o.correctVsIndex?' <span class="idxbeat">beat mkt</span>':'')+'</span></div>';
+  }
+  var TN={Day:'day-trade',Week:'week',Long:'long-hold'};
+  var body='<p class="mtake">Every <b>'+TN[tf]+'</b> call we\'ve made — '+TW[tf]+'. <b class="'+(wr>=50?'up':'down')+'">Right '+wins+' of '+n+'</b> ('+wr+'%).</p>'+
+    '<div class="tflist">'+(graded.map(row).join('')||'<p class="muted">No graded calls yet.</p>')+
+    (pending.length?'<div class="tfpend-h">Still open</div>'+pending.map(row).join(''):'')+'</div>'+
+    '<p style="font-size:11.5px;color:var(--faint);margin-top:12px">Green ✓ = it made money in its window. <span class="idxbeat">beat mkt</span> = also beat the market. Tap any row for the full story.</p>';
+  var m=document.getElementById('modal'); m.className='modal';
+  m.innerHTML='<div class="mhead '+vc+'"><button class="mclose" id="mClose" aria-label="Close">✕</button>'+
+    '<div class="mtf">📊 Scored honestly</div><div class="mtop"><div class="msym" style="font-size:22px">'+esc(TL[tf])+'</div></div>'+
+    '<span class="mverd '+(vc==='buy'?'v-buy':vc==='don'?'v-dont':'v-hold')+'">'+wr+'% right</span></div>'+
+    '<div class="mbody">'+body+'</div>';
+  var ov=document.getElementById('overlay'); ov.classList.add('open'); ov.setAttribute('aria-hidden','false');
+  document.getElementById('mClose').focus();
+  m.querySelectorAll('.tfrow.graderow').forEach(function(r){
+    function go(){ openGrade(r.dataset.gsym); }
+    r.addEventListener('click',go);
+    r.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();go();}});
+  });
 }
 
 // ---- Reusable ⓘ explainers (no black box) ----
@@ -2637,6 +2686,11 @@ function wire(D){
     function go(e){ if(e.target.closest('a'))return; e.stopPropagation(); openGrade(el.dataset.gsym); }
     el.addEventListener('click',go);
     el.addEventListener('keydown',function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); go(e); } });
+  });
+  document.querySelectorAll('.tfs[data-tf]').forEach(function(el){
+    function go(){ openTimeframe(el.dataset.tf); }
+    el.addEventListener('click',go);
+    el.addEventListener('keydown',function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); go(); } });
   });
   renderAuth();
   var pm=document.getElementById('potMore'), pl=document.getElementById('potLose');
