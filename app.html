@@ -2035,7 +2035,7 @@ function render(D,H){
     '<section><div class="sec-head"><h2 class="display"><span class="k">01</span> Tonight\'s menu</h2>'+infoBtn('menu')+'</div>'+
       '<p class="sec-sub">Three time horizons. Day = a quick feed. Week = simmer a few days. Long = slow-cooked. Tap a card for the full serve; tap a name for Yahoo.</p>'+
       '<div class="tabs" role="tablist" aria-label="Region" style="margin-bottom:14px">'+regionTabs+soon+'</div>'+menus+'</section>'+
-    (PULSES?renderChangeEnv(D,PULSES,MKT):pulseBanner(D))+
+    // Change-environment retired — its trajectory + "ready to buy" now live inside each pick card (miniTraj + buyat + rangeBar).
     '<section><div class="sec-head"><h2 class="display"><span class="k">02</span> The world &amp; the sectors</h2>'+infoBtn('world')+'</div>'+
       '<p class="sec-sub">What\'s moving the pot, and which kitchens are hot vs which to skip.</p>'+
       '<div class="cols"><div class="stack"><div class="eyebrow">🌍 Geopolitics</div>'+lines(D.geo,'title','geo')+'</div>'+
