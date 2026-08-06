@@ -92,6 +92,15 @@
   .s-in .proxpct,.s-near .proxpct{color:var(--buy)} .s-close .proxpct{color:var(--hold)} .s-wait .proxpct{color:var(--muted)}
   .proxkey{font-size:10px;color:var(--faint);margin-top:10px}
   .sec-head{display:flex;align-items:baseline;gap:12px;margin-bottom:2px}
+  .infobtn{flex:0 0 auto;width:20px;height:20px;border-radius:50%;border:1.5px solid var(--muted);background:none;color:var(--muted);font-family:Georgia,'Times New Roman',serif;font-style:italic;font-weight:700;font-size:12px;line-height:1;cursor:pointer;align-self:center;transition:border-color .12s,color .12s}
+  .infobtn:hover{border-color:var(--broth);color:var(--broth)}
+  .schedlink{cursor:pointer;display:inline-flex;align-items:center;gap:7px}
+  .schedi{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;border:1.2px solid var(--muted);font-family:Georgia,serif;font-style:italic;font-size:9.5px;font-weight:700}
+  .schedlink:hover .schedi{border-color:var(--broth);color:var(--broth)}
+  .infobody h4{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--broth);font-weight:800;margin:16px 0 6px}
+  .infobody p{font-size:14px;line-height:1.55;color:var(--ink);margin:0 0 10px;text-wrap:pretty}
+  .infobody .infoul{margin:0 0 10px;padding-left:20px;display:flex;flex-direction:column;gap:6px;font-size:13.5px;line-height:1.5}
+  .infobody .infofoot{font-size:12.5px;color:var(--muted);border-top:1px solid var(--line);padding-top:10px;margin-top:4px}
   .sec-head h2{font-size:clamp(20px,3.4vw,30px)}
   .sec-head .k{color:var(--broth)}
   .sec-sub{color:var(--muted);font-size:14px;margin-bottom:16px}
@@ -299,28 +308,37 @@
   .cardwatch:hover{border-color:var(--broth);color:var(--broth)}
   /* Smart-watchlist alert + rows */
   .wlalert{background:rgba(35,194,103,.13);border:1px solid rgba(35,194,103,.5);color:var(--ink);border-radius:11px;padding:11px 14px;font-size:13.5px;font-weight:700;margin-bottom:14px;text-wrap:pretty}
-  .wrow{background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--faint);border-radius:11px;padding:9px 12px;margin-bottom:8px}
-  .wtop{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-  .wrow.wt-in{border-left-color:var(--buy);background:rgba(35,194,103,.07)}
-  .wrow.wt-close{border-left-color:var(--hold)} .wrow.wt-wait{border-left-color:var(--faint)}
-  .wintel{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:8px;padding-top:8px;border-top:1px dashed var(--line);font-size:11.5px}
-  .wic{background:var(--surface-2);border:1px solid var(--line);border-radius:999px;padding:3px 9px;font-weight:800;white-space:nowrap}
-  .wic.sc{border-color:rgba(255,122,26,.4);color:var(--broth)} .wic.tg{color:var(--ink)}
-  .wic.vd{text-transform:uppercase;font-size:10px;letter-spacing:.03em}
-  .wic.vd.buy{color:var(--buy);border-color:rgba(35,194,103,.4)} .wic.vd.hold{color:var(--hold)} .wic.vd.dont{color:var(--dont)}
-  .wic.none{border:0;background:none;color:var(--faint);font-weight:700;font-style:italic;white-space:normal}
-  .wicat{color:var(--muted);font-weight:600;flex:1 1 140px;min-width:120px}
-  .wview{margin-left:auto;background:var(--broth);border:0;color:#fff;font-family:var(--font);font-weight:800;font-size:11px;padding:5px 11px;border-radius:999px;cursor:pointer;white-space:nowrap}
-  .wview:hover{filter:brightness(1.08)}
-  .wsym{font-weight:900;font-size:14px;text-decoration:none;color:var(--ink)}
+  #wlPills{display:flex;flex-direction:column;gap:18px}
+  .wlgroup{}
+  .wlgh{font-size:12px;font-weight:900;letter-spacing:.04em;text-transform:uppercase;color:var(--ink);display:flex;align-items:center;gap:8px}
+  .wlgn{background:var(--surface-2);border:1px solid var(--line);border-radius:999px;padding:1px 9px;font-size:11px;color:var(--muted)}
+  .wlgs{font-size:12px;color:var(--muted);margin:3px 0 11px}
+  .wlgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px;align-items:stretch}
+  .wrow{display:flex;flex-direction:column;gap:7px;background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--faint);border-radius:12px;padding:12px 13px;height:100%}
+  .wrow.wclick{cursor:pointer;transition:border-color .12s,transform .12s}
+  .wrow.wclick:hover{border-color:var(--broth)}
+  .wrow.wt-in{border-left-color:var(--buy);background:rgba(35,194,103,.06)}
+  .wrow.wt-close{border-left-color:var(--hold)} .wrow.wt-wait{border-left-color:var(--faint)} .wrow.wt-none{border-left-color:var(--line)}
+  .wc-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .wsym{font-weight:900;font-size:15px;text-decoration:none;color:var(--ink)}
   .wsym .wflag{font-size:9px;color:var(--faint);font-weight:700}
-  .wpx{font-family:var(--mono);font-weight:800;font-size:13px}
-  .wpx.up{color:var(--buy)} .wpx.down{color:var(--dont)} .wpx.muted{color:var(--muted)}
-  .went{font-size:11.5px;color:var(--muted);font-weight:700}
-  .wst{margin-left:auto;font-size:12px;font-weight:800}
-  .wt-in .wst{color:var(--buy)} .wt-close .wst{color:var(--hold)} .wt-wait .wst{color:var(--muted)} .wt-none .wst{color:var(--faint)}
   .wrm{background:none;border:0;color:var(--faint);cursor:pointer;font-size:14px;padding:2px 4px;line-height:1}
   .wrm:hover{color:var(--dont)}
+  .wc-px{display:flex;align-items:baseline;gap:10px}
+  .wpx{font-family:var(--mono);font-weight:900;font-size:16px}
+  .wpx.up{color:var(--buy)} .wpx.down{color:var(--dont)} .wpx.muted{color:var(--muted)}
+  .wst{margin-left:auto;font-size:11.5px;font-weight:800}
+  .wt-in .wst{color:var(--buy)} .wt-close .wst{color:var(--hold)} .wt-wait .wst{color:var(--muted)}
+  .wc-lv{font-size:11.5px;font-weight:800;color:var(--muted);font-variant-numeric:tabular-nums}
+  .wc-tag{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:auto;padding-top:8px;border-top:1px dashed var(--line);font-size:11px}
+  .wc-tag.none{color:var(--faint);font-style:italic;font-weight:600}
+  .wic{background:var(--surface-2);border:1px solid var(--line);border-radius:999px;padding:3px 9px;font-weight:800;white-space:nowrap}
+  .wic.sc{border-color:rgba(255,122,26,.4);color:var(--broth)}
+  .wic.vd{text-transform:uppercase;font-size:9.5px;letter-spacing:.03em}
+  .wic.vd.buy{color:var(--buy);border-color:rgba(35,194,103,.4)} .wic.vd.hold{color:var(--hold)} .wic.vd.dont{color:var(--dont)}
+  .wic.tr{color:var(--muted);font-weight:600;white-space:normal;flex:1 1 100%;background:none;border:0;padding:3px 0}
+  .wview{margin-left:auto;background:var(--broth);border:0;color:#fff;font-family:var(--font);font-weight:800;font-size:10.5px;padding:4px 10px;border-radius:999px;cursor:pointer;white-space:nowrap}
+  .wview:hover{filter:brightness(1.08)}
 
   /* ARCHIVE */
   .arch{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
@@ -1763,7 +1781,7 @@ function render(D,H){
     '<div style="display:flex;gap:8px;align-items:center"><span class="live"><span class="pulse"></span>LIVE</span>'+
     '<button class="viewbtn" id="viewBtn">😋 Simple</button>'+
     '<button class="chip toggle" id="themeBtn" aria-label="Toggle theme">🌗</button></div></div>'+
-    '<div class="eyebrow" style="margin-top:22px;letter-spacing:.06em">'+esc((D.stamp||'').replace(/,?\s*20\d\d/,'').replace(/\s*AEST\b/,''))+(D.next?' · next ~'+esc(D.next):'')+'</div>'+
+    '<div class="eyebrow schedlink" data-info="schedule" role="button" tabindex="0" title="How the run schedule works" style="margin-top:22px;letter-spacing:.06em">'+esc((D.stamp||'').replace(/,?\s*20\d\d/,'').replace(/\s*AEST\b/,''))+(D.next?' · next ~'+esc(D.next):'')+' <span class="schedi">i</span></div>'+
     '<h1 class="display">Two pots on the boil:<br><span class="hot">'+esc(D.headline.a)+'</span> &amp; <span class="hot">'+esc(D.headline.b)+'</span>.</h1>'+
     '<p class="chef">'+D.chef+'</p>'+
     '<div class="metastrip"><span class="chip"><span class="dot" style="background:var(--hold)"></span> Risk: '+esc(r.label)+'</span>'+
@@ -1802,7 +1820,7 @@ function render(D,H){
     '<div class="cols"><div class="stack">'+lines((D.commodities||[]).slice(0,half),'name')+'</div>'+
     '<div class="stack">'+lines((D.commodities||[]).slice(half),'name')+'</div></div></section>'+
 
-  '<section><div class="sec-head"><h2 class="display"><span class="k">06</span> Your watchlist</h2></div>'+
+  '<section><div class="sec-head"><h2 class="display"><span class="k">06</span> Your watchlist</h2>'+infoBtn('watchlist')+'</div>'+
     '<p class="sec-sub">Tap <b>＋ Watch</b> on any pick to track it — we remember its ideal-buy price and flag it when it gets there. Or add your own below.</p>'+
     '<div class="wlalert" id="wlAlert" role="status" aria-live="polite" style="display:none"></div>'+
     '<div class="wlbar"><input id="wlInput" placeholder="Add a ticker… e.g. BHP" maxlength="8" aria-label="Ticker to add">'+
@@ -1905,6 +1923,42 @@ function closeModal(){
   if(LASTFOCUS&&LASTFOCUS.focus)LASTFOCUS.focus();
 }
 
+// ---- Reusable ⓘ explainers (no black box) ----
+var INFO={
+  watchlist:{icon:'⭐',title:'Your Watchlist',body:
+    '<p><b>Your personal shortlist</b> — stocks you want the Chef to keep an eye on. Add any ticker below, or tap <b>＋ Watch</b> on any pick to track it with its ideal-buy price remembered.</p>'+
+    '<h4>What makes it smart</h4><p>For anything we already analyse, each card carries a live read:</p>'+
+    '<ul class="infoul"><li><b>🎯 Buy zone</b> — the ideal price to buy: a pullback toward its recent average, or its current price if already cheap.</li>'+
+    '<li><b>Target</b> — a realistic upside: its 52-week high, or +12% if it\'s already near it.</li>'+
+    '<li><b>Score / verdict</b> — our Buy-Now read. US names get the full model score; ASX names get a technical trend read (uptrend, RSI, distance to high) until we add ASX analyst data.</li>'+
+    '<li><b>Status + alert</b> — how far today\'s price is from your buy zone, with a 🎯 flag the moment it hits it.</li></ul>'+
+    '<h4>The honest limits</h4><p>It\'s saved in <b>this browser only</b> (no account yet), and we can fully assess only tickers that pass through our scan or the shared watchlist. Assessing <i>anything</i> you type, on any device, with push reminders, needs sign-in — that\'s on the roadmap.</p>'+
+    '<p class="infofoot">No black box: every number comes from live market data and the same engine behind the recommendation cards.</p>'},
+  schedule:{icon:'⏱️',title:'The run schedule',body:
+    '<p>Stock Soup runs on two clocks — one heavy, one light.</p>'+
+    '<h4>🍳 Major runs — a fresh menu</h4><p>The full re-cook: re-scan the market, re-score everything, pick 6 new stocks. This is what advances <b>The Journey</b>. Timed to <b>~30 minutes before each market opens</b>, so the menu is fresh when you can act:</p>'+
+    '<ul class="infoul"><li>🇦🇺 <b>09:30 AEST</b> — before the ASX opens (10:00).</li>'+
+    '<li>🇺🇸 <b>23:00 AEST</b> — before the US opens (9:30am New York).</li>'+
+    '<li>☀️ <b>12:30 AEST</b> — a midday check while the ASX trades.</li></ul>'+
+    '<h4>⏱️ Minor runs — a re-price</h4><p>Every hour we re-price the current 6 picks + your watchlist and read the change — <i>same menu, fresh numbers</i>. These fill <b>Tonight\'s hourly runs</b> and the change-environment chart. They don\'t pick new stocks.</p>'+
+    '<p class="infofoot">So: <b>majors</b> change <i>what\'s on the menu</i> (market-open-timed); <b>minors</b> keep <i>the prices</i> live (hourly). The time up top is the next run — tap it any time to see this.</p>'}
+};
+function infoBtn(key){ return '<button class="infobtn" data-info="'+esc(key)+'" aria-label="What is this?">i</button>'; }
+function openInfo(key){
+  var i=INFO[key]; if(!i) return;
+  LASTFOCUS=document.activeElement;
+  var m=document.getElementById('modal'); m.className='modal';
+  m.innerHTML='<div class="mhead"><button class="mclose" id="mClose" aria-label="Close">✕</button><div class="mtf">'+esc(i.icon||'ⓘ')+' Explainer</div>'+
+    '<div class="mtop"><div class="msym" style="font-size:24px;line-height:1.1">'+esc(i.title)+'</div></div></div>'+
+    '<div class="mbody infobody">'+i.body+'</div>';
+  var ov=document.getElementById('overlay'); ov.classList.add('open'); ov.setAttribute('aria-hidden','false');
+  document.getElementById('mClose').focus();
+}
+function wireInfo(){ document.querySelectorAll('[data-info]').forEach(function(b){
+  b.onclick=function(e){ e.preventDefault(); openInfo(b.dataset.info); };
+  b.onkeydown=function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); openInfo(b.dataset.info); } };
+}); }
+
 // ---- Smart watchlist (per-browser localStorage; global so cards, modal & section all share it) ----
 var WLKEY='soup_watchlist';
 function wlGet(){try{return JSON.parse(localStorage.getItem(WLKEY)||'[]');}catch(e){return[];}}
@@ -1925,12 +1979,20 @@ function wlPriceMap(D){
   return m;
 }
 // Smart overlay for a watched ticker: pull the richest intel we already hold.
+// Priority: current pick (full, tappable) > scored shared-watchlist intel > candidate > none.
 function wlIntel(w,D){
   var pick=null,preg=null,pidx=null,pcur='$';
   (D.regions||[]).forEach(function(rg){(rg.picks||[]).forEach(function(p,i){if(p.sym===w.sym&&rg.id===w.region){pick=p;preg=rg.id;pidx=i;pcur=rg.cur||'$';}});});
   if(pick) return {kind:'pick',region:preg,idx:pidx,cur:pcur,
     score:(pick.score&&!pick.score.pending?(pick.score.buy_now+'/100 · '+pick.score.band):null),
-    target:pick.nTarget,verdict:pick.verdict,vclass:pick.vclass,catalyst:(pick.catalysts||[])[0]||pick.plain};
+    target:pick.nTarget,entry:pick.nEntry,verdict:pick.verdict,vclass:pick.vclass,catalyst:(pick.catalysts||[])[0]||pick.plain};
+  var wi=(D.watchlistIntel||{})[w.sym];
+  if(wi && wi.region===w.region && !wi.error){
+    var vclass=/get in|buy|nibble/i.test(wi.verdict||'')?'buy':/wait|late|skip|pass/i.test(wi.verdict||'')?'dont':'hold';
+    return {kind:'intel',cur:wi.cur||pcur,entry:wi.entry,target:wi.target,
+      score:(wi.buy_now!=null?(wi.buy_now+'/100 · '+wi.band):null),
+      verdict:wi.verdict||null,vclass:vclass,trend:wi.trend,asx:!!wi.asx_limited,sent:wi.sent};
+  }
   var c=(D.candidates||[]).filter(function(x){return x.sym===w.sym&&x.region===w.region;})[0];
   if(c) return {kind:'cand',note:c.note,heat:c.heat};
   return {kind:'none'};
@@ -1940,10 +2002,11 @@ function renderWatchlist(){
   var D=(LAST&&LAST.D)||{}, pm=wlPriceMap(D);
   var rows=wlGet().map(function(w){
     var info=pm[w.sym+'|'+w.region]||null;
-    var entry=(w.entry!=null?w.entry:(info&&info.entry!=null?info.entry:null));
-    var price=info?info.price:null, cur=info?info.cur:(w.region==='au'?'A$':'$');
+    var it=wlIntel(w,D);
+    var entry=(w.entry!=null?w.entry:(info&&info.entry!=null?info.entry:(it.entry!=null?it.entry:null)));
+    var price=info?info.price:null, cur=info?info.cur:(it.cur||(w.region==='au'?'A$':'$'));
     var gap=(entry&&price)?(price/entry-1)*100:null;
-    return {w:w,price:price,cur:cur,up:info?info.up:null,change:info?info.change:null,entry:entry,gap:gap,intel:wlIntel(w,D)};
+    return {w:w,price:price,cur:cur,up:info?info.up:null,change:info?info.change:null,entry:entry,gap:gap,intel:it};
   });
   var triggered=rows.filter(function(r){return r.gap!=null&&r.gap<=0.5;});
   rows.sort(function(x,y){var gx=x.gap==null?9999:x.gap,gy=y.gap==null?9999:y.gap;return gx-gy;});
@@ -1953,33 +2016,40 @@ function renderWatchlist(){
     banner.style.display=triggered.length?'':'none';}
   if(!rows.length){el.innerHTML='<span class="wlempty">No tickers yet — add one above, or tap <b>＋ Watch</b> on any pick.</span>';return;}
   var HEAT={hot:'🔥',good:'✅',mid:'➖',cold:'⛔'};
-  el.innerHTML=rows.map(function(r){
-    var w=r.w,cls,lbl;
-    if(r.gap==null){cls='wt-none';lbl=(r.price==null?'tracking…':'no target');}
-    else if(r.gap<=0.5){cls='wt-in';lbl='at buy ✓';}
-    else if(r.gap<=4){cls='wt-close';lbl=Math.round(r.gap)+'% to go';}
-    else{cls='wt-wait';lbl=Math.round(r.gap)+'% above buy';}
-    var px=r.price!=null?'<span class="wpx '+(r.up?'up':'down')+'">'+r.cur+r.price+'</span>':'<span class="wpx muted">—</span>';
-    var ent=r.entry!=null?'<span class="went">buy @ '+r.cur+r.entry+'</span>':'';
-    var it=r.intel, intelHtml='';
+  function card(r){
+    var w=r.w, it=r.intel;
+    var cls = r.gap==null?'wt-none':(r.gap<=0.5?'wt-in':(r.gap<=4?'wt-close':'wt-wait'));
+    var lbl = r.gap==null?'':(r.gap<=0.5?'at buy ✓':(r.gap<=4?Math.round(r.gap)+'% to buy':Math.round(r.gap)+'% above'));
+    var px = r.price!=null?'<span class="wpx '+(r.up?'up':'down')+'">'+r.cur+r.price+'</span>':'<span class="wpx muted">—</span>';
+    var lv = (r.entry!=null||it.target!=null)?'<div class="wc-lv">'+(r.entry!=null?'🎯 buy '+r.cur+r.entry:'')+(it.target!=null?(r.entry!=null?'  ·  ':'')+'target '+r.cur+it.target:'')+'</div>':'';
+    var tag='';
     if(it.kind==='pick'){
-      var chips='';
-      if(it.score) chips+='<span class="wic sc">🧮 '+esc(it.score)+'</span>';
-      if(it.target!=null) chips+='<span class="wic tg">🎯 target '+r.cur+it.target+'</span>';
-      chips+='<span class="wic vd '+esc(it.vclass)+'">'+esc(it.verdict)+'</span>';
-      intelHtml='<div class="wintel">'+chips+(it.catalyst?'<span class="wicat">'+esc(String(it.catalyst).slice(0,90))+'</span>':'')+
-        '<button class="wview" data-region="'+esc(it.region)+'" data-idx="'+it.idx+'">Open card →</button></div>';
+      tag='<div class="wc-tag">'+(it.score?'<span class="wic sc">🧮 '+esc(it.score)+'</span>':'')+'<span class="wic vd '+esc(it.vclass)+'">'+esc(it.verdict)+'</span></div>';
+    } else if(it.kind==='intel'){
+      tag='<div class="wc-tag">'+(it.score?'<span class="wic sc">🧮 '+esc(it.score)+'</span>':'')+(it.verdict?'<span class="wic vd '+esc(it.vclass)+'">'+esc(it.verdict)+'</span>':'')+
+        (it.asx&&it.trend?'<span class="wic tr">'+esc(it.trend)+'</span>':'')+'</div>';
     } else if(it.kind==='cand'){
-      intelHtml='<div class="wintel"><span class="wic">'+(HEAT[it.heat]||'•')+' on our radar</span>'+(it.note?'<span class="wicat">'+esc(it.note)+'</span>':'')+'</div>';
+      tag='<div class="wc-tag"><span class="wic">'+(HEAT[it.heat]||'•')+' on our radar</span>'+(it.note?'<span class="wic tr">'+esc(it.note)+'</span>':'')+'</div>';
     } else {
-      intelHtml='<div class="wintel"><span class="wic none">Not in this run’s scan — we’ll assess it the next time it surfaces.</span></div>';
+      tag='<div class="wc-tag none">Not scanned yet — we’ll assess it next time it surfaces.</div>';
     }
-    return '<div class="wrow '+cls+'"><div class="wtop"><a class="wsym" href="'+yf(w.sym,w.region)+'" target="_blank" rel="noopener">'+esc(w.sym)+' <span class="wflag">'+(w.region==='au'?'AU':'US')+'</span></a>'+
-      px+ent+'<span class="wst">'+lbl+'</span>'+
-      '<button class="wrm" data-sym="'+esc(w.sym)+'" data-region="'+esc(w.region)+'" aria-label="Remove '+esc(w.sym)+'">✕</button></div>'+intelHtml+'</div>';
-  }).join('');
-  el.querySelectorAll('.wrm').forEach(function(b){b.addEventListener('click',function(){wlRemove(b.dataset.sym,b.dataset.region);renderWatchlist();syncWatchButtons();});});
-  el.querySelectorAll('.wview').forEach(function(b){b.addEventListener('click',function(){var rg=(D.regions||[]).filter(function(x){return x.id===b.dataset.region;})[0];if(rg){var p=rg.picks[+b.dataset.idx];if(p)openModal(p,rg.id,rg.cur||'$');}});});
+    var clk = it.kind==='pick' ? ' wclick" data-region="'+esc(it.region)+'" data-idx="'+it.idx+'" role="button" tabindex="0' : '';
+    return '<div class="wrow '+cls+clk+'">'+
+      '<div class="wc-head"><a class="wsym" href="'+yf(w.sym,w.region)+'" target="_blank" rel="noopener">'+esc(w.sym)+' <span class="wflag">'+(w.region==='au'?'AU':'US')+'</span></a>'+
+        '<button class="wrm" data-sym="'+esc(w.sym)+'" data-region="'+esc(w.region)+'" aria-label="Remove '+esc(w.sym)+'">✕</button></div>'+
+      '<div class="wc-px">'+px+(lbl?'<span class="wst">'+lbl+'</span>':'')+'</div>'+lv+tag+'</div>';
+  }
+  var smart=rows.filter(function(r){return r.intel.kind!=='none';});
+  var plain=rows.filter(function(r){return r.intel.kind==='none';});
+  function group(title,sub,list){ return list.length?'<div class="wlgroup"><div class="wlgh">'+title+' <span class="wlgn">'+list.length+'</span></div>'+(sub?'<div class="wlgs">'+sub+'</div>':'')+'<div class="wlgrid">'+list.map(card).join('')+'</div></div>':''; }
+  el.innerHTML=group('🧠 Smart watching','We have a live read on these — buy zone, target, verdict.',smart)+
+               group('📌 Also on your list','Tracked — we\'ll assess each when it next surfaces in a scan.',plain);
+  el.querySelectorAll('.wrm').forEach(function(b){b.addEventListener('click',function(e){e.stopPropagation();wlRemove(b.dataset.sym,b.dataset.region);renderWatchlist();syncWatchButtons();});});
+  el.querySelectorAll('.wrow.wclick').forEach(function(row){
+    function open(){var rg=(D.regions||[]).filter(function(x){return x.id===row.dataset.region;})[0];if(rg){var p=rg.picks[+row.dataset.idx];if(p)openModal(p,rg.id,rg.cur||'$');}}
+    row.addEventListener('click',function(e){if(e.target.closest('a')||e.target.closest('.wrm'))return;open();});
+    row.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();open();}});
+  });
 }
 // Reflect watch-state on any ＋Watch/✓Watching buttons currently in the DOM
 function syncWatchButtons(){
@@ -2041,6 +2111,7 @@ function wire(D){
   var tb=document.getElementById('trackBtn'), tc=document.getElementById('trackCta');
   if(TRACK){ if(tb)tb.onclick=openTrackRecord; if(tc)tc.onclick=openTrackRecord; }
   else { if(tb)tb.style.display='none'; if(tc)tc.style.display='none'; }
+  wireInfo();
   var tabs=document.querySelectorAll('.tab[data-region]');
   tabs.forEach(function(t){t.addEventListener('click',function(){
     tabs.forEach(function(x){x.setAttribute('aria-selected','false');document.getElementById('menu-'+x.dataset.region).classList.add('hidden');});
@@ -2151,7 +2222,7 @@ function renderSimple(D){
     '<div class="simple"><div class="shero"><div class="brandrow"><div class="brand"><span class="bowl">🍲</span> Stock Soup</div>'+
       '<div style="display:flex;gap:8px;align-items:center"><button class="viewbtn" id="viewFull">📋 Full</button>'+
       '<button class="chip toggle" id="themeBtn2" aria-label="Toggle theme">🌗</button></div></div>'+
-      '<div class="seyebrow">'+esc(sStamp)+(D.next?' · next <b>~'+esc(D.next)+'</b>':'')+'</div>'+
+      '<div class="seyebrow schedlink" data-info="schedule" role="button" tabindex="0" title="How the run schedule works">'+esc(sStamp)+(D.next?' · next <b>~'+esc(D.next)+'</b>':'')+' <span class="schedi">i</span></div>'+
       '<div class="sregion" role="group" aria-label="Market">'+regBtns+'</div>'+
       '<div class="smood">Tonight: <span class="hot">'+esc(D.headline.a)+'</span> &amp; <span class="hot">'+esc(D.headline.b)+'</span></div>'+
       (D.chefShort?'<p class="schef">'+esc(D.chefShort)+'</p>':'')+
@@ -2188,6 +2259,7 @@ function wireSimple(D){
     b.addEventListener('click',function(e){e.preventDefault();e.stopPropagation();watchToggleFromEl(b);});
   });
   syncWatchButtons();
+  wireInfo();
   var lvl=(D.risk&&D.risk.level!=null)?D.risk.level:50;
   requestAnimationFrame(function(){var n=document.getElementById('sneedle');if(n)n.style.left=lvl+'%';});
 }
