@@ -125,13 +125,16 @@
   .mkf:hover{opacity:.85}
   .mkf.active{opacity:1;transform:scale(1.06)}
   .mkf.active::after{content:"";position:absolute;left:50%;bottom:-8px;transform:translateX(-50%);width:16px;height:3px;border-radius:3px;background:var(--broth)}
-  .mkf.phase-closed{box-shadow:0 0 0 1.5px var(--line)}
+  .mkf.phase-closed{box-shadow:0 0 0 2px rgba(255,77,77,.55)}
   .mkf.phase-open{box-shadow:0 0 0 2px var(--buy)}
   .mkf.phase-opening{box-shadow:0 0 0 2px var(--buy);animation:mkpulseG 1.5s ease-in-out infinite}
   .mkf.phase-closing{box-shadow:0 0 0 2px var(--hold);animation:mkpulseO 1.5s ease-in-out infinite}
   @keyframes mkpulseG{0%,100%{box-shadow:0 0 0 2px var(--buy)}50%{box-shadow:0 0 0 6px rgba(35,194,103,.30)}}
   @keyframes mkpulseO{0%,100%{box-shadow:0 0 0 2px var(--hold)}50%{box-shadow:0 0 0 6px rgba(255,197,61,.32)}}
   @media (prefers-reduced-motion:reduce){.mkf.phase-opening,.mkf.phase-closing{animation:none}}
+  .mktwrap{display:inline-flex;flex-direction:column;align-items:center;gap:9px}
+  .mktcap{font-size:10px;font-weight:800;color:var(--muted);white-space:nowrap;letter-spacing:.02em;line-height:1}
+  .mktcap.mc-open,.mktcap.mc-opening{color:var(--buy)} .mktcap.mc-closing{color:var(--hold)}
   .toprail{display:flex;gap:12px;align-items:center}
   .burgerwrap{position:relative}
   .burger{width:38px;height:38px;border-radius:11px;border:1.5px solid var(--line);background:var(--surface-2);color:var(--ink);font-size:18px;line-height:1;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;padding:0}
@@ -160,7 +163,9 @@
   .axhead{font-size:12px;font-weight:900;letter-spacing:.03em;color:var(--ink);margin:0 0 10px;text-transform:uppercase}
   .axheadsub{color:var(--muted);font-weight:700;text-transform:none;letter-spacing:0}
   .axnone{background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:14px 15px;color:var(--muted);font-size:13.5px;line-height:1.5}
-  .axcard{background:linear-gradient(180deg,rgba(35,194,103,.11),transparent 72%),var(--surface);border:1px solid rgba(35,194,103,.34);border-left:3px solid var(--buy);border-radius:13px;padding:13px 15px;margin-bottom:10px;cursor:pointer;transition:border-color .12s,transform .05s}
+  .axgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;align-items:start}
+  @media(max-width:760px){.axgrid{grid-template-columns:1fr}}
+  .axcard{background:linear-gradient(180deg,rgba(35,194,103,.11),transparent 72%),var(--surface);border:1px solid rgba(35,194,103,.34);border-left:3px solid var(--buy);border-radius:13px;padding:13px 15px;cursor:pointer;transition:border-color .12s,transform .05s}
   .axcard:hover{border-color:var(--buy)} .axcard:active{transform:scale(.995)}
   .axtop{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
   .axverb{font-size:12px;font-weight:900;letter-spacing:.04em;color:var(--buy)}
@@ -595,6 +600,9 @@
   .wown{border:0;background:transparent;cursor:pointer;font-size:15px;line-height:1;padding:3px;opacity:.38;filter:grayscale(1);transition:opacity .12s,filter .12s,transform .12s}
   .wown:hover{opacity:.75;transform:scale(1.1)}
   .wown.owned{opacity:1;filter:none;transform:scale(1.05)}
+  .wmon{border:0;background:transparent;cursor:pointer;font-size:14px;line-height:1;padding:3px;opacity:.45;transition:opacity .12s,transform .12s}
+  .wmon:hover{opacity:.85;transform:scale(1.1)} .wmon.on{opacity:1;filter:drop-shadow(0 0 5px rgba(35,194,103,.55))}
+  .wc-monspark{margin-top:2px} .wc-monload{font-size:11px;color:var(--faint)}
   .wsym{font-weight:900;font-size:15px;text-decoration:none;color:var(--ink)}
   .wsym .wflag{font-size:9px;color:var(--faint);font-weight:700}
   .wrm{background:none;border:0;color:var(--faint);cursor:pointer;font-size:14px;padding:2px 4px;line-height:1}
@@ -807,24 +815,28 @@ var TFS=[tfB('Day'),tfB('Week'),tfB('Long')];
 // phase: 'open' | 'opening' (≤1h to open) | 'closing' (≤1h to close) | 'closed'.
 function marketStatus(region){
   var d=new Date(), day=d.getDay(), h=d.getHours()+d.getMinutes()/60, wd=day>=1&&day<=5;
+  function mins(to){return Math.max(1,Math.round((to-h)*60));}
   if(region==='au'){
-    if(!wd) return {phase:'closed',open:false,txt:'closed · weekend'};
-    if(h>=10&&h<16) return h>=15?{phase:'closing',open:true,txt:'ASX closing soon'}:{phase:'open',open:true,txt:'ASX open now'};
-    if(h>=9&&h<10) return {phase:'opening',open:false,txt:'ASX opens within the hour'};
-    if(h<9) return {phase:'closed',open:false,txt:'ASX opens in '+Math.max(1,Math.round(10-h))+'h'};
+    if(!wd) return {phase:'closed',open:false,txt:'ASX closed · weekend'};
+    if(h>=10&&h<16) return h>=15?{phase:'closing',open:true,txt:'ASX closes in '+mins(16)+'m'}:{phase:'open',open:true,txt:'ASX open now'};
+    if(h>=9&&h<10) return {phase:'opening',open:false,txt:'ASX opens in '+mins(10)+'m'};
+    if(h<9) return {phase:'closed',open:false,txt:'ASX opens in '+Math.round(10-h)+'h'};
     return {phase:'closed',open:false,txt:'ASX closed for the day'};
   }
   // US markets, converted to AEST (~23:30 → 06:00 next day)
-  if(h>=23.5||h<6) return (h>=5&&h<6)?{phase:'closing',open:true,txt:'US closing soon'}:{phase:'open',open:true,txt:'US open now'};
-  if(h>=22.5&&h<23.5) return {phase:'opening',open:false,txt:'US opens within the hour'};
+  if(h>=23.5||h<6) return (h>=5&&h<6)?{phase:'closing',open:true,txt:'US closes in '+mins(6)+'m'}:{phase:'open',open:true,txt:'US open now'};
+  if(h>=22.5&&h<23.5) return {phase:'opening',open:false,txt:'US opens in '+mins(23.5)+'m'};
   return {phase:'closed',open:false,txt:'US opens tonight'};
 }
 function mktBarHtml(D){
   var FLAG={au:'🇦🇺',us:'🇺🇸'}, NM={au:'ASX',us:'US'};
-  return '<div class="mktflags" role="tablist" aria-label="Filter market">'+(D.regions||[]).map(function(rg){
+  var flags=(D.regions||[]).map(function(rg){
     var st=marketStatus(rg.id), on=rg.id===MKT;
     return '<button class="mkf phase-'+st.phase+(on?' active':'')+'" role="tab" data-region="'+esc(rg.id)+'" aria-selected="'+on+'" aria-label="'+esc(NM[rg.id])+'" title="'+esc(st.txt)+'"><span class="mkff">'+(FLAG[rg.id]||'🏳️')+'</span></button>';
-  }).join('')+'</div>';
+  }).join('');
+  var sel=marketStatus(MKT);
+  return '<div class="mktwrap"><div class="mktflags" role="tablist" aria-label="Filter market">'+flags+'</div>'+
+    '<div class="mktcap mc-'+sel.phase+'">'+esc(sel.txt)+'</div></div>';
 }
 var LAST=null, LASTFOCUS=null;
 function yf(sym,region){var s=String(sym).replace(/\*$/,'');if(region==="au")s+=".AX";return "https://finance.yahoo.com/quote/"+encodeURIComponent(s);}
@@ -1045,8 +1057,8 @@ function actionsHtml(D){
       '<div class="axwhy">'+esc(a.why)+'</div></div>';
   }).join('');
   var out='';
-  if(buyCards) out+='<div class="axhead">🎯 Ready right now <span class="axheadsub">— sensible, signalling, and at the price we’ve waited for</span></div>'+buyCards;
-  if(holdCards) out+='<div class="axhead axhead2">📦 What to do with your holdings</div>'+holdCards;
+  if(buyCards) out+='<div class="axhead">🎯 Ready right now <span class="axheadsub">— sensible, signalling, and at the price we’ve waited for</span></div><div class="axgrid">'+buyCards+'</div>';
+  if(holdCards) out+='<div class="axhead axhead2">📦 What to do with your holdings</div><div class="axgrid">'+holdCards+'</div>';
   if(!out) out='<div class="axhead">🎯 Ready right now</div><div class="axnone">No green lights this second — nothing’s dropped to its buy price yet. That’s fine; patience is the edge. Tap <b>📦 I own it</b> on anything you hold and its sell signals will show up here too. 🍲</div>';
   return '<div class="actions">'+out+'</div>';
 }
@@ -1210,7 +1222,6 @@ function render(D,H){
   // ===== 🍲 TONIGHT'S MENU =====
   '<div class="tabview active" id="tab-menu">'+
     '<div class="tabhead menuhead">'+
-      '<div class="seat-label"><span class="k">01</span> Take your seat <span class="seat-sub">· get ready for today’s meals</span></div>'+
       '<div class="eyebrow schedlink" data-info="schedule" role="button" tabindex="0" title="How the run schedule works" style="letter-spacing:.06em">'+esc((D.stamp||'').replace(/,?\s*20\d\d/,'').replace(/\s*AEST\b/,''))+(D.next?' · next ~'+esc(D.next):'')+' <span class="schedi">i</span></div>'+
       '<h1 class="display">Two pots on the boil:<br><span class="hot">'+esc(hdl(D,'a'))+'</span> &amp; <span class="hot">'+esc(hdl(D,'b'))+'</span>.</h1>'+
       '<p class="chef">'+chefFor(D)+'</p>'+
@@ -1221,10 +1232,12 @@ function render(D,H){
       '<span class="chip">'+esc(D.hotTags)+'</span></div>'+
       '<div class="meter"><div class="track"><div class="needle" id="needle"></div></div>'+
       '<div class="lbls"><span>🔴 Hide the cash</span><span>⚪ Steady</span><span>🟢 Send it</span></div></div>'+
+      '<div class="sec-head" style="margin:26px 0 3px"><h2 class="display"><span class="k">01</span> Take your seat</h2></div>'+
+      '<p class="sec-sub" style="margin:0 0 10px">Enough of the mood — here’s what’s worth <b>acting on</b> right now.</p>'+
+      actionsHtml(D)+
     '</div>'+
     '<section><div class="sec-head"><h2 class="display"><span class="k">02</span> Serving today in '+(MKT==='us'?'the U.S.':'Australia')+'</h2>'+infoBtn('menu')+'</div>'+
-      actionsHtml(D)+
-      '<p class="sec-sub" style="margin-top:12px">Three time horizons — '+tfB('Day')+' a quick feed · '+tfB('Week')+' a few days · '+tfB('Long')+' slow-cooked. Tap a card for the full serve; tap a name for Yahoo.</p>'+menus+'</section>'+
+      '<p class="sec-sub" style="margin-top:4px">Three time horizons — '+tfB('Day')+' a quick feed · '+tfB('Week')+' a few days · '+tfB('Long')+' slow-cooked. Tap a card for the full serve; tap a name for Yahoo.</p>'+menus+'</section>'+
     // Change-environment retired — its trajectory + "ready to buy" now live inside each pick card (miniTraj + buyat + rangeBar).
     '<section><div class="sec-head"><h2 class="display"><span class="k">03</span> The world &amp; the sectors</h2>'+infoBtn('world')+'</div>'+
       '<p class="sec-sub">What\'s moving the pot, and which kitchens are hot vs which to skip.</p>'+
@@ -1241,7 +1254,7 @@ function render(D,H){
       (potLose?'<button class="potmore" id="potMore" aria-expanded="false">➖ '+_loseIdx.length+' more — maybes &amp; passes ▾</button>'+
         '<div class="pot potlose" id="potLose" hidden>'+potLose+'</div>':'')+
       '</section>'+
-    '<section class="hourlysec">'+story+'</section>'+
+    // hourly-runs list removed from the menu — it lives (unified) in Inside the Kitchen's run schedule
   '</div>'+
 
   // ===== 🍽️ THE REVIEWS =====
@@ -1883,7 +1896,7 @@ function renderWatchlist(){
     var w=r.w, it=r.intel;
     var cls = r.gap==null?'wt-none':(r.gap<=0.5?'wt-in':(r.gap<=4?'wt-close':'wt-wait'));
     var lbl = r.gap==null?'':(r.gap<=0.5?'at buy ✓':Math.round(r.gap)+'% above');
-    var px = r.price!=null?'<span class="pmc-price">'+r.cur+r.price+'</span>':'<span class="pmc-price muted">—</span>';
+    var px = r.price!=null?'<span class="pmc-price">'+r.cur+r.price+'</span>':'<span class="pmc-price wpx muted" data-hy-sym="'+esc(w.sym)+'" data-hy-region="'+esc(w.region)+'" data-hy-cur="'+r.cur+'">…</span>';
     var chg = r.change?'<span class="pmc-chg '+(r.up?'up':'down')+'">'+(r.up?'▲':'▼')+' '+esc(r.change)+'</span>':'';
     var spk = (r.spark&&r.spark.length>2)?'<div class="pmc-spark">'+sparkSVG(r.spark.slice(-30))+'</div>':'';
     var buyLine = (r.entry!=null||it.target!=null)?'<div class="wc-lv">'+(r.entry!=null?'🎯 buy '+r.cur+r.entry:'')+(it.target!=null?(r.entry!=null?' · ':'')+'target '+r.cur+it.target:'')+(lbl?'  <span class="wst">'+lbl+'</span>':'')+'</div>':(lbl?'<div class="wc-lv"><span class="wst">'+lbl+'</span></div>':'');
@@ -1903,10 +1916,10 @@ function renderWatchlist(){
       : ' wclick wclick-ins" data-sym="'+esc(w.sym)+'" data-wregion="'+esc(w.region)+'" role="button" tabindex="0';
     return '<div class="wrow wcard '+cls+clk+'">'+
       '<div class="wc-head"><a class="wsym" href="'+yf(w.sym,w.region)+'" target="_blank" rel="noopener">'+esc(w.sym)+' <span class="wflag">'+(w.region==='au'?'AU':'US')+'</span></a>'+
-        '<span class="wc-btns"><button class="wown'+(wlOwns(w.sym,w.region)?' owned':'')+'" data-sym="'+esc(w.sym)+'" data-region="'+esc(w.region)+'" aria-label="'+(wlOwns(w.sym,w.region)?'Owned — tap to unflag':'Flag as owned')+'" title="'+(wlOwns(w.sym,w.region)?'You own this ✓ — tap to unflag':'I own it')+'">📦</button>'+
+        '<span class="wc-btns">'+(it.kind==='none'?'<button class="wmon" data-sym="'+esc(w.sym)+'" data-region="'+esc(w.region)+'" aria-label="Watch live" title="Watch live — pull price &amp; chart">📡</button>':'')+'<button class="wown'+(wlOwns(w.sym,w.region)?' owned':'')+'" data-sym="'+esc(w.sym)+'" data-region="'+esc(w.region)+'" aria-label="'+(wlOwns(w.sym,w.region)?'Owned — tap to unflag':'Flag as owned')+'" title="'+(wlOwns(w.sym,w.region)?'You own this ✓ — tap to unflag':'I own it')+'">📦</button>'+
         '<button class="wrm" data-sym="'+esc(w.sym)+'" data-region="'+esc(w.region)+'" aria-label="Remove '+esc(w.sym)+'">✕</button></span></div>'+
       (r.name?'<div class="pmc-name">'+esc(r.name)+'</div>':'')+
-      '<div class="wc-px">'+px+chg+'</div>'+spk+buyLine+tag+'</div>';
+      '<div class="wc-px">'+px+chg+'</div>'+spk+(it.kind==='none'?'<div class="wc-monspark"></div>':'')+buyLine+tag+'</div>';
   }
   var smart=rows.filter(function(r){return r.intel.kind!=='none';});
   var plain=rows.filter(function(r){return r.intel.kind==='none';});
@@ -1915,6 +1928,24 @@ function renderWatchlist(){
                group('📌 Also tracked','On your list but <b>not in tonight\'s scan yet</b> — we watch the price and give it the full scored read the moment it resurfaces.',plain);
   el.querySelectorAll('.wrm').forEach(function(b){b.addEventListener('click',function(e){e.stopPropagation();wlRemove(b.dataset.sym,b.dataset.region);renderWatchlist();syncWatchButtons();});});
   el.querySelectorAll('.wown').forEach(function(b){b.addEventListener('click',function(e){e.stopPropagation();var on=wlToggleOwn(b.dataset.sym,b.dataset.region);b.classList.toggle('owned',on);b.setAttribute('title',on?'You own this ✓ — tap to unflag':'I own it');renderWatchlist();});});
+  el.querySelectorAll('.wmon').forEach(function(b){b.addEventListener('click',function(e){e.stopPropagation();
+    var sym=b.dataset.sym, reg=b.dataset.region, wc=b.closest('.wcard'), host=wc?wc.querySelector('.wc-monspark'):null;
+    b.classList.add('on');
+    if(host){ host.innerHTML='<span class="wc-monload">pulling live chart…</span>';
+      fetch(API_BASE+'/history?sym='+encodeURIComponent(sym)+'&region='+encodeURIComponent(reg)).then(function(r){return r.ok?r.json():null;}).then(function(h){
+        host.innerHTML=(h&&h.closes&&h.closes.length>2)?'<div class="pmc-spark">'+sparkSVG(h.closes.slice(-30))+'</div>':'<span class="wc-monload">no chart yet</span>';
+      }).catch(function(){host.innerHTML='<span class="wc-monload">couldn’t load chart</span>';}); }
+  });});
+  // auto-fetch a live price for any card with none (the 'Also tracked' items) — incl. right after adding
+  el.querySelectorAll('.pmc-price.wpx[data-hy-sym]').forEach(function(sp){
+    var sym=sp.dataset.hySym, reg=sp.dataset.hyRegion, cur=sp.dataset.hyCur;
+    fetch(API_BASE+'/quote?sym='+encodeURIComponent(sym)+'&region='+encodeURIComponent(reg)).then(function(r){return r.ok?r.json():null;}).then(function(q){
+      if(!q||q.price==null){ sp.textContent='—'; return; }
+      sp.textContent=cur+(+q.price).toFixed(2); sp.classList.remove('muted','wpx');
+      var up=(q.change_p||0)>=0, ce=document.createElement('span'); ce.className='pmc-chg '+(up?'up':'down'); ce.innerHTML=(up?'▲':'▼')+' '+(q.change_p>=0?'+':'')+(+q.change_p).toFixed(1)+'%';
+      if(sp.parentNode) sp.parentNode.appendChild(ce);
+    }).catch(function(){ sp.textContent='—'; });
+  });
   el.querySelectorAll('.wrow.wclick:not(.wclick-ins)').forEach(function(row){
     function open(){var rg=(D.regions||[]).filter(function(x){return x.id===row.dataset.region;})[0];if(rg){var p=rg.picks[+row.dataset.idx];if(p)openModal(p,rg.id,rg.cur||'$');}}
     row.addEventListener('click',function(e){if(e.target.closest('a')||e.target.closest('.wrm'))return;open();});
