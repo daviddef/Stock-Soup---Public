@@ -7,8 +7,10 @@
   "level": 52,
   "btc": "$64,176",
   "btcChange": "+0.97%",
-  "audusd": "0.7049",
-  "gold": "~$4,073"
+  "audusd": 0.7061,
+  "gold": "~$4,073",
+  "audusdUp": true,
+  "audusdChange": "+0.21%"
  },
  "headline": {
   "a": "AI",
@@ -28,8 +30,8 @@
      "vclass": "v-buy",
      "sym": "MND",
      "name": "Monadelphous",
-     "price": "A$30.3",
-     "change": "+0.0%",
+     "price": "A$30.41",
+     "change": "+0.36%",
      "up": true,
      "rsi": 59,
      "plain": "Just landed a $200m BHP contract but the shares have barely twitched. That's the whole game — good news, price hasn't caught up yet.",
@@ -96,7 +98,7 @@
       30.3
      ],
      "news": "Monadelphous secures major construction contract with BHP",
-     "short": 0.24
+     "short": 0.23
     },
     {
      "tf": "📅 Week",
@@ -104,8 +106,8 @@
      "vclass": "v-hold",
      "sym": "PNI",
      "name": "Pinnacle",
-     "price": "A$19.34",
-     "change": "+0.47%",
+     "price": "A$19.32",
+     "change": "+0.36%",
      "up": true,
      "rsi": 68.9,
      "plain": "Cracking result, jumped 8%. Only catch — it's a bit hot right now. Let it cool and buy the pullback near A$18.50.",
@@ -249,7 +251,7 @@
       19.25
      ],
      "news": "Terms of employment arrangements for Matthew Lamb",
-     "short": 4.3
+     "short": 4.48
     },
     {
      "tf": "📈 Long",
@@ -257,8 +259,8 @@
      "vclass": "v-buy",
      "sym": "EOS",
      "name": "Electro Optic",
-     "price": "A$7.57",
-     "change": "-1.05%",
+     "price": "A$7.52",
+     "change": "-1.7%",
      "up": false,
      "rsi": 48.5,
      "plain": "Lasers and drone-killers. AUKUS money is a multi-year tide. It's cheap vs its average — a patient buy, not a sprint.",
@@ -325,7 +327,7 @@
       7.65
      ],
      "news": "Quarterly Activities/Appendix 4C and updated Revenue Outlook",
-     "short": 6.95
+     "short": 7.01
     }
    ]
   },
@@ -891,9 +893,9 @@
    "region": "au",
    "heat": "hot",
    "note": "Gold breakout +8.7% — pack running",
-   "price": "A$14.94",
+   "price": "A$14.75",
    "up": true,
-   "change": "+5.25%",
+   "change": "+3.95%",
    "name": "Capricorn Metals Ltd",
    "spark": [
     9.77,
@@ -1152,16 +1154,16 @@
     14.19
    ],
    "news": "Quarterly Activities/Appendix 5B Cash Flow Report",
-   "short": 1.11
+   "short": 1.1
   },
   {
    "sym": "GMD",
    "region": "au",
    "heat": "hot",
    "note": "Gold +8.2%, riding the miner surge",
-   "price": "A$6.89",
+   "price": "A$6.8",
    "up": true,
-   "change": "+7.07%",
+   "change": "+5.67%",
    "name": "Genesis Minerals Ltd",
    "spark": [
     3.97,
@@ -1420,16 +1422,16 @@
     6.44
    ],
    "news": "Application for quotation of securities - GMD",
-   "short": 9.61
+   "short": 9.57
   },
   {
    "sym": "LNW",
    "region": "au",
    "heat": "good",
    "note": "Earnings beat +6.5% — just missed the cut",
-   "price": "A$118.7",
+   "price": "A$118.29",
    "up": true,
-   "change": "+0.59%",
+   "change": "+0.25%",
    "name": "Light & Wonder Inc",
    "spark": [
     136.48,
@@ -1688,7 +1690,7 @@
     118.0
    ],
    "news": "LNW Q2 2026 Earnings Presentation",
-   "short": 0.54
+   "short": 0.59
   },
   {
    "sym": "DUR",
@@ -1965,7 +1967,7 @@
    "note": "$85m mining-services contract win",
    "price": "A$0.54",
    "up": true,
-   "change": "+4.85%",
+   "change": "+3.88%",
    "name": "Mastermyne Group Ltd",
    "spark": [
     0.15,
@@ -3290,9 +3292,9 @@
    "region": "au",
    "heat": "mid",
    "note": "Broker upgrade to Buy (Morgans)",
-   "price": "A$62.01",
+   "price": "A$61.67",
    "up": true,
-   "change": "+2.11%",
+   "change": "+1.55%",
    "name": "Mineral Resources Ltd",
    "spark": [
     33.15,
@@ -3551,16 +3553,16 @@
     60.73
    ],
    "news": "Quarterly Activity Report - Q4 FY26",
-   "short": 4.52
+   "short": 4.53
   },
   {
    "sym": "NEU",
    "region": "au",
    "heat": "mid",
    "note": "+16% on results — already ran hard",
-   "price": "A$21.58",
-   "up": false,
-   "change": "-0.28%",
+   "price": "A$22.09",
+   "up": true,
+   "change": "+2.08%",
    "name": "Neuren Pharmaceuticals Ltd",
    "spark": [
     17.01,
@@ -3819,7 +3821,7 @@
     21.64
    ],
    "news": "Record Q2 DAYBUE net sales of US$125m, CY26 royalty upgraded",
-   "short": 5.37
+   "short": 5.41
   },
   {
    "sym": "ALNY",
@@ -4615,16 +4617,16 @@
     0.41
    ],
    "news": "Webcast details for Healius FY26 Results",
-   "short": 10.62
+   "short": 10.8
   },
   {
    "sym": "BPT",
    "region": "au",
    "heat": "cold",
    "note": "Downgraded to Sell — steer clear",
-   "price": "A$0.85",
+   "price": "A$0.86",
    "up": false,
-   "change": "-3.93%",
+   "change": "-3.15%",
    "name": "Beach Energy Ltd",
    "spark": [
     1.23,
@@ -4883,7 +4885,7 @@
     0.89
    ],
    "news": "Beach Energy Ltd FY26 Results Presentation",
-   "short": 8.23
+   "short": 8.2
   },
   {
    "sym": "AMZN",
@@ -5175,23 +5177,23 @@
   }
  ],
  "chefShort": "Calm night — robots & rockets are cooking. PLTR already bolted 29%, so don't chase it.",
- "next": "21:00 AEST",
+ "next": "12:30 AEST",
  "defaultWatchlist": [
   {
    "sym": "VTM",
    "region": "au",
    "name": "Victory Metals",
-   "price": "A$1.54",
+   "price": "A$1.59",
    "up": true,
-   "change": "+6.57%"
+   "change": "+10.03%"
   },
   {
    "sym": "PDN",
    "region": "au",
    "name": "Paladin Energy",
-   "price": "A$9.93",
+   "price": "A$9.88",
    "up": false,
-   "change": "-0.65%"
+   "change": "-1.1%"
   },
   {
    "sym": "IEL",
@@ -5199,23 +5201,23 @@
    "name": "IDP Education",
    "price": "A$2.38",
    "up": false,
-   "change": "-1.04%"
+   "change": "-0.62%"
   },
   {
    "sym": "TLX",
    "region": "au",
    "name": "Telix Pharmaceuticals",
-   "price": "A$14.84",
+   "price": "A$14.88",
    "up": true,
-   "change": "+0.78%"
+   "change": "+1.12%"
   },
   {
    "sym": "EOS",
    "region": "au",
    "name": "Electro Optic Systems",
-   "price": "A$7.57",
+   "price": "A$7.52",
    "up": false,
-   "change": "-1.05%"
+   "change": "-1.7%"
   },
   {
    "sym": "NTU",
@@ -5229,17 +5231,17 @@
    "sym": "DYL",
    "region": "au",
    "name": "Deep Yellow",
-   "price": "A$1.37",
+   "price": "A$1.36",
    "up": false,
-   "change": "-2.84%"
+   "change": "-3.4%"
   },
   {
    "sym": "DRO",
    "region": "au",
    "name": "DroneShield",
-   "price": "A$2.12",
+   "price": "A$2.13",
    "up": false,
-   "change": "-3.42%"
+   "change": "-2.74%"
   },
   {
    "sym": "A2M",
@@ -5253,17 +5255,17 @@
    "sym": "SGH",
    "region": "au",
    "name": "Sievert Larson Holdings",
-   "price": "A$46.23",
-   "up": false,
-   "change": "-0.19%"
+   "price": "A$46.33",
+   "up": true,
+   "change": "+0.02%"
   },
   {
    "sym": "WTC",
    "region": "au",
    "name": "WiseTech Global",
-   "price": "A$38.48",
+   "price": "A$38.81",
    "up": false,
-   "change": "-3.57%"
+   "change": "-2.76%"
   },
   {
    "sym": "PLTR",
@@ -5275,38 +5277,38 @@
   }
  ],
  "pulse": {
-  "stamp": "Thu 11:16",
-  "synth": "Since last hour the board is **flat ⚪** (avg +0.06%). Climbing: PNI +0.47%, IEL +0.42%.",
+  "stamp": "Thu 11:41",
+  "synth": "Since last hour the board is **flat ⚪** (avg +0.22%). Climbing: VTM +3.25%, WTC +0.86%, DRO +0.47%, MND +0.36%. Slipping: DYL -0.73%, EOS -0.66%, PDN -0.5%.",
   "movers": [
    {
-    "sym": "PNI",
-    "since": 0.47,
-    "up": true
-   },
-   {
-    "sym": "IEL",
-    "since": 0.42,
-    "up": true
-   },
-   {
-    "sym": "TLX",
-    "since": 0.2,
+    "sym": "VTM",
+    "since": 3.25,
     "up": true
    },
    {
     "sym": "WTC",
-    "since": -0.16,
+    "since": 0.86,
+    "up": true
+   },
+   {
+    "sym": "DYL",
+    "since": -0.73,
     "up": false
    },
    {
     "sym": "EOS",
-    "since": 0.13,
-    "up": true
+    "since": -0.66,
+    "up": false
    },
    {
-    "sym": "SGH",
-    "since": -0.13,
+    "sym": "PDN",
+    "since": -0.5,
     "up": false
+   },
+   {
+    "sym": "DRO",
+    "since": 0.47,
+    "up": true
    }
   ]
  },

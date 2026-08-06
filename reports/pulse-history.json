@@ -2024,6 +2024,155 @@
     ]
    ],
    "synth": "Since last hour the board is **flat ⚪** (avg +0.06%). Climbing: PNI +0.47%, IEL +0.42%."
+  },
+  {
+   "stamp": "Thu 11:41",
+   "iso": "2026-08-06T11:41:42.855165+10:00",
+   "snap": {
+    "MND": {
+     "price": 30.41,
+     "dp": 0.36,
+     "region": "au"
+    },
+    "PNI": {
+     "price": 19.32,
+     "dp": 0.36,
+     "region": "au"
+    },
+    "EOS": {
+     "price": 7.52,
+     "dp": -1.7,
+     "region": "au"
+    },
+    "KTOS": {
+     "price": 55.34,
+     "dp": 6.69,
+     "region": "us"
+    },
+    "PLTR": {
+     "price": 158.43,
+     "dp": -2.6,
+     "region": "us"
+    },
+    "ETN": {
+     "price": 447.28,
+     "dp": 0.56,
+     "region": "us"
+    },
+    "VTM": {
+     "price": 1.59,
+     "dp": 10.03,
+     "region": "au"
+    },
+    "PDN": {
+     "price": 9.88,
+     "dp": -1.1,
+     "region": "au"
+    },
+    "IEL": {
+     "price": 2.38,
+     "dp": -0.62,
+     "region": "au"
+    },
+    "TLX": {
+     "price": 14.88,
+     "dp": 1.12,
+     "region": "au"
+    },
+    "NTU": {
+     "price": 0.03,
+     "dp": 0.0,
+     "region": "au"
+    },
+    "DYL": {
+     "price": 1.36,
+     "dp": -3.4,
+     "region": "au"
+    },
+    "DRO": {
+     "price": 2.13,
+     "dp": -2.74,
+     "region": "au"
+    },
+    "A2M": {
+     "price": 6.94,
+     "dp": 0.73,
+     "region": "au"
+    },
+    "SGH": {
+     "price": 46.33,
+     "dp": 0.02,
+     "region": "au"
+    },
+    "WTC": {
+     "price": 38.81,
+     "dp": -2.76,
+     "region": "au"
+    }
+   },
+   "changes": [
+    [
+     "VTM",
+     3.25,
+     10.03
+    ],
+    [
+     "WTC",
+     0.86,
+     -2.76
+    ],
+    [
+     "DYL",
+     -0.73,
+     -3.4
+    ],
+    [
+     "EOS",
+     -0.66,
+     -1.7
+    ],
+    [
+     "PDN",
+     -0.5,
+     -1.1
+    ],
+    [
+     "DRO",
+     0.47,
+     -2.74
+    ],
+    [
+     "MND",
+     0.36,
+     0.36
+    ],
+    [
+     "TLX",
+     0.27,
+     1.12
+    ],
+    [
+     "SGH",
+     0.22,
+     0.02
+    ],
+    [
+     "PNI",
+     -0.1,
+     0.36
+    ],
+    [
+     "KTOS",
+     0.0,
+     6.69
+    ],
+    [
+     "PLTR",
+     0.0,
+     -2.6
+    ]
+   ],
+   "synth": "Since last hour the board is **flat ⚪** (avg +0.22%). Climbing: VTM +3.25%, WTC +0.86%, DRO +0.47%, MND +0.36%. Slipping: DYL -0.73%, EOS -0.66%, PDN -0.5%."
   }
  ]
 }
