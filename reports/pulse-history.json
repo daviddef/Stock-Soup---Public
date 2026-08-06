@@ -2659,6 +2659,155 @@
     ]
    ],
    "synth": "Since last hour the board is **flat ⚪** (avg +0.06%). Climbing: DRO +1.33%, WTC +0.74%. Slipping: DYL -0.72%. (ASX closed — moves are US-led.)"
+  },
+  {
+   "stamp": "Thu 16:40",
+   "iso": "2026-08-06T16:40:56.703927+10:00",
+   "snap": {
+    "MND": {
+     "price": 30.38,
+     "dp": 0.26,
+     "region": "au"
+    },
+    "PNI": {
+     "price": 19.25,
+     "dp": 0.0,
+     "region": "au"
+    },
+    "EOS": {
+     "price": 7.74,
+     "dp": 1.18,
+     "region": "au"
+    },
+    "KTOS": {
+     "price": 55.34,
+     "dp": 6.69,
+     "region": "us"
+    },
+    "PLTR": {
+     "price": 158.43,
+     "dp": -2.6,
+     "region": "us"
+    },
+    "ETN": {
+     "price": 447.28,
+     "dp": 0.56,
+     "region": "us"
+    },
+    "VTM": {
+     "price": 1.61,
+     "dp": 11.42,
+     "region": "au"
+    },
+    "PDN": {
+     "price": 9.83,
+     "dp": -1.6,
+     "region": "au"
+    },
+    "IEL": {
+     "price": 2.27,
+     "dp": -5.42,
+     "region": "au"
+    },
+    "TLX": {
+     "price": 15.04,
+     "dp": 2.17,
+     "region": "au"
+    },
+    "NTU": {
+     "price": 0.03,
+     "dp": 7.69,
+     "region": "au"
+    },
+    "DYL": {
+     "price": 1.38,
+     "dp": -2.48,
+     "region": "au"
+    },
+    "DRO": {
+     "price": 2.28,
+     "dp": 4.11,
+     "region": "au"
+    },
+    "A2M": {
+     "price": 6.96,
+     "dp": 1.02,
+     "region": "au"
+    },
+    "SGH": {
+     "price": 46.45,
+     "dp": 0.28,
+     "region": "au"
+    },
+    "WTC": {
+     "price": 39.3,
+     "dp": -1.53,
+     "region": "au"
+    }
+   },
+   "changes": [
+    [
+     "VTM",
+     1.26,
+     11.42
+    ],
+    [
+     "PDN",
+     -0.91,
+     -1.6
+    ],
+    [
+     "IEL",
+     -0.87,
+     -5.42
+    ],
+    [
+     "DYL",
+     0.73,
+     -2.48
+    ],
+    [
+     "A2M",
+     -0.57,
+     1.02
+    ],
+    [
+     "MND",
+     -0.49,
+     0.26
+    ],
+    [
+     "SGH",
+     -0.36,
+     0.28
+    ],
+    [
+     "TLX",
+     0.2,
+     2.17
+    ],
+    [
+     "EOS",
+     0.13,
+     1.18
+    ],
+    [
+     "PNI",
+     0.1,
+     0.0
+    ],
+    [
+     "KTOS",
+     0.0,
+     6.69
+    ],
+    [
+     "PLTR",
+     0.0,
+     -2.6
+    ]
+   ],
+   "synth": "Since last hour the board is **flat ⚪** (avg -0.05%). Climbing: VTM +1.26%, DYL +0.73%. Slipping: PDN -0.91%, IEL -0.87%, A2M -0.57%, MND -0.49%. (ASX closed — moves are US-led.)"
   }
  ]
 }
