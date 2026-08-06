@@ -103,6 +103,8 @@
   .refreshbtn:hover{border-color:var(--broth);color:var(--broth)}
   .refreshbtn.spinning{animation:spin .8s linear infinite;color:var(--broth)}
   @keyframes spin{to{transform:rotate(360deg)}}
+  .toast{position:fixed;left:50%;bottom:28px;transform:translate(-50%,20px);background:var(--ink);color:var(--surface);font-family:var(--font);font-weight:700;font-size:13px;line-height:1.4;padding:11px 18px;border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,.28);z-index:9999;opacity:0;transition:opacity .25s,transform .25s;max-width:82vw;text-align:center;pointer-events:none}
+  .toast.show{opacity:1;transform:translate(-50%,0)}
   .infobtn{flex:0 0 auto;width:20px;height:20px;border-radius:50%;border:1.5px solid var(--muted);background:none;color:var(--muted);font-family:Georgia,'Times New Roman',serif;font-style:italic;font-weight:700;font-size:12px;line-height:1;cursor:pointer;align-self:center;transition:border-color .12s,color .12s}
   .infobtn:hover{border-color:var(--broth);color:var(--broth)}
   .schedlink{cursor:pointer;display:inline-flex;align-items:center;gap:7px}
@@ -2519,8 +2521,18 @@ function wireSimple(D){
   requestAnimationFrame(function(){var n=document.getElementById('sneedle');if(n)n.style.left=lvl+'%';});
 }
 
+function flashToast(msg){
+  var t=document.createElement('div'); t.className='toast'; t.innerHTML=msg;
+  document.body.appendChild(t);
+  requestAnimationFrame(function(){ t.classList.add('show'); });
+  setTimeout(function(){ t.classList.remove('show'); setTimeout(function(){ if(t.parentNode)t.remove(); },300); }, 2400);
+}
+var _refreshing=false;
 function refreshPrices(btn){
+  if(_refreshing) return; _refreshing=true;
   if(btn){ btn.classList.add('spinning'); }
+  var beforeIso=(PULSES&&PULSES.length)?PULSES[PULSES.length-1].iso:null;
+  var started=Date.now();
   return Promise.allSettled([
     fetch('latest.json',{cache:'no-store'}).then(function(r){return r.ok?r.json():null;}),
     fetch('menu-history.json',{cache:'no-store'}).then(function(r){return r.ok?r.json():null;}),
@@ -2530,9 +2542,16 @@ function refreshPrices(btn){
     var d=res[0].value, h=res[1].value, pu=res[2].value, tr=res[3].value;
     if(pu&&pu.pulses&&pu.pulses.length>1) PULSES=pu.pulses;
     if(tr&&tr.record) TRACK=tr;
-    var sc=window.pageYOffset;
-    boot(d&&d.regions?d:EMBEDDED, h&&h.menus?h:HIST_EMBED);   // re-renders (button rebuilt fresh)
-    window.scrollTo(0,sc);
+    var afterIso=(PULSES&&PULSES.length)?PULSES[PULSES.length-1].iso:null;
+    var fresh=afterIso&&afterIso!==beforeIso;
+    // keep the spin visible for at least a beat so it reads as an action
+    setTimeout(function(){
+      var sc=window.pageYOffset;
+      boot(d&&d.regions?d:EMBEDDED, h&&h.menus?h:HIST_EMBED);
+      window.scrollTo(0,sc);
+      _refreshing=false;
+      flashToast(fresh?'✓ Prices refreshed — updated just now':'Already up to date · last run '+(afterIso?timeAgo(afterIso):'—')+'<br><span style="opacity:.7;font-weight:600">New prices publish each hourly run.</span>');
+    }, Math.max(0, 450-(Date.now()-started)));
   });
 }
 boot(EMBEDDED,HIST_EMBED);
