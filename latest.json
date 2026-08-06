@@ -30,16 +30,16 @@
      "vclass": "v-buy",
      "sym": "CQR",
      "name": "Charter Hall Retail",
-     "price": "A$4.08",
-     "change": "+0.4%",
-     "up": true,
+     "price": "A$4.06",
+     "change": "-0.25%",
+     "up": false,
      "rsi": 64,
      "plain": "A broker upgrade landed today and the price hasn't caught up — a steady REIT, not a rocket, but the re-rate hasn't happened yet.",
      "levels": "In <b>A$4.00</b> · Target <b>A$4.30</b> · Stop <b>A$3.75</b>",
      "nStop": 3.75,
      "nEntry": 4.0,
      "nTarget": 4.3,
-     "nNow": 4.085,
+     "nNow": 4.06,
      "chefTake": "Think of CQR as the corner shopping-centre landlord who just got told the rent's going up. Boring on the surface, but the cheque clears every quarter and today someone official said it's worth more. Get seated before the market re-prices it.",
      "catalysts": [
       "UBS just upgraded to Buy — target lifted ~13% to A$4.30",
@@ -82,8 +82,8 @@
       4.07,
       4.07
      ],
-     "news": "UBS upgrades Charter Hall Retail to Buy, lifts target to $4.30",
-     "short": null
+     "news": "Dividend/Distribution - CQR",
+     "short": 0.73
     },
     {
      "tf": "📅 Week",
@@ -91,8 +91,8 @@
      "vclass": "v-buy",
      "sym": "MIN",
      "name": "Mineral Resources",
-     "price": "A$61.79",
-     "change": "+1.7%",
+     "price": "A$61.8",
+     "change": "+1.76%",
      "up": true,
      "rsi": 55,
      "plain": "A fresh broker upgrade on a beaten-up miner that's only just starting to turn. More room before it looks expensive.",
@@ -100,7 +100,7 @@
      "nStop": 55.0,
      "nEntry": 60.0,
      "nTarget": 70.0,
-     "nNow": 61.79,
+     "nNow": 61.8,
      "chefTake": "MIN is the mining-services all-rounder that's been in the sin-bin and is finally being let back on the field. Morgans reckons it's a Buy again. It's not below the trend by accident — but that's exactly when the upgrades start.",
      "catalysts": [
       "Morgans upgraded to Buy from Accumulate",
@@ -143,8 +143,8 @@
       59.37,
       60.73
      ],
-     "news": "Morgans upgrades Mineral Resources to Buy",
-     "short": null
+     "news": "Quarterly Activity Report - Q4 FY26",
+     "short": 4.53
     },
     {
      "tf": "📈 Long",
@@ -152,16 +152,16 @@
      "vclass": "v-hold",
      "sym": "PNI",
      "name": "Pinnacle",
-     "price": "A$19.23",
-     "change": "-0.1%",
-     "up": false,
+     "price": "A$19.25",
+     "change": "+0.0%",
+     "up": true,
      "rsi": 69,
      "plain": "Quality compounder that just beat on earnings — but it's run a bit hot short-term, so nibble and add on dips.",
      "levels": "In <b>A$18.50</b> · Target <b>A$24.00</b> · Stop <b>A$17.00</b>",
      "nStop": 17.0,
      "nEntry": 18.5,
      "nTarget": 24.0,
-     "nNow": 19.23,
+     "nNow": 19.25,
      "chefTake": "PNI is the quiet fund manager that keeps getting richer while nobody's watching. Earnings up 31%, Macquarie likes it. The only catch: it's already had a good run, so don't back up the truck at the top — spoon it in.",
      "catalysts": [
       "NPAT +31% YoY — a genuine earnings beat",
@@ -204,8 +204,8 @@
       17.76,
       19.25
      ],
-     "news": "Pinnacle NPAT +31%; Macquarie stays outperform",
-     "short": null
+     "news": "Terms of employment arrangements for Matthew Lamb",
+     "short": 4.48
     }
    ]
   },
@@ -221,7 +221,7 @@
      "sym": "CVS",
      "name": "CVS Health",
      "price": "$99.12",
-     "change": "-5.1%",
+     "change": "-5.08%",
      "up": false,
      "rsi": 37,
      "plain": "Beat earnings and raised guidance, yet the stock fell 5% today into oversold territory. Good news on sale.",
@@ -272,7 +272,7 @@
       104.42,
       99.12
      ],
-     "news": "CVS Health beats Q2, raises FY guidance — shares dip on the print",
+     "news": "3 Medical Stocks Standing Out After Crushing Q2 Earnings Expectations",
      "short": null
     },
     {
@@ -282,7 +282,7 @@
      "sym": "ANET",
      "name": "Arista Networks",
      "price": "$197.31",
-     "change": "+3.6%",
+     "change": "+3.57%",
      "up": true,
      "rsi": 66,
      "plain": "The strongest name in the whole scan: an earnings beat plus above-consensus guidance, in a clean uptrend and not yet stretched.",
@@ -333,7 +333,7 @@
       190.51,
       197.31
      ],
-     "news": "Arista beats and guides Q3 revenue above Street estimates",
+     "news": "JPMorgan Resets Arista Stock Target After AI Surge",
      "short": null
     },
     {
@@ -342,8 +342,8 @@
      "vclass": "v-buy",
      "sym": "LLY",
      "name": "Eli Lilly",
-     "price": "$1,169.86",
-     "change": "+4.9%",
+     "price": "$1169.86",
+     "change": "+4.86%",
      "up": true,
      "rsi": 51,
      "plain": "The blue-chip of the run: another beat-and-raise on unstoppable GLP-1 demand, bought at trend rather than extended.",
@@ -394,7 +394,7 @@
       1115.68,
       1169.86
      ],
-     "news": "Eli Lilly beats and raises FY revenue guide on GLP-1 demand",
+     "news": "How To Earn $500 A Month From Eli Lilly Stock Ahead Of Q2 Earnings",
      "short": null
     }
    ]
@@ -577,7 +577,7 @@
    "region": "us",
    "heat": "hot",
    "price": "$197.31",
-   "change": "+3.6%",
+   "change": "+3.57%",
    "up": true,
    "spark": [
     161.74,
@@ -612,7 +612,7 @@
     197.31
    ],
    "note": "Beat + above-estimate revenue guide",
-   "news": null,
+   "news": "JPMorgan Resets Arista Stock Target After AI Surge",
    "short": null,
    "score": 68
   },
@@ -621,8 +621,8 @@
    "name": "Eli Lilly",
    "region": "us",
    "heat": "hot",
-   "price": "$1,169.86",
-   "change": "+4.9%",
+   "price": "$1169.86",
+   "change": "+4.86%",
    "up": true,
    "spark": [
     1117.26,
@@ -657,7 +657,7 @@
     1169.86
    ],
    "note": "Beat + raised FY26 revenue guide",
-   "news": null,
+   "news": "How To Earn $500 A Month From Eli Lilly Stock Ahead Of Q2 Earnings",
    "short": null,
    "score": 62
   },
@@ -667,7 +667,7 @@
    "region": "us",
    "heat": "hot",
    "price": "$99.12",
-   "change": "-5.1%",
+   "change": "-5.08%",
    "up": false,
    "spark": [
     101.87,
@@ -702,7 +702,7 @@
     99.12
    ],
    "note": "Q2 beat + raised FY26 EPS guide; only +2.5% (fresh)",
-   "news": null,
+   "news": "3 Medical Stocks Standing Out After Crushing Q2 Earnings Expectations",
    "short": null,
    "score": 57
   },
@@ -712,7 +712,7 @@
    "region": "us",
    "heat": "good",
    "price": "$260.72",
-   "change": null,
+   "change": "+11.36%",
    "up": true,
    "spark": [
     202.1,
@@ -747,7 +747,7 @@
     260.72
    ],
    "note": "Q2 beat + raised FY26 guide",
-   "news": null,
+   "news": "Charles River (CRL) Is Up 11.0% After Raising Adjusted EPS Outlook Amid Divestiture-Driven GAAP Losses – Has The Bull Case Changed?",
    "short": null,
    "score": 43
   },
@@ -757,7 +757,7 @@
    "region": "us",
    "heat": "good",
    "price": "$55.34",
-   "change": null,
+   "change": "+6.69%",
    "up": true,
    "spark": [
     47.95,
@@ -792,7 +792,7 @@
     55.34
    ],
    "note": "Piper Sandler Overweight $75; unmanned defence",
-   "news": null,
+   "news": "KTOS Stock Hits Two-Month High As Clear Growth Prospects Spur Piper Sandler Ratings Upgrade",
    "short": null,
    "score": 41
   },
@@ -802,7 +802,7 @@
    "region": "us",
    "heat": "mid",
    "price": "$240.19",
-   "change": null,
+   "change": "+1.28%",
    "up": true,
    "spark": [
     220.25,
@@ -837,7 +837,7 @@
     240.19
    ],
    "note": "BNP Paribas upgrade to Outperform, $300 PT",
-   "news": null,
+   "news": "PayPal to Stripe: The Offer Is Too Low",
    "short": null,
    "score": 38
   },
@@ -846,9 +846,9 @@
    "name": "Charter Hall Retail",
    "region": "au",
    "heat": "mid",
-   "price": "A$4.08",
-   "change": "+0.4%",
-   "up": true,
+   "price": "A$4.06",
+   "change": "-0.25%",
+   "up": false,
    "spark": [
     4.01,
     4.04,
@@ -882,8 +882,8 @@
     4.07
    ],
    "note": "UBS upgrade to Buy, target +13% to $4.30",
-   "news": null,
-   "short": null,
+   "news": "Dividend/Distribution - CQR",
+   "short": 0.73,
    "score": 36
   },
   {
@@ -891,8 +891,8 @@
    "name": "Mineral Resources",
    "region": "au",
    "heat": "mid",
-   "price": "A$61.79",
-   "change": "+1.7%",
+   "price": "A$61.8",
+   "change": "+1.76%",
    "up": true,
    "spark": [
     64.14,
@@ -927,8 +927,8 @@
     60.73
    ],
    "note": "Morgans upgrade to Buy",
-   "news": null,
-   "short": null,
+   "news": "Quarterly Activity Report - Q4 FY26",
+   "short": 4.53,
    "score": 26
   },
   {
@@ -936,9 +936,9 @@
    "name": "Pinnacle",
    "region": "au",
    "heat": "mid",
-   "price": "A$19.28",
-   "change": "-0.1%",
-   "up": false,
+   "price": "A$19.25",
+   "change": "+0.0%",
+   "up": true,
    "spark": [
     16.94,
     16.7,
@@ -972,8 +972,8 @@
     19.25
    ],
    "note": "NPAT +31% YoY; Macquarie outperform",
-   "news": null,
-   "short": null,
+   "news": "Terms of employment arrangements for Matthew Lamb",
+   "short": 4.48,
    "score": 26
   },
   {
@@ -981,8 +981,8 @@
    "name": "Capricorn Metals",
    "region": "au",
    "heat": "mid",
-   "price": "A$14.77",
-   "change": null,
+   "price": "A$14.74",
+   "change": "+3.88%",
    "up": true,
    "spark": [
     12.12,
@@ -1017,8 +1017,8 @@
     14.19
    ],
    "note": "Bell Potter PT raised to $17.80",
-   "news": null,
-   "short": null,
+   "news": "Quarterly Activities/Appendix 5B Cash Flow Report",
+   "short": 1.1,
    "score": 25
   },
   {
@@ -1027,7 +1027,7 @@
    "region": "us",
    "heat": "mid",
    "price": "$63.28",
-   "change": null,
+   "change": "+0.05%",
    "up": true,
    "spark": [
     70.98,
@@ -1062,7 +1062,7 @@
     63.28
    ],
    "note": "Arc blockchain partners; doubled FY other-rev guide",
-   "news": null,
+   "news": "Circle Internet Group, Inc. 2026 Q2 - Results - Earnings Call Presentation",
    "short": null,
    "score": 25
   },
@@ -1071,9 +1071,9 @@
    "name": "Neuren",
    "region": "au",
    "heat": "cold",
-   "price": "A$21.66",
-   "change": null,
-   "up": true,
+   "price": "A$21.56",
+   "change": "-0.37%",
+   "up": false,
    "spark": [
     12.76,
     12.2,
@@ -1107,8 +1107,8 @@
     21.64
    ],
    "note": "Record Daybue sales; Macquarie outperform",
-   "news": null,
-   "short": null,
+   "news": "Record Q2 DAYBUE net sales of US$125m, CY26 royalty upgraded",
+   "short": 5.41,
    "score": 23
   },
   {
@@ -1117,7 +1117,7 @@
    "region": "au",
    "heat": "cold",
    "price": "A$0.28",
-   "change": null,
+   "change": "+1.85%",
    "up": true,
    "spark": [
     0.22,
@@ -1152,8 +1152,8 @@
     0.27
    ],
    "note": "Manganese take-or-pay offtake; record revenue A$51M",
-   "news": null,
-   "short": null,
+   "news": "Binding Offtake Signed for Butcherbird Manganese",
+   "short": 0.0,
    "score": 22
   },
   {
@@ -1162,7 +1162,7 @@
    "region": "us",
    "heat": "cold",
    "price": "$228.72",
-   "change": null,
+   "change": "+4.44%",
    "up": true,
    "spark": [
     294.06,
@@ -1197,7 +1197,7 @@
     228.72
    ],
    "note": "Raymond James Strong Buy, $420 PT",
-   "news": null,
+   "news": "Tenaya Therapeutics Reports Second Quarter 2026 Financial Results and Provides Business Update",
    "short": null,
    "score": 17
   },
@@ -1206,8 +1206,8 @@
    "name": "DroneShield",
    "region": "au",
    "heat": "cold",
-   "price": "A$2.23",
-   "change": null,
+   "price": "A$2.28",
+   "change": "+4.11%",
    "up": true,
    "spark": [
     2.41,
@@ -1242,8 +1242,8 @@
     2.19
    ],
    "note": "H1 revenue +74% to $125.8M; Canaccord Buy $2.80; defence",
-   "news": null,
-   "short": null,
+   "news": "Material Contracts, Product Release & Trading Update",
+   "short": 16.03,
    "score": 16
   },
   {
@@ -1251,8 +1251,8 @@
    "name": "Light & Wonder",
    "region": "au",
    "heat": "cold",
-   "price": "A$118.49",
-   "change": null,
+   "price": "A$118.08",
+   "change": "+0.07%",
    "up": true,
    "spark": [
     115.21,
@@ -1287,8 +1287,8 @@
     118.0
    ],
    "note": "Morgans Buy, PT $174 (45% upside)",
-   "news": null,
-   "short": null,
+   "news": "LNW Q2 2026 Earnings Presentation",
+   "short": 0.59,
    "score": 16
   }
  ],
@@ -1829,38 +1829,38 @@
   }
  ],
  "pulse": {
-  "stamp": "Thu 16:40",
-  "synth": "Since last hour the board is **flat ⚪** (avg -0.05%). Climbing: VTM +1.26%, DYL +0.73%. Slipping: PDN -0.91%, IEL -0.87%, A2M -0.57%, MND -0.49%. (ASX closed — moves are US-led.)",
+  "stamp": "Thu 16:51",
+  "synth": "Since last hour the board is **flat ⚪** (avg +0.0%). Nothing moved much — quiet hour. (ASX closed — moves are US-led.)",
   "movers": [
    {
+    "sym": "PNI",
+    "since": 0.0,
+    "up": true
+   },
+   {
     "sym": "VTM",
-    "since": 1.26,
+    "since": 0.0,
     "up": true
    },
    {
     "sym": "PDN",
-    "since": -0.91,
-    "up": false
-   },
-   {
-    "sym": "IEL",
-    "since": -0.87,
-    "up": false
-   },
-   {
-    "sym": "DYL",
-    "since": 0.73,
+    "since": 0.0,
     "up": true
    },
    {
-    "sym": "A2M",
-    "since": -0.57,
-    "up": false
+    "sym": "IEL",
+    "since": 0.0,
+    "up": true
    },
    {
-    "sym": "MND",
-    "since": -0.49,
-    "up": false
+    "sym": "TLX",
+    "since": 0.0,
+    "up": true
+   },
+   {
+    "sym": "EOS",
+    "since": 0.0,
+    "up": true
    }
   ]
  },
