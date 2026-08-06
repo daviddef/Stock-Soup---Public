@@ -388,6 +388,18 @@
   .wlreg:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
   .wlstatus{font-size:13px;font-weight:700;margin-top:10px;min-height:18px}
   .wlnote{font-size:12px;color:var(--muted);margin-top:12px;max-width:60ch}
+  .wlauth{margin-top:14px}
+  .authrow{border:1px solid var(--line);border-radius:14px;padding:14px 16px;background:var(--surface)}
+  .authrow.in{display:flex;align-items:center;gap:12px;justify-content:space-between;flex-wrap:wrap;font-size:13px;color:var(--muted)}
+  .authpitch{font-size:13px;color:var(--muted);line-height:1.5;margin-bottom:10px;max-width:64ch}
+  .authpitch b{color:var(--ink)}
+  .authform{display:flex;gap:8px;flex-wrap:wrap}
+  .authform input{flex:1;min-width:180px;padding:10px 13px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);font-size:14px}
+  .authform input:focus{outline:2px solid var(--broth);outline-offset:1px}
+  .authbtn{background:var(--broth);color:#fff;border:0;font-weight:800;font-size:14px;padding:10px 18px;border-radius:10px;cursor:pointer;white-space:nowrap}
+  .authbtn.ghost{background:transparent;color:var(--muted);border:1px solid var(--line);padding:7px 14px;font-size:13px}
+  .authbtn:hover{filter:brightness(1.05)}
+  .authmsg{font-size:12.5px;color:var(--muted);margin-top:9px;min-height:1px}
   /* ＋Watch buttons (cards + modal) */
   .watchbtn{cursor:pointer;font-family:var(--font);font-weight:800;white-space:nowrap}
   .watchbtn.on{background:var(--broth)!important;border-color:var(--broth)!important;color:#fff!important}
@@ -1981,7 +1993,7 @@ function render(D,H){
       '<span class="wlseg" role="group" aria-label="Market"><button id="wlAu" aria-pressed="true">🇦🇺 AU</button><button id="wlUs" aria-pressed="false">🇺🇸 US</button></span>'+
       '<button class="wladd" id="wlAdd">Add</button></div>'+
     '<div class="wlpills" id="wlPills"></div>'+
-    '<div class="wlnote">Saved in this browser only. Cross-device sync &amp; price alerts are coming.</div></section>'+
+    '<div class="wlauth" id="wlAuth"></div></section>'+
 
   '<section><div class="sec-head"><h2 class="display"><span class="k">07</span> The archive</h2>'+infoBtn('archive')+'</div>'+
     '<p class="sec-sub">Every menu we\'ve served. Tap one to open that run\'s full report.</p>'+
@@ -2346,13 +2358,35 @@ function wireInfo(){ document.querySelectorAll('[data-info]').forEach(function(b
   b.onkeydown=function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); openInfo(b.dataset.info); } };
 }); }
 
-// ---- Smart watchlist (per-browser localStorage; global so cards, modal & section all share it) ----
+// ---- Accounts / cross-device sync (Cloudflare backend) ----
+var API_BASE='https://stocksoup-api.defranceski.workers.dev';
+var SKEY='soup_session', EKEY='soup_email';
+function sessGet(){try{return localStorage.getItem(SKEY)||'';}catch(e){return'';}}
+function sessSet(t){try{t?localStorage.setItem(SKEY,t):localStorage.removeItem(SKEY);}catch(e){}}
+function signedIn(){return !!sessGet();}
+function apiHdr(){return {'Authorization':'Bearer '+sessGet(),'Content-Type':'application/json'};}
+function apiPush(method,path,body){ if(!signedIn())return; try{fetch(API_BASE+path,{method:method,headers:apiHdr(),body:body?JSON.stringify(body):undefined}).then(function(r){if(r.status===401){sessSet('');}}).catch(function(){});}catch(e){} }
+// Pull the server list on sign-in; merge any device-only items up first (nothing lost), then mirror down.
+function syncFromBackend(cb){
+  if(!signedIn()){cb&&cb();return;}
+  fetch(API_BASE+'/me/watchlist',{headers:apiHdr()}).then(function(r){ if(r.status===401){sessSet('');throw 0;} return r.ok?r.json():null; }).then(function(j){
+    if(j&&j.watchlist){
+      var server=j.watchlist.map(function(w){return {sym:w.sym,region:w.region,entry:w.entry};});
+      var have={}; server.forEach(function(w){have[w.sym+'|'+w.region]=1;});
+      var missing=wlGet().filter(function(w){return !have[w.sym+'|'+w.region];});
+      if(missing.length){ apiPush('POST','/me/import',{items:missing.map(function(w){return {sym:w.sym,region:w.region,entry:wlNum(w.entry)||null};})}); server=server.concat(missing); }
+      wlSet(server);
+    }
+    cb&&cb();
+  }).catch(function(){cb&&cb();});
+}
+// ---- Smart watchlist (localStorage source-of-truth; write-through to backend when signed in) ----
 var WLKEY='soup_watchlist';
 function wlGet(){try{return JSON.parse(localStorage.getItem(WLKEY)||'[]');}catch(e){return[];}}
 function wlSet(a){try{localStorage.setItem(WLKEY,JSON.stringify(a));}catch(e){}}
 function wlHas(sym,region){return wlGet().some(function(w){return w.sym===sym&&w.region===region;});}
-function wlAddItem(it){var a=wlGet();if(!a.some(function(w){return w.sym===it.sym&&w.region===it.region;})){a.push(it);wlSet(a);}}
-function wlRemove(sym,region){wlSet(wlGet().filter(function(w){return !(w.sym===sym&&w.region===region);}));}
+function wlAddItem(it){var a=wlGet();if(!a.some(function(w){return w.sym===it.sym&&w.region===it.region;})){a.push(it);wlSet(a);apiPush('POST','/me/watchlist',{sym:it.sym,region:it.region,entry:(wlNum(it.entry)||it.entry||null)});}}
+function wlRemove(sym,region){wlSet(wlGet().filter(function(w){return !(w.sym===sym&&w.region===region);}));apiPush('DELETE','/me/watchlist/'+region+'/'+sym);}
 function wlToggle(it){if(wlHas(it.sym,it.region)){wlRemove(it.sym,it.region);return false;}wlAddItem(it);return true;}
 function wlNum(s){var v=(String(s==null?'':s)).match(/([\d.]+)/);return v?parseFloat(v[1]):null;}
 function wlPriceMap(D){
@@ -2495,6 +2529,34 @@ function watchToggleFromEl(b){
   wlToggle(it); syncWatchButtons(); renderWatchlist();
 }
 
+// ---- sign-in bar under the watchlist ----
+function renderAuth(){
+  var el=document.getElementById('wlAuth'); if(!el)return;
+  if(signedIn()){
+    var email=''; try{email=localStorage.getItem(EKEY)||'';}catch(e){}
+    el.innerHTML='<div class="authrow in"><span>✓ <b>Synced'+(email?' as '+esc(email):'')+'</b> — your list follows you across devices, and we\'ll email you when a stock hits its buy price.</span>'+
+      '<button class="authbtn ghost" id="signOut">Sign out</button></div>';
+    document.getElementById('signOut').onclick=function(){ sessSet(''); try{localStorage.removeItem(EKEY);}catch(e){} renderAuth(); flashToast('Signed out — list is now on this device only'); };
+  }else{
+    el.innerHTML='<div class="authrow out"><div class="authpitch">🔒 <b>Saved on this device only.</b> Sign in with just your email to sync your watchlist everywhere and get a heads-up when a stock hits your buy price.</div>'+
+      '<form class="authform" id="signInForm"><input id="siEmail" type="email" placeholder="you@email.com" aria-label="Email" required>'+
+      '<button class="authbtn" type="submit">Sign in →</button></form><div class="authmsg" id="authMsg"></div></div>';
+    document.getElementById('signInForm').onsubmit=function(e){ e.preventDefault(); doSignIn(); };
+  }
+}
+function doSignIn(){
+  var inp=document.getElementById('siEmail'), msg=document.getElementById('authMsg');
+  var email=(inp.value||'').trim().toLowerCase(); if(!email||email.indexOf('@')<0){msg.textContent='Enter a valid email.';return;}
+  try{localStorage.setItem(EKEY,email);}catch(e){}
+  msg.textContent='Sending your sign-in link…';
+  fetch(API_BASE+'/auth/request',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:email})})
+    .then(function(r){return r.json();}).then(function(j){
+      if(j&&j.magic_link){ msg.textContent='Signing you in…'; window.location.href=API_BASE+j.magic_link; }   // DEV_MODE: follow the link (redirects back signed-in)
+      else if(j&&j.sent_to){ msg.innerHTML='📧 <b>Check your email</b> — we sent a sign-in link to '+esc(j.sent_to)+'.'; }
+      else { msg.textContent='Something went wrong — try again.'; }
+    }).catch(function(){ msg.textContent='Couldn\'t reach the server — try again.'; });
+}
+
 function openTrackRecord(){
   var T=TRACK; if(!T)return;
   LASTFOCUS=document.activeElement;
@@ -2542,6 +2604,7 @@ function wire(D){
     el.addEventListener('click',go);
     el.addEventListener('keydown',function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); go(e); } });
   });
+  renderAuth();
   var pm=document.getElementById('potMore'), pl=document.getElementById('potLose');
   if(pm&&pl){ pm.onclick=function(){ var open=pl.hasAttribute('hidden'); if(open)pl.removeAttribute('hidden'); else pl.setAttribute('hidden',''); pm.setAttribute('aria-expanded',open?'true':'false'); pm.innerHTML=(open?'▴ Hide the maybes &amp; passes':'➖ '+pl.children.length+' more — maybes &amp; passes ▾'); }; }
   var lu=document.getElementById('lastUpd');
@@ -2741,6 +2804,9 @@ function refreshPrices(btn){
     }, Math.max(0, 450-(Date.now()-started)));
   });
 }
+// capture the magic-link session handed back in the redirect hash (#session=…), then sync the list
+(function(){var m=(location.hash||'').match(/session=([^&]+)/);if(m){sessSet(decodeURIComponent(m[1]));try{history.replaceState(null,'',location.pathname+location.search);}catch(e){}}})();
+if(signedIn()) syncFromBackend(function(){ if(document.getElementById('wlPills')){renderWatchlist();syncWatchButtons();} });
 boot(EMBEDDED,HIST_EMBED);
 Promise.allSettled([
   fetch('latest.json',{cache:'no-store'}).then(function(r){return r.ok?r.json():null;}),
