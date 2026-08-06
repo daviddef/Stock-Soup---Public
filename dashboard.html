@@ -212,6 +212,15 @@
   .jrow .jb{margin-left:auto;font-size:10px;font-weight:800;padding:1px 6px;border-radius:5px;flex:0 0 auto}
   .jb-new{background:rgba(255,107,26,.18);color:var(--broth)}
   .jb-drop{color:var(--dont)}
+  .jrow .jg{font-size:12px;font-weight:900;flex:0 0 auto;cursor:help}
+  .jg-win{color:var(--buy)} .jg-loss{color:var(--dont)} .jg-pend{color:var(--faint);font-weight:700}
+  .tfscore{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0 4px}
+  .tfs{background:var(--surface-2);border:1px solid var(--line);border-radius:11px;padding:9px 6px;text-align:center}
+  .tfs .tft{font-size:11px;font-weight:800;color:var(--muted)}
+  .tfs .tfv{font-size:20px;font-weight:850;font-variant-numeric:tabular-nums;margin-top:2px;line-height:1}
+  .tfs .tfn{font-size:10px;color:var(--faint);margin-top:2px}
+  .tfs.good .tfv{color:var(--buy)} .tfs.mid .tfv{color:var(--hold)} .tfs.bad .tfv{color:var(--dont)}
+  .idxbeat{color:var(--broth);font-weight:800;font-size:.85em}
   .jrow.keep,.jrow.drop{border-radius:7px;margin:2px -7px;padding:4px 7px}
   .jrow.keep{background:rgba(35,194,103,.13)}
   .jrow.drop{background:rgba(255,77,77,.10)}
@@ -362,7 +371,7 @@
   .wlseg button{background:var(--surface);border:0;color:var(--muted);font-family:var(--font);font-weight:800;font-size:13px;padding:0 14px;cursor:pointer}
   .wlseg button[aria-pressed="true"]{background:var(--broth);color:#1a0f06}
   .wladd{background:var(--broth);color:#1a0f06;border:0;font-family:var(--font);font-weight:800;border-radius:10px;padding:0 20px;cursor:pointer;font-size:14px}
-  .wlpills{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;min-height:8px}
+  .wlpills{display:flex;flex-direction:column;gap:8px;margin-bottom:16px;min-height:8px}
   .wlpill{display:inline-flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:6px 8px 6px 13px;font-size:13px}
   .wlpill a{font-weight:800;color:var(--ink);text-decoration:none}
   .wlpill a:hover{color:var(--broth)}
@@ -1817,6 +1826,14 @@ function render(D,H){
   }).join('');
 
   var names=(H&&H.names)||{}, ms=(H&&H.menus)||[];
+  function gradeBadge(sym){
+    var o=OUTCOMES&&OUTCOMES.outcomes&&OUTCOMES.outcomes[String(sym).replace(/\*$/,'')];
+    if(!o) return '';
+    if(o.status!=='graded') return '<span class="jg jg-pend" title="still open — its horizon hasn\'t elapsed yet">⏳</span>';
+    var pct=(o.ret>=0?'+':'')+(Math.round(o.ret*1000)/10)+'%';
+    var tip=(o.correct?'✓ correct':'✗ wrong')+' over its '+o.tf+' horizon · '+pct+(o.correctVsIndex?' · beat the index':'');
+    return '<span class="jg '+(o.correct?'jg-win':'jg-loss')+'" title="'+esc(tip)+'">'+(o.correct?'✓':'✗')+'</span>';
+  }
   function jcol(m,older,isNow){
     function grp(label,arr,region){
       var olderSet=older?older[region]:null;
@@ -1825,12 +1842,12 @@ function render(D,H){
         var nm=names[String(sym).replace(/\*$/,'')]||'';
         var rowcls='jrow'+(olderSet&&!isNew?' keep':'');
         var badge=(olderSet&&isNew)?'<span class="jb jb-new">NEW</span>':'';
-        return '<div class="'+rowcls+'"><span class="jtf">'+TFS[idx]+'</span><span class="jinfo">'+qlink(sym,region)+(nm?'<span class="jname">'+esc(nm)+'</span>':'')+'</span>'+badge+'</div>';
+        return '<div class="'+rowcls+'"><span class="jtf">'+TFS[idx]+'</span><span class="jinfo">'+qlink(sym,region)+(nm?'<span class="jname">'+esc(nm)+'</span>':'')+'</span>'+gradeBadge(sym)+badge+'</div>';
       });
       if(olderSet){
         olderSet.filter(function(s){return (arr||[]).indexOf(s)<0;}).forEach(function(sym){
           var nm=names[String(sym).replace(/\*$/,'')]||'';
-          rows.push('<div class="jrow drop"><span class="jtf">×</span><span class="jinfo">'+qlink(sym,region)+(nm?'<span class="jname">'+esc(nm)+'</span>':'')+'</span><span class="jb jb-drop">DROP</span></div>');
+          rows.push('<div class="jrow drop"><span class="jtf">×</span><span class="jinfo">'+qlink(sym,region)+(nm?'<span class="jname">'+esc(nm)+'</span>':'')+'</span>'+gradeBadge(sym)+'<span class="jb jb-drop">DROP</span></div>');
         });
       }
       return '<div class="jgrp">'+label+'</div>'+rows.join('');
@@ -1853,6 +1870,18 @@ function render(D,H){
   var recClear=(_rp.length===2)?'<div class="sub" style="color:var(--ink);font-weight:700">'+_rp[0].trim()+' win'+(_rp[0].trim()==='1'?'':'s')+' · '+_rp[1].trim()+' loss'+(_rp[1].trim()==='1'?'':'es')+'</div>':'';
   var recRows=(sb.closed||[]).map(function(c){var w=c.win;return '<div class="row"><span class="rsym">'+qlink(c.sym,'au')+'</span><div class="bar"><span class="fill" style="'+(w?'left:50%;width:26%;background:var(--buy)':'right:50%;width:22%;background:var(--dont)')+'"></span></div><span class="res '+(w?'up':'down')+'">'+esc(c.pct)+'</span></div>';}).join('');
   var openRows=(sb.open||[]).map(function(o){var reg=(D.regions&&D.regions[0]&&D.regions[0].picks.some(function(p){return p.sym===o.sym;}))?'au':'us';return '<div class="row"><span>'+esc(o.tf)+' '+qlink(o.sym,reg)+' <span style="color:var(--muted)">'+esc(o.period)+'</span></span><span class="st"'+(o.hot?' style="color:var(--hold)"':'')+'>'+esc(o.status)+'</span></div>';}).join('');
+  // real accountability from the grader (outcomes.json) — replaces the placeholder when present
+  var ocOn=!!(OUTCOMES&&OUTCOMES.outcomes);
+  var tfBadge={Day:'⚡',Week:'📅',Long:'📈'};
+  var ocRecord=ocOn?OUTCOMES.record:sb.record;
+  var _rp2=(ocRecord||'').split(/[–-]/);
+  var recClear2=(_rp2.length===2)?'<div class="sub" style="color:var(--ink);font-weight:700">'+_rp2[0].trim()+' win'+(_rp2[0].trim()==='1'?'':'s')+' · '+_rp2[1].trim()+' loss'+(_rp2[1].trim()==='1'?'':'es')+'</div>':recClear;
+  var ocGraded=ocOn?Object.keys(OUTCOMES.outcomes).map(function(k){return OUTCOMES.outcomes[k];}).filter(function(o){return o.status==='graded';}):[];
+  var ocRows=ocGraded.slice().sort(function(a,b){return (b.date||'').localeCompare(a.date||'');}).slice(0,6).map(function(o){
+    var w=o.correct, pct=(o.ret>=0?'+':'')+(Math.round(o.ret*1000)/10)+'%';
+    return '<div class="row"><span class="rsym">'+(tfBadge[o.tf]||'')+' '+qlink(o.sym,o.region||'us')+'</span><div class="bar"><span class="fill" style="'+(w?'left:50%;width:26%;background:var(--buy)':'right:50%;width:22%;background:var(--dont)')+'"></span></div><span class="res '+(w?'up':'down')+'">'+esc(pct)+(o.correctVsIndex?' <span class="idxbeat" title="also beat its market index">▲idx</span>':'')+'</span></div>';
+  }).join('');
+  var ocScorecard=(ocOn&&OUTCOMES.byTimeframe)?'<div class="tfscore">'+['Day','Week','Long'].map(function(tf){var a=OUTCOMES.byTimeframe[tf]||{};var wr=a.n?Math.round((a.winRate||0)*100):null;var cls=wr==null?'':(wr>=60?'good':wr>=40?'mid':'bad');return '<div class="tfs '+cls+'"><div class="tft">'+tfBadge[tf]+' '+tf+'</div><div class="tfv">'+(wr==null?'—':wr+'%')+'</div><div class="tfn">'+(a.n?a.n+(a.n===1?' call':' calls'):'—')+'</div></div>';}).join('')+'</div>':'';
   function lines(arr,key,src,off){off=off||0;return (arr||[]).map(function(x,i){return '<div class="line clickline" data-theme="'+esc(src)+'" data-ti="'+(off+i)+'" role="button" tabindex="0"><span class="em">'+esc(x.em)+'</span><div class="txt">'+esc(x[key])+'<small>'+x.note+'</small></div><span class="tag '+esc(x.tclass)+'">'+esc(x.tag)+'</span></div>';}).join('');}
   var story = (PULSES&&PULSES.length) ?
     ('<div class="panel"><h3>Tonight\'s hourly runs</h3><p class="panelsub"><b>Minor runs</b> — same menu, re-priced every hour ('+PULSES.length+' this session). The <b>major</b> menu changes are in The Journey. Newest first.</p>'+
@@ -1910,9 +1939,12 @@ function render(D,H){
     '<p class="sec-sub"><b>Major runs only</b> — each card is a full re-cook where the menu (the 6 picks) actually changes. Prices still update every hour in between — those minor re-prices live in <b>Tonight\'s hourly runs</b> below. Newest first. Each row: <b>⚡ Day · 📅 Week · 📈 Long</b>. <span style="color:var(--buy)">Green = kept</span>, <span style="color:var(--dont)">red/✕ = DROP</span>, NEW = fresh this run.</p>'+
     '<div class="chef-note">'+note+'</div><div class="journey">'+journeyCols+'</div>'+
     '<div class="grid2"><div class="panel"><div class="paneltop"><h3>Closed calls · scored honestly</h3><button class="trackbtn" id="trackBtn">📊 Full month →</button></div>'+
-    '<div class="score"><div><div class="big">'+esc(sb.record)+' <span class="wl">W–L</span></div>'+recClear+'<div class="sub">'+esc(sb.recordNote)+'</div></div></div>'+
-    '<div class="rec">'+recRows+'</div><p style="font-size:11px;color:var(--faint);margin-top:12px">'+esc(sb.closedNote)+'</p>'+
-    '<button class="trackcta" id="trackCta">See the last month graded → 29 W · 31 L, what we learned, what we\'d change</button></div>'+
+    '<div class="score"><div><div class="big">'+esc(ocRecord||'—')+' <span class="wl">W–L</span></div>'+recClear2+'<div class="sub">'+esc(ocOn?'every past pick, graded over its own horizon':(sb.recordNote||''))+'</div></div></div>'+
+    ocScorecard+
+    '<div class="rec">'+(ocOn?ocRows:recRows)+'</div>'+
+    (ocOn?'<p style="font-size:11px;color:var(--faint);margin-top:12px">Each pick graded over its own window — ⚡ next session · 📅 ~1 week · 📈 ~1 month. <span class="idxbeat">▲idx</span> = also beat its market index.</p>'
+         :'<p style="font-size:11px;color:var(--faint);margin-top:12px">'+esc(sb.closedNote||'')+'</p>')+
+    '<button class="trackcta" id="trackCta">See the full month graded → what we learned, what we\'d change</button></div>'+
     story+'</div></section>'+
 
   '<section id="fullpot"><div class="sec-head"><h2 class="display"><span class="k">03</span> The full pot</h2>'+infoBtn('fullpot')+'</div>'+
@@ -2539,7 +2571,7 @@ document.addEventListener('keydown',function(e){if(e.key==='Escape')closeModal()
 document.getElementById('overlay').addEventListener('click',function(e){if(e.target&&e.target.id==='mClose')closeModal();});
 
 /* ---- View mode: simple (mobile default) vs full, with toggle ---- */
-var VIEW = null, SREGION = 'au', PULSES = null, TRACK = null, MKT = 'au';
+var VIEW = null, SREGION = 'au', PULSES = null, TRACK = null, MKT = 'au', OUTCOMES = null;
 function setView(v){ VIEW = v; try{ localStorage.setItem('soup_view', v); }catch(e){} applyView(); }
 function applyView(){ if(!LAST) return; window.scrollTo(0,0); if(VIEW==='simple') renderSimple(LAST.D); else render(LAST.D, LAST.H); }
 function boot(D,H){
@@ -2640,11 +2672,13 @@ function refreshPrices(btn){
     fetch('latest.json',{cache:'no-store'}).then(function(r){return r.ok?r.json():null;}),
     fetch('menu-history.json',{cache:'no-store'}).then(function(r){return r.ok?r.json():null;}),
     fetch('reports/pulse-history.json',{cache:'no-store'}).then(function(r){return r.ok?r.json():null;}),
-    fetch('reports/track-record.json',{cache:'no-store'}).then(function(r){return r.ok?r.json():null;})
+    fetch('reports/track-record.json',{cache:'no-store'}).then(function(r){return r.ok?r.json():null;}),
+    fetch('reports/outcomes.json',{cache:'no-store'}).then(function(r){return r.ok?r.json():null;})
   ]).then(function(res){
-    var d=res[0].value, h=res[1].value, pu=res[2].value, tr=res[3].value;
+    var d=res[0].value, h=res[1].value, pu=res[2].value, tr=res[3].value, oc=res[4].value;
     if(pu&&pu.pulses&&pu.pulses.length>1) PULSES=pu.pulses;
     if(tr&&tr.record) TRACK=tr;
+    if(oc&&oc.outcomes) OUTCOMES=oc;
     var afterIso=(PULSES&&PULSES.length)?PULSES[PULSES.length-1].iso:null;
     var fresh=afterIso&&afterIso!==beforeIso;
     // keep the spin visible for at least a beat so it reads as an action
@@ -2662,11 +2696,13 @@ Promise.allSettled([
   fetch('latest.json',{cache:'no-store'}).then(function(r){return r.ok?r.json():null;}),
   fetch('menu-history.json',{cache:'no-store'}).then(function(r){return r.ok?r.json():null;}),
   fetch('reports/pulse-history.json',{cache:'no-store'}).then(function(r){return r.ok?r.json():null;}),
-  fetch('reports/track-record.json',{cache:'no-store'}).then(function(r){return r.ok?r.json():null;})
+  fetch('reports/track-record.json',{cache:'no-store'}).then(function(r){return r.ok?r.json():null;}),
+  fetch('reports/outcomes.json',{cache:'no-store'}).then(function(r){return r.ok?r.json():null;})
 ]).then(function(res){
-  var d=res[0].value, h=res[1].value, pu=res[2].value, tr=res[3].value;
+  var d=res[0].value, h=res[1].value, pu=res[2].value, tr=res[3].value, oc=res[4].value;
   if(pu&&pu.pulses&&pu.pulses.length>1) PULSES=pu.pulses;
   if(tr&&tr.record) TRACK=tr;
-  if((d&&d.regions)||(h&&h.menus)||PULSES||TRACK) boot(d&&d.regions?d:EMBEDDED, h&&h.menus?h:HIST_EMBED);
+  if(oc&&oc.outcomes) OUTCOMES=oc;
+  if((d&&d.regions)||(h&&h.menus)||PULSES||TRACK||OUTCOMES) boot(d&&d.regions?d:EMBEDDED, h&&h.menus?h:HIST_EMBED);
 }).catch(function(){});
 </script>
