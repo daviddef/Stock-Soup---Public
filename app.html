@@ -110,12 +110,18 @@
   .infobtn{flex:0 0 auto;width:20px;height:20px;border-radius:50%;border:1.5px solid var(--muted);background:none;color:var(--muted);font-family:Georgia,'Times New Roman',serif;font-style:italic;font-weight:700;font-size:12px;line-height:1;cursor:pointer;align-self:center;transition:border-color .12s,color .12s}
   .infobtn:hover{border-color:var(--broth);color:var(--broth)}
   .mktbar{display:flex;gap:8px;margin:16px 0 2px;flex-wrap:wrap}
-  .mktbtn{display:inline-flex;flex-direction:column;align-items:flex-start;gap:2px;background:var(--surface-2);border:1.5px solid var(--line);border-radius:13px;padding:8px 16px;cursor:pointer;font-family:var(--font);transition:border-color .12s,background .12s}
-  .mktbtn .mktlbl{font-weight:800;font-size:14.5px;color:var(--ink)}
-  .mktbtn.active{border-color:var(--broth);background:var(--broth-soft,rgba(255,107,26,.12))}
-  .mktbtn.active .mktlbl{color:var(--broth)}
-  .mktst{font-size:10.5px;font-weight:700;letter-spacing:.02em}
-  .mktst.mon{color:var(--buy)} .mktst.moff{color:var(--faint)}
+  .mktflags{display:inline-flex;gap:11px;align-items:center}
+  .mkf{position:relative;width:34px;height:34px;border-radius:50%;border:0;background:var(--surface-2);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-size:17px;line-height:1;padding:0;opacity:.5;transition:opacity .15s,transform .15s,box-shadow .3s}
+  .mkf:hover{opacity:.85}
+  .mkf.active{opacity:1;transform:scale(1.06)}
+  .mkf.active::after{content:"";position:absolute;left:50%;bottom:-8px;transform:translateX(-50%);width:16px;height:3px;border-radius:3px;background:var(--broth)}
+  .mkf.phase-closed{box-shadow:0 0 0 1.5px var(--line)}
+  .mkf.phase-open{box-shadow:0 0 0 2px var(--buy)}
+  .mkf.phase-opening{box-shadow:0 0 0 2px var(--buy);animation:mkpulseG 1.5s ease-in-out infinite}
+  .mkf.phase-closing{box-shadow:0 0 0 2px var(--hold);animation:mkpulseO 1.5s ease-in-out infinite}
+  @keyframes mkpulseG{0%,100%{box-shadow:0 0 0 2px var(--buy)}50%{box-shadow:0 0 0 6px rgba(35,194,103,.30)}}
+  @keyframes mkpulseO{0%,100%{box-shadow:0 0 0 2px var(--hold)}50%{box-shadow:0 0 0 6px rgba(255,197,61,.32)}}
+  @media (prefers-reduced-motion:reduce){.mkf.phase-opening,.mkf.phase-closing{animation:none}}
   .schedlink{cursor:pointer;display:inline-flex;align-items:center;gap:7px}
   .schedi{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;border:1.2px solid var(--muted);font-family:Georgia,serif;font-style:italic;font-size:9.5px;font-weight:700}
   .schedlink:hover .schedi{border-color:var(--broth);color:var(--broth)}
@@ -723,23 +729,27 @@ var _TFB={Day:['d','D'],Week:['w','W'],Long:['m','M']};
 function tfB(tf){var m=_TFB[tf]||_TFB[tfNorm(tf)];return m?'<span class="tfb tfb-'+m[0]+'">'+m[1]+'</span>':'';}
 function tfBW(tf){var n=tfNorm(tf),w={Day:'Day',Week:'Week',Long:'Long'}[n]||'';return tfB(n)+(w?' '+w:'');}
 var TFS=[tfB('Day'),tfB('Week'),tfB('Long')];
-// Rough market open/closed by AEST clock (user is in AU). ASX 10:00–16:00; US ~23:30–06:00 AEST.
+// Market phase by AEST clock (user is in AU). ASX 10:00–16:00; US ~23:30–06:00 AEST.
+// phase: 'open' | 'opening' (≤1h to open) | 'closing' (≤1h to close) | 'closed'.
 function marketStatus(region){
   var d=new Date(), day=d.getDay(), h=d.getHours()+d.getMinutes()/60, wd=day>=1&&day<=5;
   if(region==='au'){
-    if(wd&&h>=10&&h<16) return {open:true,txt:'open'};
-    if(wd&&h<10) return {open:false,txt:'opens '+Math.max(1,Math.round(10-h))+'h'};
-    if(wd&&h>=16) return {open:false,txt:'closed'};
-    return {open:false,txt:'closed · wknd'};
+    if(!wd) return {phase:'closed',open:false,txt:'closed · weekend'};
+    if(h>=10&&h<16) return h>=15?{phase:'closing',open:true,txt:'ASX closing soon'}:{phase:'open',open:true,txt:'ASX open now'};
+    if(h>=9&&h<10) return {phase:'opening',open:false,txt:'ASX opens within the hour'};
+    if(h<9) return {phase:'closed',open:false,txt:'ASX opens in '+Math.max(1,Math.round(10-h))+'h'};
+    return {phase:'closed',open:false,txt:'ASX closed for the day'};
   }
-  if(h>=23.5||h<6) return {open:true,txt:'open'};
-  if(h>=6&&h<23.5) return {open:false,txt:'opens tonight'};
-  return {open:false,txt:'closed'};
+  // US markets, converted to AEST (~23:30 → 06:00 next day)
+  if(h>=23.5||h<6) return (h>=5&&h<6)?{phase:'closing',open:true,txt:'US closing soon'}:{phase:'open',open:true,txt:'US open now'};
+  if(h>=22.5&&h<23.5) return {phase:'opening',open:false,txt:'US opens within the hour'};
+  return {phase:'closed',open:false,txt:'US opens tonight'};
 }
 function mktBarHtml(D){
-  return '<div class="mktbar" role="tablist" aria-label="Market">'+(D.regions||[]).map(function(rg){
-    var st=marketStatus(rg.id);
-    return '<button class="tab mktbtn'+(rg.id===MKT?' active':'')+'" role="tab" data-region="'+esc(rg.id)+'" aria-selected="'+(rg.id===MKT)+'"><span class="mktlbl">'+esc(rg.label)+'</span><span class="mktst '+(st.open?'mon':'moff')+'">'+(st.open?'● ':'○ ')+esc(st.txt)+'</span></button>';
+  var FLAG={au:'🇦🇺',us:'🇺🇸'}, NM={au:'ASX',us:'US'};
+  return '<div class="mktflags" role="tablist" aria-label="Filter market">'+(D.regions||[]).map(function(rg){
+    var st=marketStatus(rg.id), on=rg.id===MKT;
+    return '<button class="mkf phase-'+st.phase+(on?' active':'')+'" role="tab" data-region="'+esc(rg.id)+'" aria-selected="'+on+'" aria-label="'+esc(NM[rg.id])+'" title="'+esc(st.txt)+'"><span class="mkff">'+(FLAG[rg.id]||'🏳️')+'</span></button>';
   }).join('')+'</div>';
 }
 var LAST=null, LASTFOCUS=null;
@@ -1858,7 +1868,7 @@ function wire(D){
   else { if(tb)tb.style.display='none'; if(tc)tc.style.display='none'; }
   wireInfo();
   wireThemes();
-  var tabs=document.querySelectorAll('.tab[data-region]');
+  var tabs=document.querySelectorAll('.mkf[data-region], .tab[data-region]');
   tabs.forEach(function(t){t.addEventListener('click',function(){
     if(t.dataset.region===MKT)return;
     MKT=t.dataset.region;                 // global market → the whole full view follows
