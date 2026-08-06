@@ -166,7 +166,7 @@
   .storyrow b{color:var(--broth)}
   .pickcol{display:flex;flex-direction:column;gap:12px}
   .rucard{background:linear-gradient(180deg,rgba(255,107,26,.10),rgba(255,107,26,.03));border:1px solid rgba(255,107,26,.4);border-left:4px solid var(--broth);border-radius:14px;padding:15px 16px}
-  .rutag{font-size:13px;font-weight:900;letter-spacing:.04em;text-transform:uppercase;color:var(--broth);margin-bottom:8px}
+  .rutag{font-size:13px;font-weight:900;letter-spacing:.04em;text-transform:uppercase;color:var(--broth);margin-bottom:8px;display:flex;align-items:center;gap:8px}
   .rutop{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap}
   .rusym{font-size:24px;font-weight:900;text-decoration:none;color:var(--ink);letter-spacing:-.02em}
   .rusym:hover{color:var(--broth)}
@@ -185,7 +185,10 @@
   .mrange{margin-top:2px}
   .mrlbl{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);font-weight:700;margin-bottom:6px}
   .mrbar{position:relative;height:7px;border-radius:999px;background:linear-gradient(90deg,var(--buy),var(--hold) 55%,var(--dont))}
-  .mrnow{position:absolute;top:50%;transform:translate(-50%,-50%);width:12px;height:12px;border-radius:50%;background:var(--ink);box-shadow:0 0 0 2px var(--surface)}
+  .mrnow{position:absolute;top:50%;transform:translate(-50%,-50%);width:12px;height:12px;border-radius:50%;background:var(--ink);box-shadow:0 0 0 2px var(--surface);z-index:2}
+  .mrbuy{position:absolute;top:50%;transform:translate(-50%,-50%);width:3px;height:15px;border-radius:2px;background:var(--buy);box-shadow:0 0 0 1.5px var(--surface);z-index:1}
+  .mrbuycap{position:absolute;bottom:11px;transform:translateX(-50%);font-size:9.5px;font-weight:800;color:var(--buy);white-space:nowrap}
+  .mrange{position:relative;padding-top:13px;margin-top:2px}
   .mrends{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);font-weight:600;margin-top:6px;font-variant-numeric:tabular-nums;gap:8px}
   .mrends span:nth-child(2){color:var(--ink);font-weight:800}
   .mrunner{background:var(--surface-2);border:1px solid var(--line);border-radius:11px;padding:12px 13px;font-size:13px;line-height:1.5}
@@ -361,7 +364,7 @@
   .wlgh{font-size:12px;font-weight:900;letter-spacing:.04em;text-transform:uppercase;color:var(--ink);display:flex;align-items:center;gap:8px}
   .wlgn{background:var(--surface-2);border:1px solid var(--line);border-radius:999px;padding:1px 9px;font-size:11px;color:var(--muted)}
   .wlgs{font-size:12px;color:var(--muted);margin:3px 0 11px}
-  .wlgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px;align-items:stretch}
+  .wlgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px;align-items:stretch;align-content:start;grid-auto-rows:min-content}
   .wrow{display:flex;flex-direction:column;gap:7px;background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--faint);border-radius:12px;padding:12px 13px;height:100%}
   .wrow.wclick{cursor:pointer;transition:border-color .12s,transform .12s}
   .wrow.wclick:hover{border-color:var(--broth)}
@@ -1723,7 +1726,7 @@ function miniTraj(sym){
     '<svg viewBox="0 0 '+W+' '+H+'" width="'+W+'" height="'+H+'" preserveAspectRatio="none" aria-hidden="true"><polyline points="'+pts+'" fill="none" stroke="'+col+'" stroke-width="1.5" vector-effect="non-scaling-stroke"/></svg>'+
     '<span class="mtpct" style="color:'+col+'">'+(pct>=0?'+':'')+pct.toFixed(1)+'%</span></div>';
 }
-function rangeBar(spark,cur,tf){
+function rangeBar(spark,cur,tf,entry){
   if(!spark||spark.length<3) return '';
   // Window matches the pick's horizon: Day→recent, Week→~1 week, Long→~1 month.
   var t=String(tf||'').toLowerCase();
@@ -1733,13 +1736,18 @@ function rangeBar(spark,cur,tf){
   else { win=Math.min(spark.length,22); lbl='1-month range'; }
   var s=spark.slice(-win); if(s.length<2) s=spark.slice(-3);
   var mn=Math.min.apply(null,s),mx=Math.max.apply(null,s),c=s[s.length-1];
-  var pos=Math.max(3,Math.min(97,((c-mn)/((mx-mn)||1))*100));
+  // include the ideal-buy in the scale so its marker always lands on the bar
+  if(entry!=null){ mn=Math.min(mn,entry); mx=Math.max(mx,entry); }
+  var span=(mx-mn)||1;
+  var pos=Math.max(3,Math.min(97,((c-mn)/span)*100));
+  var buyPos=(entry!=null)?Math.max(2,Math.min(98,((entry-mn)/span)*100)):null;
   return '<div class="mrange"><div class="mrlbl">'+lbl+' · low → high</div>'+
-    '<div class="mrbar"><span class="mrnow" style="left:'+pos.toFixed(0)+'%"></span></div>'+
+    '<div class="mrbar">'+(buyPos!=null?'<span class="mrbuy" style="left:'+buyPos.toFixed(0)+'%" title="ideal buy '+cur+entry+'"></span><span class="mrbuycap" style="left:'+buyPos.toFixed(0)+'%">🎯 buy</span>':'')+'<span class="mrnow" style="left:'+pos.toFixed(0)+'%"></span></div>'+
     '<div class="mrends"><span>'+cur+mn.toFixed(2)+'</span><span>now '+cur+c.toFixed(2)+'</span><span>'+cur+mx.toFixed(2)+'</span></div></div>';
 }
 function ruCard(ru,region,idx){var da=(region!=null?' data-region="'+region+'" data-idx="'+idx+'" tabindex="0" role="button"':'');
-  return '<article class="rucard'+(region!=null?' tappable':'')+'"'+da+'><div class="rutag">🥈 Runner-up</div>'+
+  var rv=ru.verdict||'Get in', rvc=ru.vclass||(/wait|late|skip/i.test(rv)?'hold':'buy');
+  return '<article class="rucard'+(region!=null?' tappable':'')+'"'+da+'><div class="rutag">🥈 Runner-up<span class="verdict '+esc(rvc)+'" style="margin-left:auto">'+esc(rv)+'</span></div>'+
   '<div class="rutop"><span class="rusym">'+esc(ru.sym)+'</span>'+
   '<span class="runame">'+esc(ru.name)+'</span><span class="rupx">'+esc(ru.price)+' <span class="'+(ru.up?'up':'down')+'">'+(ru.up?'▲':'▼')+' '+esc(ru.change)+'</span></span></div>'+
   '<div class="ruline">'+esc(ru.line)+'</div></article>';}
@@ -1756,11 +1764,12 @@ function discoveryFunnel(D){
 }
 function buyState(p){ if(p.nEntry==null||p.nNow==null) return ''; var g=(p.nNow/p.nEntry-1)*100; return g<=1.5?'in':(g<=4?'close':'wait'); }
 function buyAction(p){
+  // States the PRICE relationship to the ideal buy — not a buy/sell command (that's the verdict pill up top).
   var s=buyState(p); if(!s) return '';
   var g=(p.nNow/p.nEntry-1)*100;
-  if(s==='in') return ' <span class="baact">· get in ✓</span>';
-  if(s==='close') return ' <span class="baact">· almost — wait −'+Math.round(g)+'%</span>';
-  return ' <span class="baact">· wait for the dip −'+Math.round(g)+'%</span>';
+  if(s==='in') return ' <span class="baact">· at your buy price ✓</span>';
+  if(s==='close') return ' <span class="baact">· '+Math.round(g)+'% above ideal</span>';
+  return ' <span class="baact">· '+Math.round(g)+'% above — better on a dip</span>';
 }
 
 function render(D,H){
@@ -1778,7 +1787,7 @@ function render(D,H){
         miniTraj(p.sym)+
         '<div class="buyat'+(p.nEntry?' ba-'+buyState(p):'')+'">'+(p.nEntry?'<span class="bl">🎯 Ideal buy</span> ~'+esc(rg.cur||'$')+p.nEntry+buyAction(p):'<span class="bl">Track this pick</span>')+'</div>'+
         '<p class="plain">'+p.plain+'</p><div class="lvls">'+p.levels+'</div>'+
-        (p.spark?rangeBar(p.spark,rg.cur||'$',p.tf):'')+'</article>'+
+        (p.spark?rangeBar(p.spark,rg.cur||'$',p.tf,p.nEntry):'')+'</article>'+
         ((p.runnerUp && /wait|late|hold|skip|avoid|pass|don.t|steer/i.test(p.verdict||''))?ruCard(p.runnerUp,rg.id,idx):'')+'</div>';
     }).join('');
     return '<div class="menu'+(rg.id===MKT?'':' hidden')+'" id="menu-'+rg.id+'" role="tabpanel">'+cards+'</div>';
@@ -1821,7 +1830,7 @@ function render(D,H){
   var recClear=(_rp.length===2)?'<div class="sub" style="color:var(--ink);font-weight:700">'+_rp[0].trim()+' win'+(_rp[0].trim()==='1'?'':'s')+' · '+_rp[1].trim()+' loss'+(_rp[1].trim()==='1'?'':'es')+'</div>':'';
   var recRows=(sb.closed||[]).map(function(c){var w=c.win;return '<div class="row"><span class="rsym">'+qlink(c.sym,'au')+'</span><div class="bar"><span class="fill" style="'+(w?'left:50%;width:26%;background:var(--buy)':'right:50%;width:22%;background:var(--dont)')+'"></span></div><span class="res '+(w?'up':'down')+'">'+esc(c.pct)+'</span></div>';}).join('');
   var openRows=(sb.open||[]).map(function(o){var reg=(D.regions&&D.regions[0]&&D.regions[0].picks.some(function(p){return p.sym===o.sym;}))?'au':'us';return '<div class="row"><span>'+esc(o.tf)+' '+qlink(o.sym,reg)+' <span style="color:var(--muted)">'+esc(o.period)+'</span></span><span class="st"'+(o.hot?' style="color:var(--hold)"':'')+'>'+esc(o.status)+'</span></div>';}).join('');
-  function lines(arr,key,src){return (arr||[]).map(function(x,i){return '<div class="line clickline" data-theme="'+esc(src)+'" data-ti="'+i+'" role="button" tabindex="0"><span class="em">'+esc(x.em)+'</span><div class="txt">'+esc(x[key])+'<small>'+x.note+'</small></div><span class="tag '+esc(x.tclass)+'">'+esc(x.tag)+'</span></div>';}).join('');}
+  function lines(arr,key,src,off){off=off||0;return (arr||[]).map(function(x,i){return '<div class="line clickline" data-theme="'+esc(src)+'" data-ti="'+(off+i)+'" role="button" tabindex="0"><span class="em">'+esc(x.em)+'</span><div class="txt">'+esc(x[key])+'<small>'+x.note+'</small></div><span class="tag '+esc(x.tclass)+'">'+esc(x.tag)+'</span></div>';}).join('');}
   var story = (PULSES&&PULSES.length) ?
     ('<div class="panel"><h3>Tonight\'s hourly runs</h3><p class="panelsub"><b>Minor runs</b> — same menu, re-priced every hour ('+PULSES.length+' this session). The <b>major</b> menu changes are in The Journey. Newest first.</p>'+
      '<div class="pulselog">'+PULSES.slice().reverse().map(function(pu){
@@ -1890,8 +1899,8 @@ function render(D,H){
 
   '<section><div class="sec-head"><h2 class="display"><span class="k">05</span> Commodities — simple</h2>'+infoBtn('commodities')+'</div>'+
     '<p class="sec-sub">No jargon. Just: worth a look, emerging (🔥), or leave it.</p>'+
-    '<div class="cols"><div class="stack">'+lines((D.commodities||[]).slice(0,half),'name')+'</div>'+
-    '<div class="stack">'+lines((D.commodities||[]).slice(half),'name')+'</div></div></section>'+
+    '<div class="cols"><div class="stack">'+lines((D.commodities||[]).slice(0,half),'name','commodities',0)+'</div>'+
+    '<div class="stack">'+lines((D.commodities||[]).slice(half),'name','commodities',half)+'</div></div></section>'+
 
   '<section><div class="sec-head"><h2 class="display"><span class="k">06</span> Your watchlist</h2>'+infoBtn('watchlist')+'</div>'+
     '<p class="sec-sub">Tap <b>＋ Watch</b> on any pick to track it — we remember its ideal-buy price and flag it when it gets there. Or add your own below.</p>'+
@@ -2090,9 +2099,13 @@ function themeIntel(sym,D){
   return {kind:'none'};
 }
 function openTheme(src,idx){
-  var D=LAST.D||{}, arr=src==='geo'?D.geo:D.sectors, item=arr&&arr[idx]; if(!item)return;
+  var D=LAST.D||{}, arr=src==='geo'?D.geo:(src==='commodities'?D.commodities:D.sectors), item=arr&&arr[idx]; if(!item)return;
   LASTFOCUS=document.activeElement;
   var syms=item.tickers||themeTickers(item);
+  if(src==='commodities' && !syms.length){         // commodities name no tickers → pull related names from the pot
+    var nm=(item.name||'').toLowerCase().split(/[\s—·]/)[0];
+    syms=(D.candidates||[]).filter(function(c){return nm && (c.note||'').toLowerCase().indexOf(nm)>=0;}).map(function(c){return c.sym;});
+  }
   var rows=syms.map(function(sym){
     var it=themeIntel(sym,D), line='', reg='us', tapAttr=' class="themerow"';
     if(it.kind==='pick'){ line='<span class="tvd '+esc(it.p.vclass)+'">'+esc(it.p.verdict)+'</span> · '+esc(it.p.price)+(it.p.nTarget!=null?' → target '+it.cur+it.p.nTarget:''); reg=it.region; tapAttr=' class="themerow tappable" data-region="'+esc(it.region)+'" data-idx="'+it.idx+'" role="button" tabindex="0"'; }
@@ -2108,7 +2121,7 @@ function openTheme(src,idx){
   var vc=(item.tclass==='t-buy'||item.tclass==='t-hot')?'buy':(item.tclass==='t-dont'?'don':'hold');
   var m=document.getElementById('modal'); m.className='modal';
   m.innerHTML='<div class="mhead '+vc+'"><button class="mclose" id="mClose" aria-label="Close">✕</button>'+
-    '<div class="mtf">'+esc(item.em||'🎯')+' '+(src==='geo'?'Geopolitical theme':'Sector')+'</div>'+
+    '<div class="mtf">'+esc(item.em||'🎯')+' '+(src==='geo'?'Geopolitical theme':(src==='commodities'?'Commodity':'Sector'))+'</div>'+
     '<div class="mtop"><div class="msym" style="font-size:23px;line-height:1.15">'+esc(item.title||item.name)+'</div></div>'+
     '<span class="mverd '+vc+'">'+esc(item.tag)+'</span></div>'+
     '<div class="mbody"><p class="mtake">'+esc(item.note)+'</p>'+
@@ -2465,7 +2478,7 @@ function renderSimple(D){
       miniTraj(p.sym)+
       '<div class="buyat'+(p.nEntry?' ba-'+buyState(p):'')+'">'+(p.nEntry?'<span class="bl">🎯 Ideal buy</span> ~'+esc(region.cur||'$')+p.nEntry+buyAction(p):'<span class="bl">Track this pick</span>')+'</div>'+
       '<div class="sline">'+esc(p.plain)+'</div>'+
-      (p.spark?rangeBar(p.spark,(region.cur||'$'),p.tf):'')+'</article>'+
+      (p.spark?rangeBar(p.spark,(region.cur||'$'),p.tf,p.nEntry):'')+'</article>'+
       ((p.runnerUp && /wait|late|hold|skip|avoid|pass|don.t|steer/i.test(p.verdict||''))?ruCard(p.runnerUp,rid,idx):'');
   }).join('');
   function _grp(arr,key){var b=[],o=[],s=[];(arr||[]).forEach(function(x){var t=x.tclass,n=x[key];if(t==='t-dont')s.push(n);else if(t==='t-buy'||t==='t-hot')b.push(n);else o.push(n);});return {b:b,o:o,s:s};}
