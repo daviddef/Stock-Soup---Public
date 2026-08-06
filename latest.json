@@ -30,8 +30,8 @@
      "vclass": "v-buy",
      "sym": "MND",
      "name": "Monadelphous",
-     "price": "A$30.56",
-     "change": "+0.86%",
+     "price": "A$30.53",
+     "change": "+0.74%",
      "up": true,
      "rsi": 59,
      "plain": "Just landed a $200m BHP contract but the shares have barely twitched. That's the whole game — good news, price hasn't caught up yet.",
@@ -39,7 +39,7 @@
      "nStop": 28.5,
      "nEntry": 30.0,
      "nTarget": 34.0,
-     "nNow": 30.56,
+     "nNow": 30.53,
      "chefTake": "Think of MND as the tradie who just landed a massive job but hasn't bragged about it at the pub yet. Contract's signed, money's coming, share price is still sitting there like nothing happened. That gap is the whole opportunity. Not a fireworks stock — more a reliable Sunday roast — but you want to be seated before the room smells it.",
      "catalysts": [
       "Just won a ~$200m contract from BHP — real money, confirmed",
@@ -106,16 +106,16 @@
      "vclass": "v-hold",
      "sym": "PNI",
      "name": "Pinnacle",
-     "price": "A$19.27",
-     "change": "+0.1%",
-     "up": true,
+     "price": "A$19.23",
+     "change": "-0.1%",
+     "up": false,
      "rsi": 68.9,
      "plain": "Cracking result, jumped 8%. Only catch — it's a bit hot right now. Let it cool and buy the pullback near A$18.50.",
      "levels": "In <b>A$18.50</b> · Target <b>A$22</b> · Stop <b>A$17.20</b>",
      "nStop": 17.2,
      "nEntry": 18.5,
      "nTarget": 22.0,
-     "nNow": 19.27,
+     "nNow": 19.23,
      "chefTake": "PNI just served a cracker and the whole room clapped (+8%). Trouble is, everyone's now queuing. When a dish is this hot you don't burn your mouth — you wait for it to cool to about A$18.50, then tuck in. Cracking business; just don't pay the 'straight out of the oven' premium.",
      "catalysts": [
       "Big earnings result — money flooding into their funds",
@@ -259,8 +259,8 @@
      "vclass": "v-buy",
      "sym": "EOS",
      "name": "Electro Optic",
-     "price": "A$7.72",
-     "change": "+0.92%",
+     "price": "A$7.73",
+     "change": "+1.05%",
      "up": true,
      "rsi": 48.5,
      "plain": "Lasers and drone-killers. AUKUS money is a multi-year tide. It's cheap vs its average — a patient buy, not a sprint.",
@@ -268,7 +268,7 @@
      "nStop": 6.9,
      "nEntry": 7.5,
      "nTarget": 9.5,
-     "nNow": 7.72,
+     "nNow": 7.73,
      "chefTake": "EOS is the slow-cooked brisket. Lasers, drone-zappers, the works — and governments are throwing AUKUS money at exactly this menu for years to come. Right now it's marked down below its usual price, which is precisely when you load the plate. Bring patience, not a stopwatch.",
      "catalysts": [
       "Fresh 'Buy' call from a broker — analyst conviction",
@@ -893,9 +893,9 @@
    "region": "au",
    "heat": "hot",
    "note": "Gold breakout +8.7% — pack running",
-   "price": "A$14.76",
+   "price": "A$14.74",
    "up": true,
-   "change": "+3.98%",
+   "change": "+3.88%",
    "name": "Capricorn Metals Ltd",
    "spark": [
     9.77,
@@ -1161,9 +1161,9 @@
    "region": "au",
    "heat": "hot",
    "note": "Gold +8.2%, riding the miner surge",
-   "price": "A$6.75",
+   "price": "A$6.72",
    "up": true,
-   "change": "+4.81%",
+   "change": "+4.35%",
    "name": "Genesis Minerals Ltd",
    "spark": [
     3.97,
@@ -1429,9 +1429,9 @@
    "region": "au",
    "heat": "good",
    "note": "Earnings beat +6.5% — just missed the cut",
-   "price": "A$119.22",
+   "price": "A$118.08",
    "up": true,
-   "change": "+1.03%",
+   "change": "+0.07%",
    "name": "Light & Wonder Inc",
    "spark": [
     136.48,
@@ -1699,7 +1699,7 @@
    "note": "$281m AUKUS contract",
    "price": "A$2.29",
    "up": true,
-   "change": "+5.3%",
+   "change": "+5.53%",
    "name": "Duratec Ltd",
    "spark": [
     1.445,
@@ -3292,9 +3292,9 @@
    "region": "au",
    "heat": "mid",
    "note": "Broker upgrade to Buy (Morgans)",
-   "price": "A$61.79",
+   "price": "A$61.8",
    "up": true,
-   "change": "+1.75%",
+   "change": "+1.76%",
    "name": "Mineral Resources Ltd",
    "spark": [
     33.15,
@@ -3560,9 +3560,9 @@
    "region": "au",
    "heat": "mid",
    "note": "+16% on results — already ran hard",
-   "price": "A$21.7",
-   "up": true,
-   "change": "+0.28%",
+   "price": "A$21.56",
+   "up": false,
+   "change": "-0.37%",
    "name": "Neuren Pharmaceuticals Ltd",
    "spark": [
     17.01,
@@ -4356,9 +4356,9 @@
    "region": "au",
    "heat": "cold",
    "note": "−23% guidance cut — falling knife",
-   "price": "A$0.41",
+   "price": "A$0.42",
    "up": true,
-   "change": "+0.61%",
+   "change": "+1.22%",
    "name": "Healius Ltd",
    "spark": [
     0.8,
@@ -4616,7 +4616,7 @@
     0.41,
     0.41
    ],
-   "news": "Webcast details for Healius FY26 Results",
+   "news": "Change of Share Registry Provider",
    "short": 10.8
   },
   {
@@ -4625,8 +4625,8 @@
    "heat": "cold",
    "note": "Downgraded to Sell — steer clear",
    "price": "A$0.89",
-   "up": true,
-   "change": "+0.0%",
+   "up": false,
+   "change": "-0.56%",
    "name": "Beach Energy Ltd",
    "spark": [
     1.23,
@@ -5223,9 +5223,9 @@
    "sym": "PDN",
    "region": "au",
    "name": "Paladin Energy",
-   "price": "A$9.93",
+   "price": "A$9.92",
    "up": false,
-   "change": "-0.6%",
+   "change": "-0.75%",
    "spark": [
     9.74,
     9.35,
@@ -5303,9 +5303,9 @@
    "sym": "TLX",
    "region": "au",
    "name": "Telix Pharmaceuticals",
-   "price": "A$15.02",
+   "price": "A$15.01",
    "up": true,
-   "change": "+2.04%",
+   "change": "+1.94%",
    "spark": [
     15.68,
     15.33,
@@ -5343,9 +5343,9 @@
    "sym": "EOS",
    "region": "au",
    "name": "Electro Optic Systems",
-   "price": "A$7.72",
+   "price": "A$7.73",
    "up": true,
-   "change": "+0.92%",
+   "change": "+1.05%",
    "spark": [
     10.8,
     10.97,
@@ -5399,7 +5399,7 @@
    "name": "Northern Minerals",
    "price": "A$0.03",
    "up": true,
-   "change": "+7.69%",
+   "change": "+3.85%",
    "spark": [
     0.025,
     0.025,
@@ -5437,9 +5437,9 @@
    "sym": "DYL",
    "region": "au",
    "name": "Deep Yellow",
-   "price": "A$1.38",
+   "price": "A$1.37",
    "up": false,
-   "change": "-2.48%",
+   "change": "-2.84%",
    "spark": [
     1.455,
     1.42,
@@ -5477,9 +5477,9 @@
    "sym": "DRO",
    "region": "au",
    "name": "DroneShield",
-   "price": "A$2.25",
+   "price": "A$2.28",
    "up": true,
-   "change": "+2.97%",
+   "change": "+4.11%",
    "spark": [
     2.41,
     2.28,
@@ -5517,9 +5517,9 @@
    "sym": "A2M",
    "region": "au",
    "name": "A2 Milk",
-   "price": "A$7.01",
+   "price": "A$7.0",
    "up": true,
-   "change": "+1.74%",
+   "change": "+1.6%",
    "spark": [
     7.1,
     7.19,
@@ -5557,9 +5557,9 @@
    "sym": "SGH",
    "region": "au",
    "name": "Sievert Larson Holdings",
-   "price": "A$46.59",
+   "price": "A$46.62",
    "up": true,
-   "change": "+0.59%",
+   "change": "+0.65%",
    "spark": [
     45.47,
     46.49,
@@ -5597,9 +5597,9 @@
    "sym": "WTC",
    "region": "au",
    "name": "WiseTech Global",
-   "price": "A$39.01",
+   "price": "A$39.3",
    "up": false,
-   "change": "-2.26%",
+   "change": "-1.53%",
    "spark": [
     31.39,
     31.55,
@@ -5689,37 +5689,37 @@
   }
  ],
  "pulse": {
-  "stamp": "Thu 16:19",
-  "synth": "Since last hour the board is **flat ⚪** (avg -0.04%). Nothing moved much — quiet hour. (ASX closed — moves are US-led.)",
+  "stamp": "Thu 16:29",
+  "synth": "Since last hour the board is **flat ⚪** (avg +0.06%). Climbing: DRO +1.33%, WTC +0.74%. Slipping: DYL -0.72%. (ASX closed — moves are US-led.)",
   "movers": [
    {
-    "sym": "MND",
-    "since": -0.26,
-    "up": false
-   },
-   {
-    "sym": "EOS",
-    "since": -0.26,
-    "up": false
+    "sym": "DRO",
+    "since": 1.33,
+    "up": true
    },
    {
     "sym": "WTC",
-    "since": -0.2,
+    "since": 0.74,
+    "up": true
+   },
+   {
+    "sym": "DYL",
+    "since": -0.72,
+    "up": false
+   },
+   {
+    "sym": "PNI",
+    "since": -0.21,
     "up": false
    },
    {
     "sym": "A2M",
-    "since": 0.14,
-    "up": true
-   },
-   {
-    "sym": "PDN",
-    "since": -0.1,
+    "since": -0.14,
     "up": false
    },
    {
-    "sym": "TLX",
-    "since": 0.07,
+    "sym": "EOS",
+    "since": 0.13,
     "up": true
    }
   ]
