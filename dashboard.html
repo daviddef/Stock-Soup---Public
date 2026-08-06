@@ -2905,44 +2905,43 @@ function refreshPrices(btn){
   if(btn){ btn.classList.add('spinning'); }
   var beforeIso=(PULSES&&PULSES.length)?PULSES[PULSES.length-1].iso:null;
   var started=Date.now();
-  return Promise.allSettled([
-    fetch('latest.json',{cache:'no-store'}).then(function(r){return r.ok?r.json():null;}),
-    fetch('menu-history.json',{cache:'no-store'}).then(function(r){return r.ok?r.json():null;}),
-    fetch('reports/pulse-history.json',{cache:'no-store'}).then(function(r){return r.ok?r.json():null;}),
-    fetch('reports/track-record.json',{cache:'no-store'}).then(function(r){return r.ok?r.json():null;}),
-    fetch('reports/outcomes.json',{cache:'no-store'}).then(function(r){return r.ok?r.json():null;})
-  ]).then(function(res){
-    var d=res[0].value, h=res[1].value, pu=res[2].value, tr=res[3].value, oc=res[4].value;
-    if(pu&&pu.pulses&&pu.pulses.length>1) PULSES=pu.pulses;
-    if(tr&&tr.record) TRACK=tr;
-    if(oc&&oc.outcomes) OUTCOMES=oc;
-    var afterIso=(PULSES&&PULSES.length)?PULSES[PULSES.length-1].iso:null;
-    var fresh=afterIso&&afterIso!==beforeIso;
-    // keep the spin visible for at least a beat so it reads as an action
-    setTimeout(function(){
-      var sc=window.pageYOffset;
-      boot(d&&d.regions?d:EMBEDDED, h&&h.menus?h:HIST_EMBED);
-      window.scrollTo(0,sc);
-      _refreshing=false;
-      flashToast(fresh?'✓ Prices refreshed — updated just now':'Already up to date · last run '+(afterIso?timeAgo(afterIso):'—')+'<br><span style="opacity:.7;font-weight:600">New prices publish each hourly run.</span>');
-    }, Math.max(0, 450-(Date.now()-started)));
+  return new Promise(function(resolve){
+    loadGated(function(b){
+      var d=b&&b.latest, h=b&&b.menuHistory;
+      if(b&&b.pulseHistory&&b.pulseHistory.pulses&&b.pulseHistory.pulses.length>1) PULSES=b.pulseHistory.pulses;
+      if(b&&b.trackRecord&&b.trackRecord.record) TRACK=b.trackRecord;
+      if(b&&b.outcomes&&b.outcomes.outcomes) OUTCOMES=b.outcomes;
+      var afterIso=(PULSES&&PULSES.length)?PULSES[PULSES.length-1].iso:null;
+      var fresh=afterIso&&afterIso!==beforeIso;
+      setTimeout(function(){
+        var sc=window.pageYOffset;
+        boot(d&&d.regions?d:EMBEDDED, h&&h.menus?h:HIST_EMBED);
+        window.scrollTo(0,sc);
+        _refreshing=false;
+        flashToast(fresh?'✓ Prices refreshed — updated just now':'Already up to date · last run '+(afterIso?timeAgo(afterIso):'—')+'<br><span style="opacity:.7;font-weight:600">New prices publish each hourly run.</span>');
+        resolve();
+      }, Math.max(0, 450-(Date.now()-started)));
+    });
   });
 }
 // capture the magic-link session handed back in the redirect hash (#session=…), then sync the list
 (function(){var m=(location.hash||'').match(/session=([^&]+)/);if(m){sessSet(decodeURIComponent(m[1]));try{history.replaceState(null,'',location.pathname+location.search);}catch(e){}}})();
 if(signedIn()) syncFromBackend(function(){ if(document.getElementById('wlPills')){renderWatchlist();syncWatchButtons();} });
-boot(EMBEDDED,HIST_EMBED);
-Promise.allSettled([
-  fetch('latest.json',{cache:'no-store'}).then(function(r){return r.ok?r.json():null;}),
-  fetch('menu-history.json',{cache:'no-store'}).then(function(r){return r.ok?r.json():null;}),
-  fetch('reports/pulse-history.json',{cache:'no-store'}).then(function(r){return r.ok?r.json():null;}),
-  fetch('reports/track-record.json',{cache:'no-store'}).then(function(r){return r.ok?r.json():null;}),
-  fetch('reports/outcomes.json',{cache:'no-store'}).then(function(r){return r.ok?r.json():null;})
-]).then(function(res){
-  var d=res[0].value, h=res[1].value, pu=res[2].value, tr=res[3].value, oc=res[4].value;
+// The picks bundle is members-only — fetched from the Worker with the session token, never a public file.
+function loadGated(cb){
+  fetch(API_BASE+'/data',{headers:{'Authorization':'Bearer '+sessGet()},cache:'no-store'})
+    .then(function(r){ if(r.status===401){ sessSet(''); location.replace('index.html'); throw 0; } return r.ok?r.json():null; })
+    .then(function(b){ cb(b||null); }).catch(function(){ cb(null); });
+}
+function applyBundle(b){
+  if(!b) return false;
+  var d=b.latest, h=b.menuHistory, pu=b.pulseHistory, tr=b.trackRecord, oc=b.outcomes;
   if(pu&&pu.pulses&&pu.pulses.length>1) PULSES=pu.pulses;
   if(tr&&tr.record) TRACK=tr;
   if(oc&&oc.outcomes) OUTCOMES=oc;
-  if((d&&d.regions)||(h&&h.menus)||PULSES||TRACK||OUTCOMES) boot(d&&d.regions?d:EMBEDDED, h&&h.menus?h:HIST_EMBED);
-}).catch(function(){});
+  if((d&&d.regions)||(h&&h.menus)||PULSES||TRACK||OUTCOMES){ boot(d&&d.regions?d:EMBEDDED, h&&h.menus?h:HIST_EMBED); return true; }
+  return false;
+}
+boot(EMBEDDED,HIST_EMBED);
+loadGated(applyBundle);
 </script>
