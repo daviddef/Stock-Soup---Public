@@ -232,7 +232,9 @@
   .rlrow:last-child{border-bottom:0}
   .rltype{font-size:10px;font-weight:800;padding:2px 6px;border-radius:6px;white-space:nowrap;text-align:center}
   .rl-maj{background:var(--broth-soft,rgba(255,107,26,.12));color:var(--broth)} .rl-min{background:var(--surface-2);color:var(--muted)}
-  .rlwhen{font-weight:700;grid-column:2} .rlnote{grid-column:2;color:var(--muted);font-size:11.5px;line-height:1.35;text-wrap:pretty}
+  .rlwhen{font-weight:700;grid-column:2} .rlnote{grid-column:2;color:var(--muted);font-size:11.5px;line-height:1.5;text-wrap:pretty;display:flex;flex-wrap:wrap;align-items:center;gap:2px 0}
+  .rlpk{display:inline-flex;align-items:center;gap:3px;margin-right:7px;font-weight:700;color:var(--ink);white-space:nowrap}
+  .rlmkt{font-size:12px;margin-right:2px} .rldur{color:var(--faint);font-weight:600;font-size:10.5px;margin-left:4px}
   .jhead .when{font-weight:800;font-size:13px}
   .jhead .when small{display:block;color:var(--muted);font-weight:600;font-size:11px}
   .now-b{font-size:10px;font-weight:900;background:var(--broth);color:#1a0f06;padding:2px 7px;border-radius:6px;letter-spacing:.06em}
@@ -854,7 +856,7 @@ function render(D,H){
         '<div class="tf"><span class="name">'+tfBW(p.tf)+'</span><span class="tf-r"><button class="watchbtn iconwatch" data-sym="'+esc(p.sym)+'" data-region="'+esc(rg.id)+'" data-name="'+esc(p.name)+'"'+(p.nEntry!=null?' data-entry="'+p.nEntry+'"':'')+' aria-pressed="false" title="Add to watchlist">+</button><span class="verdict '+esc(p.vclass)+'">'+esc(p.verdict)+'</span></span></div>'+
         '<div class="tick"><span class="symwrap"><span class="sym">'+qlink(p.sym,rg.id)+'</span><span class="co">'+qlink(p.sym,rg.id,p.name)+' ↗</span></span>'+
         '<span class="px"><span class="p mono">'+esc(p.price)+'</span><br><span class="c mono '+(p.up?'up':'down')+'">'+esc(p.change)+'</span></span></div>'+
-        miniTraj(p.sym)+
+        /* miniTraj removed — inconsistent (only carried-over picks had it) + confusing 'since 23:33'; the range bar shows the trend */
         '<div class="buyat'+(p.nEntry?' ba-'+buyState(p):'')+'">'+(p.nEntry?'<span class="bl">🎯 Ideal buy</span> ~'+esc(rg.cur||'$')+p.nEntry+buyAction(p):'<span class="bl">Track this pick</span>')+'</div>'+
         '<p class="plain">'+p.plain+'</p><div class="lvls">'+p.levels+'</div>'+
         (p.spark?rangeBar(p.spark,rg.cur||'$',p.tf,p.nEntry):'')+'</article>'+
@@ -1041,6 +1043,7 @@ function render(D,H){
 
   // ===== 👨‍🍳 INSIDE THE KITCHEN =====
   '<div class="tabview" id="tab-kitchen">'+
+    '<section><div class="sec-head"><h2 class="display">⏱️ Run schedule</h2></div>'+(INFO.schedule?INFO.schedule.body:'')+runLogHtml()+'</section>'+
     '<section><div class="sec-head"><h2 class="display">🗄️ The Archive</h2>'+infoBtn('archive')+'</div>'+
       '<p class="sec-sub">Every menu we\'ve served. Tap one to open that run\'s full report.</p>'+
       '<div class="arch" id="archList"><div class="wlempty">Loading past menus…</div></div>'+
@@ -1257,14 +1260,16 @@ var INFO={
 function infoBtn(key){ return '<button class="infobtn" data-info="'+esc(key)+'" aria-label="What is this?">i</button>'; }
 function runLogHtml(){
   var H=(LAST&&LAST.H)||{}, hh='font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--broth);font-weight:800;margin:18px 0 8px';
+  function pk(arr){return (arr||[]).map(function(s,i){return '<span class="rlpk">'+tfB(['Day','Week','Long'][i])+' '+esc(s)+'</span>';}).join('');}
+  function dur(ms){return ms?' <span class="rldur">· ran '+(ms/1000).toFixed(1)+'s</span>':'';}
   var majors=(H.menus||[]).slice(0,8).map(function(m){
-    var names=[].concat(m.au||[],m.us||[]).join(' · ');
-    return '<div class="rlrow"><span class="rltype rl-maj">🍳 menu</span><span class="rlwhen">'+esc(m.stamp)+' · '+esc(m.time)+'</span><span class="rlnote">'+esc(names)+'</span></div>';
+    return '<div class="rlrow"><span class="rltype rl-maj">🍳 menu</span><span class="rlwhen">'+esc(m.stamp)+' · '+esc(m.time)+dur(m.durMs)+'</span>'+
+      '<span class="rlnote"><span class="rlmkt">🇦🇺</span> '+pk(m.au)+' <span class="rlmkt" style="margin-left:8px">🌏</span> '+pk(m.us)+'</span></div>';
   }).join('');
   var mins=(PULSES||[]).slice().reverse().slice(0,12).map(function(pu){
     var ch=(pu.changes||[]).filter(function(c){return Math.abs(c[1])>=0.05;});
     var mv=ch.slice(0,3).map(function(c){return esc(c[0])+' '+(c[1]>=0?'+':'')+c[1]+'%';}).join(' · ');
-    return '<div class="rlrow"><span class="rltype rl-min">⏱ re-price</span><span class="rlwhen">'+esc(pu.stamp)+'</span><span class="rlnote">'+(mv||'<span class="muted">quiet</span>')+'</span></div>';
+    return '<div class="rlrow"><span class="rltype rl-min">⏱ re-price</span><span class="rlwhen">'+esc(pu.stamp)+dur(pu.durMs)+'</span><span class="rlnote">'+(mv||'<span class="muted">quiet</span>')+'</span></div>';
   }).join('');
   return '<h4 style="'+hh+'">Every run — newest first</h4><p style="font-size:12.5px;color:var(--muted);margin:0 0 10px">🍳 <b>menu</b> = a full re-cook (new picks). ⏱ <b>re-price</b> = same menu, fresh numbers.</p>'+
     '<div class="runlog">'+
@@ -1278,7 +1283,7 @@ function openInfo(key){
   var m=document.getElementById('modal'); m.className='modal';
   m.innerHTML='<div class="mhead"><button class="mclose" id="mClose" aria-label="Close">✕</button><div class="mtf">'+esc(i.icon||'ⓘ')+' Explainer</div>'+
     '<div class="mtop"><div class="msym" style="font-size:24px;line-height:1.1">'+esc(i.title)+'</div></div></div>'+
-    '<div class="mbody infobody">'+i.body+(key==='schedule'?runLogHtml():'')+'</div>';
+    '<div class="mbody infobody">'+i.body+(key==='schedule'?'<p style="font-size:12.5px;color:var(--muted);margin-top:14px">📋 The full run log lives in <b>Inside the Kitchen</b>.</p>':'')+'</div>';
   var ov=document.getElementById('overlay'); ov.classList.add('open'); ov.setAttribute('aria-hidden','false');
   document.getElementById('mClose').focus();
 }
@@ -1888,7 +1893,7 @@ function renderSimple(D){
       '<div class="stf"><span>'+tfBW(p.tf)+'</span><button class="watchbtn iconwatch" data-sym="'+esc(p.sym)+'" data-region="'+esc(rid)+'" data-name="'+esc(p.name)+'"'+(p.nEntry!=null?' data-entry="'+p.nEntry+'"':'')+' aria-pressed="false" title="Add to watchlist">+</button></div>'+
       '<div class="ssym">'+esc(p.sym)+' <span class="sverd '+esc(p.vclass)+'">'+esc(p.verdict)+'</span></div>'+
       '<div class="sname">'+esc(p.name)+' · '+esc(p.price)+' <span class="'+(p.up?'up':'down')+'">'+(p.up?'▲':'▼')+' '+esc(p.change)+'</span></div>'+
-      miniTraj(p.sym)+
+      /* miniTraj removed — inconsistent (only carried-over picks had it) + confusing 'since 23:33'; the range bar shows the trend */
       '<div class="buyat'+(p.nEntry?' ba-'+buyState(p):'')+'">'+(p.nEntry?'<span class="bl">🎯 Ideal buy</span> ~'+esc(region.cur||'$')+p.nEntry+buyAction(p):'<span class="bl">Track this pick</span>')+'</div>'+
       '<div class="sline">'+esc(p.plain)+'</div>'+
       (p.spark?rangeBar(p.spark,(region.cur||'$'),p.tf,p.nEntry):'')+'</article>'+
