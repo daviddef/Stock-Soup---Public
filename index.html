@@ -212,7 +212,8 @@
   .jrow .jb{margin-left:auto;font-size:10px;font-weight:800;padding:1px 6px;border-radius:5px;flex:0 0 auto}
   .jb-new{background:rgba(255,107,26,.18);color:var(--broth)}
   .jb-drop{color:var(--dont)}
-  .jrow .jg{font-size:12px;font-weight:900;flex:0 0 auto;cursor:help}
+  .jrow .jg{font-size:12px;font-weight:900;flex:0 0 auto;cursor:pointer;padding:0 3px;border-radius:5px;transition:background .12s}
+  .jrow .jg:hover{background:var(--surface-2)}
   .jg-win{color:var(--buy)} .jg-loss{color:var(--dont)} .jg-pend{color:var(--faint);font-weight:700}
   .tfscore{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0 4px}
   .tfs{background:var(--surface-2);border:1px solid var(--line);border-radius:11px;padding:9px 6px;text-align:center}
@@ -220,7 +221,13 @@
   .tfs .tfv{font-size:20px;font-weight:850;font-variant-numeric:tabular-nums;margin-top:2px;line-height:1}
   .tfs .tfn{font-size:10px;color:var(--faint);margin-top:2px}
   .tfs.good .tfv{color:var(--buy)} .tfs.mid .tfv{color:var(--hold)} .tfs.bad .tfv{color:var(--dont)}
-  .idxbeat{color:var(--broth);font-weight:800;font-size:.85em}
+  .idxbeat{color:var(--broth);font-weight:800;font-size:.8em;background:var(--broth-soft,rgba(255,107,26,.12));padding:1px 5px;border-radius:5px;margin-left:3px}
+  .graderow{cursor:pointer;border-radius:8px;margin:0 -6px;padding:2px 6px;transition:background .12s}
+  .graderow:hover{background:var(--surface-2)}
+  .gexp{background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:14px 16px;font-size:14px;line-height:1.55}
+  .gexp p{margin:0 0 10px;text-wrap:pretty} .gexp p:last-child{margin-bottom:0}
+  .gexp .up{color:var(--buy)} .gexp .down{color:var(--dont)}
+  .gverdict{border-top:1px dashed var(--line);padding-top:10px;color:var(--muted)}
   .jrow.keep,.jrow.drop{border-radius:7px;margin:2px -7px;padding:4px 7px}
   .jrow.keep{background:rgba(35,194,103,.13)}
   .jrow.drop{background:rgba(255,77,77,.10)}
@@ -1827,12 +1834,13 @@ function render(D,H){
 
   var names=(H&&H.names)||{}, ms=(H&&H.menus)||[];
   function gradeBadge(sym){
-    var o=OUTCOMES&&OUTCOMES.outcomes&&OUTCOMES.outcomes[String(sym).replace(/\*$/,'')];
+    var key=String(sym).replace(/\*$/,'');
+    var o=OUTCOMES&&OUTCOMES.outcomes&&OUTCOMES.outcomes[key];
     if(!o) return '';
-    if(o.status!=='graded') return '<span class="jg jg-pend" title="still open — its horizon hasn\'t elapsed yet">⏳</span>';
+    if(o.status!=='graded') return '<span class="jg jg-pend" data-gsym="'+esc(key)+'" role="button" tabindex="0" title="tap — still open, not scored yet">⏳</span>';
     var pct=(o.ret>=0?'+':'')+(Math.round(o.ret*1000)/10)+'%';
-    var tip=(o.correct?'✓ correct':'✗ wrong')+' over its '+o.tf+' horizon · '+pct+(o.correctVsIndex?' · beat the index':'');
-    return '<span class="jg '+(o.correct?'jg-win':'jg-loss')+'" title="'+esc(tip)+'">'+(o.correct?'✓':'✗')+'</span>';
+    var tip=(o.correct?'✓ we got this right':'✗ this one missed')+' · '+pct+' — tap to see what happened';
+    return '<span class="jg '+(o.correct?'jg-win':'jg-loss')+'" data-gsym="'+esc(key)+'" role="button" tabindex="0" title="'+esc(tip)+'">'+(o.correct?'✓':'✗')+'</span>';
   }
   function jcol(m,older,isNow){
     function grp(label,arr,region){
@@ -1879,9 +1887,10 @@ function render(D,H){
   var ocGraded=ocOn?Object.keys(OUTCOMES.outcomes).map(function(k){return OUTCOMES.outcomes[k];}).filter(function(o){return o.status==='graded';}):[];
   var ocRows=ocGraded.slice().sort(function(a,b){return (b.date||'').localeCompare(a.date||'');}).slice(0,6).map(function(o){
     var w=o.correct, pct=(o.ret>=0?'+':'')+(Math.round(o.ret*1000)/10)+'%';
-    return '<div class="row"><span class="rsym">'+(tfBadge[o.tf]||'')+' '+qlink(o.sym,o.region||'us')+'</span><div class="bar"><span class="fill" style="'+(w?'left:50%;width:26%;background:var(--buy)':'right:50%;width:22%;background:var(--dont)')+'"></span></div><span class="res '+(w?'up':'down')+'">'+esc(pct)+(o.correctVsIndex?' <span class="idxbeat" title="also beat its market index">▲idx</span>':'')+'</span></div>';
+    return '<div class="row graderow" data-gsym="'+esc(o.sym)+'" role="button" tabindex="0" title="Tap to see what happened with '+esc(o.sym)+'"><span class="rsym">'+(tfBadge[o.tf]||'')+' '+qlink(o.sym,o.region||'us')+'</span><div class="bar"><span class="fill" style="'+(w?'left:50%;width:26%;background:var(--buy)':'right:50%;width:22%;background:var(--dont)')+'"></span></div><span class="res '+(w?'up':'down')+'">'+esc(pct)+(o.correctVsIndex?' <span class="idxbeat" title="also did better than the market">beat mkt</span>':'')+'</span></div>';
   }).join('');
-  var ocScorecard=(ocOn&&OUTCOMES.byTimeframe)?'<div class="tfscore">'+['Day','Week','Long'].map(function(tf){var a=OUTCOMES.byTimeframe[tf]||{};var wr=a.n?Math.round((a.winRate||0)*100):null;var cls=wr==null?'':(wr>=60?'good':wr>=40?'mid':'bad');return '<div class="tfs '+cls+'"><div class="tft">'+tfBadge[tf]+' '+tf+'</div><div class="tfv">'+(wr==null?'—':wr+'%')+'</div><div class="tfn">'+(a.n?a.n+(a.n===1?' call':' calls'):'—')+'</div></div>';}).join('')+'</div>':'';
+  var tfLabel={Day:'⚡ Day trades',Week:'📅 Week holds',Long:'📈 Long holds'};
+  var ocScorecard=(ocOn&&OUTCOMES.byTimeframe)?'<div class="tfscore">'+['Day','Week','Long'].map(function(tf){var a=OUTCOMES.byTimeframe[tf]||{};var wr=a.n?Math.round((a.winRate||0)*100):null;var cls=wr==null?'':(wr>=60?'good':wr>=40?'mid':'bad');return '<div class="tfs '+cls+'"><div class="tft">'+tfLabel[tf]+'</div><div class="tfv">'+(wr==null?'—':wr+'%')+'</div><div class="tfn">'+(a.n?'right '+Math.round((a.winRate||0)*a.n)+' of '+a.n:'—')+'</div></div>';}).join('')+'</div>':'';
   function lines(arr,key,src,off){off=off||0;return (arr||[]).map(function(x,i){return '<div class="line clickline" data-theme="'+esc(src)+'" data-ti="'+(off+i)+'" role="button" tabindex="0"><span class="em">'+esc(x.em)+'</span><div class="txt">'+esc(x[key])+'<small>'+x.note+'</small></div><span class="tag '+esc(x.tclass)+'">'+esc(x.tag)+'</span></div>';}).join('');}
   var story = (PULSES&&PULSES.length) ?
     ('<div class="panel"><h3>Tonight\'s hourly runs</h3><p class="panelsub"><b>Minor runs</b> — same menu, re-priced every hour ('+PULSES.length+' this session). The <b>major</b> menu changes are in The Journey. Newest first.</p>'+
@@ -1939,10 +1948,10 @@ function render(D,H){
     '<p class="sec-sub"><b>Major runs only</b> — each card is a full re-cook where the menu (the 6 picks) actually changes. Prices still update every hour in between — those minor re-prices live in <b>Tonight\'s hourly runs</b> below. Newest first. Each row: <b>⚡ Day · 📅 Week · 📈 Long</b>. <span style="color:var(--buy)">Green = kept</span>, <span style="color:var(--dont)">red/✕ = DROP</span>, NEW = fresh this run.</p>'+
     '<div class="chef-note">'+note+'</div><div class="journey">'+journeyCols+'</div>'+
     '<div class="grid2"><div class="panel"><div class="paneltop"><h3>Closed calls · scored honestly</h3><button class="trackbtn" id="trackBtn">📊 Full month →</button></div>'+
-    '<div class="score"><div><div class="big">'+esc(ocRecord||'—')+' <span class="wl">W–L</span></div>'+recClear2+'<div class="sub">'+esc(ocOn?'every past pick, graded over its own horizon':(sb.recordNote||''))+'</div></div></div>'+
+    '<div class="score"><div><div class="big">'+esc(ocRecord||'—')+' <span class="wl">W–L</span></div>'+recClear2+'<div class="sub">'+(ocOn?'How our past tips actually did. <b>Tap any</b> to see the story.':esc(sb.recordNote||''))+'</div></div></div>'+
     ocScorecard+
     '<div class="rec">'+(ocOn?ocRows:recRows)+'</div>'+
-    (ocOn?'<p style="font-size:11px;color:var(--faint);margin-top:12px">Each pick graded over its own window — ⚡ next session · 📅 ~1 week · 📈 ~1 month. <span class="idxbeat">▲idx</span> = also beat its market index.</p>'
+    (ocOn?'<p style="font-size:11.5px;color:var(--muted);margin-top:12px;line-height:1.5">We check every pick after <b>its own timeframe</b> — a day-trade the next day, a week pick after a week, a long hold after a month. <span style="color:var(--buy);font-weight:700">Green = it made money.</span> <b>“beat mkt”</b> means it also did better than the whole market. Tap any row for the full story.</p>'
          :'<p style="font-size:11px;color:var(--faint);margin-top:12px">'+esc(sb.closedNote||'')+'</p>')+
     '<button class="trackcta" id="trackCta">See the full month graded → what we learned, what we\'d change</button></div>'+
     story+'</div></section>'+
@@ -2068,6 +2077,42 @@ function closeModal(){
   var ov=document.getElementById('overlay');
   ov.classList.remove('open');ov.setAttribute('aria-hidden','true');
   if(LASTFOCUS&&LASTFOCUS.focus)LASTFOCUS.focus();
+}
+function fmtDate(iso){var p=String(iso||'').split('-');if(p.length!==3)return iso||'';var mo=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];return (+p[2])+' '+(mo[(+p[1])-1]||'')+' '+p[0];}
+// Plain-English "what happened" for one graded call — the honesty of that exact pick on that run.
+function openGrade(sym){
+  sym=String(sym).replace(/\*$/,'');
+  var o=OUTCOMES&&OUTCOMES.outcomes&&OUTCOMES.outcomes[sym]; if(!o)return;
+  LASTFOCUS=document.activeElement;
+  var nm=((LAST&&LAST.H&&LAST.H.names)||{})[sym]||'';
+  var cur=o.region==='au'?'A$':'$', mkt=o.region==='au'?'the ASX 200':'the S&P 500';
+  var tfWord={Day:'a <b>day-trade</b> — checked the very next trading day',
+              Week:'a <b>week pick</b> — checked after about a week',
+              Long:'a <b>long hold</b> — checked after about a month'};
+  var tfEmoji={Day:'⚡',Week:'📅',Long:'📈'}[o.tf]||'';
+  var vc,verd,body;
+  var line1='We put <b>'+esc(sym)+'</b>'+(nm?' ('+esc(nm)+')':'')+' on the menu as '+tfWord[o.tf]+', on <b>'+esc(fmtDate(o.date))+'</b>'+(o.entry!=null?' at <b>'+cur+o.entry+'</b>':'')+'.';
+  if(o.status!=='graded'){
+    vc='v-hold'; verd='⏳ Still cooking';
+    body='<p class="mtake">'+line1+'</p><div class="gexp"><p>Its window hasn\'t finished yet, so we <b>haven\'t marked it right or wrong</b>. That\'s the whole point of doing this honestly — no scoring a pick until its clock is actually up.</p></div>';
+  }else{
+    var up=o.ret>=0, retPct=Math.abs(Math.round(o.ret*1000)/10);
+    vc=o.correct?'v-buy':'v-dont'; verd=o.correct?'✓ We got this one right':'✗ This one didn\'t work';
+    var line2='When its time was up'+(o.exitDate?', on <b>'+esc(fmtDate(o.exitDate))+'</b>':'')+', it was'+(o.exit!=null?' <b>'+cur+o.exit+'</b> — ':' ')+'<b class="'+(up?'up':'down')+'">'+(up?'up ':'down ')+retPct+'%</b> from where we called it.';
+    var line3='';
+    if(o.excess!=null){var bret=Math.round((o.ret-o.excess)*1000)/10, exc=Math.abs(Math.round(o.excess*1000)/10);
+      line3='<p>Over the same days '+mkt+' '+(bret>=0?'went up':'went down')+' '+Math.abs(bret)+'%, so this pick <b>'+(o.correctVsIndex?'did better than the market':'did worse than the market')+'</b> by '+exc+'%.</p>';}
+    var line4='<p class="gverdict">'+(o.correct?'It <b>made money</b> over its window → counts as a <b>win ✓</b>.':'It <b>lost money</b> over its window → counts as a <b>loss ✗</b>.')+' We only call a pick right if it actually went up in its own timeframe — win or lose, it goes on the record.</p>';
+    body='<p class="mtake">'+line1+'</p><div class="gexp"><p>'+line2+'</p>'+line3+line4+'</div>';
+  }
+  var m=document.getElementById('modal'); m.className='modal';
+  m.innerHTML='<div class="mhead '+(vc==='v-buy'?'buy':vc==='v-dont'?'don':'hold')+'"><button class="mclose" id="mClose" aria-label="Close">✕</button>'+
+    '<div class="mtf">'+tfEmoji+' '+(o.region==='au'?'🇦🇺 ASX':'🌏 International')+' · scored honestly</div>'+
+    '<div class="mtop"><div class="msym">'+esc(sym)+'</div></div>'+
+    '<span class="mverd '+vc+'">'+esc(verd)+'</span></div>'+
+    '<div class="mbody">'+body+'</div>';
+  var ov=document.getElementById('overlay'); ov.classList.add('open'); ov.setAttribute('aria-hidden','false');
+  document.getElementById('mClose').focus();
 }
 
 // ---- Reusable ⓘ explainers (no black box) ----
@@ -2492,6 +2537,11 @@ function wire(D){
   });
   var vb=document.getElementById('viewBtn'); if(vb) vb.onclick=function(){setView('simple');};
   var rb=document.getElementById('refreshBtn'); if(rb) rb.onclick=function(){refreshPrices(rb);};
+  document.querySelectorAll('[data-gsym]').forEach(function(el){
+    function go(e){ if(e.target.closest('a'))return; e.stopPropagation(); openGrade(el.dataset.gsym); }
+    el.addEventListener('click',go);
+    el.addEventListener('keydown',function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); go(e); } });
+  });
   var pm=document.getElementById('potMore'), pl=document.getElementById('potLose');
   if(pm&&pl){ pm.onclick=function(){ var open=pl.hasAttribute('hidden'); if(open)pl.removeAttribute('hidden'); else pl.setAttribute('hidden',''); pm.setAttribute('aria-expanded',open?'true':'false'); pm.innerHTML=(open?'▴ Hide the maybes &amp; passes':'➖ '+pl.children.length+' more — maybes &amp; passes ▾'); }; }
   var lu=document.getElementById('lastUpd');
