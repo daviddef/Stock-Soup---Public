@@ -306,6 +306,10 @@
   .watchbtn.on{background:var(--broth)!important;border-color:var(--broth)!important;color:#fff!important}
   .cardwatch{background:var(--surface);border:1px solid var(--line);color:var(--ink);font-size:12px;padding:5px 12px;border-radius:999px;margin-left:auto;flex:0 0 auto}
   .cardwatch:hover{border-color:var(--broth);color:var(--broth)}
+  .tf-r{display:flex;align-items:center;gap:8px}
+  .iconwatch{width:24px;height:24px;border-radius:50%;border:1.5px solid var(--line);background:var(--surface-2);color:var(--muted);font-size:16px;font-weight:800;line-height:1;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;padding:0;flex:0 0 auto;transition:border-color .12s,color .12s,background .12s}
+  .iconwatch:hover{border-color:var(--broth);color:var(--broth)}
+  .iconwatch.on{background:var(--broth);border-color:var(--broth);color:#fff}
   /* Smart-watchlist alert + rows */
   .wlalert{background:rgba(35,194,103,.13);border:1px solid rgba(35,194,103,.5);color:var(--ink);border-radius:11px;padding:11px 14px;font-size:13.5px;font-weight:700;margin-bottom:14px;text-wrap:pretty}
   #wlPills{display:flex;flex-direction:column;gap:18px}
@@ -379,7 +383,7 @@
   .scard{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:20px;cursor:pointer;box-shadow:var(--shadow);transition:transform .12s,border-color .15s}
   .scard:hover{border-color:var(--broth)} .scard:active{transform:scale(.99)}
   .scard:focus-visible{outline:2px solid var(--broth);outline-offset:3px}
-  .stf{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:800;margin-bottom:8px}
+  .stf{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:800;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between}
   .ssym{font-size:clamp(30px,8vw,36px);font-weight:900;letter-spacing:-.02em;display:flex;align-items:center;gap:12px;flex-wrap:wrap;line-height:1}
   .sverd{font-size:13px;font-weight:900;padding:5px 11px;border-radius:9px;text-transform:uppercase;letter-spacing:.03em}
   .sname{color:var(--muted);font-size:15px;font-weight:700;margin:8px 0 12px}
@@ -1656,19 +1660,24 @@ function sparkSVG(vals){
     '<polygon points="0,'+h+' '+poly+' '+w+','+h+'"/><polyline points="'+poly+'"/>'+
     '<circle cx="'+last[0]+'" cy="'+last[1]+'" r="2.2"/></svg>';
 }
-// Inline "tonight" mini-trajectory from the hourly pulses (hour-by-hour path for one pick)
+// Inline mini-trajectory: the price path across our hourly runs, FIRST run → now.
+// Hidden when there's no real movement (e.g. market closed) so it never shows a meaningless 0.0%.
 function miniTraj(sym){
   if(!PULSES||PULSES.length<2) return '';
   var vals=PULSES.map(function(pu){return (pu.snap&&pu.snap[sym]?pu.snap[sym].price:null);}).filter(function(v){return v!=null;});
   if(vals.length<2) return '';
   var first=vals[0], last=vals[vals.length-1], pct=(last/first-1)*100;
-  var mn=Math.min.apply(null,vals), mx=Math.max.apply(null,vals), rng=(mx-mn)||1, W=54, H=15;
+  var mn=Math.min.apply(null,vals), mx=Math.max.apply(null,vals);
+  var spread=first?((mx-mn)/first*100):0;
+  if(spread<0.2) return '';                     // essentially flat (market closed / dead quiet) — don't show
+  var rng=(mx-mn)||1, W=52, H=15;
   var pts=vals.map(function(v,i){return (i/(vals.length-1)*W).toFixed(1)+','+(H-((v-mn)/rng)*(H-3)-1.5).toFixed(1);}).join(' ');
   var col=pct>0.05?'var(--buy)':pct<-0.05?'var(--dont)':'var(--muted)';
-  return '<div class="tonight"><span class="tnl">Tonight</span>'+
+  var since=String(PULSES[0].stamp||'').split(' ').pop();   // e.g. "23:33" — the window start
+  return '<div class="tonight" title="Change across our hourly runs since '+esc(since)+' — separate from the daily move up top">'+
+    '<span class="tnl">since '+esc(since)+'</span>'+
     '<svg viewBox="0 0 '+W+' '+H+'" width="'+W+'" height="'+H+'" preserveAspectRatio="none" aria-hidden="true"><polyline points="'+pts+'" fill="none" stroke="'+col+'" stroke-width="1.5" vector-effect="non-scaling-stroke"/></svg>'+
-    '<span class="mtpct" style="color:'+col+'">'+(pct>=0?'+':'')+pct.toFixed(1)+'%</span>'+
-    '<span class="mtn">· '+(vals.length)+' runs</span></div>';
+    '<span class="mtpct" style="color:'+col+'">'+(pct>=0?'+':'')+pct.toFixed(1)+'%</span></div>';
 }
 function rangeBar(spark,cur){
   if(!spark||spark.length<3) return '';
@@ -1712,11 +1721,11 @@ function render(D,H){
   var menus=(D.regions||[]).map(function(rg,i){
     var cards=(rg.picks||[]).map(function(p,idx){
       return '<div class="pickcol"><article class="card" tabindex="0" role="button" data-region="'+rg.id+'" data-idx="'+idx+'" aria-label="Details for '+esc(p.sym)+'">'+
-        '<div class="tf"><span class="name">'+esc(p.tf)+'</span><span class="verdict '+esc(p.vclass)+'">'+esc(p.verdict)+'</span></div>'+
+        '<div class="tf"><span class="name">'+esc(p.tf)+'</span><span class="tf-r"><button class="watchbtn iconwatch" data-sym="'+esc(p.sym)+'" data-region="'+esc(rg.id)+'" data-name="'+esc(p.name)+'"'+(p.nEntry!=null?' data-entry="'+p.nEntry+'"':'')+' aria-pressed="false" title="Add to watchlist">+</button><span class="verdict '+esc(p.vclass)+'">'+esc(p.verdict)+'</span></span></div>'+
         '<div class="tick"><span class="symwrap"><span class="sym">'+qlink(p.sym,rg.id)+'</span><span class="co">'+qlink(p.sym,rg.id,p.name)+' ↗</span></span>'+
         '<span class="px"><span class="p mono">'+esc(p.price)+'</span><br><span class="c mono '+(p.up?'up':'down')+'">'+esc(p.change)+'</span></span></div>'+
         miniTraj(p.sym)+
-        '<div class="buyat'+(p.nEntry?' ba-'+buyState(p):'')+'">'+(p.nEntry?'<span class="bl">🎯 Ideal buy</span> ~'+esc(rg.cur||'$')+p.nEntry+buyAction(p):'<span class="bl">Track this pick</span>')+'<button class="watchbtn cardwatch" data-sym="'+esc(p.sym)+'" data-region="'+esc(rg.id)+'" data-name="'+esc(p.name)+'"'+(p.nEntry!=null?' data-entry="'+p.nEntry+'"':'')+' aria-pressed="false">＋ Watch</button></div>'+
+        '<div class="buyat'+(p.nEntry?' ba-'+buyState(p):'')+'">'+(p.nEntry?'<span class="bl">🎯 Ideal buy</span> ~'+esc(rg.cur||'$')+p.nEntry+buyAction(p):'<span class="bl">Track this pick</span>')+'</div>'+
         '<p class="plain">'+p.plain+'</p><div class="lvls">'+p.levels+'</div>'+
         (p.spark?rangeBar(p.spark,rg.cur||'$'):'')+'</article>'+
         ((p.runnerUp && /wait|late|hold|skip|avoid|pass|don.t|steer/i.test(p.verdict||''))?ruCard(p.runnerUp,rg.id,idx):'')+'</div>';
@@ -2056,8 +2065,9 @@ function syncWatchButtons(){
   document.querySelectorAll('.watchbtn[data-sym]').forEach(function(b){
     var on=wlHas(b.dataset.sym,b.dataset.region);
     b.classList.toggle('on',on);
-    b.innerHTML=on?'✓ Watching':'＋ Watch';
+    b.innerHTML = b.classList.contains('iconwatch') ? (on?'✓':'+') : (on?'✓ Watching':'＋ Watch');
     b.setAttribute('aria-pressed',on?'true':'false');
+    b.title = on?'Watching — tap to remove':'Add to watchlist';
   });
 }
 function watchToggleFromEl(b){
@@ -2202,11 +2212,11 @@ function renderSimple(D){
   var cards = (region?region.picks:[]).map(function(p,idx){
     var tf = (p.tf.split(' ')[1]||p.tf);
     return '<article class="scard" tabindex="0" role="button" data-region="'+rid+'" data-idx="'+idx+'" aria-label="Details for '+esc(p.sym)+'">'+
-      '<div class="stf">'+esc(BIG[tf]||p.tf)+'</div>'+
+      '<div class="stf"><span>'+esc(BIG[tf]||p.tf)+'</span><button class="watchbtn iconwatch" data-sym="'+esc(p.sym)+'" data-region="'+esc(rid)+'" data-name="'+esc(p.name)+'"'+(p.nEntry!=null?' data-entry="'+p.nEntry+'"':'')+' aria-pressed="false" title="Add to watchlist">+</button></div>'+
       '<div class="ssym">'+esc(p.sym)+' <span class="sverd '+esc(p.vclass)+'">'+esc(p.verdict)+'</span></div>'+
       '<div class="sname">'+esc(p.name)+' · '+esc(p.price)+' <span class="'+(p.up?'up':'down')+'">'+(p.up?'▲':'▼')+' '+esc(p.change)+'</span></div>'+
       miniTraj(p.sym)+
-      '<div class="buyat'+(p.nEntry?' ba-'+buyState(p):'')+'">'+(p.nEntry?'<span class="bl">🎯 Ideal buy</span> ~'+esc(region.cur||'$')+p.nEntry+buyAction(p):'<span class="bl">Track this pick</span>')+'<button class="watchbtn cardwatch" data-sym="'+esc(p.sym)+'" data-region="'+esc(rid)+'" data-name="'+esc(p.name)+'"'+(p.nEntry!=null?' data-entry="'+p.nEntry+'"':'')+' aria-pressed="false">＋ Watch</button></div>'+
+      '<div class="buyat'+(p.nEntry?' ba-'+buyState(p):'')+'">'+(p.nEntry?'<span class="bl">🎯 Ideal buy</span> ~'+esc(region.cur||'$')+p.nEntry+buyAction(p):'<span class="bl">Track this pick</span>')+'</div>'+
       '<div class="sline">'+esc(p.plain)+'</div>'+
       (p.spark?rangeBar(p.spark,(region.cur||'$')):'')+'</article>'+
       ((p.runnerUp && /wait|late|hold|skip|avoid|pass|don.t|steer/i.test(p.verdict||''))?ruCard(p.runnerUp,rid,idx):'');
