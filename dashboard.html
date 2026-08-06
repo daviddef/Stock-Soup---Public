@@ -126,7 +126,7 @@
   .burgerwrap{position:relative}
   .burger{width:38px;height:38px;border-radius:11px;border:1.5px solid var(--line);background:var(--surface-2);color:var(--ink);font-size:18px;line-height:1;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;padding:0}
   .burger:hover{border-color:var(--broth)}
-  .burgermenu{position:absolute;right:0;top:calc(100% + 8px);z-index:70;background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:7px;min-width:214px;display:flex;flex-direction:column;gap:1px}
+  .burgermenu{position:fixed;z-index:200;background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:7px;min-width:214px;max-width:calc(100vw - 24px);display:flex;flex-direction:column;gap:1px}
   .burgermenu[hidden]{display:none}
   .bmhead{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:5px 9px 9px;border-bottom:1px solid var(--line);margin-bottom:4px}
   .bmupd{border:0;background:transparent;color:var(--muted);font-family:var(--font);font-size:12px;font-weight:700;cursor:pointer;text-decoration:underline;text-decoration-style:dotted;text-underline-offset:2px;padding:0}
@@ -170,6 +170,14 @@
   .sc-pos{background:rgba(35,194,103,.14);color:var(--buy)}
   .sc-neg{background:rgba(255,77,77,.14);color:var(--dont)}
   .sc-mix{background:var(--surface-2);color:var(--muted)}
+  .docsov{position:fixed;inset:0;z-index:300;background:var(--ground);display:none;flex-direction:column}
+  .docsbar{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--line);background:var(--surface)}
+  .docstitle{font-weight:900;font-size:15px;display:inline-flex;align-items:center;gap:8px}
+  .docsadmin{font-size:9.5px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;background:var(--broth);color:#1a0f06;padding:2px 6px;border-radius:5px}
+  .docsclose{width:34px;height:34px;border-radius:9px;border:1px solid var(--line);background:var(--surface-2);color:var(--ink);font-size:15px;cursor:pointer}
+  .docsbody{flex:1;overflow:hidden}
+  .docsframe{width:100%;height:100%;border:0;background:var(--ground)}
+  .docsload{padding:44px 20px;text-align:center;color:var(--muted)}
   .schedlink{cursor:pointer;display:inline-flex;align-items:center;gap:7px}
   .schedi{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;border:1.2px solid var(--muted);font-family:Georgia,serif;font-style:italic;font-size:9.5px;font-weight:700}
   .schedlink:hover .schedi{border-color:var(--broth);color:var(--broth)}
@@ -1161,6 +1169,7 @@ function render(D,H){
           '<button class="bmitem" id="refreshBtn" role="menuitem">↻ Refresh prices</button>'+
           '<button class="bmitem" id="viewBtn" role="menuitem">😋 Simple view</button>'+
           '<button class="bmitem" id="themeBtn" role="menuitem">🌗 Switch theme</button>'+
+          '<button class="bmitem" id="docsBtn" role="menuitem" style="display:none">📖 Documentation</button>'+
         '</div></div>'+
     '</div></div></header>'+
 
@@ -1512,9 +1521,9 @@ function runLogHtml(){
         '<span class="rlwhen">'+fmtWhen(r.ts)+'</span>'+dur(m.durMs)+'</div>'+
         '<div class="rlbody">'+pkline(m.au,'🇦🇺','Australia')+pkline(m.us,'🇺🇸','United States')+'</div></div>';
     }
-    var pu=r.pu, ch=(pu.changes||[]).filter(function(c){return Math.abs(c[1])>=0.05;})
+    var pu=r.pu, snap=pu.snap||{}, ch=(pu.changes||[]).filter(function(c){return Math.abs(c[1])>=0.05;})
       .sort(function(a,b){return Math.abs(b[1])-Math.abs(a[1]);}).slice(0,3);
-    var mv=ch.map(function(c){var up=c[1]>=0;return '<span class="'+(up?'up':'dn')+'">'+esc(c[0])+' '+(up?'+':'')+c[1]+'%</span>';}).join(' · ');
+    var mv=ch.map(function(c){var up=c[1]>=0;var reg=(snap[c[0]]||{}).region;var fl=reg==='au'?'🇦🇺 ':reg==='us'?'🇺🇸 ':'';return '<span class="'+(up?'up':'dn')+'">'+fl+esc(c[0])+' '+(up?'+':'')+c[1]+'%</span>';}).join(' · ');
     return '<div class="rlrow rlmin"><div class="rltop"><span class="rltag rltag-min">⏱ Re-price · same picks</span>'+
       '<span class="rlwhen">'+fmtWhen(r.ts)+'</span>'+dur(pu.durMs)+'</div>'+
       '<div class="rlbody"><div class="rlline rlmovers">'+(mv||'<span class="qt">quiet hour — nothing moved much</span>')+'</div></div></div>';
@@ -1744,6 +1753,20 @@ function wireInfo(){ document.querySelectorAll('[data-info]').forEach(function(b
   b.onkeydown=function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); openInfo(b.dataset.info); } };
 }); }
 
+// Admin methodology docs — fetched privately from the Worker (admin-gated), shown in an isolated iframe.
+function openDocs(){
+  var ov=document.getElementById('docsOverlay');
+  if(!ov){ ov=document.createElement('div'); ov.id='docsOverlay'; ov.className='docsov'; document.body.appendChild(ov); }
+  ov.innerHTML='<div class="docsbar"><span class="docstitle">📖 The Kitchen Manual <span class="docsadmin">admin</span></span><button class="docsclose" id="docsClose" aria-label="Close">✕</button></div><div class="docsbody" id="docsBody"><div class="docsload">Loading the manual…</div></div>';
+  ov.style.display='flex';
+  document.getElementById('docsClose').onclick=function(){ ov.style.display='none'; };
+  document.addEventListener('keydown',function esc(e){ if(e.key==='Escape'){ ov.style.display='none'; document.removeEventListener('keydown',esc); } });
+  fetch(API_BASE+'/docs',{headers:{'Authorization':'Bearer '+sessGet()}}).then(function(r){ return r.ok?r.text():null; }).then(function(html){
+    var body=document.getElementById('docsBody'); if(!body) return;
+    if(!html){ body.innerHTML='<div class="docsload">Couldn’t load the docs — admin sign-in required.</div>'; return; }
+    var f=document.createElement('iframe'); f.className='docsframe'; f.setAttribute('title','Documentation'); f.srcdoc=html; body.innerHTML=''; body.appendChild(f);
+  }).catch(function(){ var body=document.getElementById('docsBody'); if(body) body.innerHTML='<div class="docsload">Couldn’t load the docs.</div>'; });
+}
 // ---- Accounts / cross-device sync (Cloudflare backend) ----
 var API_BASE='https://stocksoup-api.defranceski.workers.dev';
 var SKEY='soup_session', EKEY='soup_email';
@@ -2058,11 +2081,12 @@ function wire(D){
   var bg=document.getElementById('burgerBtn'), bm=document.getElementById('burgerMenu');
   if(bg&&bm){
     var closeBM=function(){ bm.setAttribute('hidden',''); bg.setAttribute('aria-expanded','false'); };
-    bg.onclick=function(e){ e.stopPropagation(); if(bm.hasAttribute('hidden')){ bm.removeAttribute('hidden'); bg.setAttribute('aria-expanded','true'); } else { closeBM(); } };
+    bg.onclick=function(e){ e.stopPropagation(); if(bm.hasAttribute('hidden')){ var rc=bg.getBoundingClientRect(); bm.style.top=(rc.bottom+8)+'px'; bm.style.right=Math.max(10,(window.innerWidth-rc.right))+'px'; bm.removeAttribute('hidden'); bg.setAttribute('aria-expanded','true'); } else { closeBM(); } };
     document.addEventListener('click',function(e){ if(!bm.hasAttribute('hidden')&&!bg.contains(e.target)&&!bm.contains(e.target)) closeBM(); });
     document.addEventListener('keydown',function(e){ if(e.key==='Escape') closeBM(); });
     bm.querySelectorAll('.bmitem,.bmupd').forEach(function(it){ it.addEventListener('click',closeBM); });
   }
+  var db=document.getElementById('docsBtn'); if(db){ if(isAdmin()){ db.style.display=''; db.onclick=openDocs; } else { db.style.display='none'; } }
   document.querySelectorAll('.schedlink').forEach(function(s){ s.removeAttribute('data-info'); s.onclick=goRunSchedule; });
   var tb=document.getElementById('trackBtn'), tc=document.getElementById('trackCta');
   if(TRACK){ if(tb)tb.onclick=openTrackRecord; if(tc)tc.onclick=openTrackRecord; }
