@@ -2242,6 +2242,125 @@
     ]
    ],
    "synth": "Since last hour the board is **risk-on 🟢** (avg +1.07%). Climbing: EOS +3.86%, PNI +2.38%."
+  },
+  {
+   "stamp": "Thu 16:09",
+   "iso": "2026-08-06T16:09:17.066570+10:00",
+   "snap": {
+    "MND": {
+     "price": 30.64,
+     "dp": 1.14,
+     "region": "au"
+    },
+    "PNI": {
+     "price": 19.28,
+     "dp": 0.16,
+     "region": "au"
+    },
+    "EOS": {
+     "price": 7.74,
+     "dp": 1.18,
+     "region": "au"
+    },
+    "KTOS": {
+     "price": 55.34,
+     "dp": 6.69,
+     "region": "us"
+    },
+    "PLTR": {
+     "price": 158.43,
+     "dp": -2.6,
+     "region": "us"
+    },
+    "ETN": {
+     "price": 447.28,
+     "dp": 0.56,
+     "region": "us"
+    },
+    "VTM": {
+     "price": 1.59,
+     "dp": 10.03,
+     "region": "au"
+    },
+    "PDN": {
+     "price": 9.94,
+     "dp": -0.5,
+     "region": "au"
+    },
+    "IEL": {
+     "price": 2.29,
+     "dp": -4.58,
+     "region": "au"
+    },
+    "TLX": {
+     "price": 15.01,
+     "dp": 1.97,
+     "region": "au"
+    },
+    "NTU": {
+     "price": 0.03,
+     "dp": 5.77,
+     "region": "au"
+    },
+    "DYL": {
+     "price": 1.38,
+     "dp": -2.48,
+     "region": "au"
+    },
+    "DRO": {
+     "price": 2.25,
+     "dp": 2.51,
+     "region": "au"
+    },
+    "A2M": {
+     "price": 7.0,
+     "dp": 1.6,
+     "region": "au"
+    },
+    "SGH": {
+     "price": 46.57,
+     "dp": 0.54,
+     "region": "au"
+    },
+    "WTC": {
+     "price": 39.09,
+     "dp": -2.05,
+     "region": "au"
+    }
+   },
+   "changes": [
+    [
+     "PNI",
+     -2.53,
+     0.16
+    ],
+    [
+     "EOS",
+     -0.9,
+     1.18
+    ],
+    [
+     "MND",
+     0.56,
+     1.14
+    ],
+    [
+     "KTOS",
+     0.0,
+     6.69
+    ],
+    [
+     "PLTR",
+     0.0,
+     -2.6
+    ],
+    [
+     "ETN",
+     0.0,
+     0.56
+    ]
+   ],
+   "synth": "Since last hour the board is **risk-off 🔴** (avg -0.48%). Climbing: MND +0.56%. Slipping: PNI -2.53%, EOS -0.9%. (ASX closed — moves are US-led.)"
   }
  ]
 }
