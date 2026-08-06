@@ -121,19 +121,24 @@
   .sec-sub{color:var(--muted);font-size:14px;margin-bottom:16px}
 
   /* 4-tab navigation */
-  .tabbar{position:sticky;top:0;z-index:50;display:flex;gap:4px;background:var(--bg);backdrop-filter:saturate(1.2) blur(6px);border-bottom:1px solid var(--line);padding:8px 0;margin:6px 0 22px}
-  .tabbtn{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:0;padding:8px 4px;border-radius:13px;cursor:pointer;color:var(--muted);font-weight:800;font-size:11px;font-family:var(--font,inherit);transition:background .12s,color .12s}
-  .tabbtn .ti{font-size:21px;line-height:1;filter:grayscale(.4);transition:filter .12s}
-  .tabbtn .tl{letter-spacing:.02em}
-  .tabbtn.active{color:var(--broth);background:var(--broth-soft,rgba(255,107,26,.12))}
-  .tabbtn.active .ti{filter:none}
-  .tabbtn:hover{color:var(--ink)}
-  .tabview{display:none;animation:tabin .2s ease}
+  .tabbar{position:sticky;top:0;z-index:50;display:flex;gap:6px;background:var(--bg);backdrop-filter:saturate(1.3) blur(8px);border-bottom:2px solid var(--line);padding:10px 0 0;margin:6px 0 24px}
+  .tabbtn{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;background:none;border:0;padding:6px 4px 13px;cursor:pointer;color:var(--muted);font-weight:900;font-size:12.5px;text-transform:uppercase;letter-spacing:.03em;line-height:1.12;text-align:center;font-family:var(--font);position:relative;transition:color .15s,transform .12s}
+  .tabbtn .ti{font-size:24px;line-height:1;filter:grayscale(.5) opacity(.72);transition:filter .15s,transform .15s}
+  .tabbtn.active{color:var(--broth)}
+  .tabbtn.active .ti{filter:none;transform:scale(1.14) rotate(-3deg)}
+  .tabbtn.active::after{content:"";position:absolute;left:14%;right:14%;bottom:-2px;height:3.5px;border-radius:3px;background:linear-gradient(90deg,var(--broth),#ffb347);box-shadow:0 0 12px rgba(255,107,26,.65)}
+  .tabbtn:hover{color:var(--ink)} .tabbtn:active{transform:scale(.96)}
+  .tabview{display:none;animation:tabin .22s ease}
   .tabview.active{display:block}
-  @keyframes tabin{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+  .tabview > section{margin-top:44px} .tabview > section:first-child{margin-top:8px}   /* breathing room between sections */
+  .tabview .hourlysec{margin-top:44px}
+  @keyframes tabin{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
   @media(max-width:640px){
-    .tabbar{position:fixed;top:auto;bottom:0;left:0;right:0;margin:0;border-top:1px solid var(--line);border-bottom:0;padding:6px 8px;padding-bottom:calc(6px + env(safe-area-inset-bottom));box-shadow:0 -6px 22px -10px rgba(60,40,20,.35);border-radius:16px 16px 0 0}
-    body{padding-bottom:74px}
+    .tabbar{position:fixed;top:auto;bottom:0;left:0;right:0;margin:0;border-top:2px solid var(--line);border-bottom:0;padding:9px 6px calc(9px + env(safe-area-inset-bottom));box-shadow:0 -8px 26px -10px rgba(60,40,20,.45);border-radius:20px 20px 0 0}
+    .tabbtn{font-size:10px;padding:4px 2px 5px;letter-spacing:.02em}
+    .tabbtn .ti{font-size:23px}
+    .tabbtn.active::after{bottom:auto;top:-9px;left:32%;right:32%;height:3px}
+    body{padding-bottom:82px}
   }
   .tabs{display:inline-flex;background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:4px;gap:4px;flex-wrap:wrap}
   .tab{border:0;background:transparent;color:var(--muted);font-family:var(--font);font-weight:800;font-size:13px;
@@ -288,7 +293,7 @@
   .score .sub{font-size:13px;color:var(--muted)}
   .rec{display:flex;flex-direction:column;gap:8px}
   .rec .row{display:flex;align-items:center;gap:10px;font-size:13px}
-  .rec .rsym{font-weight:800;width:52px}
+  .rec .rsym{font-weight:800;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;flex:0 0 auto;min-width:60px}
   .rec .bar{flex:1;height:8px;border-radius:999px;background:var(--surface-2);overflow:hidden;position:relative}
   .rec .fill{position:absolute;top:0;bottom:0;border-radius:999px}
   .rec .res{width:74px;text-align:right;font-weight:800;font-family:var(--mono)}
@@ -452,6 +457,8 @@
   .acctbtn.danger{flex:1;text-align:center;background:none;color:var(--dont);border-color:rgba(255,77,77,.4)}
   .acctbtn.danger:hover{background:rgba(255,77,77,.08);border-color:var(--dont)}
   .acctmsg{font-size:12.5px;color:var(--muted);margin-top:10px;text-align:center;min-height:1px}
+  .acctdel{display:block;margin:22px auto 2px;background:none;border:0;color:var(--faint);font-size:11.5px;text-decoration:underline;text-underline-offset:2px;cursor:pointer;font-family:inherit}
+  .acctdel:hover{color:var(--dont)} .acctdel.arm{color:var(--dont);font-weight:800;font-size:12.5px;text-decoration:none}
   .authlink{background:none;border:0;color:var(--broth);font-weight:800;cursor:pointer;font-size:inherit;padding:0;font-family:inherit;text-decoration:underline;white-space:nowrap}
   .authrow{border:1px solid var(--line);border-radius:14px;padding:14px 16px;background:var(--surface)}
   .authrow.in{display:flex;align-items:center;gap:12px;justify-content:space-between;flex-wrap:wrap;font-size:13px;color:var(--muted)}
@@ -1967,7 +1974,7 @@ function render(D,H){
     var chUs=(a.us||[]).filter(function(s){return (b.us||[]).indexOf(s)<0;}).length;
     var tot=chAu+chUs, sameDay=a.stamp===b.stamp;
     var mood=tot>=5?"a total menu overhaul 🔁":tot>=3?"a big shake-up 🌶️":tot>=1?"a couple of swaps":"steady — same menu as last run 😌";
-    note="<b>Since the last serve ("+esc(b.time)+"):</b> "+mood+" — "+tot+" of 6 picks changed"+(sameDay?" (second run today).":".")+" 🇦🇺 "+chAu+"/3 swapped · 🌏 "+chUs+"/3 swapped.";
+    note="<b>Latest menu ("+esc(a.time)+")</b> vs the previous run ("+esc(b.time)+"): "+mood+" — "+tot+" of 6 picks changed"+(sameDay?" (second run today).":".")+" 🇦🇺 "+chAu+"/3 swapped · 🌏 "+chUs+"/3 swapped.";
   }
 
   var sb=D.scoreboard||{};
@@ -2014,6 +2021,10 @@ function render(D,H){
   var _keepIdx=[],_loseIdx=[];
   _cands.forEach(function(c,i){ if((c.region||'us')!==MKT) return;   // respect the global AU/US view
     if(c.heat==='mid'||c.heat==='cold')_loseIdx.push(i); else _keepIdx.push(i); });
+  if(!_keepIdx.length){   // no sizzling/tasty this market (e.g. ASX scores run low) → surface the 'maybes' so the pot isn't empty
+    _keepIdx=_loseIdx.filter(function(i){return _cands[i].heat==='mid';});
+    _loseIdx=_loseIdx.filter(function(i){return _cands[i].heat==='cold';});
+  }
   var _potN=_keepIdx.length+_loseIdx.length;
   var pot=_keepIdx.map(function(i){return potCard(_cands[i],i);}).join('');
   var potLose=_loseIdx.map(function(i){return potCard(_cands[i],i);}).join('');
@@ -2041,17 +2052,15 @@ function render(D,H){
 
   // ===== TAB BAR =====
   '<nav class="tabbar" id="tabbar" role="tablist" aria-label="Sections">'+
-    '<button class="tabbtn active" data-tab="menu" role="tab"><span class="ti">🍲</span><span class="tl">Menu</span></button>'+
-    '<button class="tabbtn" data-tab="reviews" role="tab"><span class="ti">🍽️</span><span class="tl">Reviews</span></button>'+
-    '<button class="tabbtn" data-tab="faves" role="tab"><span class="ti">⭐</span><span class="tl">Favourites</span></button>'+
-    '<button class="tabbtn" data-tab="kitchen" role="tab"><span class="ti">👨‍🍳</span><span class="tl">Kitchen</span></button>'+
+    '<button class="tabbtn active" data-tab="menu" role="tab"><span class="ti">🍲</span><span class="tl">Tonight\'s Menu</span></button>'+
+    '<button class="tabbtn" data-tab="reviews" role="tab"><span class="ti">🍽️</span><span class="tl">Dinner Reviews</span></button>'+
+    '<button class="tabbtn" data-tab="faves" role="tab"><span class="ti">⭐</span><span class="tl">Favourite Course</span></button>'+
+    '<button class="tabbtn" data-tab="kitchen" role="tab"><span class="ti">👨‍🍳</span><span class="tl">Inside the Kitchen</span></button>'+
   '</nav>'+
 
   // ===== 🍲 TONIGHT'S MENU =====
   '<div class="tabview active" id="tab-menu">'+
-    '<section><div class="sec-head"><h2 class="display"><span class="k">01</span> Tonight\'s menu</h2>'+infoBtn('menu')+'</div>'+
-      '<p class="sec-sub">Three time horizons. Day = a quick feed. Week = simmer a few days. Long = slow-cooked. Tap a card for the full serve; tap a name for Yahoo.</p>'+
-      '<div class="tabs" role="tablist" aria-label="Region" style="margin-bottom:14px">'+regionTabs+soon+'</div>'+menus+'</section>'+
+    '<section><p class="sec-sub" style="margin-top:4px">Three time horizons — '+tfB('Day')+' a quick feed · '+tfB('Week')+' a few days · '+tfB('Long')+' slow-cooked. Tap a card for the full serve; tap a name for Yahoo. '+infoBtn('menu')+'</p>'+menus+'</section>'+
     // Change-environment retired — its trajectory + "ready to buy" now live inside each pick card (miniTraj + buyat + rangeBar).
     '<section><div class="sec-head"><h2 class="display"><span class="k">02</span> The world &amp; the sectors</h2>'+infoBtn('world')+'</div>'+
       '<p class="sec-sub">What\'s moving the pot, and which kitchens are hot vs which to skip.</p>'+
@@ -2073,8 +2082,7 @@ function render(D,H){
 
   // ===== 🍽️ THE REVIEWS =====
   '<div class="tabview" id="tab-reviews">'+
-    '<section><div class="sec-head"><h2 class="display">🍽️ The Reviews</h2>'+infoBtn('journey')+'</div>'+
-      '<p class="sec-sub"><b>How good were we?</b> Every major re-cook (the menu changing) plus every closed call, <b>scored honestly</b>. Each Journey row: <b>D · W · M</b>. <span style="color:var(--buy)">Green = kept</span>, <span style="color:var(--dont)">red/✕ = DROP</span>, NEW = fresh.</p>'+
+    '<section><p class="sec-sub" style="margin-top:4px"><b>How good were we?</b> Every major re-cook (the menu changing) plus every closed call, <b>scored honestly</b>. Each Journey row: '+tfB('Day')+' '+tfB('Week')+' '+tfB('Long')+'. <span style="color:var(--buy)">Green = kept</span>, <span style="color:var(--dont)">red/✕ = DROP</span>, NEW = fresh. '+infoBtn('journey')+'</p>'+
       '<div class="chef-note">'+note+'</div><div class="journey">'+journeyCols+'</div>'+
       '<div class="panel" style="margin-top:18px"><div class="paneltop"><h3>Closed calls · scored honestly</h3><button class="trackbtn" id="trackBtn">📊 Full month →</button></div>'+
       '<div class="score"><div><div class="big">'+esc(ocRecord||'—')+' <span class="wl">W–L</span></div>'+recClear2+'<div class="sub">'+(ocOn?'How our past tips actually did. <b>Tap any</b> to see the story.':esc(sb.recordNote||''))+'</div></div></div>'+
@@ -2087,8 +2095,7 @@ function render(D,H){
 
   // ===== ⭐ YOUR FAVOURITES =====
   '<div class="tabview" id="tab-faves">'+
-    '<section><div class="sec-head"><h2 class="display">⭐ Your Favourites</h2>'+infoBtn('watchlist')+'</div>'+
-      '<p class="sec-sub">Tap <b>＋ Watch</b> on any pick to track it — we remember its ideal-buy price and flag it when it gets there. Or add your own below.</p>'+
+    '<section><p class="sec-sub" style="margin-top:4px">Tap <b>＋ Watch</b> on any pick to track it — we remember its ideal-buy price and flag it when it gets there. Or add your own below. '+infoBtn('watchlist')+'</p>'+
       '<div class="wlalert" id="wlAlert" role="status" aria-live="polite" style="display:none"></div>'+
       '<div class="wlbar"><input id="wlInput" placeholder="Add a ticker… e.g. BHP" maxlength="8" aria-label="Ticker to add">'+
         '<span class="wlseg" role="group" aria-label="Market"><button id="wlAu" aria-pressed="true">🇦🇺 AU</button><button id="wlUs" aria-pressed="false">🇺🇸 US</button></span>'+
@@ -2721,8 +2728,9 @@ function openAccount(){
       '<div class="acctrow"><span class="acctk">Sync</span><span class="acctv">✓ across your devices + price alerts</span></div>'+
       '<div class="acctrow"><span class="acctk">Appearance</span>'+seg()+'</div>'+
       (isAdmin()?'<div class="acctadmin"><div class="acctk" style="margin-bottom:8px">🛠 Admin</div><button class="acctbtn" id="acctArch">📐 Architecture &amp; data flow</button><button class="acctbtn" id="acctHealth">💓 Data-source health</button></div>':'')+
-      '<div class="acctfoot"><button class="acctbtn ghost" id="acctSignOut">Sign out</button><button class="acctbtn danger" id="acctDelete">Delete account</button></div>'+
-      '<div class="acctmsg" id="acctMsg"></div>';
+      '<div class="acctfoot"><button class="acctbtn ghost" id="acctSignOut">Sign out</button></div>'+
+      '<div class="acctmsg" id="acctMsg"></div>'+
+      '<button class="acctdel" id="acctDelete">Delete my account</button>';
   }else{
     body='<p class="mtake">Sign in with just your email — no password. We\'ll send a one-tap link.</p>'+
       '<form class="authform" id="acctSignInForm"><input id="acctEmail" type="email" placeholder="you@email.com" required><button class="authbtn" type="submit">Sign in →</button></form><div class="authmsg" id="acctSignInMsg"></div>'+
@@ -2734,7 +2742,7 @@ function openAccount(){
   m.querySelectorAll('.tseg').forEach(function(b){ b.onclick=function(){ setTheme(b.dataset.th); m.querySelectorAll('.tseg').forEach(function(x){x.classList.toggle('on',x===b);}); }; });
   var so=document.getElementById('acctSignOut'); if(so) so.onclick=function(){ sessSet(''); try{localStorage.removeItem(EKEY);}catch(e){} closeModal(); location.replace('index.html'); };
   var del=document.getElementById('acctDelete'); if(del) del.onclick=function(){
-    if(del.dataset.c!=='1'){ del.dataset.c='1'; del.textContent='⚠ Tap again to permanently delete'; return; }
+    if(del.dataset.c!=='1'){ del.dataset.c='1'; del.classList.add('arm'); del.textContent='⚠ Tap again to permanently delete everything'; return; }
     fetch(API_BASE+'/me',{method:'DELETE',headers:apiHdr()}).then(function(){ sessSet(''); try{localStorage.removeItem(EKEY);localStorage.removeItem(WLKEY);}catch(e){} closeModal(); location.replace('index.html'); })
       .catch(function(){ document.getElementById('acctMsg').textContent='Couldn\'t delete — try again.'; });
   };
