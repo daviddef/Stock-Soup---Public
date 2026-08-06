@@ -233,7 +233,10 @@
   .now-b{font-size:10px;font-weight:900;background:var(--broth);color:#1a0f06;padding:2px 7px;border-radius:6px;letter-spacing:.06em}
   .jgrp{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);font-weight:800;margin:9px 0 4px}
   .jrow{display:flex;align-items:center;gap:7px;padding:4px 0;font-size:13px}
-  .jrow .jtf{width:15px;flex:0 0 auto}
+  .jrow .jtf{width:19px;flex:0 0 auto}
+  /* bright D / W / M timeframe badges */
+  .tfb{display:inline-flex;align-items:center;justify-content:center;width:19px;height:19px;border-radius:6px;font-weight:900;font-size:11.5px;color:#fff;flex:0 0 auto;line-height:1;vertical-align:middle;box-shadow:0 1px 3px rgba(0,0,0,.18)}
+  .tfb-d{background:#f5a623} .tfb-w{background:#2f9be0} .tfb-m{background:#8b5cf6}
   .jrow .jinfo{min-width:0;flex:1}
   .jrow .jinfo a{font-weight:800}
   .jrow .jname{color:var(--muted);font-size:11px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block}
@@ -1734,7 +1737,12 @@ var HIST_EMBED = {
 };
 
 var esc=function(s){return String(s==null?"":s);};
-var TFS=["⚡","📅","📈"];
+// Bright D / W / M timeframe badges (Day / Week / Month) — used everywhere a timeframe shows.
+function tfNorm(s){s=String(s||'');return /week/i.test(s)?'Week':/long|month/i.test(s)?'Long':/day/i.test(s)?'Day':'';}
+var _TFB={Day:['d','D'],Week:['w','W'],Long:['m','M']};
+function tfB(tf){var m=_TFB[tf]||_TFB[tfNorm(tf)];return m?'<span class="tfb tfb-'+m[0]+'">'+m[1]+'</span>':'';}
+function tfBW(tf){var n=tfNorm(tf),w={Day:'Day',Week:'Week',Long:'Long'}[n]||'';return tfB(n)+(w?' '+w:'');}
+var TFS=[tfB('Day'),tfB('Week'),tfB('Long')];
 var LAST=null, LASTFOCUS=null;
 function yf(sym,region){var s=String(sym).replace(/\*$/,'');if(region==="au")s+=".AX";return "https://finance.yahoo.com/quote/"+encodeURIComponent(s);}
 function qlink(sym,region,label){return '<a class="q" href="'+yf(sym,region)+'" target="_blank" rel="noopener">'+esc(label==null?sym:label)+'</a>';}
@@ -1884,7 +1892,7 @@ function render(D,H){
   var menus=(D.regions||[]).map(function(rg,i){
     var cards=(rg.picks||[]).map(function(p,idx){
       return '<div class="pickcol"><article class="card" tabindex="0" role="button" data-region="'+rg.id+'" data-idx="'+idx+'" aria-label="Details for '+esc(p.sym)+'">'+
-        '<div class="tf"><span class="name">'+esc(p.tf)+'</span><span class="tf-r"><button class="watchbtn iconwatch" data-sym="'+esc(p.sym)+'" data-region="'+esc(rg.id)+'" data-name="'+esc(p.name)+'"'+(p.nEntry!=null?' data-entry="'+p.nEntry+'"':'')+' aria-pressed="false" title="Add to watchlist">+</button><span class="verdict '+esc(p.vclass)+'">'+esc(p.verdict)+'</span></span></div>'+
+        '<div class="tf"><span class="name">'+tfBW(p.tf)+'</span><span class="tf-r"><button class="watchbtn iconwatch" data-sym="'+esc(p.sym)+'" data-region="'+esc(rg.id)+'" data-name="'+esc(p.name)+'"'+(p.nEntry!=null?' data-entry="'+p.nEntry+'"':'')+' aria-pressed="false" title="Add to watchlist">+</button><span class="verdict '+esc(p.vclass)+'">'+esc(p.verdict)+'</span></span></div>'+
         '<div class="tick"><span class="symwrap"><span class="sym">'+qlink(p.sym,rg.id)+'</span><span class="co">'+qlink(p.sym,rg.id,p.name)+' ↗</span></span>'+
         '<span class="px"><span class="p mono">'+esc(p.price)+'</span><br><span class="c mono '+(p.up?'up':'down')+'">'+esc(p.change)+'</span></span></div>'+
         miniTraj(p.sym)+
@@ -1952,7 +1960,7 @@ function render(D,H){
   var openRows=(sb.open||[]).map(function(o){var reg=(D.regions&&D.regions[0]&&D.regions[0].picks.some(function(p){return p.sym===o.sym;}))?'au':'us';return '<div class="row"><span>'+esc(o.tf)+' '+qlink(o.sym,reg)+' <span style="color:var(--muted)">'+esc(o.period)+'</span></span><span class="st"'+(o.hot?' style="color:var(--hold)"':'')+'>'+esc(o.status)+'</span></div>';}).join('');
   // real accountability from the grader (outcomes.json) — replaces the placeholder when present
   var ocOn=!!(OUTCOMES&&OUTCOMES.outcomes);
-  var tfBadge={Day:'⚡',Week:'📅',Long:'📈'};
+  var tfBadge={Day:tfB('Day'),Week:tfB('Week'),Long:tfB('Long')};
   var ocRecord=ocOn?OUTCOMES.record:sb.record;
   var _rp2=(ocRecord||'').split(/[–-]/);
   var recClear2=(_rp2.length===2)?'<div class="sub" style="color:var(--ink);font-weight:700">'+_rp2[0].trim()+' win'+(_rp2[0].trim()==='1'?'':'s')+' · '+_rp2[1].trim()+' loss'+(_rp2[1].trim()==='1'?'':'es')+'</div>':recClear;
@@ -1961,7 +1969,7 @@ function render(D,H){
     var w=o.correct, pct=(o.ret>=0?'+':'')+(Math.round(o.ret*1000)/10)+'%';
     return '<div class="row graderow" data-gsym="'+esc(o.sym)+'" role="button" tabindex="0" title="Tap to see what happened with '+esc(o.sym)+'"><span class="rsym">'+(tfBadge[o.tf]||'')+' '+esc(o.sym)+'</span><div class="bar"><span class="fill" style="'+(w?'left:50%;width:26%;background:var(--buy)':'right:50%;width:22%;background:var(--dont)')+'"></span></div><span class="res '+(w?'up':'down')+'">'+esc(pct)+(o.correctVsIndex?' <span class="idxbeat" title="also did better than the market">beat mkt</span>':'')+'</span></div>';
   }).join('');
-  var tfLabel={Day:'⚡ Day trades',Week:'📅 Week holds',Long:'📈 Long holds'};
+  var tfLabel={Day:tfB('Day')+' Day trades',Week:tfB('Week')+' Week holds',Long:tfB('Long')+' Long holds'};
   var ocScorecard=(ocOn&&OUTCOMES.byTimeframe)?'<div class="tfscore">'+['Day','Week','Long'].map(function(tf){var a=OUTCOMES.byTimeframe[tf]||{};var wr=a.n?Math.round((a.winRate||0)*100):null;var cls=wr==null?'':(wr>=60?'good':wr>=40?'mid':'bad');return '<div class="tfs '+cls+(a.n?' tappable':'')+'"'+(a.n?' data-tf="'+tf+'" role="button" tabindex="0" title="See every '+tf+' call"':'')+'><div class="tft">'+tfLabel[tf]+'</div><div class="tfv">'+(wr==null?'—':wr+'%')+'</div><div class="tfn">'+(a.n?'right '+Math.round((a.winRate||0)*a.n)+' of '+a.n:'—')+'</div></div>';}).join('')+'</div>':'';
   function lines(arr,key,src,off){off=off||0;return (arr||[]).map(function(x,i){return '<div class="line clickline" data-theme="'+esc(src)+'" data-ti="'+(off+i)+'" role="button" tabindex="0"><span class="em">'+esc(x.em)+'</span><div class="txt">'+esc(x[key])+'<small>'+x.note+'</small></div><span class="tag '+esc(x.tclass)+'">'+esc(x.tag)+'</span></div>';}).join('');}
   var story = (PULSES&&PULSES.length) ?
@@ -2132,7 +2140,7 @@ function openModal(p,region,cur){
   m.className='modal';
   m.innerHTML=
     '<div class="mhead '+esc(p.vclass)+'"><button class="mclose" id="mClose" aria-label="Close">✕</button>'+
-      '<div class="mtf">'+esc(p.tf)+' · '+(region==='au'?'🇦🇺 ASX':'🇺🇸 International')+'</div>'+
+      '<div class="mtf">'+tfBW(p.tf)+' · '+(region==='au'?'🇦🇺 ASX':'🇺🇸 International')+'</div>'+
       '<div class="mtop"><div><div class="msym" id="mTitle">'+esc(p.sym)+'</div><div class="mco">'+qlink(p.sym,region,p.name)+' ↗</div></div>'+
         '<div class="mpx"><div class="mp mono">'+esc(p.price)+'</div><div class="mono '+(p.up?"up":"down")+'" style="font-weight:700;font-size:13px">'+esc(p.change)+'</div></div></div>'+
       '<span class="mverd '+esc(p.vclass)+'">'+esc(p.verdict)+'</span></div>'+
@@ -2180,7 +2188,7 @@ function openGrade(sym){
   var tfWord={Day:'a <b>day-trade</b> — checked the very next trading day',
               Week:'a <b>week pick</b> — checked after about a week',
               Long:'a <b>long hold</b> — checked after about a month'};
-  var tfEmoji={Day:'⚡',Week:'📅',Long:'📈'}[o.tf]||'';
+  var tfEmoji=tfB(o.tf);
   var vc,verd,body;
   var line1='We put <b>'+esc(sym)+'</b>'+(nm?' ('+esc(nm)+')':'')+' on the menu as '+tfWord[o.tf]+', on <b>'+esc(fmtDate(o.date))+'</b>'+(o.entry!=null?' at <b>'+cur+o.entry+'</b>':'')+'.';
   if(o.status!=='graded'){
@@ -2213,7 +2221,7 @@ function openTimeframe(tf){
   var graded=all.filter(function(o){return o.status==='graded';}).sort(function(a,b){return (b.date||'').localeCompare(a.date||'');});
   var pending=all.filter(function(o){return o.status!=='graded';});
   var wins=graded.filter(function(o){return o.correct;}).length, n=graded.length;
-  var TL={Day:'⚡ Day trades',Week:'📅 Week holds',Long:'📈 Long holds'};
+  var TL={Day:'Day trades',Week:'Week holds',Long:'Long holds'};
   var TW={Day:'each checked the next trading day',Week:'each checked after about a week',Long:'each checked after about a month'};
   var wr=n?Math.round(wins/n*100):0, vc=wr>=60?'buy':wr>=40?'hold':'don';
   function row(o){
@@ -2228,7 +2236,7 @@ function openTimeframe(tf){
     '<p style="font-size:11.5px;color:var(--faint);margin-top:12px">Green ✓ = it made money in its window. <span class="idxbeat">beat mkt</span> = also beat the market. Tap any row for the full story.</p>';
   var m=document.getElementById('modal'); m.className='modal';
   m.innerHTML='<div class="mhead '+vc+'"><button class="mclose" id="mClose" aria-label="Close">✕</button>'+
-    '<div class="mtf">📊 Scored honestly</div><div class="mtop"><div class="msym" style="font-size:22px">'+esc(TL[tf])+'</div></div>'+
+    '<div class="mtf">📊 Scored honestly</div><div class="mtop"><div class="msym" style="font-size:22px">'+tfB(tf)+' '+esc(TL[tf])+'</div></div>'+
     '<span class="mverd '+(vc==='buy'?'v-buy':vc==='don'?'v-dont':'v-hold')+'">'+wr+'% right</span></div>'+
     '<div class="mbody">'+body+'</div>';
   var ov=document.getElementById('overlay'); ov.classList.add('open'); ov.setAttribute('aria-hidden','false');
@@ -2873,7 +2881,7 @@ function renderSimple(D){
   var cards = (region?region.picks:[]).map(function(p,idx){
     var tf = (p.tf.split(' ')[1]||p.tf);
     return '<article class="scard" tabindex="0" role="button" data-region="'+rid+'" data-idx="'+idx+'" aria-label="Details for '+esc(p.sym)+'">'+
-      '<div class="stf"><span>'+esc(BIG[tf]||p.tf)+'</span><button class="watchbtn iconwatch" data-sym="'+esc(p.sym)+'" data-region="'+esc(rid)+'" data-name="'+esc(p.name)+'"'+(p.nEntry!=null?' data-entry="'+p.nEntry+'"':'')+' aria-pressed="false" title="Add to watchlist">+</button></div>'+
+      '<div class="stf"><span>'+tfBW(p.tf)+'</span><button class="watchbtn iconwatch" data-sym="'+esc(p.sym)+'" data-region="'+esc(rid)+'" data-name="'+esc(p.name)+'"'+(p.nEntry!=null?' data-entry="'+p.nEntry+'"':'')+' aria-pressed="false" title="Add to watchlist">+</button></div>'+
       '<div class="ssym">'+esc(p.sym)+' <span class="sverd '+esc(p.vclass)+'">'+esc(p.verdict)+'</span></div>'+
       '<div class="sname">'+esc(p.name)+' · '+esc(p.price)+' <span class="'+(p.up?'up':'down')+'">'+(p.up?'▲':'▼')+' '+esc(p.change)+'</span></div>'+
       miniTraj(p.sym)+
