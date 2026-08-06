@@ -253,7 +253,10 @@
   .potlegend span{display:inline-flex;align-items:center;gap:5px}
   .potlegend i{width:9px;height:9px;border-radius:50%;display:inline-block}
   .pot{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
-  .potcard{display:flex;flex-direction:column;gap:6px;border:1px solid var(--line);border-radius:13px;padding:12px 13px;text-decoration:none;color:var(--ink);transition:transform .12s,border-color .12s}
+  .potcard{display:flex;flex-direction:column;gap:6px;border:1px solid var(--line);border-radius:13px;padding:12px 13px;text-decoration:none;color:var(--ink);cursor:pointer;transition:transform .12s,border-color .12s}
+  .pmc-short{font-size:10px;font-weight:800;font-family:var(--mono);color:var(--dont);background:rgba(255,77,77,.12);border-radius:999px;padding:1px 6px}
+  .mnews{font-size:13.5px;line-height:1.5;background:var(--surface-2);border:1px solid var(--line);border-radius:11px;padding:11px 13px;text-wrap:pretty}
+  .mshort{font-size:13px;line-height:1.5;color:var(--ink)}
   .potcard:hover{transform:translateY(-2px)}
   .potcard:focus-visible{outline:2px solid var(--broth);outline-offset:2px}
   .potcard .ph{width:9px;height:9px;border-radius:50%;flex:0 0 auto}
@@ -1664,7 +1667,7 @@ function renderChangeEnv(D, pulses){
       '<span class="pxg"><span class="pxbuy">Buy @ '+esc(pk.cur)+pk.nEntry+'</span></span></div>';
   }).join('');
   var latest=pulses[pulses.length-1];
-  return '<section><div class="sec-head"><h2 class="display"><span class="k">01½</span> Change environment</h2></div>'+
+  return '<section><div class="sec-head"><h2 class="display"><span class="k">01½</span> Change environment</h2>'+infoBtn('changeenv')+'</div>'+
     '<p class="sec-sub">How each pick moved across the last '+n+' runs (since '+esc(pulses[0].stamp)+'), and how close each is to its ideal buy — where to act.</p>'+
     '<div class="cenv"><div class="cetraj"><div class="ceh">📈 Trajectories · % from first run</div>'+
       '<div class="cechartwrap"><svg class="cechart" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none">'+zero+lines+'</svg>'+labHtml+'</div>'+flatHtml+'</div>'+
@@ -1816,15 +1819,16 @@ function render(D,H){
         return '<div class="plrow"><span class="pltime">'+esc(pu.stamp)+'</span><span class="plmv">'+body+'</span></div>';
       }).join('')+'</div></div>')
     : '<div class="panel"><h3>Tonight\'s hourly runs</h3><p class="panelsub">Hourly pulses will appear here as they run.</p></div>';
-  var pot=(D.candidates||[]).map(function(c){
+  var pot=(D.candidates||[]).map(function(c,i){
     var spk=(c.spark&&c.spark.length>2)?sparkSVG(c.spark.slice(-30)):'';
     var chg=c.change?'<span class="pmc-chg '+(c.up?'up':'down')+'">'+(c.up?'▲':'▼')+' '+esc(c.change)+'</span>':'';
-    return '<a class="potcard h-'+esc(c.heat)+'" href="'+yf(c.sym,c.region)+'" target="_blank" rel="noopener">'+
-      '<div class="pmc-top">'+(c.heat==='cold'?'<span class="ph no">⛔</span>':'<span class="ph"></span>')+'<b class="pmc-sym">'+esc(c.sym)+'</b><span class="pmc-flag">'+(c.region==='au'?'AU':'US')+'</span></div>'+
+    var shortChip=(c.short!=null&&c.short>=4)?'<span class="pmc-short">🩳 '+c.short+'%</span>':'';
+    return '<div class="potcard h-'+esc(c.heat)+'" data-ci="'+i+'" role="button" tabindex="0" aria-label="Details for '+esc(c.sym)+'">'+
+      '<div class="pmc-top">'+(c.heat==='cold'?'<span class="ph no">⛔</span>':'<span class="ph"></span>')+'<b class="pmc-sym">'+esc(c.sym)+'</b>'+shortChip+'<span class="pmc-flag">'+(c.region==='au'?'AU':'US')+'</span></div>'+
       (c.name?'<div class="pmc-name">'+esc(c.name)+'</div>':'')+
       '<div class="pmc-px">'+(c.price?'<span class="pmc-price">'+esc(c.price)+'</span>':'')+chg+'</div>'+
       (spk?'<div class="pmc-spark">'+spk+'</div>':'')+
-      '<div class="pmc-note">'+esc(c.note)+'</div></a>';
+      '<div class="pmc-note">'+esc(c.news||c.note)+'</div></div>';
   }).join('');
   var half=Math.ceil((D.commodities||[]).length/2);
   var trail=(D.trail||[]).map(function(t){var jump=(t.jump?' <a class="trailjump" href="#'+esc(t.jump)+'">'+esc(t.jumpLabel||'see the list →')+'</a>':'');return '<div class="step"><span class="n">'+esc(t.n)+'</span><div class="st-txt">'+t.text+jump+'<small>'+esc(t.note)+'</small></div></div>';}).join('');
@@ -1844,12 +1848,12 @@ function render(D,H){
     '<div class="meter"><div class="track"><div class="needle" id="needle"></div></div>'+
     '<div class="lbls"><span>🔴 Hide the cash</span><span>⚪ Steady</span><span>🟢 Send it</span></div></div></header>'+
 
-  '<section><div class="sec-head"><h2 class="display"><span class="k">01</span> Tonight\'s menu</h2></div>'+
+  '<section><div class="sec-head"><h2 class="display"><span class="k">01</span> Tonight\'s menu</h2>'+infoBtn('menu')+'</div>'+
     '<p class="sec-sub">Three time horizons. Day = a quick feed. Week = simmer a few days. Long = slow-cooked. Tap a card for the full serve; tap a name for Yahoo.</p>'+
     '<div class="tabs" role="tablist" aria-label="Region" style="margin-bottom:14px">'+regionTabs+soon+'</div>'+menus+'</section>'+
 
   (PULSES?renderChangeEnv(D,PULSES):pulseBanner(D))+
-  '<section><div class="sec-head"><h2 class="display"><span class="k">02</span> The journey</h2></div>'+
+  '<section><div class="sec-head"><h2 class="display"><span class="k">02</span> The journey</h2>'+infoBtn('journey')+'</div>'+
     '<p class="sec-sub"><b>Major runs only</b> — each card is a full re-cook where the menu (the 6 picks) actually changes. Prices still update every hour in between — those minor re-prices live in <b>Tonight\'s hourly runs</b> below. Newest first. Each row: <b>⚡ Day · 📅 Week · 📈 Long</b>. <span style="color:var(--buy)">Green = kept</span>, <span style="color:var(--dont)">red/✕ = DROP</span>, NEW = fresh this run.</p>'+
     '<div class="chef-note">'+note+'</div><div class="journey">'+journeyCols+'</div>'+
     '<div class="grid2"><div class="panel"><div class="paneltop"><h3>Closed calls · scored honestly</h3><button class="trackbtn" id="trackBtn">📊 Full month →</button></div>'+
@@ -1858,17 +1862,17 @@ function render(D,H){
     '<button class="trackcta" id="trackCta">See the last month graded → 29 W · 31 L, what we learned, what we\'d change</button></div>'+
     story+'</div></section>'+
 
-  '<section id="fullpot"><div class="sec-head"><h2 class="display"><span class="k">03</span> The full pot</h2></div>'+
-    '<p class="sec-sub">Every candidate the scan shortlisted tonight — <b>'+((D.candidates||[]).length)+' names</b>, priced and scored. These are the ones we chose from. Colour = how appetising it looks. Tap any for Yahoo.</p>'+
+  '<section id="fullpot"><div class="sec-head"><h2 class="display"><span class="k">03</span> The full pot</h2>'+infoBtn('fullpot')+'</div>'+
+    '<p class="sec-sub">Every candidate the scan shortlisted tonight — <b>'+((D.candidates||[]).length)+' names</b>, priced and scored. These are the ones we chose from. Colour = how appetising it looks. <b>Tap any for the full read.</b></p>'+
     '<div class="potlegend"><span><i style="background:var(--broth)"></i>🔥 sizzling</span><span><i style="background:var(--buy)"></i>✅ tasty</span><span><i style="background:var(--hold)"></i>➖ maybe</span><span><span class="legno">⛔</span> send it back</span></div>'+
     '<div class="pot">'+pot+'</div></section>'+
 
-  '<section><div class="sec-head"><h2 class="display"><span class="k">04</span> The world &amp; the sectors</h2></div>'+
+  '<section><div class="sec-head"><h2 class="display"><span class="k">04</span> The world &amp; the sectors</h2>'+infoBtn('world')+'</div>'+
     '<p class="sec-sub">What\'s moving the pot, and which kitchens are hot vs which to skip.</p>'+
     '<div class="cols"><div class="stack"><div class="eyebrow">🌍 Geopolitics</div>'+lines(D.geo,'title','geo')+'</div>'+
     '<div class="stack"><div class="eyebrow">🍳 Sectors — buy vs skip</div>'+lines(D.sectors,'title','sectors')+'</div></div></section>'+
 
-  '<section><div class="sec-head"><h2 class="display"><span class="k">05</span> Commodities — simple</h2></div>'+
+  '<section><div class="sec-head"><h2 class="display"><span class="k">05</span> Commodities — simple</h2>'+infoBtn('commodities')+'</div>'+
     '<p class="sec-sub">No jargon. Just: worth a look, emerging (🔥), or leave it.</p>'+
     '<div class="cols"><div class="stack">'+lines((D.commodities||[]).slice(0,half),'name')+'</div>'+
     '<div class="stack">'+lines((D.commodities||[]).slice(half),'name')+'</div></div></section>'+
@@ -1882,7 +1886,7 @@ function render(D,H){
     '<div class="wlpills" id="wlPills"></div>'+
     '<div class="wlnote">Saved in this browser only. Cross-device sync &amp; price alerts are coming.</div></section>'+
 
-  '<section><div class="sec-head"><h2 class="display"><span class="k">07</span> The archive</h2></div>'+
+  '<section><div class="sec-head"><h2 class="display"><span class="k">07</span> The archive</h2>'+infoBtn('archive')+'</div>'+
     '<p class="sec-sub">Every menu we\'ve served. Tap one to open that run\'s full report.</p>'+
     '<div class="arch" id="archList"><div class="wlempty">Loading past menus…</div></div>'+
     '<div class="archmore" id="archMore"></div></section>'+
@@ -1957,6 +1961,8 @@ function openModal(p,region,cur){
         '<div class="rsimeta">'+rsiWord+'</div></div>'+
       scoreHtml+
       '<p class="mtake"><span class="lead">Chef says:</span> '+esc(p.chefTake)+'</p>'+
+      (p.news?'<div class="mnews">📰 <span class="lead">In the news:</span> '+esc(p.news)+'</div>':'')+
+      (p.short!=null?'<div class="mshort">🩳 <span class="lead">Short interest:</span> <b>'+p.short+'%</b>'+(p.short>=8?' — elevated (squeeze fuel)':p.short>=4?' — moderate':' — light')+'</div>':'')+
       '<div><h4 style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:800;margin-bottom:10px">Why it\'s on the menu</h4><ul class="mcat">'+cats+'</ul></div>'+
       '<div class="mrisk"><b>Watch out:</b> '+esc(p.risk)+'</div>'+
       altsHtml+
@@ -1994,7 +2000,32 @@ var INFO={
     '<li>🇺🇸 <b>23:00 AEST</b> — before the US opens (9:30am New York).</li>'+
     '<li>☀️ <b>12:30 AEST</b> — a midday check while the ASX trades.</li></ul>'+
     '<h4>⏱️ Minor runs — a re-price</h4><p>Every hour we re-price the current 6 picks + your watchlist and read the change — <i>same menu, fresh numbers</i>. These fill <b>Tonight\'s hourly runs</b> and the change-environment chart. They don\'t pick new stocks.</p>'+
-    '<p class="infofoot">So: <b>majors</b> change <i>what\'s on the menu</i> (market-open-timed); <b>minors</b> keep <i>the prices</i> live (hourly). The time up top is the next run — tap it any time to see this.</p>'}
+    '<p class="infofoot">So: <b>majors</b> change <i>what\'s on the menu</i> (market-open-timed); <b>minors</b> keep <i>the prices</i> live (hourly). The time up top is the next run — tap it any time to see this.</p>'},
+  menu:{icon:'🍽️',title:'Tonight\'s Menu',body:
+    '<p>The <b>6 picks</b> this run — <b>3 Australian + 3 international</b>, in three time horizons:</p>'+
+    '<ul class="infoul"><li>⚡ <b>Day</b> — a quick trade off a fresh catalyst.</li><li>📅 <b>Week</b> — simmer a few days.</li><li>📈 <b>Long</b> — slow-cooked conviction.</li></ul>'+
+    '<h4>How a pick is chosen</h4><p>Every candidate is scored 0–100 by the <b>Buy-Now engine</b>: fresh catalyst, earnings surprise, analyst moves, 52-week-high proximity, volume and trend — minus an <b>overheating penalty</b> so we don\'t chase what already ran. The verdict (Get in / Wait / Too late) and the <b>ideal-buy price</b> come straight from that score. Tap a card for the full breakdown.</p>'+
+    '<p class="infofoot">The market toggle (🇦🇺/🇺🇸) switches which three you\'re looking at.</p>'},
+  changeenv:{icon:'📈',title:'Change Environment',body:
+    '<p>What\'s <b>moved</b> since the picks were chosen, and <b>how close each is to its ideal buy</b> — the "should I act yet?" view.</p>'+
+    '<h4>Trajectories</h4><p>Each line is a pick\'s price change <b>from the first hourly run tonight</b> to now (not the daily move). Flat names collapse to a note.</p>'+
+    '<h4>Ready to buy?</h4><p>The bar shows today\'s price vs <b>your ideal buy</b>. <span style="color:var(--buy)">Green</span> = at/below it → act. <b>Grey</b> = above → wait for the dip; the % is how far it still needs to fall.</p>'+
+    '<p class="infofoot">Rebuilt every hourly (minor) run.</p>'},
+  journey:{icon:'🧭',title:'The Journey',body:
+    '<p>How the menu has <b>changed across major runs</b> — each card is one full re-cook. <span style="color:var(--buy)">Green</span> = a pick we kept, <span style="color:var(--dont)">red/✕</span> = dropped, <b>NEW</b> = fresh that run.</p>'+
+    '<p>It only advances on a <b>major</b> run (new picks). Hourly re-prices are the <b>minor</b> runs below it. Tap the time up top for the full schedule.</p>'},
+  fullpot:{icon:'🍲',title:'The Full Pot',body:
+    '<p>Every candidate the scan <b>shortlisted</b> this run — the names we chose the 6 picks from. Each is priced, charted and scored.</p>'+
+    '<h4>The colour</h4><ul class="infoul"><li>🔥 <b>sizzling</b> — hottest setups</li><li>✅ <b>tasty</b> — solid</li><li>➖ <b>maybe</b> — mixed</li><li>⛔ <b>send it back</b> — avoid (falling knife / downgrade)</li></ul>'+
+    '<p>Tap any for the full read — company, day move, ~6-week chart, the news, and (for ASX) short interest.</p>'+
+    '<p class="infofoot">These are the shortlist, not the wider raw scan — see "How we got here".</p>'},
+  world:{icon:'🌍',title:'World & Sectors',body:
+    '<p>The <b>macro backdrop</b> — geopolitical themes and sector heat that tilt the picks.</p>'+
+    '<p>Each card is a <b>Buy the theme / Watch / Skip</b> call with the tickers leading it. <b>Tap one</b> to see the leaders and our read on each. These themes feed the "why" behind individual picks (e.g. AUKUS → defence names).</p>'},
+  commodities:{icon:'🛢️',title:'Commodities',body:
+    '<p>The raw-material backdrop — <b>bullish vs bearish</b> across metals, energy and the emerging plays (rare earths, uranium, lithium). Australia is resource-heavy, so this often drives the ASX picks (e.g. a gold breakout lifts the miners).</p>'},
+  archive:{icon:'🗂️',title:'The Archive',body:
+    '<p>Every menu we\'ve served, newest first — tap one to open that run\'s full report snapshot. Shows the last 3; expand for the rest. Each records that run\'s 6 picks and the risk read at the time.</p>'}
 };
 function infoBtn(key){ return '<button class="infobtn" data-info="'+esc(key)+'" aria-label="What is this?">i</button>'; }
 function openInfo(key){
@@ -2049,7 +2080,34 @@ function openTheme(src,idx){
   document.getElementById('mClose').focus();
   m.querySelectorAll('.themerow.tappable').forEach(function(row){ row.addEventListener('click',function(e){ if(e.target.closest('a'))return; var rg=(D.regions||[]).filter(function(x){return x.id===row.dataset.region;})[0]; if(rg){var p=rg.picks[+row.dataset.idx]; if(p)openModal(p,rg.id,rg.cur||'$');} }); });
 }
-function wireThemes(){ document.querySelectorAll('.clickline[data-theme]').forEach(function(l){ l.onclick=function(){ openTheme(l.dataset.theme,+l.dataset.ti); }; l.onkeydown=function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); openTheme(l.dataset.theme,+l.dataset.ti); } }; }); }
+function openCandidate(idx){
+  var D=LAST.D||{}, c=(D.candidates||[])[idx]; if(!c)return;
+  LASTFOCUS=document.activeElement;
+  var HEAT={hot:'🔥 sizzling',good:'✅ tasty',mid:'➖ maybe',cold:'⛔ send it back'};
+  var vc=(c.heat==='good'||c.heat==='hot')?'buy':(c.heat==='cold'?'don':'hold');
+  var spk=(c.spark&&c.spark.length>2)?sparkSVG(c.spark.slice(-30)):'';
+  var m=document.getElementById('modal'); m.className='modal';
+  m.innerHTML='<div class="mhead '+vc+'"><button class="mclose" id="mClose" aria-label="Close">✕</button>'+
+    '<div class="mtf">🍲 Full-pot candidate · '+(c.region==='au'?'🇦🇺 ASX':'🇺🇸 International')+'</div>'+
+    '<div class="mtop"><div><div class="msym">'+esc(c.sym)+'</div><div class="mco">'+esc(c.name||c.sym)+'</div></div>'+
+      '<div class="mpx"><div class="mp mono">'+esc(c.price||'—')+'</div>'+(c.change?'<div class="mono '+(c.up?'up':'down')+'" style="font-weight:700;font-size:13px">'+(c.up?'▲':'▼')+' '+esc(c.change)+'</div>':'')+'</div></div>'+
+    '<span class="mverd '+vc+'">'+esc(HEAT[c.heat]||c.heat)+'</span></div>'+
+    '<div class="mbody">'+
+      (spk?'<div class="viz"><h4>Recent trend · last ~6 weeks</h4>'+spk+'</div>':'')+
+      '<p class="mtake"><span class="lead">Why it\'s in the pot:</span> '+esc(c.note||'')+'</p>'+
+      (c.news?'<div class="mnews">📰 <span class="lead">In the news:</span> '+esc(c.news)+'</div>':'')+
+      (c.short!=null?'<div class="mshort">🩳 <span class="lead">Short interest:</span> <b>'+c.short+'%</b> of shares sold short'+(c.short>=8?' — <b>elevated</b> (squeeze fuel / bearish crowd)':c.short>=4?' — moderate':' — light')+'</div>':'')+
+      '<div class="mrisk" style="background:var(--surface-2);border-color:var(--line)"><b>Didn\'t make the top 3</b> — it\'s on the radar, not a pick this run.</div>'+
+      '<div class="mfoot"><button class="mbtn watchbtn" data-sym="'+esc(c.sym)+'" data-region="'+esc(c.region)+'"'+(c.name?' data-name="'+esc(c.name)+'"':'')+' aria-pressed="false">＋ Watch</button>'+
+        '<a class="mbtn primary" href="'+yf(c.sym,c.region)+'" target="_blank" rel="noopener">📈 Yahoo ↗</a></div>'+
+    '</div>';
+  var _wb=m.querySelector('.watchbtn'); if(_wb)_wb.addEventListener('click',function(e){e.preventDefault();watchToggleFromEl(_wb);});
+  syncWatchButtons();
+  var ov=document.getElementById('overlay'); ov.classList.add('open'); ov.setAttribute('aria-hidden','false');
+  document.getElementById('mClose').focus();
+}
+function wireThemes(){ document.querySelectorAll('.clickline[data-theme]').forEach(function(l){ l.onclick=function(){ openTheme(l.dataset.theme,+l.dataset.ti); }; l.onkeydown=function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); openTheme(l.dataset.theme,+l.dataset.ti); } }; });
+  document.querySelectorAll('.potcard[data-ci]').forEach(function(p){ p.onclick=function(e){ if(e.target.closest('a'))return; openCandidate(+p.dataset.ci); }; p.onkeydown=function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); openCandidate(+p.dataset.ci); } }; }); }
 function wireInfo(){ document.querySelectorAll('[data-info]').forEach(function(b){
   b.onclick=function(e){ e.preventDefault(); openInfo(b.dataset.info); };
   b.onkeydown=function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); openInfo(b.dataset.info); } };
