@@ -251,6 +251,9 @@
   /* bright D / W / M timeframe badges */
   .tfb{display:inline-flex;align-items:center;justify-content:center;width:19px;height:19px;border-radius:6px;font-weight:900;font-size:11.5px;color:#fff;flex:0 0 auto;line-height:1;vertical-align:middle;box-shadow:0 1px 3px rgba(0,0,0,.18)}
   .tfb-d{background:#f5a623} .tfb-w{background:#2f9be0} .tfb-m{background:#8b5cf6}
+  .cnew{font-size:10px;font-weight:900;background:var(--broth-soft,rgba(255,107,26,.16));color:var(--broth);padding:2px 7px;border-radius:6px;letter-spacing:.05em;vertical-align:middle;margin-left:4px}
+  .ckept{font-size:10px;font-weight:800;color:var(--buy);vertical-align:middle;opacity:.75;margin-left:4px}
+  .crepl{font-size:11px;color:var(--faint);margin:2px 0 4px;font-weight:600} .crepl b{color:var(--muted)}
   .jrow .jinfo{min-width:0;flex:1}
   .jrow .jinfo a{font-weight:800}
   .jrow .jname{color:var(--muted);font-size:11px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block}
@@ -876,10 +879,20 @@ function render(D,H){
   var regionTabs=(D.regions||[]).map(function(rg,i){return '<button class="tab" role="tab" id="tab-'+rg.id+'" aria-selected="'+(rg.id===MKT)+'" data-region="'+rg.id+'">'+esc(rg.label)+'</button>';}).join('');
   var soon='<button class="tab" disabled title="Coming soon">🌏 Asia-Pac · soon</button><button class="tab" disabled title="Coming soon">🇪🇺 Europe · soon</button>';
 
+  var _H=(LAST&&LAST.H)||{}, _prevMenu=(_H.menus&&_H.menus.length>1)?_H.menus[1]:null;
   var menus=(D.regions||[]).map(function(rg,i){
+    var prevSet=_prevMenu?(_prevMenu[rg.id]||[]):null;
+    var curSet=(rg.picks||[]).map(function(x){return x.sym;});
+    var newPicks=prevSet?curSet.filter(function(s){return prevSet.indexOf(s)<0;}):[];
+    var dropped=prevSet?prevSet.filter(function(s){return curSet.indexOf(s)<0;}):[];
     var cards=(rg.picks||[]).map(function(p,idx){
+      var isNew=prevSet?(prevSet.indexOf(p.sym)<0):false;
+      var repl=isNew?(dropped[newPicks.indexOf(p.sym)]||null):null;
+      var newPill=isNew?' <span class="cnew">NEW</span>':(prevSet?' <span class="ckept">✓ kept</span>':'');
+      var replNote=repl?'<div class="crepl">↳ replaced <b>'+esc(repl)+'</b> from the last menu</div>':'';
       return '<div class="pickcol"><article class="card" tabindex="0" role="button" data-region="'+rg.id+'" data-idx="'+idx+'" aria-label="Details for '+esc(p.sym)+'">'+
-        '<div class="tf"><span class="name">'+tfBW(p.tf)+'</span><span class="tf-r"><button class="watchbtn iconwatch" data-sym="'+esc(p.sym)+'" data-region="'+esc(rg.id)+'" data-name="'+esc(p.name)+'"'+(p.nEntry!=null?' data-entry="'+p.nEntry+'"':'')+' aria-pressed="false" title="Add to watchlist">+</button><span class="verdict '+esc(p.vclass)+'">'+esc(p.verdict)+'</span></span></div>'+
+        '<div class="tf"><span class="name">'+tfBW(p.tf)+newPill+'</span><span class="tf-r"><button class="watchbtn iconwatch" data-sym="'+esc(p.sym)+'" data-region="'+esc(rg.id)+'" data-name="'+esc(p.name)+'"'+(p.nEntry!=null?' data-entry="'+p.nEntry+'"':'')+' aria-pressed="false" title="Add to watchlist">+</button><span class="verdict '+esc(p.vclass)+'">'+esc(p.verdict)+'</span></span></div>'+
+        replNote+
         '<div class="tick"><span class="symwrap"><span class="sym">'+qlink(p.sym,rg.id)+'</span><span class="co">'+qlink(p.sym,rg.id,p.name)+' ↗</span></span>'+
         '<span class="px"><span class="p mono">'+esc(p.price)+'</span><br><span class="c mono '+(p.up?'up':'down')+'">'+esc(p.change)+'</span></span></div>'+
         /* miniTraj removed — inconsistent (only carried-over picks had it) + confusing 'since 23:33'; the range bar shows the trend */
