@@ -1181,5 +1181,108 @@
     "up": true
    }
   ]
- }
+ },
+ "watchlistIntel": {
+  "VTM": {
+   "region": "au",
+   "entry": 1.45,
+   "target": 1.88,
+   "cur": "A$",
+   "trend": "downtrend — below both averages · RSI 46 · 23% below 52wk high",
+   "asx_limited": true
+  },
+  "PDN": {
+   "region": "au",
+   "entry": 9.31,
+   "target": 14.54,
+   "cur": "A$",
+   "trend": "uptrend — above both averages · RSI 56 · 31% below 52wk high",
+   "asx_limited": true
+  },
+  "IEL": {
+   "region": "au",
+   "entry": 2.23,
+   "target": 6.68,
+   "cur": "A$",
+   "trend": "uptrend — above both averages · RSI 60 · 64% below 52wk high",
+   "asx_limited": true
+  },
+  "TLX": {
+   "region": "au",
+   "entry": 14.72,
+   "target": 18.93,
+   "cur": "A$",
+   "trend": "downtrend — below both averages · RSI 47 · 22% below 52wk high",
+   "asx_limited": true
+  },
+  "EOS": {
+   "region": "au",
+   "entry": 7.38,
+   "target": 12.26,
+   "cur": "A$",
+   "trend": "mixed vs its averages · RSI 48 · 38% below 52wk high",
+   "asx_limited": true
+  },
+  "NTU": {
+   "region": "au",
+   "entry": 0.03,
+   "target": 0.07,
+   "cur": "A$",
+   "trend": "downtrend — below both averages · RSI 48 · 63% below 52wk high",
+   "asx_limited": true
+  },
+  "DYL": {
+   "region": "au",
+   "entry": 1.33,
+   "target": 2.91,
+   "cur": "A$",
+   "trend": "mixed vs its averages · RSI 53 · 52% below 52wk high",
+   "asx_limited": true
+  },
+  "DRO": {
+   "region": "au",
+   "entry": 2.1,
+   "target": 6.6,
+   "cur": "A$",
+   "trend": "mixed vs its averages · RSI 50 · 67% below 52wk high",
+   "asx_limited": true
+  },
+  "A2M": {
+   "region": "au",
+   "entry": 6.89,
+   "target": 9.96,
+   "cur": "A$",
+   "trend": "mixed vs its averages · RSI 48 · 31% below 52wk high",
+   "asx_limited": true
+  },
+  "SGH": {
+   "region": "au",
+   "entry": 44.17,
+   "target": 51.86,
+   "cur": "A$",
+   "trend": "uptrend — above both averages · RSI 64 · 11% below 52wk high",
+   "asx_limited": true
+  },
+  "WTC": {
+   "region": "au",
+   "entry": 34.75,
+   "target": 115.96,
+   "cur": "A$",
+   "trend": "uptrend — above both averages · RSI 63 · 66% below 52wk high",
+   "asx_limited": true
+  },
+  "PLTR": {
+   "region": "us",
+   "entry": 131.43,
+   "target": 207.18,
+   "cur": "$",
+   "trend": "uptrend — above both averages · RSI 69 · 24% below 52wk high",
+   "asx_limited": false,
+   "buy_now": 20,
+   "band": "Pass",
+   "verdict": "Too late — wait",
+   "sent": "Wait on PLTR — the good news is real, but Palantir Technologies's price already shot up a lot, so you'd be paying the high price."
+  }
+ },
+ "watchlistIntelAt": "2026-08-06T10:06:22.910242+10:00"
 }
