@@ -143,6 +143,22 @@
   .tabstat .tk{color:var(--muted);font-weight:700}
   .tabstat .gd{color:var(--buy)} .tabstat .bd{color:var(--dont)}
   .menuhead{border-bottom:0;padding-top:14px}
+  .actions{margin:6px 0 4px}
+  .axhead{font-size:12px;font-weight:900;letter-spacing:.03em;color:var(--ink);margin:0 0 10px;text-transform:uppercase}
+  .axheadsub{color:var(--muted);font-weight:700;text-transform:none;letter-spacing:0}
+  .axnone{background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:14px 15px;color:var(--muted);font-size:13.5px;line-height:1.5}
+  .axcard{background:linear-gradient(180deg,rgba(35,194,103,.11),transparent 72%),var(--surface);border:1px solid rgba(35,194,103,.34);border-left:3px solid var(--buy);border-radius:13px;padding:13px 15px;margin-bottom:10px;cursor:pointer;transition:border-color .12s,transform .05s}
+  .axcard:hover{border-color:var(--buy)} .axcard:active{transform:scale(.995)}
+  .axtop{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+  .axverb{font-size:12px;font-weight:900;letter-spacing:.04em;color:var(--buy)}
+  .axsym{font-weight:900;font-size:16px;color:var(--ink)}
+  .axpx{margin-left:auto;font-weight:800;font-size:14px;color:var(--ink)}
+  .axprice{color:var(--buy);font-weight:800;font-size:13px;margin-top:7px}
+  .axwhy{color:var(--muted);font-size:13px;line-height:1.45;margin-top:6px}
+  .axfoot{margin-top:8px}
+  .axtime{font-size:11.5px;font-weight:700;display:inline-flex;align-items:center;gap:5px;padding:4px 9px;border-radius:7px;line-height:1.35}
+  .axt-open{background:rgba(245,166,35,.14);color:var(--hold)}
+  .axt-wait{background:var(--surface-2);color:var(--muted)}
   .schedlink{cursor:pointer;display:inline-flex;align-items:center;gap:7px}
   .schedi{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;border:1.2px solid var(--muted);font-family:Georgia,serif;font-style:italic;font-size:9.5px;font-weight:700}
   .schedlink:hover .schedi{border-color:var(--broth);color:var(--broth)}
@@ -913,6 +929,46 @@ function buyAction(p){
   return ' <span class="baact">· '+Math.round(g)+'% above</span>';   // close + wait — colour carries the nuance
 }
 
+// ── ACTIONS layer: "what do I actually DO tonight?" ─────────────────────────
+// A pick is BUY-ready when the model likes it (verdict isn't wait/late/skip) AND
+// it's at/under the ideal-buy price we've been waiting for (buyState 'in').
+function pickAction(p){
+  if(p.nEntry==null||p.nNow==null) return 'watch';
+  var v=(p.verdict||''), st=buyState(p);
+  if(/late|wait|skip|pass|avoid|steer/i.test(v)) return 'wait';
+  if(st==='in') return 'buy';
+  if(st==='close') return 'soon';
+  return 'wait';
+}
+function timingLine(p){
+  var t=p.timing; if(!t||t.gap_capture==null) return '';
+  if(t.gap_capture>=0.5) return '<span class="axtime axt-open">🌅 Gets away at the open — set a limit order tonight at your price</span>';
+  if(t.gap_capture>=0.4) return '<span class="axtime axt-open">🌅 Front-loaded — a night-before limit is the safer play</span>';
+  return '<span class="axtime axt-wait">🕐 No rush — it mostly moves during the day, so you can watch and still buy in</span>';
+}
+function actionsHtml(D){
+  var ready=[];
+  (D.regions||[]).forEach(function(rg){ if(rg.id!==MKT) return;
+    (rg.picks||[]).forEach(function(p,idx){ if(pickAction(p)==='buy') ready.push({p:p,rg:rg,idx:idx}); }); });
+  ready.sort(function(a,b){return (a.p.nNow/a.p.nEntry)-(b.p.nNow/b.p.nEntry);});
+  ready=ready.slice(0,3);
+  if(!ready.length){
+    return '<div class="actions"><div class="axhead">🎯 Ready right now</div>'+
+      '<div class="axnone">No green lights this second — nothing’s dropped to its buy price yet. That’s fine; patience is the edge. We’ll flag it the moment one hits. 🍲</div></div>';
+  }
+  var cards=ready.map(function(it){
+    var p=it.p, cur=it.rg.cur||'$';
+    var why=(p.catalysts&&p.catalysts[0])||p.news||'';
+    return '<div class="axcard" data-region="'+esc(it.rg.id)+'" data-idx="'+it.idx+'" role="button" tabindex="0" aria-label="Buy '+esc(p.sym)+'">'+
+      '<div class="axtop"><span class="axverb">🟢 BUY</span>'+tfBW(p.tf)+'<span class="axsym">'+esc(p.sym)+'</span><span class="axpx mono">'+esc(p.price)+'</span></div>'+
+      '<div class="axprice">✓ At your price — ideal buy ~'+esc(cur)+esc(p.nEntry)+'</div>'+
+      (why?'<div class="axwhy">'+esc(why)+'</div>':'')+
+      (timingLine(p)?'<div class="axfoot">'+timingLine(p)+'</div>':'')+
+    '</div>';
+  }).join('');
+  return '<div class="actions"><div class="axhead">🎯 Ready right now <span class="axheadsub">— sensible, signalling, and finally at the price we’ve waited for</span></div>'+cards+'</div>';
+}
+
 function render(D,H){
   LAST={D:D,H:H};
   var r=D.risk||{};
@@ -1082,6 +1138,7 @@ function render(D,H){
       '<div class="meter"><div class="track"><div class="needle" id="needle"></div></div>'+
       '<div class="lbls"><span>🔴 Hide the cash</span><span>⚪ Steady</span><span>🟢 Send it</span></div></div>'+
     '</div>'+
+    actionsHtml(D)+
     '<section><p class="sec-sub" style="margin-top:4px">Three time horizons — '+tfB('Day')+' a quick feed · '+tfB('Week')+' a few days · '+tfB('Long')+' slow-cooked. Tap a card for the full serve; tap a name for Yahoo. '+infoBtn('menu')+'</p>'+menus+'</section>'+
     // Change-environment retired — its trajectory + "ready to buy" now live inside each pick card (miniTraj + buyat + rangeBar).
     '<section><div class="sec-head"><h2 class="display"><span class="k">02</span> The world &amp; the sectors</h2>'+infoBtn('world')+'</div>'+
@@ -1487,9 +1544,9 @@ function openTheme(src,idx){
   function tcard(sym){
     var it=themeIntel(sym,D), reg='us', verd='', vcl='hold', why='', news='', cue='', tap='';
     if(it.kind==='pick'){ reg=it.region; verd=it.p.verdict; vcl=it.p.vclass||'v-hold'; var cat=(it.p.catalysts&&it.p.catalysts[0])||it.p.note||''; why='<b>In tonight\'s picks.</b> '+esc(cat); news=it.p.news||''; cue='card →'; tap=' data-kind="pick" data-region="'+esc(it.region)+'" data-idx="'+it.idx+'" role="button" tabindex="0"'; }
-    else if(it.kind==='cand'){ reg=it.c.region||'us'; verd='On the radar'; vcl='v-hold'; why='<b>Shortlisted in the full pot.</b> '+esc(it.c.note||''); news=it.c.news||''; cue='full read →'; tap=' data-kind="cand" data-ci="'+it.idx+'" role="button" tabindex="0"'; }
-    else if(it.kind==='intel'){ reg=it.wi.region||'us'; verd=it.wi.verdict||'Tracked'; vcl=/get in|buy/i.test(verd)?'v-buy':/late|wait|skip/i.test(verd)?'v-dont':'v-hold'; why='<b>On the watchlist.</b> '+esc(it.wi.trend||(it.wi.target!=null?'ideal buy near '+(it.wi.cur||'$')+it.wi.target:'we score it each run')); news=''; }
-    else { reg=(src==='commodities')?'au':'us'; verd='Live'; vcl='v-hold'; why='<span class="muted">Live price &amp; trend below — not one of tonight\'s scored picks.</span>'; }
+    else if(it.kind==='cand'){ reg=it.c.region||'us'; verd='Shortlisted'; vcl='v-hold'; why='<b>Shortlisted in the full pot.</b> '+esc(it.c.note||''); news=it.c.news||''; cue='full read →'; tap=' data-kind="cand" data-ci="'+it.idx+'" role="button" tabindex="0"'; }
+    else if(it.kind==='intel'){ reg=it.wi.region||'us'; verd=it.wi.verdict||'On your watchlist'; vcl=/get in|buy/i.test(verd)?'v-buy':/late|wait|skip/i.test(verd)?'v-dont':'v-hold'; why='<b>On your watchlist.</b> '+esc(it.wi.trend||(it.wi.target!=null?'ideal buy near '+(it.wi.cur||'$')+it.wi.target:'we score it each run')); news=''; }
+    else { reg=(src==='commodities')?'au':'us'; verd='Live price'; vcl='v-hold'; why='<span class="muted">Live price &amp; trend below — not one of tonight\'s scored picks, just shown for reference.</span>'; }
     var pi=pm[sym+'|'+reg]||pm[sym+'|au']||pm[sym+'|us']||{};
     var hasPx=pi.price!=null, hasSpk=(pi.spark&&pi.spark.length>2);
     var pxrow = hasPx ? '<div class="tsc-pxrow"><span class="tsc-px">'+esc(pi.price)+'</span>'+(pi.change?'<span class="tsc-chg '+(pi.up?'up':'down')+'">'+(pi.up?'▲':'▼')+' '+esc(pi.change)+'</span>':'')+'</div>'
@@ -1510,7 +1567,7 @@ function openTheme(src,idx){
   var etfHtml=etfs.length?'<h4 style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--broth);font-weight:800;margin:18px 0 4px">🧺 Prefer the basket? · ETFs</h4>'+
     '<p style="font-size:12px;color:var(--muted);margin:0 0 10px">The whole theme in one ticker — diversified, lower single-stock risk.</p>'+
     etfs.map(function(e){return '<div class="themerow"><a class="trsym" href="'+yf(e.s,'us')+'" target="_blank" rel="noopener">'+esc(e.s)+'</a><span class="trln">'+esc(e.n)+' <span class="trcue">↗</span></span></div>';}).join(''):'';
-  var vc=(item.tclass==='t-buy'||item.tclass==='t-hot')?'buy':(item.tclass==='t-dont'?'don':'hold');
+  var vc=(item.tclass==='t-buy'||item.tclass==='t-hot')?'v-buy':(item.tclass==='t-dont'?'v-dont':'v-hold');
   var m=document.getElementById('modal'); m.className='modal';
   m.innerHTML='<div class="mhead '+vc+'"><button class="mclose" id="mClose" aria-label="Close">✕</button>'+
     '<div class="mtf">'+esc(item.em||'🎯')+' '+(src==='geo'?'Geopolitical theme':(src==='commodities'?'Commodity':'Sector'))+'</div>'+
@@ -1519,7 +1576,7 @@ function openTheme(src,idx){
     '<div class="mbody"><p class="mtake">'+esc(item.note)+'</p>'+
     '<h4 style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:800;margin:4px 0 10px">Leaders in this theme</h4>'+
     (rows||'<p class="muted">No clear ticker leaders surfaced for this theme tonight.</p>')+etfHtml+
-    '<p style="font-size:11px;color:var(--faint);margin-top:12px">Individual names from tonight\'s read; ETFs are the diversified way to play the theme. Tap any for Yahoo.</p></div>';
+    '<p style="font-size:11px;color:var(--faint);margin-top:14px;line-height:1.6"><b style="color:var(--muted)">What the tags mean:</b> a verdict like <b>Get in</b>/<b>Wait</b> = it\'s one of tonight\'s scored picks · <b>Shortlisted</b> = we considered it, didn\'t pick it · <b>On your watchlist</b> = you\'re tracking it · <b>Live price</b> = shown for reference only. ETFs are the diversified way to play the theme.</p></div>';
   var ov=document.getElementById('overlay'); ov.classList.add('open'); ov.setAttribute('aria-hidden','false');
   document.getElementById('mClose').focus();
   hydrateThemeCards(m);
@@ -1533,7 +1590,7 @@ function openCandidate(idx){
   var D=LAST.D||{}, c=(D.candidates||[])[idx]; if(!c)return;
   LASTFOCUS=document.activeElement;
   var HEAT={hot:'🔥 sizzling',good:'✅ tasty',mid:'➖ maybe',cold:'⛔ send it back'};
-  var vc=(c.heat==='good'||c.heat==='hot')?'buy':(c.heat==='cold'?'don':'hold');
+  var vc=(c.heat==='good'||c.heat==='hot')?'v-buy':(c.heat==='cold'?'v-dont':'v-hold');
   var spk=(c.spark&&c.spark.length>2)?sparkSVG(c.spark.slice(-30)):'';
   var m=document.getElementById('modal'); m.className='modal';
   m.innerHTML='<div class="mhead '+vc+'"><button class="mclose" id="mClose" aria-label="Close">✕</button>'+
@@ -1947,7 +2004,7 @@ function wire(D){
   });});
   function regionOf(id){var a=(D.regions||[]).filter(function(x){return x.id===id;});return a[0];}
   function openFromEl(el){var rg=regionOf(el.dataset.region);if(!rg)return;var p=rg.picks[+el.dataset.idx];if(p)openModal(p,rg.id,rg.cur||'$');}
-  document.querySelectorAll('.card').forEach(function(c){
+  document.querySelectorAll('.card, .axcard').forEach(function(c){
     c.addEventListener('click',function(e){if(e.target.closest('a'))return;openFromEl(c);});
     c.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();openFromEl(c);}});
   });
