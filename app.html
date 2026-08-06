@@ -124,7 +124,7 @@
   .mkf{position:relative;width:34px;height:34px;border-radius:50%;border:0;background:var(--surface-2);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-size:17px;line-height:1;padding:0;opacity:.5;transition:opacity .15s,transform .15s,box-shadow .3s}
   .mkf:hover{opacity:.85}
   .mkf.active{opacity:1;transform:scale(1.06)}
-  .mkf.active::after{content:"";position:absolute;left:50%;bottom:-8px;transform:translateX(-50%);width:16px;height:3px;border-radius:3px;background:var(--broth)}
+  .mkf.active{transform:scale(1.12)}
   .mkf.phase-closed{box-shadow:0 0 0 2px rgba(255,77,77,.55)}
   .mkf.phase-open{box-shadow:0 0 0 2px var(--buy)}
   .mkf.phase-opening{box-shadow:0 0 0 2px var(--buy);animation:mkpulseG 1.5s ease-in-out infinite}
@@ -132,9 +132,9 @@
   @keyframes mkpulseG{0%,100%{box-shadow:0 0 0 2px var(--buy)}50%{box-shadow:0 0 0 6px rgba(35,194,103,.30)}}
   @keyframes mkpulseO{0%,100%{box-shadow:0 0 0 2px var(--hold)}50%{box-shadow:0 0 0 6px rgba(255,197,61,.32)}}
   @media (prefers-reduced-motion:reduce){.mkf.phase-opening,.mkf.phase-closing{animation:none}}
-  .mktwrap{display:inline-flex;flex-direction:column;align-items:center;gap:9px}
-  .mktcap{font-size:10px;font-weight:800;color:var(--muted);white-space:nowrap;letter-spacing:.02em;line-height:1}
-  .mktcap.mc-open,.mktcap.mc-opening{color:var(--buy)} .mktcap.mc-closing{color:var(--hold)}
+  .mktwrap{position:relative;display:inline-flex;align-items:center}
+  .mktcap{position:absolute;left:50%;top:100%;transform:translateX(-50%);margin-top:6px;font-size:9.5px;font-weight:800;color:var(--muted);white-space:nowrap;letter-spacing:.02em;line-height:1;pointer-events:none}
+  .mktcap.mc-open,.mktcap.mc-opening{color:var(--buy)} .mktcap.mc-closing{color:var(--hold)} .mktcap.mc-closed{color:var(--dont)}
   .toprail{display:flex;gap:12px;align-items:center}
   .burgerwrap{position:relative}
   .burger{width:38px;height:38px;border-radius:11px;border:1.5px solid var(--line);background:var(--surface-2);color:var(--ink);font-size:18px;line-height:1;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;padding:0}
@@ -254,7 +254,7 @@
   .tick .px{margin-left:auto;text-align:right}
   .px .p{font-weight:800;font-size:19px}
   .px .c{font-size:12px;font-weight:700}
-  .up{color:var(--buy)} .down{color:var(--dont)}
+  .up{color:var(--buy)} .down{color:var(--dont)} .flat{color:var(--muted)}
   .card .plain{font-size:14px;color:var(--ink);text-wrap:pretty}
   .card .lvls{display:flex;gap:6px;font-size:11px;color:var(--muted);border-top:1px dashed var(--line);padding-top:10px;flex-wrap:wrap}
   .lvls b{color:var(--ink)}
@@ -970,6 +970,9 @@ function discoveryFunnel(D){
     (list?'<details class="dvdet"><summary>see the '+dv.scanned+' we scanned this run</summary><div class="dvlist">'+list+'</div></details>':'')+'</div>';
 }
 function buyState(p){ if(p.nEntry==null||p.nNow==null) return ''; var g=(p.nNow/p.nEntry-1)*100; return g<=1.5?'in':(g<=4?'close':'wait'); }
+// A move under ±0.05% is essentially flat — colour it neutral, not green/red (avoids a misleading "+0.0%" in green).
+function chgTone(change,up){ var m=String(change==null?'':change).match(/-?[\d.]+/); var v=m?Math.abs(parseFloat(m[0])):0; return (!v||v<0.05)?'flat':(up?'up':'down'); }
+function chgArrow(tone){ return tone==='up'?'▲':tone==='down'?'▼':'•'; }
 function buyAction(p){
   // States the PRICE relationship to the ideal buy — not a buy/sell command (that's the verdict pill up top).
   var s=buyState(p); if(!s) return '';
@@ -988,7 +991,25 @@ function sentChip(p){
 // Market-aware header: prefer a per-market headline/chef when the run provides one
 // (D.headline[MKT] / D.chefByMkt[MKT]), else fall back to the single shared version.
 function hdl(D,k){var h=(D&&D.headline)||{}; if(h[MKT]&&h[MKT][k]!=null)return h[MKT][k]; return h[k]!=null?h[k]:'';}
-function chefFor(D){ if(D&&D.chefByMkt&&D.chefByMkt[MKT])return D.chefByMkt[MKT]; return (D&&D.chef)||''; }
+// Dynamic, market-aware chef line built from THIS market's real picks — never names the wrong
+// market's tickers, always reflects tonight's actual serve. Pipeline per-market prose wins if present.
+function chefLine(D){
+  try{
+    var rg=(D.regions||[]).filter(function(x){return x.id===MKT;})[0]||{}, picks=rg.picks||[];
+    if(!picks.length) return (D&&D.chef)||'One sec — plating tonight’s picks…';
+    var where=MKT==='us'?'from overseas':'from the ASX';
+    var risk=(((D.risk&&D.risk.label))||'').toUpperCase();
+    var mood= risk.indexOf('OFF')>=0?'The market’s twitchy tonight, so I’m keeping the bets small.'
+            : risk.indexOf('ON')>=0 ?'The market’s hungry — risk-on, so I’m leaning into the momentum.'
+            : 'The market’s steady tonight — no drama, no panic.';
+    var ready=picks.filter(function(p){return pickAction(p)==='buy';});
+    var syms=ready.slice(0,2).map(function(p){return p.sym;}).join(' & ');
+    var act= ready.length? ('<b>'+esc(syms)+(ready.length>2?' + more':'')+'</b> '+(ready.length===1?'is':'are')+' sitting right at your buy price — that’s where the action is.')
+                         : 'Nothing’s dropped to your buy price yet, so there’s no rush — patience is the edge.';
+    return '<b>Righto, listen up.</b> '+mood+' I’ve plated <b>'+picks.length+' pick'+(picks.length===1?'':'s')+' '+where+'</b> tonight. '+act;
+  }catch(e){ return (D&&D.chef)||''; }
+}
+function chefFor(D){ if(D&&D.chefByMkt&&D.chefByMkt[MKT])return D.chefByMkt[MKT]; return chefLine(D); }
 // Custom tab icons (line-art, inherit currentColor → dim when idle, broth when active).
 var TABICONS={
   menu:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 11.5h17a8.5 8.5 0 0 1-17 0Z"/><path d="M2.5 11.5h19"/><path d="M9 4.4c.7.9-.5 1.5 0 2.4M13 4c.7.9-.5 1.5 0 2.4"/></svg>',
@@ -1084,7 +1105,7 @@ function render(D,H){
         '<div class="tf"><span class="name">'+tfBW(p.tf)+newPill+'</span><span class="tf-r"><button class="watchbtn iconwatch" data-sym="'+esc(p.sym)+'" data-region="'+esc(rg.id)+'" data-name="'+esc(p.name)+'"'+(p.nEntry!=null?' data-entry="'+p.nEntry+'"':'')+' aria-pressed="false" title="Add to watchlist">+</button><span class="verdict '+esc(p.vclass)+'">'+esc(p.verdict)+'</span></span></div>'+
         replNote+
         '<div class="tick"><span class="symwrap"><span class="sym">'+qlink(p.sym,rg.id)+'</span><span class="co">'+qlink(p.sym,rg.id,p.name)+' ↗</span></span>'+
-        '<span class="px"><span class="p mono">'+esc(p.price)+'</span><br><span class="c mono '+(p.up?'up':'down')+'">'+esc(p.change)+'</span></span></div>'+
+        '<span class="px"><span class="p mono">'+esc(p.price)+'</span><br><span class="c mono '+chgTone(p.change,p.up)+'">'+esc(p.change)+'</span></span></div>'+
         /* miniTraj removed — inconsistent (only carried-over picks had it) + confusing 'since 23:33'; the range bar shows the trend */
         '<div class="buyat'+(p.nEntry?' ba-'+buyState(p):'')+'">'+(p.nEntry?'<span class="bl">🎯 Ideal buy</span> ~'+esc(rg.cur||'$')+p.nEntry+buyAction(p):'<span class="bl">Track this pick</span>')+'</div>'+
         '<p class="plain">'+p.plain+'</p>'+(sentChip(p)?'<div class="sentrow">'+sentChip(p)+'</div>':'')+'<div class="lvls">'+p.levels+'</div>'+
@@ -1232,7 +1253,7 @@ function render(D,H){
       '<span class="chip">'+esc(D.hotTags)+'</span></div>'+
       '<div class="meter"><div class="track"><div class="needle" id="needle"></div></div>'+
       '<div class="lbls"><span>🔴 Hide the cash</span><span>⚪ Steady</span><span>🟢 Send it</span></div></div>'+
-      '<div class="sec-head" style="margin:26px 0 3px"><h2 class="display"><span class="k">01</span> Take your seat</h2></div>'+
+      '<div class="sec-head" style="margin:26px 0 3px"><h2 class="display"><span class="k">01</span> Take your seat, it’s time to eat</h2>'+infoBtn('actions')+'</div>'+
       '<p class="sec-sub" style="margin:0 0 10px">Enough of the mood — here’s what’s worth <b>acting on</b> right now.</p>'+
       actionsHtml(D)+
     '</div>'+
@@ -1346,7 +1367,7 @@ function openModal(p,region,cur){
     '<div class="mhead '+esc(p.vclass)+'"><button class="mclose" id="mClose" aria-label="Close">✕</button>'+
       '<div class="mtf">'+tfBW(p.tf)+' · '+(region==='au'?'🇦🇺 ASX':'🇺🇸 International')+'</div>'+
       '<div class="mtop"><div><div class="msym" id="mTitle">'+esc(p.sym)+'</div><div class="mco">'+qlink(p.sym,region,p.name)+' ↗</div></div>'+
-        '<div class="mpx"><div class="mp mono">'+esc(p.price)+'</div><div class="mono '+(p.up?"up":"down")+'" style="font-weight:700;font-size:13px">'+esc(p.change)+'</div></div></div>'+
+        '<div class="mpx"><div class="mp mono">'+esc(p.price)+'</div><div class="mono '+chgTone(p.change,p.up)+'" style="font-weight:700;font-size:13px">'+esc(p.change)+'</div></div></div>'+
       '<span class="mverd '+esc(p.vclass)+'">'+esc(p.verdict)+'</span></div>'+
     '<div class="mbody">'+
       sparkHtml+
@@ -1456,6 +1477,15 @@ function openTimeframe(tf){
 
 // ---- Reusable ⓘ explainers (no black box) ----
 var INFO={
+  actions:{icon:'🎯',title:'How the actions engine works',body:
+    '<p>“Ready right now” is the sharp end — the tickers where <b>three things line up at once</b>:</p>'+
+    '<ul class="infoul"><li><b>Sensible</b> — our model rates it a buy on a <i>real catalyst</i> (earnings beat, analyst upgrade, confirmed news), not just chart momentum.</li>'+
+    '<li><b>Signalling</b> — the trend &amp; news point the right way, and it isn\'t overheated (not too extended, not risk-off).</li>'+
+    '<li><b>At your price</b> — it\'s trading at or below the <b>ideal-buy</b> zone we\'ve been waiting for (within ~1.5%).</li></ul>'+
+    '<p>Only picks that clear <i>all three</i> appear here, ranked by how close they sit to your ideal buy, capped at the top 3 so it stays a shortlist.</p>'+
+    '<h4>🌅 The timing verdict</h4><p>Each tells you <b>whether to place a night-before order or wait</b>: we measure how much of the stock\'s daily move happens at the open vs during the day. <i>“Gets away at the open”</i> → set a limit tonight; <i>“no rush”</i> → watch it and buy in the session.</p>'+
+    '<h4>📦 Your holdings</h4><p>Mark what you own (📦) and this block also says what to <b>do with it</b>: <b>take profit</b> (hit our target), <b>reassess</b> (thesis cooled or a sharp drop), or <b>hold</b> (still on track).</p>'+
+    '<p class="infofoot">It re-checks every hour as prices move. Nothing here is a recommendation to trade — it\'s our read; the call is yours.</p>'},
   watchlist:{icon:'⭐',title:'Your Watchlist',body:
     '<p><b>Your personal shortlist</b> — stocks you want the Chef to keep an eye on. Add any ticker below, or tap <b>＋ Watch</b> on any pick to track it with its ideal-buy price remembered.</p>'+
     '<h4>What makes it smart</h4><p>For anything we already analyse, each card carries a live read:</p>'+
@@ -2263,7 +2293,7 @@ function renderSimple(D){
     return '<article class="scard" tabindex="0" role="button" data-region="'+rid+'" data-idx="'+idx+'" aria-label="Details for '+esc(p.sym)+'">'+
       '<div class="stf"><span>'+tfBW(p.tf)+'</span><button class="watchbtn iconwatch" data-sym="'+esc(p.sym)+'" data-region="'+esc(rid)+'" data-name="'+esc(p.name)+'"'+(p.nEntry!=null?' data-entry="'+p.nEntry+'"':'')+' aria-pressed="false" title="Add to watchlist">+</button></div>'+
       '<div class="ssym">'+esc(p.sym)+' <span class="sverd '+esc(p.vclass)+'">'+esc(p.verdict)+'</span></div>'+
-      '<div class="sname">'+esc(p.name)+' · '+esc(p.price)+' <span class="'+(p.up?'up':'down')+'">'+(p.up?'▲':'▼')+' '+esc(p.change)+'</span></div>'+
+      '<div class="sname">'+esc(p.name)+' · '+esc(p.price)+' <span class="'+chgTone(p.change,p.up)+'">'+chgArrow(chgTone(p.change,p.up))+' '+esc(p.change)+'</span></div>'+
       /* miniTraj removed — inconsistent (only carried-over picks had it) + confusing 'since 23:33'; the range bar shows the trend */
       '<div class="buyat'+(p.nEntry?' ba-'+buyState(p):'')+'">'+(p.nEntry?'<span class="bl">🎯 Ideal buy</span> ~'+esc(region.cur||'$')+p.nEntry+buyAction(p):'<span class="bl">Track this pick</span>')+'</div>'+
       '<div class="sline">'+esc(p.plain)+'</div>'+
