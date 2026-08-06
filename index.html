@@ -3,91 +3,135 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Stock Soup — members' sign-in</title>
+<title>Stock Soup — the kitchen's open</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,900;1,9..144,800&display=swap" rel="stylesheet">
 <style>
   :root{
-    --bg:#faf6ef; --card:#fffdf9; --ink:#241f1a; --muted:#6f665b; --faint:#9a8f80;
-    --line:#eadfce; --broth:#ff6b1a; --broth-soft:#fff0e6; --buy:#1f9d57; --hold:#c9962b;
+    --bg:#fbf4e9; --bg2:#f6e7cf; --card:#fffdf9; --ink:#26201a; --muted:#6f6152; --faint:#a2917c;
+    --line:#ecdcc4; --broth:#ff6a1a; --broth-deep:#e14d0b; --paprika:#d6263b; --butter:#f7b733;
+    --buy:#1f9d57; --broth-soft:#ffe9d6;
+    --disp:"Fraunces",Georgia,"Times New Roman",serif;
     --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
-    --mono:"SF Mono",ui-monospace,Menlo,Consolas,monospace;
   }
-  @media (prefers-color-scheme:dark){:root{--bg:#17140f;--card:#211c16;--ink:#f3ece1;--muted:#a99e8e;--faint:#7d7264;--line:#332b21;--broth:#ff8340;--broth-soft:#2c1d12;--buy:#4cc47f;--hold:#e0b455;}}
+  @media (prefers-color-scheme:dark){:root{--bg:#181310;--bg2:#231a12;--card:#221b15;--ink:#f5ecdf;--muted:#b0a08c;--faint:#7d6e5c;--line:#372a1e;--broth:#ff8a45;--broth-deep:#ff6a1a;--paprika:#ff5c6c;--butter:#f7c65a;--buy:#4cc47f;--broth-soft:#33200f;}}
   *{box-sizing:border-box}
-  html,body{margin:0;height:100%}
-  body{background:radial-gradient(1200px 600px at 50% -10%,var(--broth-soft),var(--bg) 60%);color:var(--ink);
-    font-family:var(--sans);line-height:1.5;-webkit-font-smoothing:antialiased;display:flex;align-items:center;justify-content:center;padding:24px}
-  .wrap{width:100%;max-width:440px;text-align:center}
-  .bowl{font-size:56px;line-height:1;filter:drop-shadow(0 6px 14px rgba(255,107,26,.28))}
-  h1{font-size:34px;margin:12px 0 2px;letter-spacing:-.02em;font-weight:850}
-  .tag{color:var(--muted);font-size:15.5px;margin:0 auto 22px;max-width:34ch;text-wrap:pretty}
+  html,body{margin:0;min-height:100%}
+  body{background:
+      radial-gradient(1100px 520px at 50% -8%, var(--broth-soft), transparent 55%),
+      linear-gradient(160deg, var(--bg) 0%, var(--bg2) 100%);
+    color:var(--ink);font-family:var(--sans);line-height:1.5;-webkit-font-smoothing:antialiased;
+    display:flex;align-items:center;justify-content:center;padding:26px 20px 40px;overflow-x:hidden}
+  .wrap{width:100%;max-width:500px;text-align:center;position:relative;z-index:1}
+
+  /* steaming bowl */
+  .bowlwrap{position:relative;height:118px;margin-bottom:2px}
+  .steam{position:absolute;left:50%;top:2px;width:70px;height:70px;transform:translateX(-50%);pointer-events:none}
+  .steam span{position:absolute;bottom:0;width:9px;height:46px;border-radius:50%;
+    background:linear-gradient(to top, rgba(255,150,90,.0), rgba(255,170,110,.55));
+    filter:blur(4px);opacity:0;animation:steam 3.2s ease-in-out infinite}
+  .steam span:nth-child(1){left:18px;animation-delay:.0s}
+  .steam span:nth-child(2){left:31px;height:58px;animation-delay:.5s}
+  .steam span:nth-child(3){left:44px;animation-delay:1s}
+  @keyframes steam{0%{opacity:0;transform:translateY(6px) scaleX(1)}25%{opacity:.9}50%{transform:translateY(-26px) scaleX(1.5)}100%{opacity:0;transform:translateY(-52px) scaleX(.8)}}
+  .bowl{font-size:78px;line-height:1;position:relative;top:30px;filter:drop-shadow(0 12px 18px rgba(225,77,11,.32));animation:bob 4s ease-in-out infinite}
+  @keyframes bob{0%,100%{transform:translateY(0) rotate(-1.5deg)}50%{transform:translateY(-7px) rotate(1.5deg)}}
+
+  .kicker{font-family:var(--disp);font-style:italic;font-weight:800;color:var(--broth-deep);font-size:16px;letter-spacing:.01em;margin:2px 0 -2px;transform:rotate(-2deg)}
+  h1{font-family:var(--disp);font-weight:900;font-size:clamp(52px,15vw,86px);line-height:.9;letter-spacing:-.02em;margin:6px 0 4px;
+     background:linear-gradient(92deg,var(--broth-deep),var(--broth) 55%,var(--butter));-webkit-background-clip:text;background-clip:text;color:transparent;text-wrap:balance}
+  .tag{font-size:16.5px;color:var(--muted);margin:8px auto 6px;max-width:33ch;text-wrap:pretty}
   .tag b{color:var(--ink)}
-  .card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:24px 22px;box-shadow:0 10px 40px -18px rgba(60,40,20,.35);text-align:left}
-  .members{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--broth);background:var(--broth-soft);border:1px solid var(--line);padding:4px 10px;border-radius:999px;margin-bottom:14px}
-  .lead{font-size:15px;font-weight:700;margin:0 0 4px}
-  .sub{font-size:13px;color:var(--muted);margin:0 0 16px}
-  form{display:flex;gap:8px;flex-wrap:wrap}
-  input{flex:1;min-width:190px;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:var(--bg);color:var(--ink);font-size:15px}
-  input:focus{outline:2px solid var(--broth);outline-offset:1px}
-  button{background:var(--broth);color:#fff;border:0;font-weight:800;font-size:15px;padding:12px 20px;border-radius:12px;cursor:pointer;white-space:nowrap}
-  button:hover{filter:brightness(1.05)} button:disabled{opacity:.6;cursor:default}
+  .chips{display:flex;gap:7px;justify-content:center;flex-wrap:wrap;margin:14px 0 20px}
+  .chip{font-size:12px;font-weight:800;padding:5px 11px;border-radius:999px;border:1.5px solid var(--line);background:var(--card);white-space:nowrap;transform:rotate(var(--r,0deg))}
+  .chip.hot{color:var(--broth-deep);border-color:rgba(255,106,26,.4)} .chip.ok{color:var(--buy);border-color:rgba(31,157,87,.35)} .chip.spice{color:var(--paprika);border-color:rgba(214,38,59,.35)}
+
+  .card{background:var(--card);border:1.5px solid var(--line);border-radius:22px;padding:22px 22px 24px;text-align:left;
+    box-shadow:0 18px 50px -22px rgba(120,60,20,.5);position:relative}
+  .card::before{content:"";position:absolute;inset:0;border-radius:22px;padding:1.5px;background:linear-gradient(120deg,transparent,rgba(255,106,26,.35),transparent);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none}
+  .members{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:900;letter-spacing:.09em;text-transform:uppercase;color:#fff;background:var(--paprika);padding:5px 11px;border-radius:999px;margin-bottom:13px;transform:rotate(-1.5deg);box-shadow:0 6px 14px -6px rgba(214,38,59,.6)}
+  .lead{font-family:var(--disp);font-weight:800;font-size:23px;line-height:1.1;margin:0 0 4px}
+  .sub{font-size:13.5px;color:var(--muted);margin:0 0 16px;text-wrap:pretty}
+  form{display:flex;gap:9px;flex-wrap:wrap}
+  input{flex:1;min-width:190px;padding:13px 15px;border:1.5px solid var(--line);border-radius:13px;background:var(--bg);color:var(--ink);font-size:15.5px;font-family:var(--sans)}
+  input:focus{outline:2.5px solid var(--broth);outline-offset:1px}
+  button{font-family:var(--sans);background:linear-gradient(180deg,var(--broth),var(--broth-deep));color:#fff;border:0;font-weight:900;font-size:15.5px;padding:13px 20px;border-radius:13px;cursor:pointer;white-space:nowrap;box-shadow:0 10px 22px -10px rgba(225,77,11,.8);transition:transform .12s}
+  button:hover{transform:translateY(-2px) rotate(-1deg)} button:active{transform:translateY(0)} button:disabled{opacity:.6;cursor:default;transform:none}
   .msg{font-size:13px;color:var(--muted);margin-top:12px;min-height:1px;text-wrap:pretty}
-  .msg.err{color:#d94b45}
-  .feat{display:flex;flex-direction:column;gap:10px;margin:20px 0 4px;text-align:left}
-  .frow{display:flex;gap:10px;align-items:flex-start;font-size:13.5px;color:var(--muted)}
-  .frow b{color:var(--ink)} .frow .fi{font-size:16px;line-height:1.3;flex:0 0 auto}
-  .foot{color:var(--faint);font-size:11.5px;margin-top:22px;text-wrap:pretty}
-  .nopw{font-size:12px;color:var(--faint);margin-top:10px;text-align:center}
+  .msg.err{color:var(--paprika);font-weight:600}
+
+  .menu{margin:20px 0 2px;border-top:2px dashed var(--line);padding-top:16px}
+  .menu-h{font-family:var(--disp);font-weight:800;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);text-align:center;margin-bottom:12px}
+  .feat{display:flex;flex-direction:column;gap:13px}
+  .frow{display:flex;gap:11px;align-items:flex-start;font-size:13.8px;color:var(--muted);text-wrap:pretty}
+  .frow b{color:var(--ink)} .frow .fi{font-size:20px;line-height:1.15;flex:0 0 auto;filter:drop-shadow(0 2px 3px rgba(0,0,0,.12))}
+
+  .nopw{font-size:12.5px;color:var(--faint);margin-top:14px;text-align:center;font-style:italic}
+  .foot{color:var(--faint);font-size:11.5px;margin-top:16px;text-align:center;text-wrap:pretty}
+  @media (prefers-reduced-motion:reduce){ .bowl,.steam span{animation:none} .steam{display:none} }
 </style>
 </head>
 <body>
   <main class="wrap">
-    <div class="bowl">🍲</div>
+    <div class="bowlwrap">
+      <div class="steam"><span></span><span></span><span></span></div>
+      <div class="bowl">🍲</div>
+    </div>
+    <div class="kicker">Today's specials are simmering…</div>
     <h1>Stock&nbsp;Soup</h1>
-    <p class="tag">Six stocks, hand-scored, twice a day — <b>3 ASX · 3 global</b>. We grade every call and show you the receipts.</p>
+    <p class="tag">Six stocks, freshly scored, <b>twice a day</b> — three local, three global. We plate the winners and we don't hide the ones we torched. 🔥</p>
+    <div class="chips">
+      <span class="chip hot" style="--r:-2deg">🔥 sizzling</span>
+      <span class="chip ok" style="--r:1deg">✅ tasty</span>
+      <span class="chip spice" style="--r:-1deg">🌶️ scored honestly</span>
+    </div>
 
     <div class="card">
-      <span class="members">🔒 Members only</span>
-      <p class="lead">Sign in to see tonight's menu</p>
-      <p class="sub">Just your email — no password. We'll send a one-tap link.</p>
+      <span class="members">🔒 Reservations only</span>
+      <p class="lead">Grab a table 🍽️</p>
+      <p class="sub">Drop your email — no password, no maître d'. We'll slide a <b>one-tap link</b> across the pass and you're in.</p>
       <form id="f" novalidate>
         <input id="email" type="email" inputmode="email" autocomplete="email" placeholder="you@email.com" aria-label="Email" required>
-        <button id="go" type="submit">Get my link →</button>
+        <button id="go" type="submit">Pull up a chair →</button>
       </form>
       <div class="msg" id="msg" role="status" aria-live="polite"></div>
 
-      <div class="feat">
-        <div class="frow"><span class="fi">🍲</span><div><b>Fresh picks, twice a day.</b> Scanned from the whole market, scored, and served ~30 min before each open.</div></div>
-        <div class="frow"><span class="fi">📊</span><div><b>Scored honestly.</b> Every past call graded ✓/✗ over its own window — the wins and the losses.</div></div>
-        <div class="frow"><span class="fi">⭐</span><div><b>Your watchlist, synced.</b> Track names across devices and get emailed when one hits your buy price.</div></div>
+      <div class="menu">
+        <div class="menu-h">· on tonight's menu ·</div>
+        <div class="feat">
+          <div class="frow"><span class="fi">🍳</span><div><b>Cooked fresh, twice daily.</b> Scanned from the whole market, scored, and plated ~30 min before the opening bell.</div></div>
+          <div class="frow"><span class="fi">📖</span><div><b>The honest menu.</b> Every past dish graded ✓/✗ over its own window — the standing ovations <i>and</i> the kitchen fires.</div></div>
+          <div class="frow"><span class="fi">⭐</span><div><b>Your usual, remembered.</b> Star any stock and we'll holler the moment it hits your price.</div></div>
+        </div>
       </div>
     </div>
-    <p class="nopw">New here? Entering your email creates your account automatically.</p>
-    <p class="foot">For information only — <b>not financial advice</b>. Do your own research.</p>
+    <p class="nopw">First time in? Your email books the table — no cover charge. 🥄</p>
+    <p class="foot">For information only — <b>not financial advice</b>, just a wildly opinionated chef. Do your own research.</p>
   </main>
 
 <script>
   var API_BASE='https://stocksoup-api.defranceski.workers.dev';
   var SKEY='soup_session', EKEY='soup_email', APP='app.html';
   function sess(){try{return localStorage.getItem(SKEY)||'';}catch(e){return'';}}
-  // If we arrived from the magic link (#session=…), store it and go straight into the app.
   (function(){
     var m=(location.hash||'').match(/session=([^&]+)/);
     if(m){ try{localStorage.setItem(SKEY,decodeURIComponent(m[1]));}catch(e){} location.replace(APP); return; }
-    if(sess()){ location.replace(APP); }        // already signed in → skip the door
+    if(sess()){ location.replace(APP); }
   })();
   var f=document.getElementById('f'), msg=document.getElementById('msg'), go=document.getElementById('go');
   f.addEventListener('submit',function(e){
     e.preventDefault();
     var email=(document.getElementById('email').value||'').trim().toLowerCase();
-    if(!email||email.indexOf('@')<1){ msg.className='msg err'; msg.textContent='Please enter a valid email.'; return; }
+    if(!email||email.indexOf('@')<1){ msg.className='msg err'; msg.textContent='That doesn\'t look like an email, chef. 🧑‍🍳'; return; }
     try{localStorage.setItem(EKEY,email);}catch(e){}
-    go.disabled=true; msg.className='msg'; msg.textContent='Sending your sign-in link…';
+    go.disabled=true; msg.className='msg'; msg.textContent='Firing up your table…';
     fetch(API_BASE+'/auth/request',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:email})})
       .then(function(r){return r.json();}).then(function(j){
-        if(j&&j.magic_link){ msg.textContent='Signing you in…'; location.href=API_BASE+j.magic_link; }   // dev mode: follow the link
-        else if(j&&j.sent_to){ msg.innerHTML='📧 <b>Check your email</b> — we sent a one-tap sign-in link to '+j.sent_to+'.'; go.disabled=false; }
-        else { msg.className='msg err'; msg.textContent='Something went wrong — please try again.'; go.disabled=false; }
-      }).catch(function(){ msg.className='msg err'; msg.textContent='Couldn\'t reach the server — please try again.'; go.disabled=false; });
+        if(j&&j.magic_link){ msg.textContent='Seating you now… 🍜'; location.href=API_BASE+j.magic_link; }
+        else if(j&&j.sent_to){ msg.innerHTML='📧 <b>Check your email</b> — we slid a one-tap sign-in link over to '+j.sent_to+'.'; go.disabled=false; }
+        else { msg.className='msg err'; msg.textContent='The kitchen dropped a plate — try again?'; go.disabled=false; }
+      }).catch(function(){ msg.className='msg err'; msg.textContent='Couldn\'t reach the kitchen — try again?'; go.disabled=false; });
   });
 </script>
 </body>
