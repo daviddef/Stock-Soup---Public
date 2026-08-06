@@ -252,7 +252,22 @@
   .potlegend{display:flex;gap:14px;flex-wrap:wrap;font-size:11px;color:var(--muted);font-weight:700;margin-bottom:12px}
   .potlegend span{display:inline-flex;align-items:center;gap:5px}
   .potlegend i{width:9px;height:9px;border-radius:50%;display:inline-block}
-  .pot{display:flex;flex-wrap:wrap;gap:8px}
+  .pot{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
+  .potcard{display:flex;flex-direction:column;gap:6px;border:1px solid var(--line);border-radius:13px;padding:12px 13px;text-decoration:none;color:var(--ink);transition:transform .12s,border-color .12s}
+  .potcard:hover{transform:translateY(-2px)}
+  .potcard:focus-visible{outline:2px solid var(--broth);outline-offset:2px}
+  .potcard .ph{width:9px;height:9px;border-radius:50%;flex:0 0 auto}
+  .potcard .ph.no{background:none!important;width:auto;height:auto;border-radius:0;font-size:12px;line-height:1}
+  .pmc-top{display:flex;align-items:center;gap:7px}
+  .pmc-sym{font-weight:900;font-size:16px}
+  .pmc-flag{margin-left:auto;font-size:9px;color:var(--faint);font-weight:700}
+  .pmc-name{font-size:11.5px;color:var(--muted);font-weight:700;margin-top:-2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .pmc-px{display:flex;align-items:baseline;gap:8px}
+  .pmc-price{font-family:var(--mono);font-weight:800;font-size:14px}
+  .pmc-chg{font-family:var(--mono);font-weight:800;font-size:12px}
+  .pmc-chg.up{color:var(--buy)} .pmc-chg.down{color:var(--dont)}
+  .pmc-spark{height:26px} .pmc-spark svg{height:26px;width:100%;display:block}
+  .pmc-note{font-size:11.5px;color:var(--muted);line-height:1.4;text-wrap:pretty;margin-top:auto}
   .pill{display:inline-flex;align-items:center;gap:8px;border-radius:999px;padding:7px 13px 7px 10px;font-size:13px;
     border:1px solid var(--line);text-decoration:none;color:var(--ink);transition:transform .12s}
   .pill:hover{transform:translateY(-2px)}
@@ -1692,11 +1707,18 @@ function miniTraj(sym){
     '<svg viewBox="0 0 '+W+' '+H+'" width="'+W+'" height="'+H+'" preserveAspectRatio="none" aria-hidden="true"><polyline points="'+pts+'" fill="none" stroke="'+col+'" stroke-width="1.5" vector-effect="non-scaling-stroke"/></svg>'+
     '<span class="mtpct" style="color:'+col+'">'+(pct>=0?'+':'')+pct.toFixed(1)+'%</span></div>';
 }
-function rangeBar(spark,cur){
+function rangeBar(spark,cur,tf){
   if(!spark||spark.length<3) return '';
-  var mn=Math.min.apply(null,spark),mx=Math.max.apply(null,spark),c=spark[spark.length-1];
+  // Window matches the pick's horizon: Day→recent, Week→~1 week, Long→~1 month.
+  var t=String(tf||'').toLowerCase();
+  var win, lbl;
+  if(t.indexOf('day')>=0){ win=5; lbl='5-day range'; }
+  else if(t.indexOf('week')>=0){ win=10; lbl='2-week range'; }
+  else { win=Math.min(spark.length,22); lbl='1-month range'; }
+  var s=spark.slice(-win); if(s.length<2) s=spark.slice(-3);
+  var mn=Math.min.apply(null,s),mx=Math.max.apply(null,s),c=s[s.length-1];
   var pos=Math.max(3,Math.min(97,((c-mn)/((mx-mn)||1))*100));
-  return '<div class="mrange"><div class="mrlbl">1-month range · low → high</div>'+
+  return '<div class="mrange"><div class="mrlbl">'+lbl+' · low → high</div>'+
     '<div class="mrbar"><span class="mrnow" style="left:'+pos.toFixed(0)+'%"></span></div>'+
     '<div class="mrends"><span>'+cur+mn.toFixed(2)+'</span><span>now '+cur+c.toFixed(2)+'</span><span>'+cur+mx.toFixed(2)+'</span></div></div>';
 }
@@ -1740,7 +1762,7 @@ function render(D,H){
         miniTraj(p.sym)+
         '<div class="buyat'+(p.nEntry?' ba-'+buyState(p):'')+'">'+(p.nEntry?'<span class="bl">🎯 Ideal buy</span> ~'+esc(rg.cur||'$')+p.nEntry+buyAction(p):'<span class="bl">Track this pick</span>')+'</div>'+
         '<p class="plain">'+p.plain+'</p><div class="lvls">'+p.levels+'</div>'+
-        (p.spark?rangeBar(p.spark,rg.cur||'$'):'')+'</article>'+
+        (p.spark?rangeBar(p.spark,rg.cur||'$',p.tf):'')+'</article>'+
         ((p.runnerUp && /wait|late|hold|skip|avoid|pass|don.t|steer/i.test(p.verdict||''))?ruCard(p.runnerUp,rg.id,idx):'')+'</div>';
     }).join('');
     return '<div class="menu'+(i===0?'':' hidden')+'" id="menu-'+rg.id+'" role="tabpanel">'+cards+'</div>';
@@ -1794,7 +1816,16 @@ function render(D,H){
         return '<div class="plrow"><span class="pltime">'+esc(pu.stamp)+'</span><span class="plmv">'+body+'</span></div>';
       }).join('')+'</div></div>')
     : '<div class="panel"><h3>Tonight\'s hourly runs</h3><p class="panelsub">Hourly pulses will appear here as they run.</p></div>';
-  var pot=(D.candidates||[]).map(function(c){return '<a class="pill h-'+esc(c.heat)+'" href="'+yf(c.sym,c.region)+'" target="_blank" rel="noopener">'+(c.heat==='cold'?'<span class="ph no">⛔</span>':'<span class="ph"></span>')+'<b>'+esc(c.sym)+'</b>'+(c.price?' <span class="ppx '+(c.up?'up':'down')+'">'+esc(c.price)+'</span>':'')+' <small>'+esc(c.note)+'</small> <span class="flag">'+(c.region==='au'?'AU':'US')+'</span></a>';}).join('');
+  var pot=(D.candidates||[]).map(function(c){
+    var spk=(c.spark&&c.spark.length>2)?sparkSVG(c.spark.slice(-30)):'';
+    var chg=c.change?'<span class="pmc-chg '+(c.up?'up':'down')+'">'+(c.up?'▲':'▼')+' '+esc(c.change)+'</span>':'';
+    return '<a class="potcard h-'+esc(c.heat)+'" href="'+yf(c.sym,c.region)+'" target="_blank" rel="noopener">'+
+      '<div class="pmc-top">'+(c.heat==='cold'?'<span class="ph no">⛔</span>':'<span class="ph"></span>')+'<b class="pmc-sym">'+esc(c.sym)+'</b><span class="pmc-flag">'+(c.region==='au'?'AU':'US')+'</span></div>'+
+      (c.name?'<div class="pmc-name">'+esc(c.name)+'</div>':'')+
+      '<div class="pmc-px">'+(c.price?'<span class="pmc-price">'+esc(c.price)+'</span>':'')+chg+'</div>'+
+      (spk?'<div class="pmc-spark">'+spk+'</div>':'')+
+      '<div class="pmc-note">'+esc(c.note)+'</div></a>';
+  }).join('');
   var half=Math.ceil((D.commodities||[]).length/2);
   var trail=(D.trail||[]).map(function(t){var jump=(t.jump?' <a class="trailjump" href="#'+esc(t.jump)+'">'+esc(t.jumpLabel||'see the list →')+'</a>':'');return '<div class="step"><span class="n">'+esc(t.n)+'</span><div class="st-txt">'+t.text+jump+'<small>'+esc(t.note)+'</small></div></div>';}).join('');
 
@@ -2275,7 +2306,7 @@ function renderSimple(D){
       miniTraj(p.sym)+
       '<div class="buyat'+(p.nEntry?' ba-'+buyState(p):'')+'">'+(p.nEntry?'<span class="bl">🎯 Ideal buy</span> ~'+esc(region.cur||'$')+p.nEntry+buyAction(p):'<span class="bl">Track this pick</span>')+'</div>'+
       '<div class="sline">'+esc(p.plain)+'</div>'+
-      (p.spark?rangeBar(p.spark,(region.cur||'$')):'')+'</article>'+
+      (p.spark?rangeBar(p.spark,(region.cur||'$'),p.tf):'')+'</article>'+
       ((p.runnerUp && /wait|late|hold|skip|avoid|pass|don.t|steer/i.test(p.verdict||''))?ruCard(p.runnerUp,rid,idx):'');
   }).join('');
   function _grp(arr,key){var b=[],o=[],s=[];(arr||[]).forEach(function(x){var t=x.tclass,n=x[key];if(t==='t-dont')s.push(n);else if(t==='t-buy'||t==='t-hot')b.push(n);else o.push(n);});return {b:b,o:o,s:s};}
