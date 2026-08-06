@@ -122,6 +122,27 @@
   @keyframes mkpulseG{0%,100%{box-shadow:0 0 0 2px var(--buy)}50%{box-shadow:0 0 0 6px rgba(35,194,103,.30)}}
   @keyframes mkpulseO{0%,100%{box-shadow:0 0 0 2px var(--hold)}50%{box-shadow:0 0 0 6px rgba(255,197,61,.32)}}
   @media (prefers-reduced-motion:reduce){.mkf.phase-opening,.mkf.phase-closing{animation:none}}
+  .toprail{display:flex;gap:12px;align-items:center}
+  .burgerwrap{position:relative}
+  .burger{width:38px;height:38px;border-radius:11px;border:1.5px solid var(--line);background:var(--surface-2);color:var(--ink);font-size:18px;line-height:1;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;padding:0}
+  .burger:hover{border-color:var(--broth)}
+  .burgermenu{position:absolute;right:0;top:calc(100% + 8px);z-index:70;background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:7px;min-width:214px;display:flex;flex-direction:column;gap:1px}
+  .burgermenu[hidden]{display:none}
+  .bmhead{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:5px 9px 9px;border-bottom:1px solid var(--line);margin-bottom:4px}
+  .bmupd{border:0;background:transparent;color:var(--muted);font-family:var(--font);font-size:12px;font-weight:700;cursor:pointer;text-decoration:underline;text-decoration-style:dotted;text-underline-offset:2px;padding:0}
+  .bmupd:hover{color:var(--broth)}
+  .bmitem{display:flex;align-items:center;gap:9px;text-align:left;width:100%;border:0;background:transparent;color:var(--ink);font-family:var(--font);font-size:14px;font-weight:700;padding:10px 9px;border-radius:9px;cursor:pointer}
+  .bmitem:hover{background:var(--surface-2)}
+  .tabhead{padding:16px 0 4px;margin-bottom:6px;border-bottom:1px solid var(--line)}
+  .tabhead .theyebrow{font-size:11px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--broth);margin-bottom:9px}
+  .tabhead .thead{font-size:clamp(23px,5vw,36px);line-height:1.04;letter-spacing:-.01em;margin:0 0 9px;text-wrap:balance}
+  .tabhead .tsub{font-size:14px;color:var(--muted);line-height:1.5;margin:0 0 13px;max-width:62ch}
+  .tabhead .tsub b{color:var(--ink)}
+  .tabstats{display:flex;flex-wrap:wrap;gap:8px}
+  .tabstat{display:inline-flex;align-items:center;gap:6px;background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:7px 12px;font-size:12.5px;font-weight:800;color:var(--ink)}
+  .tabstat .tk{color:var(--muted);font-weight:700}
+  .tabstat .gd{color:var(--buy)} .tabstat .bd{color:var(--dont)}
+  .menuhead{border-bottom:0;padding-top:14px}
   .schedlink{cursor:pointer;display:inline-flex;align-items:center;gap:7px}
   .schedi{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;border:1.2px solid var(--muted);font-family:Georgia,serif;font-style:italic;font-size:9.5px;font-weight:700}
   .schedlink:hover .schedi{border-color:var(--broth);color:var(--broth)}
@@ -1028,23 +1049,16 @@ function render(D,H){
 
   document.getElementById('app').innerHTML=
   '<header class="hero"><div class="brandrow"><div class="brand"><span class="bowl">🍲</span> Stock&nbsp;Soup</div>'+
-    '<div style="display:flex;gap:8px;align-items:center"><span class="live"><span class="pulse"></span>LIVE</span>'+
-    '<button class="lastupd" id="lastUpd" title="Minor-run price log">updated…</button>'+
-    '<button class="refreshbtn" id="refreshBtn" title="Pull the latest published prices" aria-label="Refresh prices">↻</button>'+
-    '<button class="signinbtn" id="signInTop" title="Sync your watchlist + get price alerts">👤 Sign in</button>'+
-    '<button class="viewbtn" id="viewBtn">😋 Simple</button>'+
-    '<button class="chip toggle" id="themeBtn" aria-label="Toggle theme">🌗</button></div></div>'+
-    '<div class="eyebrow schedlink" data-info="schedule" role="button" tabindex="0" title="How the run schedule works" style="margin-top:22px;letter-spacing:.06em">'+esc((D.stamp||'').replace(/,?\s*20\d\d/,'').replace(/\s*AEST\b/,''))+(D.next?' · next ~'+esc(D.next):'')+' <span class="schedi">i</span></div>'+
-    mktBarHtml(D)+
-    '<h1 class="display">Two pots on the boil:<br><span class="hot">'+esc(D.headline.a)+'</span> &amp; <span class="hot">'+esc(D.headline.b)+'</span>.</h1>'+
-    '<p class="chef">'+D.chef+'</p>'+
-    '<div class="metastrip"><span class="chip clickchip" data-mchip="risk" role="button" tabindex="0"><span class="dot" style="background:var(--hold)"></span> Risk: '+esc(r.label)+' <span class="chipi">i</span></span>'+
-    '<span class="chip mono clickchip" data-mchip="btc" role="button" tabindex="0">₿ '+esc(r.btc)+' <span class="up">'+esc(r.btcChange)+'</span></span>'+
-    '<span class="chip mono clickchip" data-mchip="aud" role="button" tabindex="0">AUD/USD '+esc(r.audusd)+(r.audusdChange?' <span class="'+(r.audusdUp?'up':'down')+'">'+(r.audusdUp?'▲':'▼')+esc(r.audusdChange)+'</span>':'')+'</span>'+
-    '<span class="chip mono clickchip" data-mchip="gold" role="button" tabindex="0">Gold '+esc(r.gold)+(r.goldChange?' <span class="'+(r.goldUp?'up':'down')+'">'+(r.goldUp?'▲':'▼')+esc(r.goldChange)+'</span>':'')+'</span>'+
-    '<span class="chip">'+esc(D.hotTags)+'</span></div>'+
-    '<div class="meter"><div class="track"><div class="needle" id="needle"></div></div>'+
-    '<div class="lbls"><span>🔴 Hide the cash</span><span>⚪ Steady</span><span>🟢 Send it</span></div></div></header>'+
+    '<div class="toprail">'+mktBarHtml(D)+
+      '<div class="burgerwrap"><button class="burger" id="burgerBtn" aria-label="Menu" aria-haspopup="true" aria-expanded="false" aria-controls="burgerMenu">☰</button>'+
+        '<div class="burgermenu" id="burgerMenu" role="menu" hidden>'+
+          '<div class="bmhead"><span class="live"><span class="pulse"></span>LIVE</span><button class="bmupd" id="lastUpd">updated…</button></div>'+
+          '<button class="bmitem" id="signInTop" role="menuitem">👤 Sign in</button>'+
+          '<button class="bmitem" id="refreshBtn" role="menuitem">↻ Refresh prices</button>'+
+          '<button class="bmitem" id="viewBtn" role="menuitem">😋 Simple view</button>'+
+          '<button class="bmitem" id="themeBtn" role="menuitem">🌗 Switch theme</button>'+
+        '</div></div>'+
+    '</div></div></header>'+
 
   // ===== TAB BAR =====
   '<nav class="tabbar" id="tabbar" role="tablist" aria-label="Sections">'+
@@ -1056,6 +1070,18 @@ function render(D,H){
 
   // ===== 🍲 TONIGHT'S MENU =====
   '<div class="tabview active" id="tab-menu">'+
+    '<div class="tabhead menuhead">'+
+      '<div class="eyebrow schedlink" data-info="schedule" role="button" tabindex="0" title="How the run schedule works" style="letter-spacing:.06em">'+esc((D.stamp||'').replace(/,?\s*20\d\d/,'').replace(/\s*AEST\b/,''))+(D.next?' · next ~'+esc(D.next):'')+' <span class="schedi">i</span></div>'+
+      '<h1 class="display">Two pots on the boil:<br><span class="hot">'+esc(D.headline.a)+'</span> &amp; <span class="hot">'+esc(D.headline.b)+'</span>.</h1>'+
+      '<p class="chef">'+D.chef+'</p>'+
+      '<div class="metastrip"><span class="chip clickchip" data-mchip="risk" role="button" tabindex="0"><span class="dot" style="background:var(--hold)"></span> Risk: '+esc(r.label)+' <span class="chipi">i</span></span>'+
+      '<span class="chip mono clickchip" data-mchip="btc" role="button" tabindex="0">₿ '+esc(r.btc)+' <span class="up">'+esc(r.btcChange)+'</span></span>'+
+      '<span class="chip mono clickchip" data-mchip="aud" role="button" tabindex="0">AUD/USD '+esc(r.audusd)+(r.audusdChange?' <span class="'+(r.audusdUp?'up':'down')+'">'+(r.audusdUp?'▲':'▼')+esc(r.audusdChange)+'</span>':'')+'</span>'+
+      '<span class="chip mono clickchip" data-mchip="gold" role="button" tabindex="0">Gold '+esc(r.gold)+(r.goldChange?' <span class="'+(r.goldUp?'up':'down')+'">'+(r.goldUp?'▲':'▼')+esc(r.goldChange)+'</span>':'')+'</span>'+
+      '<span class="chip">'+esc(D.hotTags)+'</span></div>'+
+      '<div class="meter"><div class="track"><div class="needle" id="needle"></div></div>'+
+      '<div class="lbls"><span>🔴 Hide the cash</span><span>⚪ Steady</span><span>🟢 Send it</span></div></div>'+
+    '</div>'+
     '<section><p class="sec-sub" style="margin-top:4px">Three time horizons — '+tfB('Day')+' a quick feed · '+tfB('Week')+' a few days · '+tfB('Long')+' slow-cooked. Tap a card for the full serve; tap a name for Yahoo. '+infoBtn('menu')+'</p>'+menus+'</section>'+
     // Change-environment retired — its trajectory + "ready to buy" now live inside each pick card (miniTraj + buyat + rangeBar).
     '<section><div class="sec-head"><h2 class="display"><span class="k">02</span> The world &amp; the sectors</h2>'+infoBtn('world')+'</div>'+
@@ -1078,6 +1104,7 @@ function render(D,H){
 
   // ===== 🍽️ THE REVIEWS =====
   '<div class="tabview" id="tab-reviews">'+
+    reviewsHead()+
     '<section><p class="sec-sub" style="margin-top:4px"><b>How good were we?</b> Every major re-cook (the menu changing) plus every closed call, <b>scored honestly</b>. Each Journey row: '+tfB('Day')+' '+tfB('Week')+' '+tfB('Long')+'. <span style="color:var(--buy)">Green = kept</span>, <span style="color:var(--dont)">red/✕ = DROP</span>, NEW = fresh. '+infoBtn('journey')+'</p>'+
       '<div class="chef-note">'+note+'</div><div class="journey">'+journeyCols+'</div>'+
       '<div class="panel" style="margin-top:18px"><div class="paneltop"><h3>Closed calls · scored honestly</h3><button class="trackbtn" id="trackBtn">📊 Full month →</button></div>'+
@@ -1091,6 +1118,7 @@ function render(D,H){
 
   // ===== ⭐ YOUR FAVOURITES =====
   '<div class="tabview" id="tab-faves">'+
+    favesHead()+
     '<section><p class="sec-sub" style="margin-top:4px">Tap <b>＋ Watch</b> on any pick to track it — we remember its ideal-buy price and flag it when it gets there. Or add your own below. '+infoBtn('watchlist')+'</p>'+
       '<div class="wlalert" id="wlAlert" role="status" aria-live="polite" style="display:none"></div>'+
       '<div class="wlbar"><input id="wlInput" placeholder="Add a ticker… e.g. BHP" maxlength="8" aria-label="Ticker to add">'+
@@ -1102,6 +1130,7 @@ function render(D,H){
 
   // ===== 👨‍🍳 INSIDE THE KITCHEN =====
   '<div class="tabview" id="tab-kitchen">'+
+    kitchenHead(D)+
     '<section id="runsched"><div class="sec-head"><h2 class="display">⏱️ Run schedule</h2>'+infoBtn('schedule')+'</div>'+runLogHtml()+'</section>'+
     '<section><div class="sec-head"><h2 class="display">🗄️ The Archive</h2>'+infoBtn('archive')+'</div>'+
       '<p class="sec-sub">Every menu we\'ve served. Tap one to open that run\'s full report.</p>'+
@@ -1316,6 +1345,38 @@ var INFO={
     '<p>Every menu we\'ve served, newest first — tap one to open that run\'s full report snapshot. Shows the last 3; expand for the rest. Each records that run\'s 6 picks and the risk read at the time.</p>'}
 };
 function infoBtn(key){ return '<button class="infobtn" data-info="'+esc(key)+'" aria-label="What is this?">i</button>'; }
+// ── Per-tab "what you need to know" headers ─────────────────────────────────
+function tabHead(eyebrow,title,sub,stats){
+  return '<div class="tabhead">'+
+    '<div class="theyebrow">'+eyebrow+'</div>'+
+    '<h2 class="thead display">'+title+'</h2>'+
+    (sub?'<p class="tsub">'+sub+'</p>':'')+
+    (stats&&stats.length?'<div class="tabstats">'+stats.join('')+'</div>':'')+
+  '</div>';
+}
+function tstat(k,v,cls){return '<span class="tabstat"><span class="tk">'+esc(k)+'</span> <b'+(cls?' class="'+cls+'"':'')+'>'+esc(v)+'</b></span>';}
+function reviewsHead(){
+  var o=(typeof OUTCOMES!=='undefined'&&OUTCOMES)?OUTCOMES:null;
+  if(!o||!o.outcomes) return tabHead('🍽️ The scorecard','How good were we?','We grade <b>every</b> past pick after its own timeframe — no cherry-picking. Numbers fill in as calls mature.',[]);
+  var rec=o.record||'—', wr=Math.round((o.winRate||0)*100), bt=o.byTimeframe||{}, best=null;
+  ['Day','Week','Long'].forEach(function(tf){var a=bt[tf];if(a&&a.n&&(!best||(a.winRate||0)>best.wr))best={tf:tf,wr:(a.winRate||0)};});
+  var LB={Day:'Day trades',Week:'Week holds',Long:'Month holds'};
+  var stats=[tstat('Record',rec),tstat('Win rate',wr+'%',wr>=50?'gd':'bd'),tstat('Sharpest',best?LB[best.tf]+' '+Math.round(best.wr*100)+'%':'—','gd')];
+  var verdict=wr>=55?'Cooking with gas 🔥':wr>=45?'Honest and middling':'A humbling month — nothing hidden';
+  return tabHead('🍽️ The scorecard',verdict,'We check <b>every</b> pick after its own timeframe — a day-trade the next day, a week pick after a week, a month pick after a month. Tap any call below for the story.',stats);
+}
+function favesHead(){
+  var n=0; try{n=wlGet().length;}catch(e){}
+  var stats=[tstat('Watching',n),tstat('You own','0'),tstat('Price alerts','on')];
+  var t=n?('You\'re watching '+n+(n===1?' name':' names')):'Your table is empty — for now';
+  return tabHead('⭐ Your table',t,'Tap <b>＋ Watch</b> on any pick and we\'ll remember its ideal-buy price, then flag it the moment it gets there. Add your own below too.',n?stats:[]);
+}
+function kitchenHead(D){
+  var n=(typeof PULSES!=='undefined'&&PULSES)?PULSES.length:0;
+  var last=(D&&D.stamp)?String(D.stamp).replace(/,?\s*20\d\d/,'').replace(/\s*AEST\b/,''):'—';
+  var stats=[tstat('Last cook',last),tstat('Next service',D&&D.next?'~'+D.next:'—'),tstat('Re-prices today',n)];
+  return tabHead('👨‍🍳 Behind the pass','The engine room','Every run, every source, every score — no black box. This is where the soup actually gets made.',stats);
+}
 function runLogHtml(){
   var H=(LAST&&LAST.H)||{}, hh='font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--broth);font-weight:800;margin:18px 0 4px';
   var WD=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'], MO=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -1861,7 +1922,15 @@ function wire(D){
   var pm=document.getElementById('potMore'), pl=document.getElementById('potLose');
   if(pm&&pl){ pm.onclick=function(){ var open=pl.hasAttribute('hidden'); if(open)pl.removeAttribute('hidden'); else pl.setAttribute('hidden',''); pm.setAttribute('aria-expanded',open?'true':'false'); pm.innerHTML=(open?'▴ Hide the maybes &amp; passes':'➖ '+pl.children.length+' more — maybes &amp; passes ▾'); }; }
   var lu=document.getElementById('lastUpd');
-  if(lu){ if(PULSES&&PULSES.length){ lu.textContent='updated '+timeAgo(PULSES[PULSES.length-1].iso); lu.onclick=goRunSchedule; } else { lu.style.display='none'; } }
+  if(lu){ if(PULSES&&PULSES.length){ lu.textContent='updated '+timeAgo(PULSES[PULSES.length-1].iso); lu.onclick=goRunSchedule; } else { lu.textContent='no runs yet'; } }
+  var bg=document.getElementById('burgerBtn'), bm=document.getElementById('burgerMenu');
+  if(bg&&bm){
+    var closeBM=function(){ bm.setAttribute('hidden',''); bg.setAttribute('aria-expanded','false'); };
+    bg.onclick=function(e){ e.stopPropagation(); if(bm.hasAttribute('hidden')){ bm.removeAttribute('hidden'); bg.setAttribute('aria-expanded','true'); } else { closeBM(); } };
+    document.addEventListener('click',function(e){ if(!bm.hasAttribute('hidden')&&!bg.contains(e.target)&&!bm.contains(e.target)) closeBM(); });
+    document.addEventListener('keydown',function(e){ if(e.key==='Escape') closeBM(); });
+    bm.querySelectorAll('.bmitem,.bmupd').forEach(function(it){ it.addEventListener('click',closeBM); });
+  }
   document.querySelectorAll('.schedlink').forEach(function(s){ s.removeAttribute('data-info'); s.onclick=goRunSchedule; });
   var tb=document.getElementById('trackBtn'), tc=document.getElementById('trackCta');
   if(TRACK){ if(tb)tb.onclick=openTrackRecord; if(tc)tc.onclick=openTrackRecord; }
