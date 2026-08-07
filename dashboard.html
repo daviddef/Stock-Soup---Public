@@ -1126,11 +1126,33 @@ function discoveryFunnel(D){
 }
 // "The Misses" (#63): the day's real top movers, checked against what we actually scanned/served —
 // so the run's accountability isn't only ever the winners. Built by misses.py, stored on latest.misses.
+function hotMoversHtml(D){
+  // Live-ish movers between major runs (#83 follow-up): the 10-min re-price pulse now also checks
+  // Yahoo's real US gainers/losers (hour-cached, keyless) so a big mover surfaces within ~an hour
+  // instead of only at the next scheduled major run. US-only for now — ASX needs the same crumb-auth
+  // work the earnings net already solved, not yet wired in here (see Kitchen Manual roadmap).
+  var hm=D.hotMovers; if(MKT!=='us'||!hm||!hm.us||!hm.us.length) return '';
+  var rows=hm.us.slice(0,8).map(function(r){
+    var up=r.pct>=0;
+    return '<div class="missrow '+(r.tracked?'m-served':'m-missed')+'"><span class="missic">'+(r.tracked?'✅':'❌')+'</span>'+
+      '<a class="misssym" href="'+yf(r.sym,'us')+'" target="_blank" rel="noopener">'+esc(r.sym)+'<span class="wflag" style="margin-left:5px">US</span></a>'+
+      (r.name?'<span class="missnm">'+esc(r.name)+'</span>':'')+
+      '<span class="misspct '+(up?'up':'down')+'">'+(up?'▲':'▼')+' '+Math.abs(r.pct)+'%</span>'+
+      '<span class="missstat">'+(r.tracked?'On our radar':'Not tracked')+'</span></div>';
+  }).join('');
+  return '<div class="callout" style="margin-bottom:14px"><b style="color:var(--ink)">🔴 Live movers · updated '+esc(hm.stamp||'this hour')+'</b> — '+
+    'checked between major runs, not just at scan time. <b>On our radar</b> = already a pick, candidate or watchlist name; <b>Not tracked</b> = a fresh miss forming right now.</div>'+
+    '<div class="missgrid">'+rows+'</div>';
+}
 function missesSection(D){
-  var mi=D.misses; if(!mi||!mi.rows||!mi.rows.length) return '';
+  var mi=D.misses; var hmHtml=hotMoversHtml(D);
+  if((!mi||!mi.rows||!mi.rows.length)&&!hmHtml) return '';
+  if(!mi||!mi.rows||!mi.rows.length){
+    return '<section id="misses"><div class="sec-head"><h2 class="display">😬 The Misses</h2>'+infoBtn('misses')+'</div>'+hmHtml+'</section>';
+  }
   var STAT={served:{ic:'✅',lbl:'Served',cls:'m-served'},scanned:{ic:'👀',lbl:'Scanned, not served',cls:'m-scanned'},missed:{ic:'❌',lbl:'Missed',cls:'m-missed'}};
   var mktRows=mi.rows.filter(function(r){return (r.region||'us')===MKT;});
-  if(!mktRows.length) return '';
+  if(!mktRows.length) return hmHtml?'<section id="misses"><div class="sec-head"><h2 class="display">😬 The Misses</h2>'+infoBtn('misses')+'</div>'+hmHtml+'</section>':'';
   var missedN=mktRows.filter(function(r){return r.status==='missed';}).length;
   // Today's Misses are all same-day movers (net 1 checks daily gainers/losers only — no week/month
   // sweep yet, queued separately), so every row is honestly a "D" (Day) miss right now.
@@ -1144,6 +1166,7 @@ function missesSection(D){
       '<span class="missstat">'+s.lbl+'</span>'+(sig?'<div style="width:100%;margin-top:2px">'+sig+'</div>':'')+'<span class="missnote">'+esc(r.note)+'</span></div>';
   }).join('');
   return '<section id="misses"><div class="sec-head"><h2 class="display">😬 The Misses <span class="badcount">'+missedN+'</span></h2>'+infoBtn('misses')+'</div>'+
+    hmHtml+
     '<p class="sec-sub">'+(MKT==='au'?'🇦🇺 Australia\'s':'🌏 International')+' biggest real movers, checked as of <b>'+esc(mi.stamp||'tonight')+'</b> — against what tonight\'s net actually scanned. <b>'+missedN+' of '+mktRows.length+'</b> weren\'t in our net at all. Same-day (D) movers only for now — week/month misses are on the roadmap.</p>'+
     '<div class="missgrid">'+rows+'</div></section>';
 }
