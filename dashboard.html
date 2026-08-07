@@ -209,6 +209,9 @@
   .sigrow{padding:10px 14px;background:var(--surface)}
   .sigrow-top{display:flex;align-items:center;gap:7px;font-size:13px}
   .sigicon{font-size:13px}
+  button.sigsum{font-family:var(--font);border:0;cursor:pointer}
+  button.sigsum .chipi{opacity:.7}
+  .sigdiag{display:block;margin:6px 0 2px;border-radius:6px}
   .sigread{margin-left:auto;font-weight:800;font-size:12px}
   .sigread.up{color:var(--buy)} .sigread.down{color:var(--dont)}
   .sigexplain{font-size:11.5px;color:var(--faint);margin-top:3px;line-height:1.4}
@@ -225,11 +228,11 @@
   .wlstat-be{color:var(--muted);font-weight:700}
   .wlstat-empty{font-size:12.5px;color:var(--faint);margin-top:6px;line-height:1.4}
   .pxranges{display:flex;flex-direction:column;gap:10px;margin-top:4px}
-  .pxr-row{display:flex;align-items:center;gap:10px}
-  .pxr-lbl{width:52px;flex:0 0 auto;font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
-  .pxr-track{flex:1;position:relative;height:6px;border-radius:999px;background:linear-gradient(90deg,rgba(255,77,77,.4),rgba(255,197,61,.35),rgba(35,194,103,.5))}
+  .pxr-row{display:flex;align-items:center;gap:8px}
+  .pxr-lbl{width:62px;flex:0 0 auto;font-size:10.5px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.03em;white-space:nowrap}
+  .pxr-track{flex:1;min-width:0;position:relative;height:6px;border-radius:999px;background:linear-gradient(90deg,rgba(255,77,77,.4),rgba(255,197,61,.35),rgba(35,194,103,.5))}
   .pxr-dot{position:absolute;top:-4px;width:14px;height:14px;border-radius:50%;background:var(--ink);box-shadow:0 0 0 3px var(--surface);transform:translateX(-50%)}
-  .pxr-vals{flex:0 0 auto;font-size:11px;font-weight:700;color:var(--faint);font-variant-numeric:tabular-nums;white-space:nowrap}
+  .pxr-min,.pxr-max{flex:0 0 auto;font-size:11px;font-weight:700;color:var(--faint);font-variant-numeric:tabular-nums;white-space:nowrap}
   .docsov{position:fixed;inset:0;z-index:300;background:var(--ground);display:none;flex-direction:column}
   .docsbar{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--line);background:var(--surface)}
   .docstitle{font-weight:900;font-size:15px;display:inline-flex;align-items:center;gap:8px}
@@ -828,6 +831,8 @@
     width:34px;height:34px;border-radius:10px;cursor:pointer;font-size:16px;font-weight:800;line-height:1}
   .mclose:focus-visible{outline:2px solid var(--broth);outline-offset:2px}
   .mverd{display:inline-block;margin-top:12px;font-size:12px;font-weight:900;padding:6px 12px;border-radius:9px;text-transform:uppercase;letter-spacing:.04em}
+  button.mverd{border:0;font-family:var(--font);cursor:pointer}
+  button.mverd .chipi{opacity:.7;margin-left:2px}
   .mbody{padding:20px 22px 24px;display:flex;flex-direction:column;gap:18px}
   .viz{background:var(--surface-2);border:1px solid var(--line);border-radius:14px;padding:16px}
   .viz h4{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:800;margin-bottom:16px}
@@ -1204,6 +1209,39 @@ function rsChip(p,region){
 // of plain text + pills in the modal. Works on picks, candidates, AND (once wired) Misses rows —
 // any object carrying the same field names. Missing fields just don't produce a row; if too few
 // signals are available the summary honestly says so rather than guessing.
+// Small inline diagrams (#83) — a sentence like "pierced the upper Bollinger band" is still jargon
+// on first read. A tiny real picture of what actually happened (bands + a dot for where price sits)
+// makes it click faster than more words would. Kept tiny and schematic on purpose, not a real chart.
+function sigDiagRSI(rsi){
+  var x=8+184*Math.max(0,Math.min(100,rsi))/100;
+  return '<svg class="sigdiag" viewBox="0 0 200 34" width="100%" height="34" preserveAspectRatio="none">'+
+    '<defs><linearGradient id="rg1" x1="0" x2="1"><stop offset="0" stop-color="var(--buy)"/><stop offset=".5" stop-color="var(--hold)"/><stop offset="1" stop-color="var(--dont)"/></linearGradient></defs>'+
+    '<rect x="8" y="14" width="184" height="6" rx="3" fill="url(#rg1)"/>'+
+    '<circle cx="'+x+'" cy="17" r="6" fill="var(--ink)" stroke="var(--surface)" stroke-width="2"/>'+
+    '<text x="8" y="32" font-size="8" fill="var(--faint)">cheap</text><text x="192" y="32" font-size="8" fill="var(--faint)" text-anchor="end">overheated</text></svg>';
+}
+function sigDiagBB(pb){
+  var clamped=Math.max(-0.3,Math.min(1.3,pb)), y=28-clamped*22;
+  return '<svg class="sigdiag" viewBox="0 0 200 34" width="100%" height="34" preserveAspectRatio="none">'+
+    '<line x1="8" y1="6" x2="192" y2="6" stroke="var(--dont)" stroke-width="1.5" stroke-dasharray="3,3"/>'+
+    '<line x1="8" y1="17" x2="192" y2="17" stroke="var(--faint)" stroke-width="1" stroke-dasharray="2,2"/>'+
+    '<line x1="8" y1="28" x2="192" y2="28" stroke="var(--buy)" stroke-width="1.5" stroke-dasharray="3,3"/>'+
+    '<circle cx="150" cy="'+y+'" r="5" fill="var(--ink)" stroke="var(--surface)" stroke-width="2"/>'+
+    '<text x="8" y="34" font-size="0"></text></svg>';
+}
+function sigDiagTrend(tone,strong){
+  var d=tone==='pos'?'M8,26 L70,20 L130,14 L192,'+(strong?4:8):tone==='neg'?'M8,8 L70,14 L130,20 L192,'+(strong?26:22):'M8,17 Q50,6 100,17 T192,17';
+  var col=tone==='pos'?'var(--buy)':tone==='neg'?'var(--dont)':'var(--hold)';
+  return '<svg class="sigdiag" viewBox="0 0 200 34" width="100%" height="34" preserveAspectRatio="none">'+
+    '<path d="'+d+'" fill="none" stroke="'+col+'" stroke-width="2.5" stroke-linecap="round"/></svg>';
+}
+function sigDiagEMA(above20,above50){
+  var fast=above20?'M8,24 Q100,4 192,10':'M8,8 Q100,28 192,22';
+  var slow=above50?'M8,26 Q100,14 192,16':'M8,12 Q100,24 192,20';
+  return '<svg class="sigdiag" viewBox="0 0 200 34" width="100%" height="34" preserveAspectRatio="none">'+
+    '<path d="'+slow+'" fill="none" stroke="var(--faint)" stroke-width="2" stroke-dasharray="4,3"/>'+
+    '<path d="'+fast+'" fill="none" stroke="var(--broth)" stroke-width="2.5"/></svg>';
+}
 function signalRows(p,region,opts){
   opts=opts||{};
   var rows=[];
@@ -1211,7 +1249,8 @@ function signalRows(p,region,opts){
     var rsi=p.rsi, tone=rsi>=70?'neg':rsi<=35?'pos':'mix';
     rows.push({icon:'🌡️',label:'RSI '+rsi,tone:tone,
       read:rsi>=70?'Overheated — wait for it to cool':rsi<=35?'Cheap — bargain zone':'Comfortable, not stretched',
-      explain:'Momentum gauge, 0–100. Above 70 = overbought (often pulls back); below 35 = oversold (often bounces).'});
+      explain:'Momentum gauge, 0–100. Above 70 = overbought (often pulls back); below 35 = oversold (often bounces).',
+      diagram:sigDiagRSI(rsi)});
   }
   var t=p&&p.trend;
   if(t&&(t.adx!=null||t.macd_pos!=null)){
@@ -1221,14 +1260,16 @@ function signalRows(p,region,opts){
     else if(t.adx!=null&&t.adx<20){tone='mix';read='Choppy, no clear trend';}
     else {tone='mix';read='Trend stalling';}
     rows.push({icon:'📊',label:'Trend'+(t.adx!=null?' · ADX '+t.adx:''),tone:tone,read:read,
-      explain:'MACD shows direction, ADX shows strength — 25+ is a real trend, under 20 is choppy/no trend.'});
+      explain:'MACD shows direction, ADX shows strength — 25+ is a real trend, under 20 is choppy/no trend.',
+      diagram:sigDiagTrend(tone,strong)});
   }
   var e=p&&p.ema;
   if(e&&e.ema20!=null){
     var tone=(e.above_ema20&&e.above_ema50)?'pos':(!e.above_ema20&&!e.above_ema50)?'neg':'mix';
     rows.push({icon:'📈',label:'EMA',tone:tone,
       read:tone==='pos'?'Above both the 20 & 50-day averages':tone==='neg'?'Below both the 20 & 50-day averages':'Between the 20/50-day averages',
-      explain:'Fast-reacting moving averages. Above both = short-term strength; below both = short-term weakness.'});
+      explain:'Fast-reacting moving averages. Above both = short-term strength; below both = short-term weakness.',
+      diagram:sigDiagEMA(e.above_ema20,e.above_ema50)});
   }
   var b=p&&p.bb;
   if(b&&b.bb_pctb!=null){
@@ -1238,7 +1279,8 @@ function signalRows(p,region,opts){
     else if(pb>0.8){tone='mix';read='Near the upper band';}
     else if(pb<0.2){tone='mix';read='Near the lower band';}
     if(tone) rows.push({icon:'〰️',label:'Bollinger',tone:tone,read:read,
-      explain:'Volatility bands around the price. Piercing the upper band = stretched; piercing the lower = oversold.'});
+      explain:'Volatility bands around the price. Piercing the upper band = stretched; piercing the lower = oversold.',
+      diagram:sigDiagBB(pb)});
   }
   var rs=p&&p.relStrength;
   if(rs&&rs.rs!=null){
@@ -1264,20 +1306,43 @@ function signalSummary(rows){
   if(neg-pos>=2&&neg>=2) return {verdict:'weak',icon:'⚠️',label:'Signals are weak'};
   return {verdict:'mixed',icon:'😐',label:'Signals are mixed'};
 }
-function signalPillHtml(p,region){
-  var rows=signalRows(p,region); if(!rows.length) return '';
-  var s=signalSummary(rows);
-  var cls=s.verdict==='strong'?'sc-pos':s.verdict==='weak'?'sc-neg':s.verdict==='limited'?'sc-lim':'sc-mix';
-  return '<span class="sentc sigsum '+cls+'">'+s.icon+' '+esc(s.label)+'</span>';
-}
-function signalDetailHtml(p,region,opts){
-  var rows=signalRows(p,region,opts);
+function sigRowsHtml(rows){
   if(!rows.length) return '<p class="muted" style="font-size:12.5px;margin:4px 0">No technical signals available for this name — it wasn\'t in tonight\'s scored candidates.</p>';
   return '<div class="sigdetail">'+rows.map(function(r){
     return '<div class="sigrow"><div class="sigrow-top"><span class="sigicon">'+r.icon+'</span><b>'+esc(r.label)+'</b>'+
       '<span class="sigread '+(r.tone==='pos'?'up':r.tone==='neg'?'down':'')+'">'+esc(r.read)+'</span></div>'+
+      (r.diagram||'')+
       '<div class="sigexplain">'+esc(r.explain)+'</div></div>';
   }).join('')+'</div>';
+}
+// Any signal pill, anywhere it's rendered (compact card, Simple view, Misses, candidate modal),
+// is tappable and opens the SAME breakdown — one cache keyed by a sequence id so every render
+// site can just call signalPillHtml() without wiring its own click handler (#84).
+var SIG_CACHE={}, SIG_SEQ=0;
+function signalPillHtml(p,region,sym){
+  var rows=signalRows(p,region); if(!rows.length) return '';
+  var s=signalSummary(rows);
+  var cls=s.verdict==='strong'?'sc-pos':s.verdict==='weak'?'sc-neg':s.verdict==='limited'?'sc-lim':'sc-mix';
+  var key='sig'+(SIG_SEQ++);
+  SIG_CACHE[key]={rows:rows,title:(sym||(p&&p.sym)||'Signals')+' — '+s.label};
+  return '<button type="button" class="sentc sigsum '+cls+'" data-sigkey="'+key+'">'+s.icon+' '+esc(s.label)+' <span class="chipi">i</span></button>';
+}
+function openSignalBreakdown(key){
+  var c=SIG_CACHE[key]; if(!c) return;
+  LASTFOCUS=document.activeElement;
+  var m=document.getElementById('modal'); m.className='modal';
+  m.innerHTML='<div class="mhead"><button class="mclose" id="mClose" aria-label="Close">✕</button><div class="mtf">🧮 Signal breakdown</div>'+
+    '<div class="mtop"><div class="msym" style="font-size:19px;line-height:1.2">'+esc(c.title)+'</div></div></div>'+
+    '<div class="mbody">'+sigRowsHtml(c.rows)+'</div>';
+  var ov=document.getElementById('overlay'); ov.classList.add('open'); ov.setAttribute('aria-hidden','false');
+  document.getElementById('mClose').onclick=closeModal; document.getElementById('mClose').focus();
+}
+document.body.addEventListener('click',function(e){
+  var b=e.target.closest('.sigsum[data-sigkey]'); if(b){ openSignalBreakdown(b.dataset.sigkey); }
+});
+function signalDetailHtml(p,region,opts){
+  var rows=signalRows(p,region,opts);
+  return sigRowsHtml(rows);
 }
 // Week/month/year price range — where the current price sits in each real historical window (#78).
 // p.ranges = {"1w":{lo,hi,pos}, "1m":{...}, "1y":{...}} from features._price_ranges(), pos is 0-1
@@ -1290,8 +1355,9 @@ function rangeBarsHtml(p,cur){
   var rows=order.map(function(k){
     var w=r[k], pct=Math.max(0,Math.min(100,w.pos*100));
     return '<div class="pxr-row"><span class="pxr-lbl">'+LBL[k]+'</span>'+
+      '<span class="pxr-min">'+esc(cur)+w.lo.toFixed(1)+'</span>'+
       '<div class="pxr-track"><div class="pxr-dot" style="left:'+pct+'%"></div></div>'+
-      '<span class="pxr-vals">'+esc(cur)+w.lo+' – '+esc(cur)+w.hi+'</span></div>';
+      '<span class="pxr-max">'+esc(cur)+w.hi.toFixed(1)+'</span></div>';
   }).join('');
   return '<div class="viz"><h4>Price range · low → high, and where we sit</h4><div class="pxranges">'+rows+'</div></div>';
 }
@@ -1711,7 +1777,7 @@ function openModal(p,region,cur){
       '<div class="mtf">'+tfBW(p.tf)+' · '+(region==='au'?'🇦🇺 ASX':'🇺🇸 International')+'</div>'+
       '<div class="mtop"><div><div class="msym" id="mTitle">'+esc(p.sym)+'</div><div class="mco">'+qlink(p.sym,region,p.name)+' ↗</div></div>'+
         '<div class="mpx"><div class="mp mono">'+esc(p.price)+'</div><div class="mono '+chgTone(p.change,p.up)+'" style="font-weight:700;font-size:13px">'+esc(p.change)+'</div></div></div>'+
-      '<span class="mverd '+esc(p.vclass)+'">'+esc(p.verdict)+'</span></div>'+
+      '<button class="mverd '+esc(p.vclass)+'" id="mVerdictBtn" type="button" title="Tap for plain English">'+esc(p.verdict)+' <span class="chipi">i</span></button></div>'+
     '<div class="mbody">'+
       sparkHtml+
       rangesHtml+
@@ -1741,6 +1807,7 @@ function openModal(p,region,cur){
         '<a class="mbtn" href="'+yf(p.sym,region)+'" target="_blank" rel="noopener">📈 Yahoo ↗</a>'+
         '<a class="mbtn primary" href="'+esc(LAST.D.reportUrl)+'" target="_blank" rel="noopener">📖 Report ↗</a></div>'+
     '</div>';
+  var _vb=document.getElementById('mVerdictBtn'); if(_vb) _vb.onclick=function(){openVerdictExplain(p.verdict);};
   var _wb=m.querySelector('.watchbtn'); if(_wb) _wb.addEventListener('click',function(e){e.preventDefault();watchToggleFromEl(_wb);});
   var _ob=m.querySelector('.ownbtn'); if(_ob){ var _setOwn=function(on){_ob.textContent=on?'📦 Owned ✓':'📦 I own it';_ob.setAttribute('aria-pressed',on?'true':'false');_ob.classList.toggle('owned',on);}; _setOwn(wlOwns(p.sym,region)); _ob.addEventListener('click',function(e){e.preventDefault();var on=wlToggleOwn(p.sym,region,p.name);_setOwn(on);if(LAST&&LAST.D){var sc=window.pageYOffset;render(LAST.D,LAST.H);window.scrollTo(0,sc);}}); }
   syncWatchButtons();
@@ -1824,6 +1891,39 @@ function openTimeframe(tf){
   });
 }
 
+// Verdict-pill glossary (#82) — the one-line verdict ("Accumulate before results", "Great bank, rich
+// price — dips only") is punchy on purpose, but punchy reads as jargon if you don't already trade.
+// Verdicts are free text (a different phrase per pick, not a fixed list), so this can't be one lookup
+// per phrase — instead it's a small vocabulary of the actual trading terms that keep showing up,
+// matched against whatever phrase this pick happens to use. Scales to any future verdict for free.
+var VERDICT_GLOSSARY=[
+  [/accumulate/i,'Accumulate','Buy gradually, a bit at a time, instead of all in one go.'],
+  [/before results|ahead of the number|catalyst ahead|catalyst coming/i,'Before results / catalyst ahead','A real event (earnings, a contract decision) is coming up. There\'s a genuine reason for the price to move — but that also means real risk if the news disappoints.'],
+  [/dips only|on.{0,3}dip|pullback/i,'Dips only','Only worth buying if the price drops back — don\'t pay today\'s price, wait for a cheaper entry.'],
+  [/rich price|richly valued|expensive/i,'Rich price','Already trading above what it\'s normally worth — you\'d be paying a premium at today\'s price.'],
+  [/cheap on good news|hasn.t caught up/i,'Cheap on good news','Good news already came out, but the price hasn\'t moved up to reflect it yet — the opportunity is the gap between the two.'],
+  [/momentum/i,'Momentum','The price is already moving strongly in one direction — the theory is it keeps going, at least for a while.'],
+  [/breakout/i,'Breakout','The price just pushed through a level it had struggled to get past before — often read as a bullish signal.'],
+  [/get in|buy now/i,'Get in','Our system rates this a buy right now, at today\'s price.'],
+  [/wait|too late/i,'Wait / too late','It already moved a lot — buying now means chasing a price that\'s run ahead of the news.'],
+  [/great bank|quality (long|hold)/i,'Quality hold','A genuinely good business — the caution is about the PRICE you pay for it, not the company itself.']
+];
+function verdictExplainHtml(verdict){
+  var v=String(verdict||''), hits=VERDICT_GLOSSARY.filter(function(g){return g[0].test(v);});
+  if(!hits.length) return '<p style="font-size:13px;color:var(--muted);margin:0">This is our one-line verdict — the short version of the full "why this call" read below it on the card.</p>';
+  return '<div class="sigdetail">'+hits.map(function(g){
+    return '<div class="sigrow"><div class="sigrow-top"><b>'+esc(g[1])+'</b></div><div class="sigexplain">'+esc(g[2])+'</div></div>';
+  }).join('')+'</div>';
+}
+function openVerdictExplain(verdict){
+  LASTFOCUS=document.activeElement;
+  var m=document.getElementById('modal'); m.className='modal';
+  m.innerHTML='<div class="mhead"><button class="mclose" id="mClose" aria-label="Close">✕</button><div class="mtf">💬 In plain English</div>'+
+    '<div class="mtop"><div class="msym" style="font-size:20px;line-height:1.2">'+esc(verdict)+'</div></div></div>'+
+    '<div class="mbody">'+verdictExplainHtml(verdict)+'</div>';
+  var ov=document.getElementById('overlay'); ov.classList.add('open'); ov.setAttribute('aria-hidden','false');
+  document.getElementById('mClose').onclick=closeModal; document.getElementById('mClose').focus();
+}
 // ---- Reusable ⓘ explainers (no black box) ----
 var INFO={
   actions:{icon:'🎯',title:'How the actions engine works',body:
