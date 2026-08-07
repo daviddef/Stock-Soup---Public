@@ -208,6 +208,18 @@
   .anz-sell{background:rgba(255,77,77,.09);border-color:rgba(255,77,77,.32);color:var(--dont)}
   .anlist h4{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:2px 0 6px} .anlist ul{margin:0;padding-left:18px} .anlist li{margin:4px 0;font-size:13.5px;color:var(--ink);line-height:1.45}
   .anrisk li{color:var(--muted)}
+  .stblock{margin-top:14px;padding-top:13px;border-top:1px dashed var(--line)}
+  .stblock>h4{font-size:12.5px;font-weight:900;color:var(--ink);margin:0 0 7px} .stblock .sthint{color:var(--muted);font-weight:600;font-size:11.5px}
+  .stsum{font-size:13.5px;line-height:1.5;color:var(--ink);margin:0 0 9px}
+  .stbar{display:flex;height:9px;border-radius:5px;overflow:hidden;background:var(--surface-2);border:1px solid var(--line)}
+  .stseg{height:100%} .stbuy{background:var(--buy)} .sthold{background:var(--faint)} .stsell{background:var(--dont)}
+  .stleg{display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:6px;font-size:11.5px;font-weight:800}
+  .stleg .up{color:var(--buy)} .stleg .down{color:var(--dont)} .stleg .stmid{color:var(--muted)} .stleg .stn{color:var(--faint);font-weight:700;margin-left:auto}
+  .sthl{margin-top:11px;display:flex;flex-direction:column;gap:7px}
+  .sthli{display:flex;align-items:flex-start;gap:8px;font-size:12.5px;line-height:1.4;color:var(--ink)}
+  .sthlt{flex:1;min-width:0} .sthld{color:var(--faint);font-weight:700;font-size:10.5px;white-space:nowrap;flex:0 0 auto}
+  .stdot{width:7px;height:7px;border-radius:50%;margin-top:5px;flex:0 0 auto;background:var(--faint)}
+  .stdot.up{background:var(--buy)} .stdot.down{background:var(--dont)} .stdot.flat{background:var(--faint)}
   .askbar{display:flex;gap:8px;margin:2px 0 16px}
   .askbar input{flex:1;min-width:0;background:var(--surface-2);border:1px solid var(--line);border-radius:11px;padding:11px 14px;color:var(--ink);font-family:var(--font);font-size:14px}
   .askbar input:focus{outline:2px solid var(--broth);outline-offset:1px}
@@ -340,8 +352,13 @@
   .rlrow.rlmaj{border-left-color:var(--broth);background:linear-gradient(90deg,rgba(255,107,26,.09),transparent 62%)}
   .rlrow.rlmin{border-left-color:var(--line)}
   .rltop{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:4px}
-  .rltag{font-size:9.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase}
+  .rltag{font-size:9.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;display:inline-flex;align-items:center;gap:6px}
   .rltag-maj{color:var(--broth)} .rltag-min{color:var(--faint)}
+  .rlrow.rllive{border-left-color:var(--buy);background:linear-gradient(90deg,rgba(35,194,103,.12),transparent 62%)}
+  .rltag-live{color:var(--buy)}
+  .rlspin{width:9px;height:9px;border-radius:50%;border:2px solid rgba(35,194,103,.3);border-top-color:var(--buy);display:inline-block;animation:rlspin .7s linear infinite}
+  @keyframes rlspin{to{transform:rotate(360deg)}}
+  @media (prefers-reduced-motion:reduce){.rlspin{animation:none}}
   .rlwhen{font-weight:700;font-size:12.5px;color:var(--ink)}
   .rldur{color:var(--faint);font-weight:600;font-size:10.5px}
   .rlbody{display:flex;flex-direction:column;gap:4px}
@@ -550,6 +567,16 @@
   .wlseg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
   .wlseg button{background:var(--surface);border:0;color:var(--muted);font-family:var(--font);font-weight:800;font-size:13px;padding:0 14px;cursor:pointer}
   .wlseg button[aria-pressed="true"]{background:var(--broth);color:#1a0f06}
+  /* Unified Favourites bar: one input, market toggle, two actions */
+  .unibar{display:flex;gap:8px;flex-wrap:wrap;align-items:stretch}
+  .unibar input{flex:1 1 180px;min-width:150px;background:var(--surface);border:1px solid var(--line);color:var(--ink);border-radius:11px;padding:11px 14px;font-family:var(--font);font-size:14px;font-weight:700}
+  .unibar input:focus-visible{outline:2px solid var(--broth);outline-offset:1px}
+  .unibar .wlseg{border-radius:11px}
+  .uni-watch,.uni-ask{border:0;font-family:var(--font);font-weight:900;font-size:13.5px;padding:0 15px;border-radius:11px;cursor:pointer;white-space:nowrap;line-height:1;display:inline-flex;align-items:center}
+  .uni-watch{background:var(--broth);color:#1a0f06}
+  .uni-ask{background:var(--surface-2);color:var(--ink);border:1px solid var(--line)}
+  .uni-ask:hover{border-color:var(--broth);color:var(--broth)} .uni-watch:hover{filter:brightness(1.05)}
+  @media(max-width:560px){ .uni-watch,.uni-ask{flex:1 1 46%;justify-content:center} }
   .wladd{background:var(--broth);color:#1a0f06;border:0;font-family:var(--font);font-weight:800;border-radius:10px;padding:0 20px;cursor:pointer;font-size:14px}
   .wlpills{display:flex;flex-direction:column;gap:8px;margin-bottom:16px;min-height:8px}
   .wlpill{display:inline-flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:6px 8px 6px 13px;font-size:13px}
@@ -1178,11 +1205,12 @@ function render(D,H){
   var note="This is the first menu on record — the journey starts here.";
   if(ms.length>=2){
     var a=ms[0],b=ms[1];
-    var chAu=(a.au||[]).filter(function(s){return (b.au||[]).indexOf(s)<0;}).length;
-    var chUs=(a.us||[]).filter(function(s){return (b.us||[]).indexOf(s)<0;}).length;
-    var tot=chAu+chUs, sameDay=a.stamp===b.stamp;
-    var mood=tot>=5?"a total menu overhaul 🔁":tot>=3?"a big shake-up 🌶️":tot>=1?"a couple of swaps":"steady — same menu as last run 😌";
-    note="<b>Latest menu ("+esc(a.time)+")</b> vs the previous run ("+esc(b.time)+"): "+mood+" — "+tot+" of 6 picks changed"+(sameDay?" (second run today).":".")+" 🇦🇺 "+chAu+"/3 swapped · 🌏 "+chUs+"/3 swapped.";
+    // market-aware: this tab shows ONLY the selected market's diff (AU or US), never both
+    var mineNow=MKT==='us'?(a.us||[]):(a.au||[]), minePrev=MKT==='us'?(b.us||[]):(b.au||[]);
+    var ch=mineNow.filter(function(s){return minePrev.indexOf(s)<0;}).length;
+    var sameDay=a.stamp===b.stamp, mkt=MKT==='us'?'U.S. menu':'Aussie menu';
+    var mood=ch>=3?"a total overhaul 🔁 — all three swapped":ch===2?"a big shake-up 🌶️ — two swapped":ch===1?"one swap":"no change — same three as last run 😌";
+    note="<b>Latest "+mkt+" ("+esc(a.time)+")</b> vs the previous run ("+esc(b.time)+"): "+mood+(ch?" — "+ch+" of 3 picks changed":"")+(sameDay?" (second run today).":".");
   }
 
   var sb=D.scoreboard||{};
@@ -1316,14 +1344,13 @@ function render(D,H){
   // ===== ⭐ YOUR FAVOURITES =====
   '<div class="tabview" id="tab-faves">'+
     favesHead()+
-    '<div class="askbar"><input id="anAsk" placeholder="🧠 What would you do? Ask about any ticker… e.g. PLTR" maxlength="8" aria-label="Ask the analyst about a ticker">'+
-      '<span class="askseg" role="group" aria-label="Market"><button id="anAu" aria-pressed="false">🇦🇺</button><button id="anUs" aria-pressed="true">🇺🇸</button></span>'+
-      '<button class="askbtn" id="anGo">Ask</button></div>'+
-    '<section><p class="sec-sub" style="margin-top:4px">Tap <b>＋ Watch</b> on any pick to track it — we remember its ideal-buy price and flag it when it gets there. Or add your own below. '+infoBtn('watchlist')+'</p>'+
+    '<section>'+
       '<div class="wlalert" id="wlAlert" role="status" aria-live="polite" style="display:none"></div>'+
-      '<div class="wlbar"><input id="wlInput" placeholder="Add a ticker… e.g. BHP" maxlength="8" aria-label="Ticker to add">'+
-        '<span class="wlseg" role="group" aria-label="Market"><button id="wlAu" aria-pressed="true">🇦🇺 AU</button><button id="wlUs" aria-pressed="false">🇺🇸 US</button></span>'+
-        '<button class="wladd" id="wlAdd">Add</button></div>'+
+      '<div class="unibar"><input id="uniInput" placeholder="Type a ticker… e.g. BHP or PLTR" maxlength="8" aria-label="Ticker">'+
+        '<span class="wlseg" role="group" aria-label="Market"><button id="uniAu" aria-pressed="true">🇦🇺 AU</button><button id="uniUs" aria-pressed="false">🇺🇸 US</button></span>'+
+        '<button class="uni-watch" id="uniWatch">＋ Watchlist</button>'+
+        '<button class="uni-ask" id="uniAsk">🧠 What to do?</button></div>'+
+      '<p class="sec-sub" style="margin-top:9px">Type a ticker, pick its market, then <b>＋ Watchlist</b> to track it (we remember its ideal-buy and flag it when it hits) — or <b>🧠 What to do?</b> for an instant read. You can also tap <b>＋ Watch</b> on any pick. '+infoBtn('watchlist')+'</p>'+
       '<div class="wlpills" id="wlPills"></div>'+
       '<div class="wlauth" id="wlAuth"></div></section>'+
   '</div>'+
@@ -1624,9 +1651,20 @@ function runLogHtml(){
       '<span class="rlwhen">'+fmtWhen(r.ts)+'</span>'+dur(pu.durMs)+'</div>'+
       '<div class="rlbody"><div class="rlline rlmovers">'+(mv||'<span class="qt">quiet hour — nothing moved much</span>')+'</div></div></div>';
   }).join('');
+  // A run that has KICKED OFF but not yet committed — so you can see something started, live.
+  var live='';
+  if(RUNNING&&RUNNING.startedAt){
+    var rts=new Date(RUNNING.startedAt).getTime(), newest=rows.length?rows[0].ts:0;
+    if(rts>newest && (Date.now()-rts)<25*60*1000){
+      var isMenu=RUNNING.kind!=='reprice';
+      live='<div class="rlrow rllive"><div class="rltop"><span class="rltag rltag-live"><span class="rlspin"></span>'+(isMenu?'🍳 Menu · cooking now':'⏱ Re-price · running now')+'</span>'+
+        '<span class="rlwhen">started '+fmtWhen(rts)+'</span></div>'+
+        '<div class="rlbody"><div class="rlline"><span class="qt">'+esc(RUNNING.label||(isMenu?'six fresh picks land the moment it finishes…':'refreshing prices…'))+'</span></div></div></div>';
+    }
+  }
   return '<h4 style="'+hh+'">Every run — newest first</h4>'+
     '<p style="font-size:12px;color:var(--muted);margin:0 0 8px"><b style="color:var(--broth)">Menu</b> = a full re-cook (six new picks, timed ~30&nbsp;min before an open). <b>Re-price</b> = same picks, fresh numbers each hour.</p>'+
-    '<div class="runlog">'+(body||'<p class="muted">No runs yet.</p>')+'</div>';
+    '<div class="runlog">'+live+(body||(live?'':'<p class="muted">No runs yet.</p>'))+'</div>';
 }
 function openInfo(key){
   var i=INFO[key]; if(!i) return;
@@ -1865,6 +1903,24 @@ function openAnalyst(sym,region){
     .then(function(a){ renderAnalyst(a); })
     .catch(function(e){ var b=m.querySelector('.mbody'); if(b) b.innerHTML='<div class="anload">'+esc((e&&e.error)||('Couldn’t get a read on '+sym+' — double-check the ticker &amp; market.'))+'</div>'; });
 }
+// "Word on the street" — the outside view (analyst consensus, price target, news mood + headlines), summarised.
+function streetHtml(a){
+  var v=a.street; if(!v && !a.streetSummary) return '';
+  v=v||{}; var parts=[];
+  if(v.analystN){
+    parts.push('<div class="stbar" title="'+v.analystN+' analysts"><span class="stseg stbuy" style="width:'+v.buyPct+'%"></span><span class="stseg sthold" style="width:'+v.holdPct+'%"></span><span class="stseg stsell" style="width:'+v.sellPct+'%"></span></div>'+
+      '<div class="stleg"><span class="up">▲ '+v.buyPct+'% buy</span><span class="stmid">■ '+v.holdPct+'% hold</span><span class="down">▼ '+v.sellPct+'% sell</span><span class="stn">'+v.analystN+' analysts</span></div>');
+  }
+  var chips=[];
+  if(v.targetMean!=null){ var up=a.price?Math.round((v.targetMean/a.price-1)*100):null; chips.push('<span class="anchip"><span class="ank">Avg target</span> '+esc(a.cur+v.targetMean)+(up!=null?' <b class="'+(up>=0?'up':'down')+'">'+(up>=0?'+':'')+up+'%</b>':'')+'</span>'); }
+  if(v.sentiment!=null){ var t=v.sentiment>0.15?'upbeat 🟢':v.sentiment<-0.15?'gloomy 🔴':'mixed ⚪'; chips.push('<span class="anchip '+(v.sentiment>0.15?'gd':v.sentiment<-0.15?'bd':'')+'"><span class="ank">News mood</span> '+t+'</span>'); }
+  if(chips.length) parts.push('<div class="anchips" style="margin:9px 0 0">'+chips.join('')+'</div>');
+  if(v.headlines&&v.headlines.length){
+    parts.push('<div class="sthl">'+v.headlines.map(function(h){ if(!h.title) return ''; var dot='<span class="stdot '+(h.tone>0.05?'up':h.tone<-0.05?'down':'flat')+'"></span>'; return '<div class="sthli">'+dot+'<span class="sthlt">'+esc(h.title)+'</span>'+(h.date?'<span class="sthld">'+esc(h.date)+'</span>':'')+'</div>'; }).join('')+'</div>');
+  }
+  return '<div class="stblock"><h4>🗣️ Word on the street <span class="sthint">— what everyone else reckons</span></h4>'+
+    (a.streetSummary?'<p class="stsum">'+a.streetSummary+'</p>':'')+parts.join('')+'</div>';
+}
 function renderAnalyst(a){
   var m=document.getElementById('modal'), tc='v-'+(a.tone==='buy'?'buy':a.tone==='dont'?'dont':'hold'), s=a.signals||{};
   function chip(k,v,cls){ return v==null?'':'<span class="anchip '+(cls||'')+'"><span class="ank">'+k+'</span> '+esc(v)+'</span>'; }
@@ -1879,6 +1935,7 @@ function renderAnalyst(a){
       (s.support!=null?'<div class="anzones"><div class="anz anz-buy"><span class="ank">🟢 Buying zone</span> '+esc(a.cur+s.support)+'</div><div class="anz anz-sell"><span class="ank">🔴 Selling zone</span> '+esc(a.cur+s.resistance)+'</div></div>':'')+
       (a.drivers&&a.drivers.length?'<div class="anlist"><h4>Why</h4><ul>'+a.drivers.map(function(d){return '<li>'+d+'</li>';}).join('')+'</ul></div>':'')+
       (a.risks&&a.risks.length?'<div class="anlist anrisk"><h4>Watch out for</h4><ul>'+a.risks.map(function(d){return '<li>'+esc(d)+'</li>';}).join('')+'</ul></div>':'')+
+      streetHtml(a)+
       '<div class="mfoot"><button class="mbtn watchbtn" data-sym="'+esc(a.sym)+'" data-region="'+esc(a.region)+'" aria-pressed="false">＋ Watch</button>'+
         '<a class="mbtn primary" href="'+yf(a.sym,a.region)+'" target="_blank" rel="noopener">📈 Yahoo ↗</a></div>'+
       '<p class="infofoot">A transparent, rules-based read straight off the price action — <b>not</b> a recommendation to trade. The call is yours.</p>'+
@@ -1913,8 +1970,8 @@ function syncFromBackend(cb){
   if(!signedIn()){cb&&cb();return;}
   fetch(API_BASE+'/me/watchlist',{headers:apiHdr()}).then(function(r){ if(r.status===401){sessSet('');throw 0;} return r.ok?r.json():null; }).then(function(j){
     if(j&&j.watchlist){
-      var localOwn={}; try{ wlGet().forEach(function(w){ if(w.own) localOwn[w.sym+'|'+w.region]=1; }); }catch(e){}   // keep 'I own it' — server list doesn't carry it yet
-      var server=j.watchlist.map(function(w){ var o={sym:w.sym,region:w.region,entry:w.entry}; if(w.own||localOwn[w.sym+'|'+w.region]) o.own=true; return o; });
+      var localF={}; try{ wlGet().forEach(function(w){ if(w.own||w.mon) localF[w.sym+'|'+w.region]={own:w.own,mon:w.mon}; }); }catch(e){}   // safety net if a flag hasn't round-tripped yet
+      var server=j.watchlist.map(function(w){ var lf=localF[w.sym+'|'+w.region]||{}; var o={sym:w.sym,region:w.region,entry:w.entry}; if(w.own||lf.own) o.own=true; if(w.mon||lf.mon) o.mon=true; if(w.name) o.name=w.name; return o; });
       var have={}; server.forEach(function(w){have[w.sym+'|'+w.region]=1;});
       var missing=wlGet().filter(function(w){return !have[w.sym+'|'+w.region];});
       if(missing.length){ apiPush('POST','/me/import',{items:missing.map(function(w){return {sym:w.sym,region:w.region,entry:wlNum(w.entry)||null};})}); server=server.concat(missing); }
@@ -1934,6 +1991,9 @@ function wlToggle(it){if(wlHas(it.sym,it.region)){wlRemove(it.sym,it.region);ret
 // "I own it" — a holding. Marking own also keeps it on the watchlist so it syncs.
 function wlOwns(sym,region){return wlGet().some(function(w){return w.sym===sym&&w.region===region&&w.own;});}
 function wlSetOwn(sym,region,on,name){var a=wlGet(),found=false;a.forEach(function(w){if(w.sym===sym&&w.region===region){w.own=!!on;found=true;}});if(!found&&on)a.push({sym:sym,region:region,entry:null,own:true,name:name||null});wlSet(a);apiPush('POST','/me/watchlist',{sym:sym,region:region,own:!!on});}
+// "Watch live" (📡) — a sticky monitor flag. Persists locally + cross-device so the live chart auto-restores on refresh/any device.
+function wlMon(sym,region){return wlGet().some(function(w){return w.sym===sym&&w.region===region&&w.mon;});}
+function wlSetMon(sym,region,on,name){var a=wlGet(),found=false;a.forEach(function(w){if(w.sym===sym&&w.region===region){w.mon=!!on;found=true;}});if(!found&&on)a.push({sym:sym,region:region,entry:null,mon:true,name:name||null});wlSet(a);apiPush('POST','/me/watchlist',{sym:sym,region:region,mon:!!on});}
 function wlToggleOwn(sym,region,name){var on=!wlOwns(sym,region);wlSetOwn(sym,region,on,name);return on;}
 function wlNum(s){var v=(String(s==null?'':s)).match(/([\d.]+)/);return v?parseFloat(v[1]):null;}
 function wlPriceMap(D){
@@ -2009,7 +2069,7 @@ function renderWatchlist(){
       : ' wclick wclick-ins" data-sym="'+esc(w.sym)+'" data-wregion="'+esc(w.region)+'" role="button" tabindex="0';
     return '<div class="wrow wcard '+cls+clk+'">'+
       '<div class="wc-head"><a class="wsym" href="'+yf(w.sym,w.region)+'" target="_blank" rel="noopener">'+esc(w.sym)+' <span class="wflag">'+(w.region==='au'?'AU':'US')+'</span></a>'+
-        '<span class="wc-btns"><button class="wan" data-sym="'+esc(w.sym)+'" data-region="'+esc(w.region)+'" aria-label="What would you do?" title="🧠 What would you do?">🧠</button>'+(it.kind==='none'?'<button class="wmon" data-sym="'+esc(w.sym)+'" data-region="'+esc(w.region)+'" aria-label="Watch live" title="Watch live — pull price &amp; chart">📡</button>':'')+'<button class="wown'+(wlOwns(w.sym,w.region)?' owned':'')+'" data-sym="'+esc(w.sym)+'" data-region="'+esc(w.region)+'" aria-label="'+(wlOwns(w.sym,w.region)?'Owned — tap to unflag':'Flag as owned')+'" title="'+(wlOwns(w.sym,w.region)?'You own this ✓ — tap to unflag':'I own it')+'">📦</button>'+
+        '<span class="wc-btns"><button class="wan" data-sym="'+esc(w.sym)+'" data-region="'+esc(w.region)+'" aria-label="What would you do?" title="🧠 What would you do?">🧠</button>'+(it.kind==='none'?'<button class="wmon'+(wlMon(w.sym,w.region)?' on':'')+'" data-sym="'+esc(w.sym)+'" data-region="'+esc(w.region)+'" aria-pressed="'+(wlMon(w.sym,w.region)?'true':'false')+'" aria-label="Watch live" title="'+(wlMon(w.sym,w.region)?'Watching live ✓ — tap to stop':'Watch live — keep a live price &amp; chart on this')+'">📡</button>':'')+'<button class="wown'+(wlOwns(w.sym,w.region)?' owned':'')+'" data-sym="'+esc(w.sym)+'" data-region="'+esc(w.region)+'" aria-label="'+(wlOwns(w.sym,w.region)?'Owned — tap to unflag':'Flag as owned')+'" title="'+(wlOwns(w.sym,w.region)?'You own this ✓ — tap to unflag':'I own it')+'">📦</button>'+
         '<button class="wrm" data-sym="'+esc(w.sym)+'" data-region="'+esc(w.region)+'" aria-label="Remove '+esc(w.sym)+'">✕</button></span></div>'+
       (r.name?'<div class="pmc-name">'+esc(r.name)+'</div>':'')+
       '<div class="wc-px">'+px+chg+'</div>'+spk+(it.kind==='none'?'<div class="wc-monspark"></div>':'')+buyLine+tag+'</div>';
@@ -2022,14 +2082,25 @@ function renderWatchlist(){
   el.querySelectorAll('.wrm').forEach(function(b){b.addEventListener('click',function(e){e.stopPropagation();wlRemove(b.dataset.sym,b.dataset.region);renderWatchlist();syncWatchButtons();});});
   el.querySelectorAll('.wown').forEach(function(b){b.addEventListener('click',function(e){e.stopPropagation();var on=wlToggleOwn(b.dataset.sym,b.dataset.region);b.classList.toggle('owned',on);b.setAttribute('title',on?'You own this ✓ — tap to unflag':'I own it');renderWatchlist();updateOwnCount();});});
   el.querySelectorAll('.wan').forEach(function(b){b.addEventListener('click',function(e){e.stopPropagation();openAnalyst(b.dataset.sym,b.dataset.region);});});
-  el.querySelectorAll('.wmon').forEach(function(b){b.addEventListener('click',function(e){e.stopPropagation();
+  function monLoad(b){   // pull the live chart into this card's monitor host
     var sym=b.dataset.sym, reg=b.dataset.region, wc=b.closest('.wcard'), host=wc?wc.querySelector('.wc-monspark'):null;
-    b.classList.add('on');
-    if(host){ host.innerHTML='<span class="wc-monload">pulling live chart…</span>';
-      fetch(API_BASE+'/history?sym='+encodeURIComponent(sym)+'&region='+encodeURIComponent(reg)).then(function(r){return r.ok?r.json():null;}).then(function(h){
-        host.innerHTML=(h&&h.closes&&h.closes.length>2)?'<div class="pmc-spark">'+sparkSVG(h.closes.slice(-30))+'</div>':'<span class="wc-monload">no chart yet</span>';
-      }).catch(function(){host.innerHTML='<span class="wc-monload">couldn’t load chart</span>';}); }
-  });});
+    if(!host) return;
+    host.innerHTML='<span class="wc-monload">pulling live chart…</span>';
+    fetch(API_BASE+'/history?sym='+encodeURIComponent(sym)+'&region='+encodeURIComponent(reg)).then(function(r){return r.ok?r.json():null;}).then(function(h){
+      host.innerHTML=(h&&h.closes&&h.closes.length>2)?'<div class="pmc-spark">'+sparkSVG(h.closes.slice(-30))+'</div>':'<span class="wc-monload">no chart yet</span>';
+    }).catch(function(){host.innerHTML='<span class="wc-monload">couldn’t load chart</span>';});
+  }
+  el.querySelectorAll('.wmon').forEach(function(b){
+    if(b.classList.contains('on')) monLoad(b);   // sticky: auto-restore the live chart on refresh / any device
+    b.addEventListener('click',function(e){e.stopPropagation();
+      var on=!b.classList.contains('on');
+      b.classList.toggle('on',on); b.setAttribute('aria-pressed',on?'true':'false');
+      b.setAttribute('title',on?'Watching live ✓ — tap to stop':'Watch live — keep a live price & chart on this');
+      wlSetMon(b.dataset.sym,b.dataset.region,on);   // persist locally + cross-device
+      if(on){ monLoad(b); }
+      else{ var wc=b.closest('.wcard'), host=wc?wc.querySelector('.wc-monspark'):null; if(host) host.innerHTML=''; }
+    });
+  });
   // auto-fetch a live price for any card with none (the 'Also tracked' items) — incl. right after adding
   el.querySelectorAll('.pmc-price.wpx[data-hy-sym]').forEach(function(sp){
     var sym=sp.dataset.hySym, reg=sp.dataset.hyRegion, cur=sp.dataset.hyCur;
@@ -2243,11 +2314,16 @@ function wire(D){
     bm.querySelectorAll('.bmitem,.bmupd').forEach(function(it){ it.addEventListener('click',closeBM); });
   }
   var db=document.getElementById('docsBtn'); if(db){ if(isAdmin()){ db.style.display=''; db.onclick=openDocs; } else { db.style.display='none'; } }
-  (function(){ var go=document.getElementById('anGo'), ask=document.getElementById('anAsk'), au=document.getElementById('anAu'), us=document.getElementById('anUs'), reg={r:'us'};
+  // Unified Favourites bar: one ticker input + market toggle → either ＋Watchlist or 🧠 What to do?
+  (function(){ var inp=document.getElementById('uniInput'), au=document.getElementById('uniAu'), us=document.getElementById('uniUs'),
+        watch=document.getElementById('uniWatch'), ask=document.getElementById('uniAsk'), reg={r:'au'};
     function set(r){ reg.r=r; if(au)au.setAttribute('aria-pressed',r==='au'); if(us)us.setAttribute('aria-pressed',r==='us'); }
     if(au)au.onclick=function(){set('au');}; if(us)us.onclick=function(){set('us');};
-    function doAsk(){ var v=(ask&&ask.value||'').trim(); if(v) openAnalyst(v,reg.r); }
-    if(go)go.onclick=doAsk; if(ask)ask.addEventListener('keydown',function(e){ if(e.key==='Enter'){ e.preventDefault(); doAsk(); } });
+    function val(){ return (inp&&inp.value||'').trim().toUpperCase().replace(/[^A-Z0-9.]/g,''); }
+    function doWatch(){ var v=val(); if(!v)return; wlAddItem({sym:v,region:reg.r}); if(inp)inp.value=''; renderWatchlist(); syncWatchButtons(); flashToast('✓ '+v+' added to your watchlist'); }
+    function doAsk(){ var v=val(); if(v) openAnalyst(v,reg.r); }
+    if(watch)watch.onclick=doWatch; if(ask)ask.onclick=doAsk;
+    if(inp)inp.addEventListener('keydown',function(e){ if(e.key==='Enter'){ e.preventDefault(); doWatch(); } });   // Enter = the primary action (add to watchlist)
   })();
   document.addEventListener('click',function(e){ var b=e.target.closest&&e.target.closest('.anbtn'); if(b){ e.preventDefault(); openAnalyst(b.dataset.sym,b.dataset.region); } });
   document.querySelectorAll('.schedlink').forEach(function(s){ s.removeAttribute('data-info'); s.onclick=goRunSchedule; });
@@ -2280,14 +2356,7 @@ function wire(D){
     rc.addEventListener('click',function(e){if(e.target.closest('a'))return;openRu();});
     rc.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();openRu();}});
   });
-  // ---- Watchlist (uses the global smart-watchlist module) ----
-  var wlRegion='au';
-  var wau=document.getElementById('wlAu'),wus=document.getElementById('wlUs');
-  if(wau&&wus){wau.onclick=function(){wlRegion='au';wau.setAttribute('aria-pressed','true');wus.setAttribute('aria-pressed','false');};
-    wus.onclick=function(){wlRegion='us';wus.setAttribute('aria-pressed','true');wau.setAttribute('aria-pressed','false');};}
-  function wlAdd(){var inp=document.getElementById('wlInput');if(!inp)return;var v=(inp.value||'').trim().toUpperCase().replace(/[^A-Z0-9.]/g,'');if(!v)return;wlAddItem({sym:v,region:wlRegion});inp.value='';renderWatchlist();syncWatchButtons();}
-  var ab=document.getElementById('wlAdd');if(ab)ab.onclick=wlAdd;
-  var wi=document.getElementById('wlInput');if(wi)wi.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();wlAdd();}});
+  // ---- Watchlist (uses the global smart-watchlist module; the unified bar above handles add/ask) ----
   // Wire every ＋Watch button (cards, modal, pot) to the shared toggle
   document.querySelectorAll('.watchbtn[data-sym]').forEach(function(b){
     b.addEventListener('click',function(e){e.preventDefault();e.stopPropagation();watchToggleFromEl(b);});
@@ -2333,7 +2402,7 @@ document.addEventListener('keydown',function(e){if(e.key==='Escape')closeModal()
 document.getElementById('overlay').addEventListener('click',function(e){if(e.target&&e.target.id==='mClose')closeModal();});
 
 /* ---- View mode: simple (mobile default) vs full, with toggle ---- */
-var VIEW = null, SREGION = 'au', PULSES = null, TRACK = null, MKT = 'au', OUTCOMES = null, TAB = null;
+var VIEW = null, SREGION = 'au', PULSES = null, TRACK = null, MKT = 'au', OUTCOMES = null, TAB = null, RUNNING = null;
 function switchTab(t){
   TAB = t; try{ localStorage.setItem('soup_tab', t); }catch(e){}
   document.querySelectorAll('.tabbtn').forEach(function(b){ b.classList.toggle('active', b.dataset.tab===t); });
@@ -2443,6 +2512,7 @@ function refreshPrices(btn){
       if(b&&b.pulseHistory&&b.pulseHistory.pulses&&b.pulseHistory.pulses.length>1) PULSES=b.pulseHistory.pulses;
       if(b&&b.trackRecord&&b.trackRecord.record) TRACK=b.trackRecord;
       if(b&&b.outcomes&&b.outcomes.outcomes) OUTCOMES=b.outcomes;
+      RUNNING=(b&&b.running)||null; watchRun();
       var afterIso=(PULSES&&PULSES.length)?PULSES[PULSES.length-1].iso:null;
       var fresh=afterIso&&afterIso!==beforeIso;
       setTimeout(function(){
@@ -2471,8 +2541,18 @@ function applyBundle(b){
   if(pu&&pu.pulses&&pu.pulses.length>1) PULSES=pu.pulses;
   if(tr&&tr.record) TRACK=tr;
   if(oc&&oc.outcomes) OUTCOMES=oc;
-  if((d&&d.regions)||(h&&h.menus)||PULSES||TRACK||OUTCOMES){ boot(d&&d.regions?d:EMBEDDED, h&&h.menus?h:HIST_EMBED); return true; }
+  RUNNING=b.running||null;
+  if((d&&d.regions)||(h&&h.menus)||PULSES||TRACK||OUTCOMES){ boot(d&&d.regions?d:EMBEDDED, h&&h.menus?h:HIST_EMBED); watchRun(); return true; }
   return false;
+}
+// While a run is cooking, quietly re-poll /data so the finished menu (and its cleared marker) appears on its own.
+var _runPoll=null;
+function watchRun(){
+  if(_runPoll){clearTimeout(_runPoll);_runPoll=null;}
+  if(!RUNNING||!RUNNING.startedAt) return;
+  var age=Date.now()-new Date(RUNNING.startedAt).getTime();
+  if(age>25*60*1000){ RUNNING=null; return; }        // stale marker — stop watching
+  _runPoll=setTimeout(function(){ loadGated(function(b){ if(b) applyBundle(b); }); }, 40000);
 }
 boot(EMBEDDED,HIST_EMBED);
 loadGated(applyBundle);
