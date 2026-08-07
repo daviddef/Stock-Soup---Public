@@ -1101,7 +1101,7 @@ function trendChip(p){
   if(t.macd_pos===true&&t.macd_rising===true) return '<span class="sentc sc-pos">'+(strong?'🚀 Confirmed uptrend':'📈 Building momentum')+adxTag+'</span>';
   if(t.macd_pos===false&&t.macd_rising===false) return '<span class="sentc sc-neg">'+(strong?'🔻 Confirmed downtrend':'📉 Losing steam')+adxTag+'</span>';
   if(t.adx!=null&&t.adx<20) return '<span class="sentc sc-mix">〰️ Choppy, no clear trend'+adxTag+'</span>';
-  return '<span class="sentc sc-mix">😐 Mixed signals'+adxTag+'</span>';
+  return '<span class="sentc sc-mix">↔️ Trend stalling'+adxTag+'</span>';
 }
 // Value/dividend chip (#38/#59): P/E + dividend yield, shown as context — not a scoring input.
 // P/E cheap/rich is too sector-dependent to safely fold into the core score, so this stays informational.
