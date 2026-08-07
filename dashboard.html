@@ -198,6 +198,15 @@
   .sc-pos{background:rgba(35,194,103,.14);color:var(--buy)}
   .sc-neg{background:rgba(255,77,77,.14);color:var(--dont)}
   .sc-mix{background:var(--surface-2);color:var(--muted)}
+  .sc-lim{background:var(--surface-2);color:var(--faint);font-style:italic}
+  .sigsum{font-size:11.5px;padding:5px 10px}
+  .sigdetail{display:flex;flex-direction:column;gap:1px;border:1px solid var(--line);border-radius:12px;overflow:hidden;margin-top:8px}
+  .sigrow{padding:10px 14px;background:var(--surface)}
+  .sigrow-top{display:flex;align-items:center;gap:7px;font-size:13px}
+  .sigicon{font-size:13px}
+  .sigread{margin-left:auto;font-weight:800;font-size:12px}
+  .sigread.up{color:var(--buy)} .sigread.down{color:var(--dont)}
+  .sigexplain{font-size:11.5px;color:var(--faint);margin-top:3px;line-height:1.4}
   .docsov{position:fixed;inset:0;z-index:300;background:var(--ground);display:none;flex-direction:column}
   .docsbar{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--line);background:var(--surface)}
   .docstitle{font-weight:900;font-size:15px;display:inline-flex;align-items:center;gap:8px}
@@ -1077,11 +1086,12 @@ function missesSection(D){
   var missedN=mktRows.filter(function(r){return r.status==='missed';}).length;
   var rows=mktRows.map(function(r){
     var s=STAT[r.status]||STAT.missed, up=r.pct>=0;
+    var sig=signalPillHtml(r,r.region);   // gracefully empty until Misses rows carry signal data
     return '<div class="missrow '+s.cls+'"><span class="missic">'+s.ic+'</span>'+
       '<a class="misssym" href="'+yf(r.sym,r.region)+'" target="_blank" rel="noopener">'+esc(r.sym)+'<span class="wflag" style="margin-left:5px">'+(r.region==='au'?'AU':'US')+'</span></a>'+
       (r.name?'<span class="missnm">'+esc(r.name)+'</span>':'')+
       '<span class="misspct '+(up?'up':'down')+'">'+(up?'▲':'▼')+' '+Math.abs(r.pct)+'%</span>'+
-      '<span class="missstat">'+s.lbl+'</span><span class="missnote">'+esc(r.note)+'</span></div>';
+      '<span class="missstat">'+s.lbl+'</span>'+(sig?'<div style="width:100%;margin-top:2px">'+sig+'</div>':'')+'<span class="missnote">'+esc(r.note)+'</span></div>';
   }).join('');
   return '<section id="misses"><div class="sec-head"><h2 class="display">😬 The Misses <span class="badcount">'+missedN+'</span></h2>'+infoBtn('misses')+'</div>'+
     '<p class="sec-sub">'+(MKT==='au'?'🇦🇺 Australia\'s':'🌏 International')+' biggest real movers — checked honestly against what tonight\'s net actually scanned. <b>'+missedN+' of '+mktRows.length+'</b> weren\'t in our net at all.</p>'+
@@ -1154,6 +1164,87 @@ function rsChip(p,region){
   var r=p&&p.relStrength; if(!r||r.rs==null) return '';
   var idxNm=region==='au'?'ASX 200':'S&P 500', lead=r.rs>=0;
   return '<span class="sentc '+(lead?'sc-pos':'sc-neg')+'">'+(lead?'🏆 Beating':'🐌 Lagging')+' the '+idxNm+' by '+Math.abs(r.rs)+'pt'+(Math.abs(r.rs)===1?'':'s')+'</span>';
+}
+// ── Unified signal read (#73): one place that turns RSI/trend/EMA/Bollinger/relative-strength/news
+// buzz into (a) a single plain-English summary pill for the compact card, and (b) the full
+// breakdown list for the modal — instead of a wall of near-duplicate pills on the card and a mix
+// of plain text + pills in the modal. Works on picks, candidates, AND (once wired) Misses rows —
+// any object carrying the same field names. Missing fields just don't produce a row; if too few
+// signals are available the summary honestly says so rather than guessing.
+function signalRows(p,region,opts){
+  opts=opts||{};
+  var rows=[];
+  if(!opts.skipRsi&&p&&p.rsi!=null){
+    var rsi=p.rsi, tone=rsi>=70?'neg':rsi<=35?'pos':'mix';
+    rows.push({icon:'🌡️',label:'RSI '+rsi,tone:tone,
+      read:rsi>=70?'Overheated — wait for it to cool':rsi<=35?'Cheap — bargain zone':'Comfortable, not stretched',
+      explain:'Momentum gauge, 0–100. Above 70 = overbought (often pulls back); below 35 = oversold (often bounces).'});
+  }
+  var t=p&&p.trend;
+  if(t&&(t.adx!=null||t.macd_pos!=null)){
+    var strong=t.adx!=null&&t.adx>=25, tone,read;
+    if(t.macd_pos===true&&t.macd_rising===true){tone='pos';read=strong?'Confirmed uptrend':'Building momentum';}
+    else if(t.macd_pos===false&&t.macd_rising===false){tone='neg';read=strong?'Confirmed downtrend':'Losing steam';}
+    else if(t.adx!=null&&t.adx<20){tone='mix';read='Choppy, no clear trend';}
+    else {tone='mix';read='Trend stalling';}
+    rows.push({icon:'📊',label:'Trend'+(t.adx!=null?' · ADX '+t.adx:''),tone:tone,read:read,
+      explain:'MACD shows direction, ADX shows strength — 25+ is a real trend, under 20 is choppy/no trend.'});
+  }
+  var e=p&&p.ema;
+  if(e&&e.ema20!=null){
+    var tone=(e.above_ema20&&e.above_ema50)?'pos':(!e.above_ema20&&!e.above_ema50)?'neg':'mix';
+    rows.push({icon:'📈',label:'EMA',tone:tone,
+      read:tone==='pos'?'Above both the 20 & 50-day averages':tone==='neg'?'Below both the 20 & 50-day averages':'Between the 20/50-day averages',
+      explain:'Fast-reacting moving averages. Above both = short-term strength; below both = short-term weakness.'});
+  }
+  var b=p&&p.bb;
+  if(b&&b.bb_pctb!=null){
+    var pb=b.bb_pctb, tone=null, read='Mid-band — unremarkable';
+    if(pb>1){tone='neg';read='Pierced the upper band — stretched';}
+    else if(pb<0){tone='pos';read='Pierced the lower band — oversold';}
+    else if(pb>0.8){tone='mix';read='Near the upper band';}
+    else if(pb<0.2){tone='mix';read='Near the lower band';}
+    if(tone) rows.push({icon:'〰️',label:'Bollinger',tone:tone,read:read,
+      explain:'Volatility bands around the price. Piercing the upper band = stretched; piercing the lower = oversold.'});
+  }
+  var rs=p&&p.relStrength;
+  if(rs&&rs.rs!=null){
+    var idxNm=region==='au'?'ASX 200':'S&P 500', lead=rs.rs>=0;
+    rows.push({icon:lead?'🏆':'🐌',label:'Vs '+idxNm,tone:lead?'pos':'neg',
+      read:(lead?'Beating':'Lagging')+' by '+Math.abs(rs.rs)+'pt'+(Math.abs(rs.rs)===1?'':'s'),
+      explain:'Performance vs the broader index over the same stretch — is it actually leading, or just drifting with the market?'});
+  }
+  if(p&&p.news_sentiment!=null){
+    var v=p.news_sentiment, tone=v>=0.12?'pos':v<=-0.12?'neg':'mix';
+    rows.push({icon:'📰',label:'News buzz',tone:tone,
+      read:tone==='pos'?'Positive coverage':tone==='neg'?'Negative coverage':'Mixed coverage',
+      explain:'The tone of recent news coverage — separate from the chart, this is what people are actually saying.'});
+  }
+  return rows;
+}
+function signalSummary(rows){
+  var scored=rows.filter(function(r){return r.tone==='pos'||r.tone==='neg';});
+  if(scored.length<2) return {verdict:'limited',icon:'❔',label:'Limited signal data'};
+  var pos=scored.filter(function(r){return r.tone==='pos';}).length;
+  var neg=scored.filter(function(r){return r.tone==='neg';}).length;
+  if(pos-neg>=2&&pos>=2) return {verdict:'strong',icon:'✅',label:'Signals are strong'};
+  if(neg-pos>=2&&neg>=2) return {verdict:'weak',icon:'⚠️',label:'Signals are weak'};
+  return {verdict:'mixed',icon:'😐',label:'Signals are mixed'};
+}
+function signalPillHtml(p,region){
+  var rows=signalRows(p,region); if(!rows.length) return '';
+  var s=signalSummary(rows);
+  var cls=s.verdict==='strong'?'sc-pos':s.verdict==='weak'?'sc-neg':s.verdict==='limited'?'sc-lim':'sc-mix';
+  return '<span class="sentc sigsum '+cls+'">'+s.icon+' '+esc(s.label)+'</span>';
+}
+function signalDetailHtml(p,region,opts){
+  var rows=signalRows(p,region,opts);
+  if(!rows.length) return '<p class="muted" style="font-size:12.5px;margin:4px 0">No technical signals available for this name — it wasn\'t in tonight\'s scored candidates.</p>';
+  return '<div class="sigdetail">'+rows.map(function(r){
+    return '<div class="sigrow"><div class="sigrow-top"><span class="sigicon">'+r.icon+'</span><b>'+esc(r.label)+'</b>'+
+      '<span class="sigread '+(r.tone==='pos'?'up':r.tone==='neg'?'down':'')+'">'+esc(r.read)+'</span></div>'+
+      '<div class="sigexplain">'+esc(r.explain)+'</div></div>';
+  }).join('')+'</div>';
 }
 // Market-aware header: prefer a per-market headline/chef when the run provides one
 // (D.headline[MKT] / D.chefByMkt[MKT]), else fall back to the single shared version.
@@ -1294,7 +1385,7 @@ function render(D,H){
         '<span class="px"><span class="p mono">'+esc(p.price)+'</span><br><span class="c mono '+chgTone(p.change,p.up)+'">'+esc(p.change)+'</span></span></div>'+
         /* miniTraj removed — inconsistent (only carried-over picks had it) + confusing 'since 23:33'; the range bar shows the trend */
         '<div class="buyat'+(p.nEntry?' ba-'+buyState(p):'')+'">'+(p.nEntry?'<span class="bl">🎯 Ideal buy</span> ~'+esc(rg.cur||'$')+p.nEntry+buyAction(p):'<span class="bl">Track this pick</span>')+'</div>'+
-        '<p class="plain">'+p.plain+'</p>'+((sentChip(p)||trendChip(p)||emaChip(p)||bbChip(p)||valChip(p)||rsChip(p,rg.id))?'<div class="sentrow">'+sentChip(p)+trendChip(p)+emaChip(p)+bbChip(p)+valChip(p)+rsChip(p,rg.id)+'</div>':'')+'<div class="lvls">'+p.levels+'</div>'+
+        '<p class="plain">'+p.plain+'</p>'+((signalPillHtml(p,rg.id)||valChip(p))?'<div class="sentrow">'+signalPillHtml(p,rg.id)+valChip(p)+'</div>':'')+'<div class="lvls">'+p.levels+'</div>'+
         (p.spark?rangeBar(p.spark,rg.cur||'$',p.tf,p.nEntry):'')+'</article>'+
         ((p.runnerUp && /wait|late|hold|skip|avoid|pass|don.t|steer/i.test(p.verdict||''))?ruCard(p.runnerUp,rg.id,idx):'')+'</div>';
     }).join('');
@@ -1580,11 +1671,10 @@ function openModal(p,region,cur){
         '<div class="rsibar"><span class="rcap" style="left:'+clamp(rsi)+'%">RSI '+esc(rsi)+'</span><span class="rn" style="left:'+clamp(rsi)+'%"></span></div>'+
         '<div class="lends"><span class="g">Cheap</span><span class="r">Overheated</span></div>'+
         '<div class="rsimeta">'+rsiWord+'</div>'+
-        (trendChip(p)?'<div class="rsimeta" style="margin-top:8px">'+trendChip(p)+(p.trend&&p.trend.adx!=null?' <span class="muted" style="font-weight:600">· ADX '+p.trend.adx+(p.trend.adx>=25?' (strong trend)':p.trend.adx>=20?' (building)':' (choppy)')+'</span>':'')+'</div>':'')+
         (valChip(p)?'<div class="rsimeta" style="margin-top:6px">'+valChip(p)+'</div>':'')+
         (timingLine(p)?'<div class="rsimeta" style="margin-top:6px">'+timingLine(p)+'</div>':'')+
-        (rsChip(p,region)?'<div class="rsimeta" style="margin-top:6px">'+rsChip(p,region)+'</div>':'')+
-        ((emaChip(p)||bbChip(p))?'<div class="rsimeta" style="margin-top:6px">'+emaChip(p)+' '+bbChip(p)+'</div>':'')+
+        '<h4 style="margin-top:20px">🧮 All the signals, in one place</h4>'+
+        signalDetailHtml(p,region,{skipRsi:true})+
       '</div>'+
       scoreHtml+
       '<p class="mtake"><span class="lead">Chef says:</span> '+esc(p.chefTake)+'</p>'+
@@ -2010,6 +2100,7 @@ function openCandidate(idx){
     '<div class="mbody">'+
       (spk?'<div class="viz"><h4>Recent trend · last ~6 weeks</h4>'+spk+'</div>':'')+
       '<div class="mnews">🔎 <span class="lead">How we picked it up:</span> '+esc(c.note||'a signal in tonight\'s scan')+'<div class="mfound">Caught by our wide-net scan — live news, market movers and analyst actions — then priced &amp; scored into the pot.</div></div>'+
+      (signalRows(c,c.region).length?'<h4 style="margin-top:16px">🧮 All the signals, in one place</h4>'+signalDetailHtml(c,c.region):'')+
       (c.news?'<div class="mnews">📰 <span class="lead">In the news:</span> '+(c.news_url?'<a href="'+esc(c.news_url)+'" target="_blank" rel="noopener">'+esc(c.news)+' ↗</a>':esc(c.news))+'</div>':'')+
       (c.short!=null?'<div class="mshort">🩳 <span class="lead">Short interest:</span> <b>'+c.short+'%</b> of shares sold short'+(c.short>=8?' — <b>elevated</b> (squeeze fuel / bearish crowd)':c.short>=4?' — moderate':' — light')+'</div>':'')+
       '<div class="mrisk" style="background:var(--surface-2);border-color:var(--line)"><b>Didn\'t make the top 3</b> — it\'s on the radar, not a pick this run.</div>'+
