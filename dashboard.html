@@ -1098,6 +1098,13 @@ function valChip(p){
   if(v.div_yield_pct!=null) bits.push('💰 '+v.div_yield_pct+'% yield'+(v.ex_div_date?' · ex-div '+esc(v.ex_div_date):''));
   return '<span class="sentc sc-mix">'+bits.join(' · ')+'</span>';
 }
+// Relative strength vs the index (#60/#66): is this pick beating or lagging the market it trades in,
+// over the same lookback window? A real leader/laggard read, not just "is the stock up".
+function rsChip(p,region){
+  var r=p&&p.relStrength; if(!r||r.rs==null) return '';
+  var idxNm=region==='au'?'ASX 200':'S&P 500', lead=r.rs>=0;
+  return '<span class="sentc '+(lead?'sc-pos':'sc-neg')+'">'+(lead?'🏆 Beating':'🐌 Lagging')+' the '+idxNm+' by '+Math.abs(r.rs)+'pt'+(Math.abs(r.rs)===1?'':'s')+'</span>';
+}
 // Market-aware header: prefer a per-market headline/chef when the run provides one
 // (D.headline[MKT] / D.chefByMkt[MKT]), else fall back to the single shared version.
 function hdl(D,k){var h=(D&&D.headline)||{}; if(h[MKT]&&h[MKT][k]!=null)return h[MKT][k]; return h[k]!=null?h[k]:'';}
@@ -1225,7 +1232,7 @@ function render(D,H){
         '<span class="px"><span class="p mono">'+esc(p.price)+'</span><br><span class="c mono '+chgTone(p.change,p.up)+'">'+esc(p.change)+'</span></span></div>'+
         /* miniTraj removed — inconsistent (only carried-over picks had it) + confusing 'since 23:33'; the range bar shows the trend */
         '<div class="buyat'+(p.nEntry?' ba-'+buyState(p):'')+'">'+(p.nEntry?'<span class="bl">🎯 Ideal buy</span> ~'+esc(rg.cur||'$')+p.nEntry+buyAction(p):'<span class="bl">Track this pick</span>')+'</div>'+
-        '<p class="plain">'+p.plain+'</p>'+((sentChip(p)||trendChip(p)||valChip(p))?'<div class="sentrow">'+sentChip(p)+trendChip(p)+valChip(p)+'</div>':'')+'<div class="lvls">'+p.levels+'</div>'+
+        '<p class="plain">'+p.plain+'</p>'+((sentChip(p)||trendChip(p)||valChip(p)||rsChip(p,rg.id))?'<div class="sentrow">'+sentChip(p)+trendChip(p)+valChip(p)+rsChip(p,rg.id)+'</div>':'')+'<div class="lvls">'+p.levels+'</div>'+
         (p.spark?rangeBar(p.spark,rg.cur||'$',p.tf,p.nEntry):'')+'</article>'+
         ((p.runnerUp && /wait|late|hold|skip|avoid|pass|don.t|steer/i.test(p.verdict||''))?ruCard(p.runnerUp,rg.id,idx):'')+'</div>';
     }).join('');
@@ -1507,6 +1514,7 @@ function openModal(p,region,cur){
         (trendChip(p)?'<div class="rsimeta" style="margin-top:8px">'+trendChip(p)+(p.trend&&p.trend.adx!=null?' <span class="muted" style="font-weight:600">· ADX '+p.trend.adx+(p.trend.adx>=25?' (strong trend)':p.trend.adx>=20?' (building)':' (choppy)')+'</span>':'')+'</div>':'')+
         (valChip(p)?'<div class="rsimeta" style="margin-top:6px">'+valChip(p)+'</div>':'')+
         (timingLine(p)?'<div class="rsimeta" style="margin-top:6px">'+timingLine(p)+'</div>':'')+
+        (rsChip(p,region)?'<div class="rsimeta" style="margin-top:6px">'+rsChip(p,region)+'</div>':'')+
       '</div>'+
       scoreHtml+
       '<p class="mtake"><span class="lead">Chef says:</span> '+esc(p.chefTake)+'</p>'+
