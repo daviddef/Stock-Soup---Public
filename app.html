@@ -207,6 +207,18 @@
   .sigread{margin-left:auto;font-weight:800;font-size:12px}
   .sigread.up{color:var(--buy)} .sigread.down{color:var(--dont)}
   .sigexplain{font-size:11.5px;color:var(--faint);margin-top:3px;line-height:1.4}
+  .wlsummary:empty{display:none}
+  .wlstat-grid{display:grid;grid-template-columns:1fr;gap:10px;margin-bottom:16px}
+  @media(min-width:640px){.wlstat-grid{grid-template-columns:1fr 1fr}}
+  .wlstat-card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
+  .wlstat-h{font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+  .wlstat-big{font-size:26px;font-weight:900;margin-top:4px;font-variant-numeric:tabular-nums}
+  .wlstat-big.up{color:var(--buy)} .wlstat-big.down{color:var(--dont)}
+  .wlstat-sub{font-size:11px;color:var(--faint);margin-top:2px}
+  .wlstat-row{display:flex;justify-content:space-between;align-items:center;margin-top:10px;font-size:12px;font-weight:700}
+  .wlstat-wl .up{color:var(--buy)} .wlstat-wl .down{color:var(--dont)}
+  .wlstat-be{color:var(--muted);font-weight:700}
+  .wlstat-empty{font-size:12.5px;color:var(--faint);margin-top:6px;line-height:1.4}
   .docsov{position:fixed;inset:0;z-index:300;background:var(--ground);display:none;flex-direction:column}
   .docsbar{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--line);background:var(--surface)}
   .docstitle{font-weight:900;font-size:15px;display:inline-flex;align-items:center;gap:8px}
@@ -1581,6 +1593,7 @@ function render(D,H){
     favesHead()+
     '<section>'+
       '<div class="wlalert" id="wlAlert" role="status" aria-live="polite" style="display:none"></div>'+
+      '<div class="wlsummary" id="wlSummary"></div>'+
       '<div class="unibar"><input id="uniInput" placeholder="Type a ticker… e.g. BHP or PLTR" maxlength="8" aria-label="Ticker">'+
         '<span class="wlseg" role="group" aria-label="Market"><button id="uniAu" aria-pressed="true">🇦🇺 AU</button><button id="uniUs" aria-pressed="false">🇺🇸 US</button></span>'+
         '<button class="uni-watch" id="uniWatch">＋ Watchlist</button>'+
@@ -2321,6 +2334,35 @@ function wlIntel(w,D){
   if(c) return {kind:'cand',note:c.note,heat:c.heat};
   return {kind:'none'};
 }
+// Performance summary cards (#76): real math off the SAME entry/price the buy-trigger banner already
+// uses — "entry" is the ideal-buy price captured when a name was flagged (#1), so for an owned item
+// this reads as "since you flagged it" (an honest proxy — we don't have a separate purchase-price
+// field), and for a watched-not-owned item it's exactly "what you'd have made had you bought at the
+// flagged price". Only counts rows with BOTH a real entry and a real current price — no fabricated %s.
+function wlStatBlock(rows,title,icon,emptyMsg){
+  var usable=rows.filter(function(r){return r.gap!=null;});
+  if(!usable.length) return '<div class="wlstat-card"><div class="wlstat-h">'+icon+' '+esc(title)+'</div><div class="wlstat-empty">'+esc(emptyMsg)+'</div></div>';
+  var sum=0; usable.forEach(function(r){sum+=r.gap;});
+  var avg=sum/usable.length;
+  var wins=usable.filter(function(r){return r.gap>0;}).length, losses=usable.length-wins;
+  var best=usable.reduce(function(a,b){return (a.gap>b.gap)?a:b;});
+  var worst=usable.reduce(function(a,b){return (a.gap<b.gap)?a:b;});
+  return '<div class="wlstat-card"><div class="wlstat-h">'+icon+' '+esc(title)+'</div>'+
+    '<div class="wlstat-big '+(avg>=0?'up':'down')+'">'+(avg>=0?'+':'')+avg.toFixed(1)+'%</div>'+
+    '<div class="wlstat-sub">avg across '+usable.length+' name'+(usable.length===1?'':'s')+' with a captured buy price'+(rows.length>usable.length?' · '+(rows.length-usable.length)+' more not yet priced':'')+'</div>'+
+    '<div class="wlstat-row"><span class="wlstat-wl"><span class="up">'+wins+'W</span> · <span class="down">'+losses+'L</span></span>'+
+    '<span class="wlstat-be">🏆 '+esc(best.w.sym)+' '+(best.gap>=0?'+':'')+best.gap.toFixed(1)+'%'+(usable.length>1?' · 🥶 '+esc(worst.w.sym)+' '+(worst.gap>=0?'+':'')+worst.gap.toFixed(1)+'%':'')+'</span></div></div>';
+}
+function renderWlSummary(rows){
+  var el=document.getElementById('wlSummary'); if(!el) return;
+  if(!rows.length){ el.innerHTML=''; return; }
+  var owned=rows.filter(function(r){return r.w.own;});
+  var watching=rows.filter(function(r){return !r.w.own;});
+  el.innerHTML='<div class="wlstat-grid">'+
+    wlStatBlock(owned,'Things you own','📦','Flag something as owned (📦 on a card) to see real performance here.')+
+    wlStatBlock(watching,'Watchlist — what you could have owned','👀','Nothing on the watch-only list yet with a captured buy price.')+
+    '</div>';
+}
 function renderWatchlist(){
   var el=document.getElementById('wlPills'); if(!el) return;
   var D=(LAST&&LAST.D)||{}, pm=wlPriceMap(D);
@@ -2333,6 +2375,7 @@ function renderWatchlist(){
     return {w:w,price:price,cur:cur,up:info?info.up:null,change:info?info.change:null,entry:entry,gap:gap,intel:it,
       name:(info&&info.name)||w.name||null, spark:(info&&info.spark)||null};
   });
+  renderWlSummary(rows);
   var triggered=rows.filter(function(r){return r.gap!=null&&r.gap<=0.5;});
   if(WL_FILTER==='own') rows=rows.filter(function(r){return r.w.own;});
   rows.sort(function(x,y){var gx=x.gap==null?9999:x.gap,gy=y.gap==null?9999:y.gap;return gx-gy;});
