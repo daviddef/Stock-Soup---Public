@@ -619,6 +619,8 @@
   .wown{border:0;background:transparent;cursor:pointer;font-size:15px;line-height:1;padding:3px;opacity:.38;filter:grayscale(1);transition:opacity .12s,filter .12s,transform .12s}
   .wown:hover{opacity:.75;transform:scale(1.1)}
   .wown.owned{opacity:1;filter:none;transform:scale(1.05)}
+  .wan{border:0;background:transparent;cursor:pointer;font-size:15px;line-height:1;padding:3px;opacity:.5;transition:opacity .12s,transform .12s}
+  .wan:hover{opacity:1;transform:scale(1.12)}
   .wmon{border:0;background:transparent;cursor:pointer;font-size:14px;line-height:1;padding:3px;opacity:.45;transition:opacity .12s,transform .12s}
   .wmon:hover{opacity:.85;transform:scale(1.1)} .wmon.on{opacity:1;filter:drop-shadow(0 0 5px rgba(35,194,103,.55))}
   .wc-monspark{margin-top:2px} .wc-monload{font-size:11px;color:var(--faint)}
@@ -1911,7 +1913,8 @@ function syncFromBackend(cb){
   if(!signedIn()){cb&&cb();return;}
   fetch(API_BASE+'/me/watchlist',{headers:apiHdr()}).then(function(r){ if(r.status===401){sessSet('');throw 0;} return r.ok?r.json():null; }).then(function(j){
     if(j&&j.watchlist){
-      var server=j.watchlist.map(function(w){return {sym:w.sym,region:w.region,entry:w.entry};});
+      var localOwn={}; try{ wlGet().forEach(function(w){ if(w.own) localOwn[w.sym+'|'+w.region]=1; }); }catch(e){}   // keep 'I own it' — server list doesn't carry it yet
+      var server=j.watchlist.map(function(w){ var o={sym:w.sym,region:w.region,entry:w.entry}; if(w.own||localOwn[w.sym+'|'+w.region]) o.own=true; return o; });
       var have={}; server.forEach(function(w){have[w.sym+'|'+w.region]=1;});
       var missing=wlGet().filter(function(w){return !have[w.sym+'|'+w.region];});
       if(missing.length){ apiPush('POST','/me/import',{items:missing.map(function(w){return {sym:w.sym,region:w.region,entry:wlNum(w.entry)||null};})}); server=server.concat(missing); }
@@ -2006,7 +2009,7 @@ function renderWatchlist(){
       : ' wclick wclick-ins" data-sym="'+esc(w.sym)+'" data-wregion="'+esc(w.region)+'" role="button" tabindex="0';
     return '<div class="wrow wcard '+cls+clk+'">'+
       '<div class="wc-head"><a class="wsym" href="'+yf(w.sym,w.region)+'" target="_blank" rel="noopener">'+esc(w.sym)+' <span class="wflag">'+(w.region==='au'?'AU':'US')+'</span></a>'+
-        '<span class="wc-btns">'+(it.kind==='none'?'<button class="wmon" data-sym="'+esc(w.sym)+'" data-region="'+esc(w.region)+'" aria-label="Watch live" title="Watch live — pull price &amp; chart">📡</button>':'')+'<button class="wown'+(wlOwns(w.sym,w.region)?' owned':'')+'" data-sym="'+esc(w.sym)+'" data-region="'+esc(w.region)+'" aria-label="'+(wlOwns(w.sym,w.region)?'Owned — tap to unflag':'Flag as owned')+'" title="'+(wlOwns(w.sym,w.region)?'You own this ✓ — tap to unflag':'I own it')+'">📦</button>'+
+        '<span class="wc-btns"><button class="wan" data-sym="'+esc(w.sym)+'" data-region="'+esc(w.region)+'" aria-label="What would you do?" title="🧠 What would you do?">🧠</button>'+(it.kind==='none'?'<button class="wmon" data-sym="'+esc(w.sym)+'" data-region="'+esc(w.region)+'" aria-label="Watch live" title="Watch live — pull price &amp; chart">📡</button>':'')+'<button class="wown'+(wlOwns(w.sym,w.region)?' owned':'')+'" data-sym="'+esc(w.sym)+'" data-region="'+esc(w.region)+'" aria-label="'+(wlOwns(w.sym,w.region)?'Owned — tap to unflag':'Flag as owned')+'" title="'+(wlOwns(w.sym,w.region)?'You own this ✓ — tap to unflag':'I own it')+'">📦</button>'+
         '<button class="wrm" data-sym="'+esc(w.sym)+'" data-region="'+esc(w.region)+'" aria-label="Remove '+esc(w.sym)+'">✕</button></span></div>'+
       (r.name?'<div class="pmc-name">'+esc(r.name)+'</div>':'')+
       '<div class="wc-px">'+px+chg+'</div>'+spk+(it.kind==='none'?'<div class="wc-monspark"></div>':'')+buyLine+tag+'</div>';
@@ -2018,6 +2021,7 @@ function renderWatchlist(){
                group('📌 Also tracked','On your list but <b>not in tonight\'s scan yet</b> — we watch the price and give it the full scored read the moment it resurfaces.',plain);
   el.querySelectorAll('.wrm').forEach(function(b){b.addEventListener('click',function(e){e.stopPropagation();wlRemove(b.dataset.sym,b.dataset.region);renderWatchlist();syncWatchButtons();});});
   el.querySelectorAll('.wown').forEach(function(b){b.addEventListener('click',function(e){e.stopPropagation();var on=wlToggleOwn(b.dataset.sym,b.dataset.region);b.classList.toggle('owned',on);b.setAttribute('title',on?'You own this ✓ — tap to unflag':'I own it');renderWatchlist();updateOwnCount();});});
+  el.querySelectorAll('.wan').forEach(function(b){b.addEventListener('click',function(e){e.stopPropagation();openAnalyst(b.dataset.sym,b.dataset.region);});});
   el.querySelectorAll('.wmon').forEach(function(b){b.addEventListener('click',function(e){e.stopPropagation();
     var sym=b.dataset.sym, reg=b.dataset.region, wc=b.closest('.wcard'), host=wc?wc.querySelector('.wc-monspark'):null;
     b.classList.add('on');
