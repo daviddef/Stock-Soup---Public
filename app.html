@@ -1772,21 +1772,24 @@ function openInfo(key){
 }
 // ---- Theme drill-down: click a Geopolitics/Sector card → its leader tickers + our read ----
 // The lower-risk way to play a theme: 1–2 ETFs that hold the whole basket.
+// Each theme carries BOTH a US basket and (where a real, verified ASX-listed option exists) an AU
+// one — an AU user's broker often can't easily reach a US-domiciled ETF, so the local option matters.
+// AU tickers verified against ASX-listing sources (#20) — never guessed: ARMR/RBTZ/URNM/GDX/GMTL/ACDC
+// are real ASX codes as of Aug 2026; where no verified ASX equivalent was found, only 'us' is shown.
 var THEME_ETFS=[
-  {m:/defen|aukus|aerospace|military/i, e:[{s:'ITA',n:'US Aerospace & Defense'},{s:'PPA',n:'Aerospace & Defense'}]},
-  {m:/\bai\b|semi|chip|nvidia|compute/i, e:[{s:'SMH',n:'Semiconductors'},{s:'BOTZ',n:'Robotics & AI'}]},
-  {m:/uranium|nuclear/i, e:[{s:'URA',n:'Uranium Miners'},{s:'URNM',n:'Uranium Miners (pure-play)'}]},
-  {m:/gold|miner/i, e:[{s:'GDX',n:'Gold Miners'},{s:'GDXJ',n:'Junior Gold Miners'}]},
-  {m:/rare earth|critical mineral|magnet/i, e:[{s:'REMX',n:'Rare Earth / Strategic Metals'}]},
-  {m:/lithium|battery|EV\b/i, e:[{s:'LIT',n:'Lithium & Battery Tech'}]},
+  {m:/defen|aukus|aerospace|military/i, e:[{s:'ITA',n:'US Aerospace & Defense'},{s:'PPA',n:'Aerospace & Defense'}], eau:[{s:'ARMR',n:'Betashares Global Defence ETF'}]},
+  {m:/\bai\b|semi|chip|nvidia|compute/i, e:[{s:'SMH',n:'Semiconductors'},{s:'BOTZ',n:'Robotics & AI'}], eau:[{s:'RBTZ',n:'Betashares Global Robotics & AI ETF'}]},
+  {m:/uranium|nuclear/i, e:[{s:'URA',n:'Uranium Miners'},{s:'URNM',n:'Uranium Miners (pure-play)'}], eau:[{s:'URNM',n:'Betashares Global Uranium ETF'}]},
+  {m:/gold|miner/i, e:[{s:'GDX',n:'Gold Miners'},{s:'GDXJ',n:'Junior Gold Miners'}], eau:[{s:'GDX',n:'VanEck Gold Miners ETF (ASX)'}]},
+  {m:/rare earth|critical mineral|magnet|copper|base metal/i, e:[{s:'REMX',n:'Rare Earth / Strategic Metals'}], eau:[{s:'GMTL',n:'Global X Rare Earth & Critical Metals ETF'}]},
+  {m:/lithium|battery|EV\b/i, e:[{s:'LIT',n:'Lithium & Battery Tech'}], eau:[{s:'ACDC',n:'Global X Battery Tech & Lithium ETF'}]},
   {m:/energy|oil|gas|LNG/i, e:[{s:'XLE',n:'US Energy'}]},
   {m:/health|biotech|pharma/i, e:[{s:'XBI',n:'Biotech'}]},
-  {m:/copper|base metal/i, e:[{s:'COPX',n:'Copper Miners'}]}
 ];
 function themeETFs(item){
   var text=(item.title||item.name||'')+' '+(item.note||'');
-  for(var i=0;i<THEME_ETFS.length;i++){ if(THEME_ETFS[i].m.test(text)) return THEME_ETFS[i].e; }
-  return [];
+  for(var i=0;i<THEME_ETFS.length;i++){ if(THEME_ETFS[i].m.test(text)) return THEME_ETFS[i]; }
+  return null;
 }
 function themeTickers(item){
   if(item.tickers) return item.tickers;
@@ -1869,10 +1872,11 @@ function openTheme(src,idx){
       (cue?'<div class="tsc-cue">'+cue+'</div>':'')+'</div>';
   }
   var rows=syms.length?'<div class="tsgrid">'+syms.map(tcard).join('')+'</div>':'';
-  var etfs=themeETFs(item);
-  var etfHtml=etfs.length?'<h4 style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--broth);font-weight:800;margin:18px 0 4px">🧺 Prefer the basket? · ETFs</h4>'+
+  var etfMatch=themeETFs(item), etfAu=etfMatch&&etfMatch.eau||[], etfUs=etfMatch&&etfMatch.e||[];
+  function etfRow(e,reg){return '<div class="themerow"><a class="trsym" href="'+yf(e.s,reg)+'" target="_blank" rel="noopener">'+esc(e.s)+' <span class="wflag">'+(reg==='au'?'AU':'US')+'</span></a><span class="trln">'+esc(e.n)+' <span class="trcue">↗</span></span></div>';}
+  var etfHtml=(etfAu.length||etfUs.length)?'<h4 style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--broth);font-weight:800;margin:18px 0 4px">🧺 Prefer the basket? · ETFs</h4>'+
     '<p style="font-size:12px;color:var(--muted);margin:0 0 10px">The whole theme in one ticker — diversified, lower single-stock risk.</p>'+
-    etfs.map(function(e){return '<div class="themerow"><a class="trsym" href="'+yf(e.s,'us')+'" target="_blank" rel="noopener">'+esc(e.s)+'</a><span class="trln">'+esc(e.n)+' <span class="trcue">↗</span></span></div>';}).join(''):'';
+    etfAu.map(function(e){return etfRow(e,'au');}).join('')+etfUs.map(function(e){return etfRow(e,'us');}).join(''):'';
   var vc=(item.tclass==='t-buy'||item.tclass==='t-hot')?'v-buy':(item.tclass==='t-dont'?'v-dont':'v-hold');
   var m=document.getElementById('modal'); m.className='modal';
   m.innerHTML='<div class="mhead '+vc+'"><button class="mclose" id="mClose" aria-label="Close">✕</button>'+
