@@ -1876,10 +1876,22 @@ function openTheme(src,idx){
   }
   var rows=syms.length?'<div class="tsgrid">'+syms.map(tcard).join('')+'</div>':'';
   var etfMatch=themeETFs(item), etfAu=etfMatch&&etfMatch.eau||[], etfUs=etfMatch&&etfMatch.e||[];
-  function etfRow(e,reg){return '<div class="themerow"><a class="trsym" href="'+yf(e.s,reg)+'" target="_blank" rel="noopener">'+esc(e.s)+' <span class="wflag">'+(reg==='au'?'AU':'US')+'</span></a><span class="trln">'+esc(e.n)+' <span class="trcue">↗</span></span></div>';}
+  // Same rich-card treatment as ticker leaders (tcard) — live price + spark via the existing generic
+  // hydrateThemeCards mechanism (works for any ticker, not just scanned ones), tap for the full detail.
+  function etfCard(e,reg){
+    return '<div class="tscard etfcard tappable" data-sym="'+esc(e.s)+'" data-region="'+esc(reg)+'" data-hydrate="1" role="button" tabindex="0" aria-label="'+esc(e.n)+'">'+
+      '<div class="tsc-top"><a class="trsym" href="'+yf(e.s,reg)+'" target="_blank" rel="noopener">'+esc(e.s)+'</a>'+
+        '<span class="pmc-flag">'+(reg==='au'?'AU':'US')+'</span>'+
+        '<span class="mverd v-hold" style="margin-left:auto;font-size:10px;padding:3px 8px">🧺 ETF</span></div>'+
+      '<div class="tsc-pxrow tsc-slot"><span class="tsc-load">·····</span></div>'+
+      '<div class="tsc-spark tsc-sparkslot"></div>'+
+      '<div class="tsc-why"><b>'+esc(e.n)+'</b> — the whole theme, one ticker.</div>'+
+      '<div class="tsc-cue">full read →</div></div>';
+  }
+  var etfCards=etfAu.map(function(e){return etfCard(e,'au');}).join('')+etfUs.map(function(e){return etfCard(e,'us');}).join('');
   var etfHtml=(etfAu.length||etfUs.length)?'<h4 style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--broth);font-weight:800;margin:18px 0 4px">🧺 Prefer the basket? · ETFs</h4>'+
-    '<p style="font-size:12px;color:var(--muted);margin:0 0 10px">The whole theme in one ticker — diversified, lower single-stock risk.</p>'+
-    etfAu.map(function(e){return etfRow(e,'au');}).join('')+etfUs.map(function(e){return etfRow(e,'us');}).join(''):'';
+    '<p style="font-size:12px;color:var(--muted);margin:0 0 10px">The whole theme in one ticker — diversified, lower single-stock risk. Tap any for live price &amp; chart.</p>'+
+    '<div class="tsgrid">'+etfCards+'</div>':'';
   var vc=(item.tclass==='t-buy'||item.tclass==='t-hot')?'v-buy':(item.tclass==='t-dont'?'v-dont':'v-hold');
   var m=document.getElementById('modal'); m.className='modal';
   m.innerHTML='<div class="mhead '+vc+'"><button class="mclose" id="mClose" aria-label="Close">✕</button>'+
@@ -1894,7 +1906,11 @@ function openTheme(src,idx){
   document.getElementById('mClose').focus();
   hydrateThemeCards(m);
   m.querySelectorAll('.tscard.tappable').forEach(function(row){
-    function open(){ if(row.dataset.kind==='cand'){ openCandidate(+row.dataset.ci); return; } var rg=(D.regions||[]).filter(function(x){return x.id===row.dataset.region;})[0]; if(rg){var p=rg.picks[+row.dataset.idx]; if(p)openModal(p,rg.id,rg.cur||'$');} }
+    function open(){
+      if(row.classList.contains('etfcard')){ openSym(row.dataset.sym,row.dataset.region); return; }
+      if(row.dataset.kind==='cand'){ openCandidate(+row.dataset.ci); return; }
+      var rg=(D.regions||[]).filter(function(x){return x.id===row.dataset.region;})[0]; if(rg){var p=rg.picks[+row.dataset.idx]; if(p)openModal(p,rg.id,rg.cur||'$');}
+    }
     row.addEventListener('click',function(e){ if(e.target.closest('a'))return; open(); });
     row.addEventListener('keydown',function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); open(); } });
   });
