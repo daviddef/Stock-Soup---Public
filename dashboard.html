@@ -487,6 +487,7 @@
 
   /* FULL POT — candidate heatmap */
   .potlegend{display:flex;gap:14px;flex-wrap:wrap;font-size:11px;color:var(--muted);font-weight:700;margin-bottom:12px}
+  .potempty{background:var(--surface-2);border:1px dashed var(--line);border-radius:11px;padding:11px 14px;font-size:13px;color:var(--muted);margin-bottom:12px}
   .potlegend span{display:inline-flex;align-items:center;gap:5px}
   .potlegend i{width:9px;height:9px;border-radius:50%;display:inline-block}
   .pot{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
@@ -1368,7 +1369,7 @@ function render(D,H){
   // ===== 🍲 TONIGHT'S MENU =====
   '<div class="tabview active" id="tab-menu">'+
     '<div class="tabhead menuhead">'+
-      '<div class="eyebrow schedlink" data-info="schedule" role="button" tabindex="0" title="How the run schedule works" style="letter-spacing:.06em">'+esc((D.stamp||'').replace(/,?\s*20\d\d/,'').replace(/\s*AEST\b/,''))+(D.next?' · next ~'+esc(D.next):'')+' <span class="schedi">i</span></div>'+
+      '<div class="eyebrow schedlink" data-info="schedule" role="button" tabindex="0" title="Major runs are manually triggered — this is the target window, not a guarantee" style="letter-spacing:.06em">'+esc((D.stamp||'').replace(/,?\s*20\d\d/,'').replace(/\s*AEST\b/,''))+(D.next?' · usually ~'+esc(D.next):'')+' <span class="schedi">i</span></div>'+
       '<h1 class="display">Two pots on the boil:<br><span class="hot">'+esc(hdl(D,'a'))+'</span> &amp; <span class="hot">'+esc(hdl(D,'b'))+'</span>.</h1>'+
       '<p class="chef">'+chefFor(D)+'</p>'+
       '<div class="metastrip"><span class="chip clickchip" data-mchip="risk" role="button" tabindex="0"><span class="dot" style="background:var(--hold)"></span> Risk: '+esc(r.label)+' <span class="chipi">i</span></span>'+
@@ -1397,9 +1398,10 @@ function render(D,H){
     '<section id="fullpot"><div class="sec-head"><h2 class="display"><span class="k">05</span> The full pot</h2>'+infoBtn('fullpot')+'</div>'+
       '<p class="sec-sub">Every '+(MKT==='au'?'🇦🇺 Australian':'🌏 international')+' candidate the scan shortlisted tonight — <b>'+_potN+' names</b>, priced and scored. These are the ones we chose from. Colour = how appetising it looks. <b>Tap any for the full read.</b></p>'+
       '<div class="potlegend"><span><i style="background:var(--broth)"></i>🔥 sizzling</span><span><i style="background:var(--buy)"></i>✅ tasty</span><span><i style="background:var(--hold)"></i>➖ maybe</span><span><span class="legno">⛔</span> send it back</span></div>'+
-      '<div class="pot">'+pot+'</div>'+
-      (potLose?'<button class="potmore" id="potMore" aria-expanded="false">➖ '+_loseIdx.length+' more — maybes &amp; passes ▾</button>'+
-        '<div class="pot potlose" id="potLose" hidden>'+potLose+'</div>':'')+
+      (!_keepIdx.length&&potLose?'<p class="potempty">Nothing scored above <b>Watch</b> in '+(MKT==='au'?'🇦🇺 Australia':'🌏 international')+' tonight — here\'s the full '+_loseIdx.length+' we actually considered, ranked, none of them cleared the bar.</p>':'')+
+      (pot?'<div class="pot">'+pot+'</div>':'')+
+      (potLose?(_keepIdx.length?'<button class="potmore" id="potMore" aria-expanded="false">➖ '+_loseIdx.length+' more — maybes &amp; passes ▾</button>':'')+
+        '<div class="pot potlose" id="potLose"'+(_keepIdx.length?' hidden':'')+'>'+potLose+'</div>':'')+
       '</section>'+
     // hourly-runs list removed from the menu — it lives (unified) in Inside the Kitchen's run schedule
   '</div>'+
@@ -1416,6 +1418,7 @@ function render(D,H){
       (ocOn?'<p style="font-size:11.5px;color:var(--muted);margin-top:12px;line-height:1.5">We check every pick after <b>its own timeframe</b> — a day-trade the next day, a week pick after a week, a long hold after a month. <span style="color:var(--buy);font-weight:700">Green = it made money.</span> <b>“beat mkt”</b> means it also did better than the whole market. Tap any row for the full story.</p>'
            :'<p style="font-size:11px;color:var(--faint);margin-top:12px">'+esc(sb.closedNote||'')+'</p>')+
       '<button class="trackcta" id="trackCta">See the full month graded → what we learned, what we\'d change</button></div></section>'+
+    missesSection(D)+
   '</div>'+
 
   // ===== ⭐ YOUR FAVOURITES =====
@@ -1442,10 +1445,9 @@ function render(D,H){
       '<div class="archmore" id="archMore"></div></section>'+
     '<section><div class="sec-head"><h2 class="display">📋 How we got here</h2></div>'+
       '<p class="sec-sub">The recipe, in plain sight. No black box.</p>'+discoveryFunnel(D)+'<div class="panel trail">'+trail+'</div></section>'+
-    missesSection(D)+
   '</div>'+
 
-  '<footer>Auto-generated for information only. <b>Not financial advice</b> — do your own research.<br>The Stock Soup · '+esc(D.stamp||'')+(D.next?' · next pot ~'+esc(D.next):' · served hourly')+'</footer>';
+  '<footer>Auto-generated for information only. <b>Not financial advice</b> — do your own research.<br>The Stock Soup · '+esc(D.stamp||'')+(D.next?' · target window ~'+esc(D.next)+' (manual trigger)':' · served hourly')+'</footer>';
 
   wire(D);
 }
@@ -1633,7 +1635,8 @@ var INFO={
     '<p class="infofoot">No black box: every number comes from live market data and the same engine behind the recommendation cards.</p>'},
   schedule:{icon:'⏱️',title:'The run schedule',body:
     '<p>The Stock Soup runs on two clocks — one heavy, one light.</p>'+
-    '<h4>🍳 Major runs — a fresh menu</h4><p>The full re-cook: re-scan the market, re-score everything, pick 6 new stocks. This is what advances <b>The Journey</b>. Timed to <b>~30 minutes before each market opens</b>, so the menu is fresh when you can act:</p>'+
+    '<div class="callout" style="margin:10px 0 16px">⚠️ <b>Major runs are still triggered manually</b> — not on an automatic timer yet. The times below are the <b>target windows</b> a run aims for when one\'s kicked off, not a guarantee one fires automatically. Ask any time and a fresh menu gets cooked.</div>'+
+    '<h4>🍳 Major runs — a fresh menu</h4><p>The full re-cook: re-scan the market, re-score everything, pick 6 new stocks. This is what advances <b>The Journey</b>. Aimed at <b>~30 minutes before each market opens</b>, so the menu is fresh when you can act:</p>'+
     '<ul class="infoul"><li>🇦🇺 <b>09:30 AEST</b> — before the ASX opens (10:00).</li>'+
     '<li>🇺🇸 <b>23:00 AEST</b> — before the US opens (9:30am New York).</li>'+
     '<li>☀️ <b>12:30 AEST</b> — a midday check while the ASX trades.</li></ul>'+
@@ -1702,7 +1705,7 @@ function favesHead(){
 function kitchenHead(D){
   var n=(typeof PULSES!=='undefined'&&PULSES)?PULSES.length:0;
   var last=(D&&D.stamp)?String(D.stamp).replace(/,?\s*20\d\d/,'').replace(/\s*AEST\b/,''):'—';
-  var stats=[tstat('Last cook',last),tstat('Next service',D&&D.next?'~'+D.next:'—'),tstat('Re-prices today',n)];
+  var stats=[tstat('Last cook',last),tstat('Target window',D&&D.next?'~'+D.next+' (manual)':'—'),tstat('Re-prices today',n)];
   return tabHead('👨‍🍳 Behind the pass','The engine room','Every run, every source, every score — no black box. This is where the soup actually gets made.',stats);
 }
 function runLogHtml(){
@@ -1883,7 +1886,7 @@ function openTheme(src,idx){
     '<div class="mtf">'+esc(item.em||'🎯')+' '+(src==='geo'?'Geopolitical theme':(src==='commodities'?'Commodity':'Sector'))+'</div>'+
     '<div class="mtop"><div class="msym" style="font-size:23px;line-height:1.15">'+esc(item.title||item.name)+'</div></div>'+
     '<span class="mverd '+vc+'">'+esc(item.tag)+'</span></div>'+
-    '<div class="mbody"><p class="mtake"><span class="lead">Why this call:</span> '+esc(item.note)+(pickSyms.length?' <b>'+pickSyms.length+' of tonight’s picks sit in this theme</b> ('+pickSyms.map(esc).join(', ')+') — that’s our skin in the game.':' No scored pick here this run — it’s a watch, not a buy yet.')+'</p>'+
+    '<div class="mbody"><p class="mtake"><span class="lead">Why this call:</span> '+esc(item.note||'').replace(/\s*$/,'').replace(/([^.!?])$/,'$1.')+(pickSyms.length?' <b>'+pickSyms.length+' of tonight’s picks sit in this theme</b> ('+pickSyms.map(esc).join(', ')+') — that’s our skin in the game.':' No scored pick here this run — it’s a watch, not a buy yet.')+'</p>'+
     '<h4 style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:800;margin:4px 0 10px">Leaders in this theme</h4>'+
     (rows||'<p class="muted">No clear ticker leaders surfaced for this theme tonight.</p>')+etfHtml+
     '<p style="font-size:11px;color:var(--faint);margin-top:14px;line-height:1.6"><b style="color:var(--muted)">What the tags mean:</b> a verdict like <b>Get in</b>/<b>Wait</b> = it\'s one of tonight\'s scored picks · <b>Shortlisted</b> = we considered it, didn\'t pick it · <b>On your watchlist</b> = you\'re tracking it · <b>Live price</b> = shown for reference only. ETFs are the diversified way to play the theme.</p></div>';
@@ -2595,7 +2598,7 @@ function renderSimple(D){
           '<button class="bmitem" id="themeBtn2" role="menuitem">🌗 Switch theme</button>'+
           '<button class="bmitem" id="docsBtnS" role="menuitem" style="display:none">📖 Documentation</button>'+
         '</div></div></div>'+
-      '<div class="seyebrow schedlink" data-info="schedule" role="button" tabindex="0" title="How the run schedule works">'+esc(sStamp)+(D.next?' · next <b>~'+esc(D.next)+'</b>':'')+' <span class="schedi">i</span></div>'+
+      '<div class="seyebrow schedlink" data-info="schedule" role="button" tabindex="0" title="Major runs are manually triggered — this is the target window, not a guarantee">'+esc(sStamp)+(D.next?' · usually <b>~'+esc(D.next)+'</b>':'')+' <span class="schedi">i</span></div>'+
       '<div class="stoprail">'+mktBarHtml(D)+'</div>'+
       '<div class="smood">Tonight: <span class="hot">'+esc(hdl(D,'a'))+'</span> &amp; <span class="hot">'+esc(hdl(D,'b'))+'</span></div>'+
       (D.chefShort?'<p class="schef">'+esc(D.chefShort)+'</p>':'')+
