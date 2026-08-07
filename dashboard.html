@@ -1499,6 +1499,7 @@ function openModal(p,region,cur){
         '<div class="rsimeta">'+rsiWord+'</div>'+
         (trendChip(p)?'<div class="rsimeta" style="margin-top:8px">'+trendChip(p)+(p.trend&&p.trend.adx!=null?' <span class="muted" style="font-weight:600">· ADX '+p.trend.adx+(p.trend.adx>=25?' (strong trend)':p.trend.adx>=20?' (building)':' (choppy)')+'</span>':'')+'</div>':'')+
         (valChip(p)?'<div class="rsimeta" style="margin-top:6px">'+valChip(p)+'</div>':'')+
+        (timingLine(p)?'<div class="rsimeta" style="margin-top:6px">'+timingLine(p)+'</div>':'')+
       '</div>'+
       scoreHtml+
       '<p class="mtake"><span class="lead">Chef says:</span> '+esc(p.chefTake)+'</p>'+
