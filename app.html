@@ -347,9 +347,13 @@
   .jhright{display:flex;align-items:center;gap:5px;flex:0 0 auto;margin-left:auto}
   .jtally{display:inline-flex;gap:4px;font-size:10.5px;font-weight:900;background:var(--surface-2);border:1px solid var(--line);border-radius:999px;padding:2px 6px}
   .jtally .jt-w{color:var(--buy)} .jtally .jt-l{color:var(--dont)} .jtally .jt-p{color:var(--faint)}
-  .runlog{margin-top:4px}
+  .runlog{margin-top:4px;display:grid;grid-template-columns:1fr;gap:0 18px}
+  @media(min-width:640px){.runlog{grid-template-columns:1fr 1fr}}
+  .runlog-rest{display:contents}
+  .runlog-rest[hidden]{display:none}
   .rlrow{padding:9px 0 9px 11px;border-bottom:1px solid var(--line);border-left:2px solid transparent}
   .rlrow:last-child{border-bottom:0}
+  .rlrow.rlmaj,.rlrow.rllive,.rlrow.rlfail,.rlrow.rlcancel{grid-column:1/-1}
   .rlrow.rlmaj{border-left-color:var(--broth);background:linear-gradient(90deg,rgba(255,107,26,.09),transparent 62%)}
   .rlrow.rlmin{border-left-color:var(--line)}
   .rltop{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:4px}
@@ -1380,6 +1384,7 @@ function render(D,H){
   document.getElementById('app').innerHTML=
   '<header class="hero"><div class="brandrow"><div class="brand"><span class="hpot"><span class="hsteam"><i></i><i></i><i></i></span><span class="hpotbowl">🍲</span></span> The&nbsp;Stock&nbsp;Soup</div>'+
     '<div class="toprail">'+mktBarHtml(D)+
+      (isAdmin()?'<span class="adminbadge" title="Signed in as the admin account" style="margin-right:6px">ADMIN</span>':'')+
       '<div class="burgerwrap"><button class="burger" id="burgerBtn" aria-label="Menu" aria-haspopup="true" aria-expanded="false" aria-controls="burgerMenu">☰</button>'+
         '<div class="burgermenu" id="burgerMenu" role="menu" hidden>'+
           '<div class="bmhead"><span class="live"><span class="pulse"></span>LIVE</span><button class="bmupd" id="lastUpd">updated…</button></div>'+
@@ -1472,6 +1477,9 @@ function render(D,H){
   '<div class="tabview" id="tab-kitchen">'+
     kitchenHead(D)+
     '<section id="runsched"><div class="sec-head"><h2 class="display">⏱️ Run schedule</h2>'+infoBtn('schedule')+'</div>'+runLogHtml()+'</section>'+
+    (isAdmin()?'<section id="adminhealth"><div class="sec-head"><h2 class="display">💓 Data-source health <span class="adminbadge">ADMIN</span></h2></div>'+
+      '<p class="sec-sub">What is actually feeding tonight\'s picks, and any known gaps — maintained by hand, not a live ping. Only visible to you.</p>'+
+      '<button class="trackcta" id="kitchenHealthBtn">💓 Open data-source health →</button></section>':'')+
     '<section><div class="sec-head"><h2 class="display">🗄️ The Archive</h2>'+infoBtn('archive')+'</div>'+
       '<p class="sec-sub">Every menu we\'ve served. Tap one to open that run\'s full report.</p>'+
       '<div class="arch" id="archList"><div class="wlempty">Loading past menus…</div></div>'+
@@ -1765,7 +1773,7 @@ function runLogHtml(){
   (H.menus||[]).slice(0,8).forEach(function(m){rows.push({t:'maj',ts:majTs(m),m:m});});
   (PULSES||[]).forEach(function(pu){rows.push({t:'min',ts:new Date(pu.iso||0).getTime(),pu:pu});});
   rows.sort(function(a,b){return b.ts-a.ts;});
-  var body=rows.slice(0,40).map(function(r){
+  var rowsHtml=rows.slice(0,40).map(function(r){
     if(r.t==='maj'){var m=r.m;
       return '<div class="rlrow rlmaj"><div class="rltop"><span class="rltag rltag-maj">🍳 Menu · new picks</span>'+
         '<span class="rlwhen">'+fmtWhen(r.ts)+'</span>'+dur(m.durMs)+'</div>'+
@@ -1777,7 +1785,11 @@ function runLogHtml(){
     return '<div class="rlrow rlmin"><div class="rltop"><span class="rltag rltag-min">⏱ Re-price · same picks</span>'+
       '<span class="rlwhen">'+fmtWhen(r.ts)+'</span>'+dur(pu.durMs)+'</div>'+
       '<div class="rlbody"><div class="rlline rlmovers">'+(mv||'<span class="qt">quiet hour — nothing moved much</span>')+'</div></div></div>';
-  }).join('');
+  });
+  var body=rowsHtml.slice(0,12).join('');
+  var restHtml=rowsHtml.slice(12);
+  var rest=restHtml.length?('<button class="potmore" id="runMore" aria-expanded="false" style="grid-column:1/-1">➖ '+restHtml.length+' older runs ▾</button>'+
+    '<div class="runlog-rest" id="runRest" hidden>'+restHtml.join('')+'</div>'):'';
   // Every run ATTEMPT that isn't a finished menu — cooking / failed / cancelled — so nothing silently vanishes.
   // A 'done' run already shows as its committed menu below, so we only surface the others here.
   var live=(RUNLOG||[]).filter(function(e){return e&&e.startedAt&&e.status!=='done';}).map(function(e){
@@ -1796,7 +1808,7 @@ function runLogHtml(){
   }
   return '<h4 style="'+hh+'">Every run — newest first</h4>'+
     '<p style="font-size:12px;color:var(--muted);margin:0 0 8px"><b style="color:var(--broth)">Menu</b> = a full re-cook (six new picks, timed ~30&nbsp;min before an open). <b>Re-price</b> = same picks, fresh numbers each hour.</p>'+
-    '<div class="runlog">'+live+(body||(live?'':'<p class="muted">No runs yet.</p>'))+'</div>';
+    '<div class="runlog">'+live+(body||(live?'':'<p class="muted">No runs yet.</p>'))+rest+'</div>';
 }
 function openInfo(key){
   var i=INFO[key]; if(!i) return;
@@ -2378,6 +2390,7 @@ function openAccount(){
     }).catch(function(){ mg.textContent='Try again.'; }); };
   var ar=document.getElementById('acctArch'); if(ar) ar.onclick=function(){ closeModal(); openDocs(); };
   var ah=document.getElementById('acctHealth'); if(ah) ah.onclick=openDataHealth;
+  var kh=document.getElementById('kitchenHealthBtn'); if(kh) kh.onclick=openDataHealth;
 }
 // Admin: which upstream data sources are actually live, degraded, or blocked right now — maintained
 // by hand as gaps are found (EODHD's calendar/fundamentals plans, Yahoo's throttle, etc.), not pinged
@@ -2494,6 +2507,8 @@ function wire(D){
   if(sit){ sit.textContent=signedIn()?'👤 Account':'👤 Sign in'; sit.onclick=openAccount; }
   var pm=document.getElementById('potMore'), pl=document.getElementById('potLose');
   if(pm&&pl){ pm.onclick=function(){ var open=pl.hasAttribute('hidden'); if(open)pl.removeAttribute('hidden'); else pl.setAttribute('hidden',''); pm.setAttribute('aria-expanded',open?'true':'false'); pm.innerHTML=(open?'▴ Hide the maybes &amp; passes':'➖ '+pl.children.length+' more — maybes &amp; passes ▾'); }; }
+  var rm=document.getElementById('runMore'), rr=document.getElementById('runRest');
+  if(rm&&rr){ var rrN=rr.children.length; rm.onclick=function(){ var open=rr.hasAttribute('hidden'); if(open)rr.removeAttribute('hidden'); else rr.setAttribute('hidden',''); rm.setAttribute('aria-expanded',open?'true':'false'); rm.innerHTML=(open?'▴ Hide older runs':'➖ '+rrN+' older runs ▾'); }; }
   var lu=document.getElementById('lastUpd');
   if(lu){ if(PULSES&&PULSES.length){ lu.textContent='updated '+timeAgo(PULSES[PULSES.length-1].iso); lu.onclick=goRunSchedule; } else { lu.textContent='no runs yet'; } }
   var bg=document.getElementById('burgerBtn'), bm=document.getElementById('burgerMenu');
@@ -2640,6 +2655,7 @@ function renderSimple(D){
     '</div>';
   document.getElementById('app').innerHTML =
     '<div class="simple"><div class="shero"><div class="brandrow"><div class="brand"><span class="hpot"><span class="hsteam"><i></i><i></i><i></i></span><span class="hpotbowl">🍲</span></span> The&nbsp;Stock&nbsp;Soup</div>'+
+      (isAdmin()?'<span class="adminbadge" title="Signed in as the admin account" style="margin-right:6px">ADMIN</span>':'')+
       '<div class="burgerwrap"><button class="burger" id="burgerBtnS" aria-label="Menu" aria-haspopup="true" aria-expanded="false" aria-controls="burgerMenuS">☰</button>'+
         '<div class="burgermenu" id="burgerMenuS" role="menu" hidden>'+
           '<div class="bmhead"><span class="live"><span class="pulse"></span>LIVE</span><button class="bmupd" id="lastUpdS">updated…</button></div>'+
