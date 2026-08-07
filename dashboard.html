@@ -64,7 +64,12 @@
   .meter{margin-top:18px}
   .meter .track{height:10px;border-radius:999px;background:linear-gradient(90deg,var(--dont),var(--hold),var(--buy));position:relative;opacity:.9}
   .meter .needle{position:absolute;top:-5px;width:4px;height:20px;border-radius:2px;background:var(--ink);box-shadow:0 0 0 3px var(--surface);left:50%;transition:left .8s cubic-bezier(.2,.8,.2,1)}
+  .meter .needle.vixneedle{background:#9b6bff;width:3px;top:-3px;height:16px;box-shadow:0 0 0 2px var(--surface)}
   .meter .lbls{display:flex;justify-content:space-between;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);margin-top:6px;font-weight:700}
+  .meterleg{display:flex;gap:14px;justify-content:center;margin-top:8px;font-size:10.5px;font-weight:700;color:var(--muted)}
+  .meterleg i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:5px;vertical-align:middle}
+  .meterleg i.ink{background:var(--ink)} .meterleg i.vix{background:#9b6bff}
+  .tagword{opacity:.7;font-weight:700}
 
   .pulsebar{background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--broth);border-radius:14px;padding:14px 16px}
   .pulsebar .ph{font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;gap:7px;margin-bottom:7px}
@@ -1256,6 +1261,18 @@ function actionsHtml(D){
 function render(D,H){
   LAST={D:D,H:H};
   var r=D.risk||{};
+  // Sector-heat tags ("Gold hot · Defence hot · AI on fire") come as one string — split into
+  // individual chips; fold "Gold" specifically into the existing Gold price chip instead of
+  // showing it twice (#79).
+  var hotTagsList=(function(){
+    var parts=(D.hotTags||'').split('·').map(function(s){return s.trim();}).filter(Boolean);
+    var gold=false, rest=[];
+    parts.forEach(function(t){ if(/\bgold\b/i.test(t)) gold=true; else rest.push(t); });
+    return {gold:gold,rest:rest};
+  })();
+  // VIX marker on the same risk slider — same 0-100 scale as the risk needle, calm→right/risk-on,
+  // fearful→left/risk-off. Purely visual pairing; VIX still isn't a scoring input (see CLAUDE.md).
+  var vixLvl=(r.vix!=null)?Math.max(0,Math.min(100, 100-((r.vix-10)/25*100))):null;
   var regionTabs=(D.regions||[]).map(function(rg,i){return '<button class="tab" role="tab" id="tab-'+rg.id+'" aria-selected="'+(rg.id===MKT)+'" data-region="'+rg.id+'">'+esc(rg.label)+'</button>';}).join('');
   var soon='<button class="tab" disabled title="Coming soon">🌏 Asia-Pac · soon</button><button class="tab" disabled title="Coming soon">🇪🇺 Europe · soon</button>';
 
@@ -1418,13 +1435,15 @@ function render(D,H){
       '<h1 class="display">Two pots on the boil:<br><span class="hot">'+esc(hdl(D,'a'))+'</span> &amp; <span class="hot">'+esc(hdl(D,'b'))+'</span>.</h1>'+
       '<p class="chef">'+chefFor(D)+'</p>'+
       '<div class="metastrip"><span class="chip clickchip" data-mchip="risk" role="button" tabindex="0"><span class="dot" style="background:var(--hold)"></span> Risk: '+esc(r.label)+' <span class="chipi">i</span></span>'+
+      (r.vix!=null?'<span class="chip mono clickchip" data-mchip="vix" role="button" tabindex="0">😨 VIX '+esc(r.vix)+' <span class="'+(r.vixMood==='fearful'||r.vixMood==='jittery'?'down':'up')+'">'+esc(r.vixMood)+'</span></span>':'')+
       '<span class="chip mono clickchip" data-mchip="btc" role="button" tabindex="0">₿ '+esc(r.btc)+' <span class="up">'+esc(r.btcChange)+'</span></span>'+
       '<span class="chip mono clickchip" data-mchip="aud" role="button" tabindex="0">AUD/USD '+esc(r.audusd)+(r.audusdChange?' <span class="'+(r.audusdUp?'up':'down')+'">'+(r.audusdUp?'▲':'▼')+esc(r.audusdChange)+'</span>':'')+'</span>'+
-      '<span class="chip mono clickchip" data-mchip="gold" role="button" tabindex="0">Gold '+esc(r.gold)+(r.goldChange?' <span class="'+(r.goldUp?'up':'down')+'">'+(r.goldUp?'▲':'▼')+esc(r.goldChange)+'</span>':'')+'</span>'+
-      (r.vix!=null?'<span class="chip mono clickchip" data-mchip="vix" role="button" tabindex="0">😨 VIX '+esc(r.vix)+' <span class="'+(r.vixMood==='fearful'||r.vixMood==='jittery'?'down':'up')+'">'+esc(r.vixMood)+'</span></span>':'')+
-      '<span class="chip">'+esc(D.hotTags)+'</span></div>'+
-      '<div class="meter"><div class="track"><div class="needle" id="needle"></div></div>'+
-      '<div class="lbls"><span>🔴 Hide the cash</span><span>⚪ Steady</span><span>🟢 Send it</span></div></div>'+
+      '<span class="chip mono clickchip" data-mchip="gold" role="button" tabindex="0">'+(hotTagsList.gold?'🏅 ':'')+'Gold '+esc(r.gold)+(r.goldChange?' <span class="'+(r.goldUp?'up':'down')+'">'+(r.goldUp?'▲':'▼')+esc(r.goldChange)+'</span>':'')+(hotTagsList.gold?' <span class="tagword">hot</span>':'')+'</span>'+
+      hotTagsList.rest.map(function(t){return '<span class="chip">'+esc(t)+'</span>';}).join('')+
+      '</div>'+
+      '<div class="meter"><div class="track"><div class="needle" id="needle"></div>'+(vixLvl!=null?'<div class="needle vixneedle" id="needleVix" title="VIX marker"></div>':'')+'</div>'+
+      '<div class="lbls"><span>🔴 Hide the cash</span><span>⚪ Steady</span><span>🟢 Send it</span></div>'+
+      (vixLvl!=null?'<div class="meterleg"><span><i class="ink"></i> Risk</span><span><i class="vix"></i> VIX</span></div>':'')+'</div>'+
       '<div class="sec-head" style="margin:26px 0 3px"><h2 class="display"><span class="k">01</span> Take your seat, it’s time to eat</h2>'+infoBtn('actions')+'</div>'+
       '<p class="sec-sub" style="margin:0 0 10px">Enough of the mood — here’s what’s worth <b>acting on</b> right now.</p>'+
       actionsHtml(D)+
@@ -2636,7 +2655,11 @@ function wire(D){
   fetch('reports/report-index.json',{cache:'no-store'}).then(function(r){return r.ok?r.json():null;}).then(function(j){renderArch(j);}).catch(function(){renderArch(null);});
 
   var lvl=(D.risk&&D.risk.level!=null)?D.risk.level:50;
-  requestAnimationFrame(function(){var n=document.getElementById('needle');if(n)n.style.left=lvl+'%';});
+  var vixLvlN=((D.risk||{}).vix!=null)?Math.max(0,Math.min(100, 100-(((D.risk||{}).vix-10)/25*100))):null;
+  requestAnimationFrame(function(){
+    var n=document.getElementById('needle');if(n)n.style.left=lvl+'%';
+    var nv=document.getElementById('needleVix');if(nv&&vixLvlN!=null)nv.style.left=vixLvlN+'%';
+  });
 }
 
 document.getElementById('overlay').addEventListener('click',function(e){if(e.target===this)closeModal();});
