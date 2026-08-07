@@ -1040,6 +1040,16 @@ function sentChip(p){
   if(v<=-0.12) return '<span class="sentc sc-neg">📉 Negative buzz</span>';
   return '<span class="sentc sc-mix">😐 Mixed buzz</span>';
 }
+// Trend-quality chip (#60/#66): MACD direction + ADX (trend strength), the same read the score's
+// trend-quality nudge is built from — so the card shows WHY the score moved, not just the number.
+function trendChip(p){
+  var t=p&&p.trend; if(!t||(t.adx==null&&t.macd_pos==null)) return '';
+  var strong=t.adx!=null&&t.adx>=25;
+  if(t.macd_pos===true&&t.macd_rising===true) return '<span class="sentc sc-pos">'+(strong?'🚀 Confirmed uptrend':'📈 Building momentum')+'</span>';
+  if(t.macd_pos===false&&t.macd_rising===false) return '<span class="sentc sc-neg">'+(strong?'🔻 Confirmed downtrend':'📉 Losing steam')+'</span>';
+  if(t.adx!=null&&t.adx<20) return '<span class="sentc sc-mix">〰️ Choppy, no clear trend</span>';
+  return '<span class="sentc sc-mix">😐 Mixed signals</span>';
+}
 // Market-aware header: prefer a per-market headline/chef when the run provides one
 // (D.headline[MKT] / D.chefByMkt[MKT]), else fall back to the single shared version.
 function hdl(D,k){var h=(D&&D.headline)||{}; if(h[MKT]&&h[MKT][k]!=null)return h[MKT][k]; return h[k]!=null?h[k]:'';}
@@ -1167,7 +1177,7 @@ function render(D,H){
         '<span class="px"><span class="p mono">'+esc(p.price)+'</span><br><span class="c mono '+chgTone(p.change,p.up)+'">'+esc(p.change)+'</span></span></div>'+
         /* miniTraj removed — inconsistent (only carried-over picks had it) + confusing 'since 23:33'; the range bar shows the trend */
         '<div class="buyat'+(p.nEntry?' ba-'+buyState(p):'')+'">'+(p.nEntry?'<span class="bl">🎯 Ideal buy</span> ~'+esc(rg.cur||'$')+p.nEntry+buyAction(p):'<span class="bl">Track this pick</span>')+'</div>'+
-        '<p class="plain">'+p.plain+'</p>'+(sentChip(p)?'<div class="sentrow">'+sentChip(p)+'</div>':'')+'<div class="lvls">'+p.levels+'</div>'+
+        '<p class="plain">'+p.plain+'</p>'+((sentChip(p)||trendChip(p))?'<div class="sentrow">'+sentChip(p)+trendChip(p)+'</div>':'')+'<div class="lvls">'+p.levels+'</div>'+
         (p.spark?rangeBar(p.spark,rg.cur||'$',p.tf,p.nEntry):'')+'</article>'+
         ((p.runnerUp && /wait|late|hold|skip|avoid|pass|don.t|steer/i.test(p.verdict||''))?ruCard(p.runnerUp,rg.id,idx):'')+'</div>';
     }).join('');
@@ -1310,6 +1320,7 @@ function render(D,H){
       '<span class="chip mono clickchip" data-mchip="btc" role="button" tabindex="0">₿ '+esc(r.btc)+' <span class="up">'+esc(r.btcChange)+'</span></span>'+
       '<span class="chip mono clickchip" data-mchip="aud" role="button" tabindex="0">AUD/USD '+esc(r.audusd)+(r.audusdChange?' <span class="'+(r.audusdUp?'up':'down')+'">'+(r.audusdUp?'▲':'▼')+esc(r.audusdChange)+'</span>':'')+'</span>'+
       '<span class="chip mono clickchip" data-mchip="gold" role="button" tabindex="0">Gold '+esc(r.gold)+(r.goldChange?' <span class="'+(r.goldUp?'up':'down')+'">'+(r.goldUp?'▲':'▼')+esc(r.goldChange)+'</span>':'')+'</span>'+
+      (r.vix!=null?'<span class="chip mono clickchip" data-mchip="vix" role="button" tabindex="0">😨 VIX '+esc(r.vix)+' <span class="'+(r.vixMood==='fearful'||r.vixMood==='jittery'?'down':'up')+'">'+esc(r.vixMood)+'</span></span>':'')+
       '<span class="chip">'+esc(D.hotTags)+'</span></div>'+
       '<div class="meter"><div class="track"><div class="needle" id="needle"></div></div>'+
       '<div class="lbls"><span>🔴 Hide the cash</span><span>⚪ Steady</span><span>🟢 Send it</span></div></div>'+
@@ -1441,7 +1452,9 @@ function openModal(p,region,cur){
         '<h4 style="margin-top:20px">How hot is it right now? · RSI</h4>'+
         '<div class="rsibar"><span class="rcap" style="left:'+clamp(rsi)+'%">RSI '+esc(rsi)+'</span><span class="rn" style="left:'+clamp(rsi)+'%"></span></div>'+
         '<div class="lends"><span class="g">Cheap</span><span class="r">Overheated</span></div>'+
-        '<div class="rsimeta">'+rsiWord+'</div></div>'+
+        '<div class="rsimeta">'+rsiWord+'</div>'+
+        (trendChip(p)?'<div class="rsimeta" style="margin-top:8px">'+trendChip(p)+(p.trend&&p.trend.adx!=null?' <span class="muted" style="font-weight:600">· ADX '+p.trend.adx+(p.trend.adx>=25?' (strong trend)':p.trend.adx>=20?' (building)':' (choppy)')+'</span>':'')+'</div>':'')+
+      '</div>'+
       scoreHtml+
       '<p class="mtake"><span class="lead">Chef says:</span> '+esc(p.chefTake)+'</p>'+
       (p.news?'<div class="mnews">📰 <span class="lead">In the news:</span> '+esc(p.news)+'</div>':'')+
@@ -1881,6 +1894,12 @@ function openMarketChip(key){
       (g?'<p><b>Our read:</b> '+esc(g.note)+' <b>('+esc(g.tag)+')</b>.</p>':'')+
       (miners.length?'<p><b>Riding it in the pot:</b> '+esc(miners.join(', '))+'.</p>':'')+
       '<p class="infofoot">Australia is resource-heavy, so gold\'s move often drives the ASX picks.</p>');
+  } else if(key==='vix'){
+    _mchipModal('😨','Market context','VIX — the fear gauge',
+      '<p><b>'+esc(r.vix)+'</b> — <span class="'+(r.vixMood==='fearful'||r.vixMood==='jittery'?'down':'up')+'">'+esc(r.vixMood)+'</span>'+(r.vixChange!=null?' ('+(r.vixChange>=0?'+':'')+r.vixChange+'% today)':'')+'.</p>'+
+      '<p>The VIX measures how much swing the options market expects in the S&amp;P 500. It\'s a read on the WHOLE market\'s nerves, not any one stock.</p>'+
+      '<ul class="infoul"><li>🟢 &lt;15 <b>calm</b> — steady, low-drama tape.</li><li>⚪ 15–20 <b>normal</b> — business as usual.</li><li>🟡 20–28 <b>jittery</b> — bigger daily swings, size down.</li><li>🔴 &gt;28 <b>fearful</b> — a real risk-off event; wider stops, smaller bets.</li></ul>'+
+      '<p class="infofoot">A high VIX doesn\'t mean "sell everything" — it means expect bigger moves both ways.</p>');
   }
 }
 function openPulseLog(){
