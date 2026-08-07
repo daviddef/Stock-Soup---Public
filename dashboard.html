@@ -848,6 +848,11 @@
   .rsibar .rn{position:absolute;top:50%;transform:translate(-50%,-50%);width:4px;height:18px;background:var(--ink);border-radius:2px;box-shadow:0 0 0 3px var(--surface)}
   .rsibar .rcap{position:absolute;top:-22px;transform:translateX(-50%);font-size:10px;font-weight:800;color:var(--ink);white-space:nowrap}
   .rsimeta{font-size:12px;color:var(--muted);margin-top:8px;text-align:center}
+  .spmm{display:flex;justify-content:space-between;font-size:10.5px;font-weight:700;color:var(--faint);font-variant-numeric:tabular-nums;margin-top:3px}
+  .pin52{margin-top:2px}
+  .pin52-track{position:relative;height:4px;border-radius:999px;background:var(--line);margin:16px 4px 6px}
+  .pin52-mk{position:absolute;top:-15px;transform:translateX(-50%);color:var(--broth);font-size:15px;line-height:1}
+  .pin52-ends{display:flex;justify-content:space-between;font-size:12px;font-weight:800;color:var(--ink);font-variant-numeric:tabular-nums}
   .scorebar{display:flex;height:16px;border-radius:8px;overflow:hidden;background:var(--surface);border:1px solid var(--line);margin:6px 0}
   .scoreseg{height:100%}
   .s-pead{background:#23C267}.s-rev{background:#4C9AFF}.s-hi{background:#FF6B1A}.s-news{background:#FFC53D}.s-vol{background:#B692FF}
@@ -1350,7 +1355,7 @@ function signalDetailHtml(p,region,opts){
 function rangeBarsHtml(p,cur){
   var r=p&&p.ranges; if(!r) return '';
   var LBL={"1w":"1 week","1m":"1 month","1y":"1 year"};
-  var order=["1w","1m","1y"].filter(function(k){return r[k];});
+  var order=["1w","1m"].filter(function(k){return r[k];});   // 1y now has its own dedicated 52-week pin widget (range52Html) — no need to repeat it here
   if(!order.length) return '';
   var rows=order.map(function(k){
     var w=r[k], pct=Math.max(0,Math.min(100,w.pos*100));
@@ -1750,7 +1755,15 @@ function openModal(p,region,cur){
         '<div class="scorebar">'+segs+'</div><div class="scorelegend">'+leg+'</div></div>';
     }
   }
-  var sparkHtml = p.spark ? '<div class="viz"><h4>Recent trend · last ~2 months</h4>'+sparkSVG(p.spark)+'<div class="rsimeta">'+(p.spark[p.spark.length-1]>=p.spark[0]?'📈 Up over the stretch':'📉 Down over the stretch')+'</div></div>' : '';
+  var sparkHtml = p.spark ? '<div class="viz"><h4>Recent trend · last ~2 months</h4>'+sparkSVG(p.spark)+
+    '<div class="spmm"><span>'+esc(cur)+Math.min.apply(null,p.spark).toFixed(1)+'</span><span>'+esc(cur)+Math.max.apply(null,p.spark).toFixed(1)+'</span></div>'+
+    '<div class="rsimeta">'+(p.spark[p.spark.length-1]>=p.spark[0]?'📈 Up over the stretch':'📉 Down over the stretch')+'</div></div>' : '';
+  var range52Html=(p.ranges&&p.ranges['1y'])?(function(){
+    var w=p.ranges['1y'], pct=Math.max(2,Math.min(98,w.pos*100));
+    return '<div class="viz"><h4>52-week range</h4><div class="pin52">'+
+      '<div class="pin52-track"><div class="pin52-mk" style="left:'+pct+'%">▼</div></div>'+
+      '<div class="pin52-ends"><span>'+esc(cur)+w.lo.toFixed(1)+'</span><span>'+esc(cur)+w.hi.toFixed(1)+'</span></div></div></div>';
+  })():'';
   var rangesHtml = rangeBarsHtml(p,cur);
   // Other options — runner-up + same-market candidates, so there's always a Plan B inside the tap
   var _curS={}; (LAST.D.regions||[]).forEach(function(rg){(rg.picks||[]).forEach(function(pp){_curS[pp.sym]=1;});});
@@ -1780,6 +1793,7 @@ function openModal(p,region,cur){
       '<button class="mverd '+esc(p.vclass)+'" id="mVerdictBtn" type="button" title="Tap for plain English">'+esc(p.verdict)+' <span class="chipi">i</span></button></div>'+
     '<div class="mbody">'+
       sparkHtml+
+      range52Html+
       rangesHtml+
       '<div class="viz"><h4>Where the price sits · stop → target</h4>'+
         '<div class="ladder"><span class="cap now" style="left:'+nowPct+'%">Now '+esc(p.price)+'</span>'+
@@ -2225,7 +2239,11 @@ function openTheme(src,idx){
     '<div class="mtf">'+esc(item.em||'🎯')+' '+(src==='geo'?'Geopolitical theme':(src==='commodities'?'Commodity':'Sector'))+'</div>'+
     '<div class="mtop"><div class="msym" style="font-size:23px;line-height:1.15">'+esc(item.title||item.name)+'</div></div>'+
     '<span class="mverd '+vc+'">'+esc(item.tag)+'</span></div>'+
-    '<div class="mbody"><p class="mtake"><span class="lead">Why this call:</span> '+esc(item.note||'').replace(/\s*$/,'').replace(/([^.!?])$/,'$1.')+(pickSyms.length?' <b>'+pickSyms.length+' of tonight’s picks sit in this theme</b> ('+pickSyms.map(esc).join(', ')+') — that’s our skin in the game.':' No scored pick here this run — it’s a watch, not a buy yet.')+'</p>'+
+    '<div class="mbody"><p class="mtake"><span class="lead">Why this call:</span> '+esc(item.note||'').replace(/\s*$/,'').replace(/([^.!?])$/,'$1.')+
+      (pickSyms.length?' <b>'+pickSyms.length+' of tonight’s picks sit in this theme</b> ('+pickSyms.map(esc).join(', ')+') — that’s our skin in the game.'
+        :(item.tclass==='t-buy'||item.tclass==='t-hot')?' This theme itself is rated a genuine buy — none of tonight\'s <b>6 stock picks</b> happen to sit in it, but that\'s a coverage gap (see leaders/ETFs below), not a downgrade.'
+        :item.tclass==='t-dont'?' Rated a pass — sitting this one out.'
+        :' No scored pick here this run — it’s a watch, not a buy yet.')+'</p>'+
     '<h4 style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:800;margin:4px 0 10px">Leaders in this theme</h4>'+
     (rows||'<p class="muted">No clear ticker leaders surfaced for this theme tonight.</p>')+etfHtml+
     '<p style="font-size:11px;color:var(--faint);margin-top:14px;line-height:1.6"><b style="color:var(--muted)">What the tags mean:</b> a verdict like <b>Get in</b>/<b>Wait</b> = it\'s one of tonight\'s scored picks · <b>Shortlisted</b> = we considered it, didn\'t pick it · <b>On your watchlist</b> = you\'re tracking it · <b>Live price</b> = shown for reference only. ETFs are the diversified way to play the theme.</p></div>';
