@@ -499,6 +499,8 @@
     .pmc-note{font-size:10.5px;line-height:1.35}
   }
   .potmore{margin:12px auto 0;display:block;background:var(--surface-2);border:1px solid var(--line);color:var(--muted);font-weight:800;font-size:12.5px;padding:9px 16px;border-radius:10px;cursor:pointer;letter-spacing:.01em}
+  .potmore-lead{margin-top:0;background:var(--broth);border-color:var(--broth);color:#1a0f06;font-size:14px;padding:13px 22px;width:100%;box-shadow:0 2px 8px rgba(255,107,26,.25)}
+  .potmore-lead:hover{filter:brightness(1.05)}
   .potmore:hover{border-color:var(--hold);color:var(--ink)}
   .potlose{margin-top:12px}
   .potlose[hidden]{display:none}
@@ -1398,10 +1400,10 @@ function render(D,H){
     '<section id="fullpot"><div class="sec-head"><h2 class="display"><span class="k">05</span> The full pot</h2>'+infoBtn('fullpot')+'</div>'+
       '<p class="sec-sub">Every '+(MKT==='au'?'🇦🇺 Australian':'🌏 international')+' candidate the scan shortlisted tonight — <b>'+_potN+' names</b>, priced and scored. These are the ones we chose from. Colour = how appetising it looks. <b>Tap any for the full read.</b></p>'+
       '<div class="potlegend"><span><i style="background:var(--broth)"></i>🔥 sizzling</span><span><i style="background:var(--buy)"></i>✅ tasty</span><span><i style="background:var(--hold)"></i>➖ maybe</span><span><span class="legno">⛔</span> send it back</span></div>'+
-      (!_keepIdx.length&&potLose?'<p class="potempty">Nothing scored above <b>Watch</b> in '+(MKT==='au'?'🇦🇺 Australia':'🌏 international')+' tonight — here\'s the full '+_loseIdx.length+' we actually considered, ranked, none of them cleared the bar.</p>':'')+
+      (!_keepIdx.length&&potLose?'<p class="potempty">Nothing scored above <b>Watch</b> in '+(MKT==='au'?'🇦🇺 Australia':'🌏 international')+' tonight — by design we only show sizzling/tasty picks up top. Tap below to see the full '+_loseIdx.length+' we actually considered, ranked, none cleared the bar. <b>👇 Tap to see them</b></p>':'')+
       (pot?'<div class="pot">'+pot+'</div>':'')+
-      (potLose?(_keepIdx.length?'<button class="potmore" id="potMore" aria-expanded="false">➖ '+_loseIdx.length+' more — maybes &amp; passes ▾</button>':'')+
-        '<div class="pot potlose" id="potLose"'+(_keepIdx.length?' hidden':'')+'>'+potLose+'</div>':'')+
+      (potLose?'<button class="potmore'+(!_keepIdx.length?' potmore-lead':'')+'" id="potMore" aria-expanded="false">➖ '+_loseIdx.length+' more — maybes &amp; passes ▾</button>'+
+        '<div class="pot potlose" id="potLose" hidden>'+potLose+'</div>':'')+
       '</section>'+
     // hourly-runs list removed from the menu — it lives (unified) in Inside the Kitchen's run schedule
   '</div>'+
