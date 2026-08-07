@@ -836,6 +836,13 @@
   .altmain{display:flex;align-items:baseline;gap:8px}
   .altspark{margin-top:6px;height:24px;opacity:.85}
   .altspark svg{width:100%;height:100%}
+  .dhgrid{display:flex;flex-direction:column;gap:8px}
+  .dhrow{border:1px solid var(--line);border-radius:11px;padding:11px 14px;background:var(--surface-2)}
+  .dhrow.dh-blocked{border-left:3px solid var(--dont)} .dhrow.dh-degraded{border-left:3px solid var(--hold)} .dhrow.dh-ok{border-left:3px solid var(--buy)}
+  .dhtop{display:flex;align-items:center;gap:8px}
+  .dhname{font-size:14px} .dhstat{margin-left:auto;font-size:11px;font-weight:800;text-transform:uppercase;color:var(--muted)}
+  .dhuse{font-size:12.5px;color:var(--muted);margin-top:4px}
+  .dhnote{font-size:12px;color:var(--faint);margin-top:4px;font-style:italic}
   .altmain b{font-size:15px;font-weight:900}
   .altnm{font-size:12px;color:var(--muted);font-weight:700}
   .altpx{margin-left:auto;font-size:12px;font-weight:800;font-family:var(--mono)}
@@ -2303,8 +2310,37 @@ function openAccount(){
     fetch(API_BASE+'/auth/request',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:em})}).then(function(r){return r.json();}).then(function(j){
       if(j&&j.magic_link){ mg.textContent='Signing you in…'; location.href=API_BASE+j.magic_link; } else if(j&&j.sent_to){ mg.innerHTML='📧 Check your email.'; }
     }).catch(function(){ mg.textContent='Try again.'; }); };
-  var ar=document.getElementById('acctArch'); if(ar) ar.onclick=function(){ flashToast('Architecture &amp; data-flow view — landing in the admin pass'); };
-  var ah=document.getElementById('acctHealth'); if(ah) ah.onclick=function(){ flashToast('Data-source health board — landing in the admin pass'); };
+  var ar=document.getElementById('acctArch'); if(ar) ar.onclick=function(){ closeModal(); openDocs(); };
+  var ah=document.getElementById('acctHealth'); if(ah) ah.onclick=openDataHealth;
+}
+// Admin: which upstream data sources are actually live, degraded, or blocked right now — maintained
+// by hand as gaps are found (EODHD's calendar/fundamentals plans, Yahoo's throttle, etc.), not pinged
+// live from the browser (no API keys client-side, and a live health-check adds no real value here).
+var DATA_HEALTH=[
+  {name:'EODHD',use:'ASX prices, EOD bars, news feed + sentiment, forex, bulk quant scan',status:'ok'},
+  {name:'EODHD calendar/fundamentals',use:'Forward earnings calendar, P/E, dividends',status:'blocked',note:'403 Forbidden — not in our plan. Replaced by Yahoo (ASX) + Finnhub (US).'},
+  {name:'Finnhub',use:'US quotes, analyst recommendations, earnings calendar, metrics (P/E, div yield)',status:'ok'},
+  {name:'Yahoo Finance (keyless)',use:'ASX earnings dates, P/E/dividend metrics, EOD fallback',status:'degraded',note:'Works, but rate-limits hard per IP on tight loops — batch calls, add delay, never hammer it while testing.'},
+  {name:'FMP',use:'Earnings calendar (legacy)',status:'blocked',note:'Endpoint disabled for non-legacy subscribers.'},
+  {name:'Alpha Vantage / Mediastack / Twelve Data',use:'Movers / news / usage (daily-cache only)',status:'ok',note:'Tight daily caps — cached, not called live per-request.'},
+  {name:'ASX announcements feed',use:'Post-report ASX catalysts (price-sensitive announcements)',status:'ok'},
+  {name:'eToro public API',use:'Holdings import (attempted #47)',status:'blocked',note:'401 Unauthorized — locked to approved partner apps. Manual paste import queued instead.'},
+];
+function openDataHealth(){
+  var ic={ok:'🟢',degraded:'🟡',blocked:'🔴'}, lbl={ok:'Live',degraded:'Degraded',blocked:'Blocked'};
+  var rows=DATA_HEALTH.map(function(s){
+    return '<div class="dhrow dh-'+s.status+'"><div class="dhtop"><span class="dhic">'+ic[s.status]+'</span><b class="dhname">'+esc(s.name)+'</b><span class="dhstat">'+lbl[s.status]+'</span></div>'+
+      '<div class="dhuse">'+esc(s.use)+'</div>'+(s.note?'<div class="dhnote">'+esc(s.note)+'</div>':'')+'</div>';
+  }).join('');
+  LASTFOCUS=document.activeElement;
+  var m=document.getElementById('modal'); m.className='modal';
+  m.innerHTML='<div class="mhead"><button class="mclose" id="mClose" aria-label="Close">✕</button><div class="mtf">🛠 Admin</div>'+
+    '<div class="mtop"><div class="msym" style="font-size:22px">💓 Data-source health</div></div></div>'+
+    '<div class="mbody"><p class="sec-sub" style="margin-top:0">What is actually feeding tonight\'s picks, and any known gaps — maintained by hand as they\'re found, not a live ping (no keys in the browser).</p>'+
+    '<div class="dhgrid">'+rows+'</div>'+
+    '<p class="infofoot">Full source-by-source detail lives in <b>The Kitchen Manual</b> → §11 Data APIs.</p></div>';
+  var ov=document.getElementById('overlay'); ov.classList.add('open'); ov.setAttribute('aria-hidden','false');
+  document.getElementById('mClose').onclick=closeModal; document.getElementById('mClose').focus();
 }
 function renderAuth(){
   var el=document.getElementById('wlAuth'); if(!el)return;
