@@ -196,7 +196,7 @@
   .axhold.ax-warn{border-color:rgba(255,197,61,.4);border-left-color:var(--hold);background:linear-gradient(180deg,rgba(255,197,61,.09),transparent 72%),var(--surface)}
   .axhold.ax-hold{border-color:var(--line);border-left-color:var(--muted);background:var(--surface)}
   .ownbtn.owned{background:rgba(35,194,103,.14);border-color:rgba(35,194,103,.4);color:var(--buy)}
-  .sentrow{margin:8px 0 2px}
+  .sentrow{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 2px}
   .sentc{display:inline-flex;align-items:center;gap:4px;font-size:10.5px;font-weight:800;padding:3px 8px;border-radius:6px;letter-spacing:.02em}
   .chiptag{opacity:.65;font-weight:700;font-size:9.5px}
   .sc-pos{background:rgba(35,194,103,.14);color:var(--buy)}
@@ -1939,7 +1939,11 @@ function runLogHtml(){
   rows.sort(function(a,b){return b.ts-a.ts;});
   var rowsHtml=rows.slice(0,40).map(function(r){
     if(r.t==='maj'){var m=r.m;
-      return '<div class="rlrow rlmaj"><div class="rltop"><span class="rltag rltag-maj">🍳 Menu · new picks</span>'+
+      // A run can republish (e.g. to refresh the Full Pot) without the 6 picks actually changing —
+      // don't claim "new picks" when they're identical to the immediately-prior menu entry.
+      var mi=(H.menus||[]).indexOf(m), prevM=(mi>=0&&H.menus[mi+1])?H.menus[mi+1]:null;
+      var samePicks=prevM&&JSON.stringify(prevM.au||[])===JSON.stringify(m.au||[])&&JSON.stringify(prevM.us||[])===JSON.stringify(m.us||[]);
+      return '<div class="rlrow rlmaj"><div class="rltop"><span class="rltag rltag-maj">🍳 Menu · '+(samePicks?'confirmed, no change':'new picks')+'</span>'+
         '<span class="rlwhen">'+fmtWhen(r.ts)+'</span>'+dur(m.durMs)+'</div>'+
         '<div class="rlbody">'+pkline(m.au,'🇦🇺','Australia')+pkline(m.us,'🇺🇸','United States')+'</div></div>';
     }
@@ -2865,6 +2869,7 @@ function renderSimple(D){
       /* miniTraj removed — inconsistent (only carried-over picks had it) + confusing 'since 23:33'; the range bar shows the trend */
       '<div class="buyat'+(p.nEntry?' ba-'+buyState(p):'')+'">'+(p.nEntry?'<span class="bl">🎯 Ideal buy</span> ~'+esc(region.cur||'$')+p.nEntry+buyAction(p):'<span class="bl">Track this pick</span>')+'</div>'+
       '<div class="sline">'+esc(p.plain)+'</div>'+
+      ((signalPillHtml(p,rid)||valChip(p))?'<div class="sentrow">'+signalPillHtml(p,rid)+valChip(p)+'</div>':'')+
       (p.spark?rangeBar(p.spark,(region.cur||'$'),p.tf,p.nEntry):'')+'</article>'+
       ((p.runnerUp && /wait|late|hold|skip|avoid|pass|don.t|steer/i.test(p.verdict||''))?ruCard(p.runnerUp,rid,idx):'');
   }).join('');
