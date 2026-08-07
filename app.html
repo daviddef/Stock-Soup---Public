@@ -959,11 +959,16 @@ function marketStatus(region){
 }
 function mktBarHtml(D){
   var FLAG={au:'🇦🇺',us:'🇺🇸'}, NM={au:'ASX',us:'US'};
+  var statuses={}; (D.regions||[]).forEach(function(rg){statuses[rg.id]=marketStatus(rg.id);});
   var flags=(D.regions||[]).map(function(rg){
-    var st=marketStatus(rg.id), on=rg.id===MKT;
+    var st=statuses[rg.id], on=rg.id===MKT;
     return '<button class="mkf phase-'+st.phase+(on?' active':'')+'" role="tab" data-region="'+esc(rg.id)+'" aria-selected="'+on+'" aria-label="'+esc(NM[rg.id])+'" title="'+esc(st.txt)+'"><span class="mkff">'+(FLAG[rg.id]||'🏳️')+'</span></button>';
   }).join('');
-  var sel=marketStatus(MKT);
+  // The ring colour already shows open/closed per-market — repeating "closed" in the caption is
+  // dead text. What the ring CAN'T show is which market is about to open/close (time-sensitive,
+  // actionable), so prioritise surfacing THAT over just describing whichever tab is selected.
+  var urgent=Object.keys(statuses).find(function(k){return statuses[k].phase==='opening'||statuses[k].phase==='closing';});
+  var sel=urgent?statuses[urgent]:(statuses[MKT]||marketStatus(MKT));
   return '<div class="mktwrap"><div class="mktflags" role="tablist" aria-label="Filter market">'+flags+'</div>'+
     '<div class="mktcap mc-'+sel.phase+'">'+esc(sel.txt)+'</div></div>';
 }
@@ -1106,17 +1111,19 @@ function missesSection(D){
   var mktRows=mi.rows.filter(function(r){return (r.region||'us')===MKT;});
   if(!mktRows.length) return '';
   var missedN=mktRows.filter(function(r){return r.status==='missed';}).length;
+  // Today's Misses are all same-day movers (net 1 checks daily gainers/losers only — no week/month
+  // sweep yet, queued separately), so every row is honestly a "D" (Day) miss right now.
   var rows=mktRows.map(function(r){
     var s=STAT[r.status]||STAT.missed, up=r.pct>=0;
     var sig=signalPillHtml(r,r.region);   // gracefully empty until Misses rows carry signal data
-    return '<div class="missrow '+s.cls+'"><span class="missic">'+s.ic+'</span>'+
+    return '<div class="missrow '+s.cls+'"><span class="missic">'+s.ic+'</span>'+tfB('Day')+
       '<a class="misssym" href="'+yf(r.sym,r.region)+'" target="_blank" rel="noopener">'+esc(r.sym)+'<span class="wflag" style="margin-left:5px">'+(r.region==='au'?'AU':'US')+'</span></a>'+
       (r.name?'<span class="missnm">'+esc(r.name)+'</span>':'')+
       '<span class="misspct '+(up?'up':'down')+'">'+(up?'▲':'▼')+' '+Math.abs(r.pct)+'%</span>'+
       '<span class="missstat">'+s.lbl+'</span>'+(sig?'<div style="width:100%;margin-top:2px">'+sig+'</div>':'')+'<span class="missnote">'+esc(r.note)+'</span></div>';
   }).join('');
   return '<section id="misses"><div class="sec-head"><h2 class="display">😬 The Misses <span class="badcount">'+missedN+'</span></h2>'+infoBtn('misses')+'</div>'+
-    '<p class="sec-sub">'+(MKT==='au'?'🇦🇺 Australia\'s':'🌏 International')+' biggest real movers — checked honestly against what tonight\'s net actually scanned. <b>'+missedN+' of '+mktRows.length+'</b> weren\'t in our net at all.</p>'+
+    '<p class="sec-sub">'+(MKT==='au'?'🇦🇺 Australia\'s':'🌏 International')+' biggest real movers, checked as of <b>'+esc(mi.stamp||'tonight')+'</b> — against what tonight\'s net actually scanned. <b>'+missedN+' of '+mktRows.length+'</b> weren\'t in our net at all. Same-day (D) movers only for now — week/month misses are on the roadmap.</p>'+
     '<div class="missgrid">'+rows+'</div></section>';
 }
 function buyState(p){ if(p.nEntry==null||p.nNow==null) return ''; var g=(p.nNow/p.nEntry-1)*100; return g<=1.5?'in':(g<=4?'close':'wait'); }
@@ -1518,7 +1525,7 @@ function render(D,H){
       (c.name?'<div class="pmc-name">'+esc(c.name)+'</div>':'')+
       '<div class="pmc-px">'+(c.price?'<span class="pmc-price">'+esc(c.price)+'</span>':'')+chg+'</div>'+
       (spk?'<div class="pmc-spark">'+spk+'</div>':'')+
-      '<div class="pmc-note">'+esc(c.news||c.note)+'</div></div>';
+      '<div class="pmc-note">'+esc(c.note||c.news)+'</div></div>';   // WHY it's rated this way beats a random news headline (was c.news||c.note)
   }
   var _cands=(D.candidates||[]);
   var _keepIdx=[],_loseIdx=[];
