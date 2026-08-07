@@ -834,6 +834,8 @@
   .altcard:hover{border-left-color:var(--broth)}
   .altcard.h-hot{border-left-color:var(--broth)} .altcard.h-good{border-left-color:var(--buy)} .altcard.h-mid{border-left-color:var(--hold)} .altcard.h-cold{border-left-color:var(--dont)}
   .altmain{display:flex;align-items:baseline;gap:8px}
+  .altspark{margin-top:6px;height:24px;opacity:.85}
+  .altspark svg{width:100%;height:100%}
   .altmain b{font-size:15px;font-weight:900}
   .altnm{font-size:12px;color:var(--muted);font-weight:700}
   .altpx{margin-left:auto;font-size:12px;font-weight:800;font-family:var(--mono)}
@@ -1461,17 +1463,19 @@ function openModal(p,region,cur){
   // Other options — runner-up + same-market candidates, so there's always a Plan B inside the tap
   var _curS={}; (LAST.D.regions||[]).forEach(function(rg){(rg.picks||[]).forEach(function(pp){_curS[pp.sym]=1;});});
   var _alts=[];
-  if(p.runnerUp) _alts.push({sym:p.runnerUp.sym,region:p.runnerUp.region||region,name:p.runnerUp.name,price:p.runnerUp.price,change:p.runnerUp.change,up:p.runnerUp.up,note:p.runnerUp.line});
+  if(p.runnerUp) _alts.push({sym:p.runnerUp.sym,region:p.runnerUp.region||region,name:p.runnerUp.name,price:p.runnerUp.price,change:p.runnerUp.change,up:p.runnerUp.up,note:p.runnerUp.line,spark:p.runnerUp.spark});
   var _ho={hot:0,good:1,mid:2,cold:3};
   (LAST.D.candidates||[]).filter(function(c){return c.region===region&&c.sym!==p.sym&&!_curS[c.sym]&&!_alts.some(function(a){return a.sym===c.sym;});})
     .sort(function(a,b){return (_ho[a.heat]==null?9:_ho[a.heat])-(_ho[b.heat]==null?9:_ho[b.heat]);})
     .slice(0,Math.max(0,3-_alts.length))
-    .forEach(function(c){_alts.push({sym:c.sym,region:c.region,note:c.note,heat:c.heat,price:c.price,change:c.change,up:c.up});});
+    .forEach(function(c){_alts.push({sym:c.sym,region:c.region,note:c.note,heat:c.heat,price:c.price,change:c.change,up:c.up,spark:c.spark});});
   var altsHtml=_alts.length?'<div class="malts"><h4 class="maltsh">🥈 Prefer another? · '+_alts.length+' other option'+(_alts.length>1?'s':'')+' this run</h4>'+
     _alts.map(function(a){
       var px=a.price?'<span class="altpx '+(a.up?'up':'down')+'">'+esc(a.price)+(a.change?' '+esc(a.change):'')+'</span>':'<span class="altpx muted">live ↗</span>';
+      var asp=(a.spark&&a.spark.length>2)?'<div class="altspark">'+sparkSVG(a.spark.slice(-30))+'</div>':'';
       return '<a class="altcard'+(a.heat?' h-'+a.heat:'')+'" href="'+yf(a.sym,a.region||region)+'" target="_blank" rel="noopener">'+
         '<div class="altmain"><b>'+esc(a.sym)+'</b>'+(a.name?' <span class="altnm">'+esc(a.name)+'</span>':'')+px+'<span class="altarrow">↗</span></div>'+
+        asp+
         (a.note?'<div class="altnote">'+esc(a.note)+'</div>':'')+'</a>';
     }).join('')+'</div>':'';
   var m=document.getElementById('modal');
