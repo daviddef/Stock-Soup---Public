@@ -155,6 +155,10 @@
   .tabstat{display:inline-flex;align-items:center;gap:6px;background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:7px 12px;font-size:12.5px;font-weight:800;color:var(--ink)}
   .tabstat .tk{color:var(--muted);font-weight:700}
   .tabstat .gd{color:var(--buy)} .tabstat .bd{color:var(--dont)}
+  button.tabstat{font-family:var(--font);cursor:pointer}
+  .wlfbtn:hover{border-color:var(--broth)}
+  .wlfbtn.on{background:var(--broth);border-color:var(--broth);color:#fff}
+  .wlfbtn.on .tk{color:rgba(255,255,255,.85)}
   .menuhead{border-bottom:0;padding-top:14px}
   .seat-label{font-size:12px;font-weight:900;letter-spacing:.05em;text-transform:uppercase;color:var(--ink);margin-bottom:6px}
   .seat-label .k{color:var(--broth)}
@@ -1718,7 +1722,12 @@ var INFO={
     '<p>Every run we check the day\'s <b>real</b> biggest movers against what our discovery process actually scanned — honestly, including the ones that got away.</p>'+
     '<ul class="infoul"><li>✅ <b>Served</b> — it was one of tonight\'s 6 picks.</li><li>👀 <b>Scanned, not served</b> — it was in the full-pot scan but scored below the cut.</li><li>❌ <b>Missed</b> — it wasn\'t in our search at all this run.</li></ul>'+
     '<h4>Why a real mover gets missed</h4><p>We search two ways: a <b>news &amp; catalyst search</b> (contracts, upgrades, earnings beats) every run, and a <b>whole-market technical scan</b> — a full sweep of every liquid stock for chart-based setups, which catches quiet momentum moves with no headline behind them. The technical scan is heavier and doesn\'t run on every single pass yet — when it\'s skipped, a name moving purely on chart momentum (no news) can slip through. Each miss below says exactly which of these applies.</p>'+
-    '<p class="infofoot">This is the same accountability spirit as the grading ledger — we\'d rather show you the gap than hide it. A high miss count on a given day flags where the search needs to widen.</p>'}
+    '<p class="infofoot">This is the same accountability spirit as the grading ledger — we\'d rather show you the gap than hide it. A high miss count on a given day flags where the search needs to widen.</p>'},
+  pricealerts:{icon:'🔔',title:'Price alerts — what actually happens',body:
+    '<p>Right now this means one real thing: when you\'re signed in and a stock on your table hits (or drops below) its buy price, you\'ll see a <b>banner right here on the Favourites tab</b> the next time you open it.</p>'+
+    '<p><b>It\'s not an email or push notification yet</b> — that\'s planned but not live. You have to actually open the app to see it.</p>'+
+    '<p>There\'s no per-user on/off switch because it isn\'t a notification channel you can be opted into or out of — it\'s just a banner that shows up when the condition is true. Nothing to turn off.</p>'+
+    '<p class="infofoot">Want a real email/push alert instead of having to check the app? That\'s a real, bigger build (queued) — tell us and we\'ll prioritise it.</p>'}
 };
 function infoBtn(key){ return '<button class="infobtn" data-info="'+esc(key)+'" aria-label="What is this?">i</button>'; }
 // ── Per-tab "what you need to know" headers ─────────────────────────────────
@@ -1744,9 +1753,11 @@ function reviewsHead(){
 function updateOwnCount(){ var el=document.getElementById('ownCount'); if(el){ try{ el.textContent=wlGet().filter(function(w){return w.own;}).length; }catch(e){} } }
 function favesHead(){
   var n=0,owned=0; try{var a=wlGet(); n=a.length; owned=a.filter(function(w){return w.own;}).length;}catch(e){}
-  var stats=[tstat('Watching',n),'<span class="tabstat"><span class="tk">You own</span> <b id="ownCount">'+owned+'</b></span>',tstat('Price alerts','on')];
+  var stats=['<button class="tabstat wlfbtn'+(WL_FILTER==='all'?' on':'')+'" id="wlfAll" type="button"><span class="tk">Watching</span> <b>'+n+'</b></button>',
+    '<button class="tabstat wlfbtn'+(WL_FILTER==='own'?' on':'')+'" id="wlfOwn" type="button"><span class="tk">You own</span> <b id="ownCount">'+owned+'</b></button>',
+    '<span class="tabstat"><span class="tk">Price alerts</span> <b>on</b> '+infoBtn('pricealerts')+'</span>'];
   var t=n?('You\'re watching '+n+(n===1?' name':' names')):'Your table is empty — for now';
-  return tabHead('⭐ Your table',t,'Tap <b>＋ Watch</b> on any pick and we\'ll remember its ideal-buy price, then flag it the moment it gets there. Add your own below too.',n?stats:[]);
+  return tabHead('⭐ Your table',t,'Tap <b>＋ Watch</b> on any pick and we\'ll remember its ideal-buy price, then flag it the moment it gets there. Add your own below too. <b>Tap Watching/You own above</b> to filter the list.',n?stats:[]);
 }
 function kitchenHead(D){
   var n=(typeof PULSES!=='undefined'&&PULSES)?PULSES.length:0;
@@ -2213,12 +2224,13 @@ function renderWatchlist(){
       name:(info&&info.name)||w.name||null, spark:(info&&info.spark)||null};
   });
   var triggered=rows.filter(function(r){return r.gap!=null&&r.gap<=0.5;});
+  if(WL_FILTER==='own') rows=rows.filter(function(r){return r.w.own;});
   rows.sort(function(x,y){var gx=x.gap==null?9999:x.gap,gy=y.gap==null?9999:y.gap;return gx-gy;});
   var banner=document.getElementById('wlAlert');
   if(banner){var t=triggered.map(function(r){return esc(r.w.sym);}).join(', ');
     banner.innerHTML=triggered.length?('🎯 '+triggered.length+' watched '+(triggered.length===1?'stock is':'stocks are')+' at or below your buy price: <b>'+t+'</b> — go look.'):'';
     banner.style.display=triggered.length?'':'none';}
-  if(!rows.length){el.innerHTML='<span class="wlempty">No tickers yet — add one above, or tap <b>＋ Watch</b> on any pick.</span>';return;}
+  if(!rows.length){el.innerHTML=(WL_FILTER==='own')?'<span class="wlempty">You haven\'t flagged anything as owned yet — tap 📦 on a card to mark it.</span>':'<span class="wlempty">No tickers yet — add one above, or tap <b>＋ Watch</b> on any pick.</span>';return;}
   var HEAT={hot:'🔥',good:'✅',mid:'➖',cold:'⛔'};
   function card(r){
     var w=r.w, it=r.intel;
@@ -2529,6 +2541,11 @@ function wire(D){
   var rm=document.getElementById('runMore'), rr=document.getElementById('runRest');
   if(rm&&rr){ var rrN=rr.children.length; rm.onclick=function(){ var open=rr.hasAttribute('hidden'); if(open)rr.removeAttribute('hidden'); else rr.setAttribute('hidden',''); rm.setAttribute('aria-expanded',open?'true':'false'); rm.innerHTML=(open?'▴ Hide older runs':'➖ '+rrN+' older runs ▾'); }; }
   var kh=document.getElementById('kitchenHealthBtn'); if(kh) kh.onclick=openDataHealth;
+  var wfa=document.getElementById('wlfAll'), wfo=document.getElementById('wlfOwn');
+  if(wfa&&wfo){
+    wfa.onclick=function(){ WL_FILTER='all'; wfa.classList.add('on'); wfo.classList.remove('on'); renderWatchlist(); };
+    wfo.onclick=function(){ WL_FILTER='own'; wfo.classList.add('on'); wfa.classList.remove('on'); renderWatchlist(); };
+  }
   var lu=document.getElementById('lastUpd');
   if(lu){ if(PULSES&&PULSES.length){ lu.textContent='updated '+timeAgo(PULSES[PULSES.length-1].iso); lu.onclick=goRunSchedule; } else { lu.textContent='no runs yet'; } }
   var bg=document.getElementById('burgerBtn'), bm=document.getElementById('burgerMenu');
@@ -2628,7 +2645,7 @@ document.addEventListener('keydown',function(e){if(e.key==='Escape')closeModal()
 document.getElementById('overlay').addEventListener('click',function(e){if(e.target&&e.target.id==='mClose')closeModal();});
 
 /* ---- View mode: simple (mobile default) vs full, with toggle ---- */
-var VIEW = null, SREGION = 'au', PULSES = null, TRACK = null, MKT = 'au', OUTCOMES = null, TAB = null, RUNNING = null, RUNLOG = [];
+var VIEW = null, SREGION = 'au', PULSES = null, TRACK = null, MKT = 'au', OUTCOMES = null, TAB = null, RUNNING = null, RUNLOG = [], WL_FILTER = 'all';
 function switchTab(t){
   TAB = t; try{ localStorage.setItem('soup_tab', t); }catch(e){}
   document.querySelectorAll('.tabbtn').forEach(function(b){ b.classList.toggle('active', b.dataset.tab===t); });
