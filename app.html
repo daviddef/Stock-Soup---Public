@@ -185,6 +185,7 @@
   .ownbtn.owned{background:rgba(35,194,103,.14);border-color:rgba(35,194,103,.4);color:var(--buy)}
   .sentrow{margin:8px 0 2px}
   .sentc{display:inline-flex;align-items:center;gap:4px;font-size:10.5px;font-weight:800;padding:3px 8px;border-radius:6px;letter-spacing:.02em}
+  .chiptag{opacity:.65;font-weight:700;font-size:9.5px}
   .sc-pos{background:rgba(35,194,103,.14);color:var(--buy)}
   .sc-neg{background:rgba(255,77,77,.14);color:var(--dont)}
   .sc-mix{background:var(--surface-2);color:var(--muted)}
@@ -1087,10 +1088,13 @@ function sentChip(p){
 function trendChip(p){
   var t=p&&p.trend; if(!t||(t.adx==null&&t.macd_pos==null)) return '';
   var strong=t.adx!=null&&t.adx>=25;
-  if(t.macd_pos===true&&t.macd_rising===true) return '<span class="sentc sc-pos">'+(strong?'🚀 Confirmed uptrend':'📈 Building momentum')+'</span>';
-  if(t.macd_pos===false&&t.macd_rising===false) return '<span class="sentc sc-neg">'+(strong?'🔻 Confirmed downtrend':'📉 Losing steam')+'</span>';
-  if(t.adx!=null&&t.adx<20) return '<span class="sentc sc-mix">〰️ Choppy, no clear trend</span>';
-  return '<span class="sentc sc-mix">😐 Mixed signals</span>';
+  // Raw ADX number shown right on the card (not just the tapped-in detail) — plain-English alone
+  // made it impossible to visually confirm ADX is actually computed without opening the modal.
+  var adxTag=t.adx!=null?' <span class="chiptag">ADX '+t.adx+'</span>':'';
+  if(t.macd_pos===true&&t.macd_rising===true) return '<span class="sentc sc-pos">'+(strong?'🚀 Confirmed uptrend':'📈 Building momentum')+adxTag+'</span>';
+  if(t.macd_pos===false&&t.macd_rising===false) return '<span class="sentc sc-neg">'+(strong?'🔻 Confirmed downtrend':'📉 Losing steam')+adxTag+'</span>';
+  if(t.adx!=null&&t.adx<20) return '<span class="sentc sc-mix">〰️ Choppy, no clear trend'+adxTag+'</span>';
+  return '<span class="sentc sc-mix">😐 Mixed signals'+adxTag+'</span>';
 }
 // Value/dividend chip (#38/#59): P/E + dividend yield, shown as context — not a scoring input.
 // P/E cheap/rich is too sector-dependent to safely fold into the core score, so this stays informational.
@@ -1100,6 +1104,26 @@ function valChip(p){
   if(v.pe!=null) bits.push('P/E '+v.pe);
   if(v.div_yield_pct!=null) bits.push('💰 '+v.div_yield_pct+'% yield'+(v.ex_div_date?' · ex-div '+esc(v.ex_div_date):''));
   return '<span class="sentc sc-mix">'+bits.join(' · ')+'</span>';
+}
+// EMA read (#60): price vs the 20/50-day exponential averages — a faster-reacting cousin of the SMA
+// stack already shown elsewhere, exposed here as its own visible signal (it was previously only MACD's
+// internal engine).
+function emaChip(p){
+  var e=p&&p.ema; if(!e||e.ema20==null) return '';
+  if(e.above_ema20&&e.above_ema50) return '<span class="sentc sc-pos">📈 Above both EMAs</span>';
+  if(!e.above_ema20&&!e.above_ema50) return '<span class="sentc sc-neg">📉 Below both EMAs</span>';
+  return '<span class="sentc sc-mix">↔️ Between the 20/50-day EMAs</span>';
+}
+// Bollinger Bands read (#60): %B position within the band — a volatility-normalised "how stretched
+// is it right now" read, distinct from RSI (momentum) and extension-vs-SMA20 (trend-based).
+function bbChip(p){
+  var b=p&&p.bb; if(!b||b.bb_pctb==null) return '';
+  var pb=b.bb_pctb;
+  if(pb>1) return '<span class="sentc sc-neg">🎈 Pierced the upper Bollinger Band — stretched</span>';
+  if(pb<0) return '<span class="sentc sc-pos">🔻 Pierced the lower Bollinger Band — oversold</span>';
+  if(pb>0.8) return '<span class="sentc sc-mix">〰️ Near the upper Bollinger Band</span>';
+  if(pb<0.2) return '<span class="sentc sc-mix">〰️ Near the lower Bollinger Band</span>';
+  return '';   // mid-band is unremarkable — don't clutter the card with a "nothing to see" chip
 }
 // Relative strength vs the index (#60/#66): is this pick beating or lagging the market it trades in,
 // over the same lookback window? A real leader/laggard read, not just "is the stock up".
@@ -1235,7 +1259,7 @@ function render(D,H){
         '<span class="px"><span class="p mono">'+esc(p.price)+'</span><br><span class="c mono '+chgTone(p.change,p.up)+'">'+esc(p.change)+'</span></span></div>'+
         /* miniTraj removed — inconsistent (only carried-over picks had it) + confusing 'since 23:33'; the range bar shows the trend */
         '<div class="buyat'+(p.nEntry?' ba-'+buyState(p):'')+'">'+(p.nEntry?'<span class="bl">🎯 Ideal buy</span> ~'+esc(rg.cur||'$')+p.nEntry+buyAction(p):'<span class="bl">Track this pick</span>')+'</div>'+
-        '<p class="plain">'+p.plain+'</p>'+((sentChip(p)||trendChip(p)||valChip(p)||rsChip(p,rg.id))?'<div class="sentrow">'+sentChip(p)+trendChip(p)+valChip(p)+rsChip(p,rg.id)+'</div>':'')+'<div class="lvls">'+p.levels+'</div>'+
+        '<p class="plain">'+p.plain+'</p>'+((sentChip(p)||trendChip(p)||emaChip(p)||bbChip(p)||valChip(p)||rsChip(p,rg.id))?'<div class="sentrow">'+sentChip(p)+trendChip(p)+emaChip(p)+bbChip(p)+valChip(p)+rsChip(p,rg.id)+'</div>':'')+'<div class="lvls">'+p.levels+'</div>'+
         (p.spark?rangeBar(p.spark,rg.cur||'$',p.tf,p.nEntry):'')+'</article>'+
         ((p.runnerUp && /wait|late|hold|skip|avoid|pass|don.t|steer/i.test(p.verdict||''))?ruCard(p.runnerUp,rg.id,idx):'')+'</div>';
     }).join('');
@@ -1519,6 +1543,7 @@ function openModal(p,region,cur){
         (valChip(p)?'<div class="rsimeta" style="margin-top:6px">'+valChip(p)+'</div>':'')+
         (timingLine(p)?'<div class="rsimeta" style="margin-top:6px">'+timingLine(p)+'</div>':'')+
         (rsChip(p,region)?'<div class="rsimeta" style="margin-top:6px">'+rsChip(p,region)+'</div>':'')+
+        ((emaChip(p)||bbChip(p))?'<div class="rsimeta" style="margin-top:6px">'+emaChip(p)+' '+bbChip(p)+'</div>':'')+
       '</div>'+
       scoreHtml+
       '<p class="mtake"><span class="lead">Chef says:</span> '+esc(p.chefTake)+'</p>'+
@@ -1672,9 +1697,10 @@ var INFO={
   archive:{icon:'🗂️',title:'The Archive',body:
     '<p>Every menu we\'ve served, newest first — tap one to open that run\'s full report snapshot. Shows the last 3; expand for the rest. Each records that run\'s 6 picks and the risk read at the time.</p>'},
   misses:{icon:'😬',title:'The Misses',body:
-    '<p>Every run we check the day\'s <b>real</b> biggest movers against what our discovery net actually scanned — honestly, including the ones that got away.</p>'+
-    '<ul class="infoul"><li>✅ <b>Served</b> — it was one of tonight\'s 6 picks.</li><li>👀 <b>Scanned, not served</b> — it was in the full-pot scan but scored below the cut.</li><li>❌ <b>Missed</b> — it wasn\'t in our net at all this run.</li></ul>'+
-    '<p class="infofoot">This is the same accountability spirit as the grading ledger — we\'d rather show you the gap than hide it. A high miss count on a given day flags where the discovery net needs to widen.</p>'}
+    '<p>Every run we check the day\'s <b>real</b> biggest movers against what our discovery process actually scanned — honestly, including the ones that got away.</p>'+
+    '<ul class="infoul"><li>✅ <b>Served</b> — it was one of tonight\'s 6 picks.</li><li>👀 <b>Scanned, not served</b> — it was in the full-pot scan but scored below the cut.</li><li>❌ <b>Missed</b> — it wasn\'t in our search at all this run.</li></ul>'+
+    '<h4>Why a real mover gets missed</h4><p>We search two ways: a <b>news &amp; catalyst search</b> (contracts, upgrades, earnings beats) every run, and a <b>whole-market technical scan</b> — a full sweep of every liquid stock for chart-based setups, which catches quiet momentum moves with no headline behind them. The technical scan is heavier and doesn\'t run on every single pass yet — when it\'s skipped, a name moving purely on chart momentum (no news) can slip through. Each miss below says exactly which of these applies.</p>'+
+    '<p class="infofoot">This is the same accountability spirit as the grading ledger — we\'d rather show you the gap than hide it. A high miss count on a given day flags where the search needs to widen.</p>'}
 };
 function infoBtn(key){ return '<button class="infobtn" data-info="'+esc(key)+'" aria-label="What is this?">i</button>'; }
 // ── Per-tab "what you need to know" headers ─────────────────────────────────
@@ -2726,7 +2752,10 @@ function watchRun(){
   if(!RUNNING||!RUNNING.startedAt) return;
   var age=Date.now()-new Date(RUNNING.startedAt).getTime();
   if(age>25*60*1000){ RUNNING=null; return; }        // stale marker — stop watching
-  _runPoll=setTimeout(function(){ loadGated(function(b){ if(b) applyBundle(b); }); }, 40000);
+  _runPoll=setTimeout(function(){
+    var sc=window.pageYOffset;                        // preserve scroll — a full re-render must never jump you to the top
+    loadGated(function(b){ if(b) applyBundle(b); window.scrollTo(0,sc); });
+  }, 40000);
 }
 boot(EMBEDDED,HIST_EMBED);
 loadGated(applyBundle);
