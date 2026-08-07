@@ -624,6 +624,11 @@
   .missrow.m-served .missstat{color:var(--buy);background:rgba(35,194,103,.16)}
   .missrow.m-scanned .missstat{color:var(--hold);background:rgba(255,197,61,.18)}
   .missnote{width:100%;color:var(--faint);font-size:12px}
+  .misschart{width:100%;order:99}
+  .misschart .spark{width:100%;height:26px;display:block}
+  .misschart-mm{display:flex;justify-content:space-between;font-size:10px;font-weight:700;color:var(--faint);font-variant-numeric:tabular-nums;margin-top:1px}
+  .misschart-mm .misschart-now{color:var(--muted);font-weight:800}
+  .misschart-load{font-size:10px;color:var(--faint);letter-spacing:.15em}
 
   .cta{display:flex;justify-content:center;margin-top:4px}
   .cta a{background:var(--broth);color:#1a0f06;font-weight:900;text-decoration:none;padding:15px 30px;border-radius:12px;
@@ -1126,6 +1131,9 @@ function discoveryFunnel(D){
 }
 // "The Misses" (#63): the day's real top movers, checked against what we actually scanned/served —
 // so the run's accountability isn't only ever the winners. Built by misses.py, stored on latest.misses.
+function missChartSlot(sym,region,cur){
+  return '<div class="misschart" data-hydrate-chart data-sym="'+esc(sym)+'" data-region="'+esc(region)+'" data-cur="'+esc(cur)+'"><span class="misschart-load">····· 24h</span></div>';
+}
 function hotMoversHtml(D){
   // Live-ish movers between major runs (#83 follow-up): the 10-min re-price pulse now also checks
   // Yahoo's real US gainers/losers (hour-cached, keyless) so a big mover surfaces within ~an hour
@@ -1138,7 +1146,7 @@ function hotMoversHtml(D){
       '<a class="misssym" href="'+yf(r.sym,'us')+'" target="_blank" rel="noopener">'+esc(r.sym)+'<span class="wflag" style="margin-left:5px">US</span></a>'+
       (r.name?'<span class="missnm">'+esc(r.name)+'</span>':'')+
       '<span class="misspct '+(up?'up':'down')+'">'+(up?'▲':'▼')+' '+Math.abs(r.pct)+'%</span>'+
-      '<span class="missstat">'+(r.tracked?'On our radar':'Not tracked')+'</span></div>';
+      '<span class="missstat">'+(r.tracked?'On our radar':'Not tracked')+'</span>'+missChartSlot(r.sym,'us','$')+'</div>';
   }).join('');
   return '<div class="callout" style="margin-bottom:14px"><b style="color:var(--ink)">🔴 Live movers · updated '+esc(hm.stamp||'this hour')+'</b> — '+
     'checked between major runs, not just at scan time. <b>On our radar</b> = already a pick, candidate or watchlist name; <b>Not tracked</b> = a fresh miss forming right now.</div>'+
@@ -1163,7 +1171,8 @@ function missesSection(D){
       '<a class="misssym" href="'+yf(r.sym,r.region)+'" target="_blank" rel="noopener">'+esc(r.sym)+'<span class="wflag" style="margin-left:5px">'+(r.region==='au'?'AU':'US')+'</span></a>'+
       (r.name?'<span class="missnm">'+esc(r.name)+'</span>':'')+
       '<span class="misspct '+(up?'up':'down')+'">'+(up?'▲':'▼')+' '+Math.abs(r.pct)+'%</span>'+
-      '<span class="missstat">'+s.lbl+'</span>'+(sig?'<div style="width:100%;margin-top:2px">'+sig+'</div>':'')+'<span class="missnote">'+esc(r.note)+'</span></div>';
+      '<span class="missstat">'+s.lbl+'</span>'+(sig?'<div style="width:100%;margin-top:2px">'+sig+'</div>':'')+'<span class="missnote">'+esc(r.note)+'</span>'+
+      missChartSlot(r.sym,r.region,r.region==='au'?'A$':'$')+'</div>';
   }).join('');
   return '<section id="misses"><div class="sec-head"><h2 class="display">😬 The Misses <span class="badcount">'+missedN+'</span></h2>'+infoBtn('misses')+'</div>'+
     hmHtml+
@@ -2904,8 +2913,19 @@ function openTrackRecord(){
   document.getElementById('mClose').focus();
 }
 
+function hydrateMissCharts(){
+  document.querySelectorAll('.misschart[data-hydrate-chart]').forEach(function(slot){
+    var sym=slot.dataset.sym, reg=slot.dataset.region, cur=slot.dataset.cur||'';
+    fetch(API_BASE+'/intraday?sym='+encodeURIComponent(sym)+'&region='+encodeURIComponent(reg)).then(function(r){return r.ok?r.json():null;}).then(function(j){
+      if(!j||!j.closes||j.closes.length<2){ slot.innerHTML=''; return; }
+      var vals=j.closes, mn=Math.min.apply(null,vals), mx=Math.max.apply(null,vals), now=vals[vals.length-1];
+      slot.innerHTML=sparkSVG(vals)+'<div class="misschart-mm"><span>'+cur+mn.toFixed(2)+'</span><span class="misschart-now">now '+cur+now.toFixed(2)+'</span><span>'+cur+mx.toFixed(2)+'</span></div>';
+    }).catch(function(){ slot.innerHTML=''; });
+  });
+}
 function wire(D){
   var root=document.documentElement;
+  hydrateMissCharts();
   document.getElementById('themeBtn').addEventListener('click',function(){
     var cur=root.getAttribute('data-theme')||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');
     root.setAttribute('data-theme',cur==='dark'?'light':'dark');
