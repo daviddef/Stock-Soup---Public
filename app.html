@@ -3,6 +3,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Cache-Control" content="no-cache, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,900;1,9..144,800&display=swap" rel="stylesheet">
 <style>
   :root{
     --ground:#14100E; --surface:#1E1815; --surface-2:#271F1A; --line:#3A2F27;
@@ -11,6 +14,7 @@
     --shadow:0 12px 40px -12px rgba(0,0,0,.7);
     --font:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
     --mono:ui-monospace,"SF Mono",Menlo,monospace;
+    --disp:"Fraunces",Georgia,"Times New Roman",serif;
   }
   @media (prefers-color-scheme:light){
     :root{ --ground:#FBF6EF; --surface:#FFFFFF; --surface-2:#F3EADF; --line:#E4D7C6;
@@ -25,7 +29,7 @@
   body{background:var(--ground);color:var(--ink);font-family:var(--font);line-height:1.5;
     -webkit-font-smoothing:antialiased;padding:clamp(14px,3vw,40px)}
   .wrap{max-width:1080px;margin:0 auto;display:flex;flex-direction:column;gap:26px}
-  .display{font-weight:900;letter-spacing:-.02em;text-wrap:balance;line-height:.98;text-transform:uppercase}
+  .display{font-family:var(--disp);font-weight:900;letter-spacing:-.02em;text-wrap:balance;line-height:.98;text-transform:uppercase}
   .eyebrow{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);font-weight:700}
   .mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
   a.q{color:inherit;text-decoration:none;border-bottom:1px dotted transparent}
@@ -35,7 +39,7 @@
   .hero{background:radial-gradient(120% 140% at 100% 0%, rgba(255,107,26,.16), transparent 55%),var(--surface);
     border:1px solid var(--line);border-radius:20px;padding:clamp(20px,3.5vw,38px);position:relative;overflow:hidden}
   .brandrow{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}
-  .brand{display:flex;align-items:center;gap:10px;font-weight:900;font-size:20px;letter-spacing:-.01em}
+  .brand{display:flex;align-items:center;gap:10px;font-family:var(--disp);font-style:italic;font-weight:800;font-size:21px;letter-spacing:-.01em}
   .hpot{position:relative;display:inline-flex;font-size:24px;line-height:1;animation:hbob 4.2s ease-in-out infinite;transform-origin:50% 90%}
   .hpotbowl{filter:drop-shadow(0 4px 6px rgba(225,77,11,.3))}
   .hsteam{position:absolute;left:50%;top:-7px;transform:translateX(-50%);width:20px;height:14px;pointer-events:none}
