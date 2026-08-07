@@ -558,8 +558,9 @@
   .trailjump{color:var(--broth);font-weight:800;text-decoration:none;white-space:nowrap}
   .trailjump:hover{text-decoration:underline}
   .badcount{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:22px;padding:0 6px;border-radius:999px;background:var(--dont);color:#fff;font-size:12px;font-weight:900;vertical-align:middle;margin-left:2px}
-  .missgrid{display:flex;flex-direction:column;gap:1px;border:1px solid var(--line);border-radius:12px;overflow:hidden}
-  .missrow{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:10px 14px;background:var(--surface);font-size:13px}
+  .missgrid{display:grid;grid-template-columns:1fr;gap:8px}
+  @media(min-width:640px){.missgrid{grid-template-columns:1fr 1fr}}
+  .missrow{display:flex;flex-wrap:wrap;align-content:flex-start;align-items:center;gap:8px;padding:10px 14px;background:var(--surface);font-size:13px;border:1px solid var(--line);border-radius:10px}
   .missrow.m-missed{border-left:3px solid var(--dont)}
   .missrow.m-scanned{border-left:3px solid var(--hold)}
   .missrow.m-served{border-left:3px solid var(--buy)}
@@ -568,8 +569,10 @@
   .missnm{color:var(--muted);font-size:12px}
   .misspct{font-weight:800;font-variant-numeric:tabular-nums;margin-left:auto}
   .missstat{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);background:var(--surface-2);border-radius:6px;padding:2px 8px}
+  .missrow.m-missed .missstat{color:var(--dont);background:rgba(255,77,77,.16)}
+  .missrow.m-served .missstat{color:var(--buy);background:rgba(35,194,103,.16)}
+  .missrow.m-scanned .missstat{color:var(--hold);background:rgba(255,197,61,.18)}
   .missnote{width:100%;color:var(--faint);font-size:12px}
-  @media(min-width:640px){.missnote{width:auto;margin-left:auto;text-align:right}}
 
   .cta{display:flex;justify-content:center;margin-top:4px}
   .cta a{background:var(--broth);color:#1a0f06;font-weight:900;text-decoration:none;padding:15px 30px;border-radius:12px;
@@ -1052,7 +1055,10 @@ function discoveryFunnel(D){
 function missesSection(D){
   var mi=D.misses; if(!mi||!mi.rows||!mi.rows.length) return '';
   var STAT={served:{ic:'✅',lbl:'Served',cls:'m-served'},scanned:{ic:'👀',lbl:'Scanned, not served',cls:'m-scanned'},missed:{ic:'❌',lbl:'Missed',cls:'m-missed'}};
-  var rows=mi.rows.map(function(r){
+  var mktRows=mi.rows.filter(function(r){return (r.region||'us')===MKT;});
+  if(!mktRows.length) return '';
+  var missedN=mktRows.filter(function(r){return r.status==='missed';}).length;
+  var rows=mktRows.map(function(r){
     var s=STAT[r.status]||STAT.missed, up=r.pct>=0;
     return '<div class="missrow '+s.cls+'"><span class="missic">'+s.ic+'</span>'+
       '<span class="misssym">'+esc(r.sym)+'<span class="wflag" style="margin-left:5px">'+(r.region==='au'?'AU':'US')+'</span></span>'+
@@ -1060,8 +1066,8 @@ function missesSection(D){
       '<span class="misspct '+(up?'up':'down')+'">'+(up?'▲':'▼')+' '+Math.abs(r.pct)+'%</span>'+
       '<span class="missstat">'+s.lbl+'</span><span class="missnote">'+esc(r.note)+'</span></div>';
   }).join('');
-  return '<section id="misses"><div class="sec-head"><h2 class="display">😬 The Misses <span class="badcount">'+mi.missedCount+'</span></h2>'+infoBtn('misses')+'</div>'+
-    '<p class="sec-sub">The day\'s biggest real movers — checked honestly against what tonight\'s net actually scanned. <b>'+mi.missedCount+' of '+mi.totalCount+'</b> weren\'t in our net at all.</p>'+
+  return '<section id="misses"><div class="sec-head"><h2 class="display">😬 The Misses <span class="badcount">'+missedN+'</span></h2>'+infoBtn('misses')+'</div>'+
+    '<p class="sec-sub">'+(MKT==='au'?'🇦🇺 Australia\'s':'🌏 International')+' biggest real movers — checked honestly against what tonight\'s net actually scanned. <b>'+missedN+' of '+mktRows.length+'</b> weren\'t in our net at all.</p>'+
     '<div class="missgrid">'+rows+'</div></section>';
 }
 function buyState(p){ if(p.nEntry==null||p.nNow==null) return ''; var g=(p.nNow/p.nEntry-1)*100; return g<=1.5?'in':(g<=4?'close':'wait'); }
