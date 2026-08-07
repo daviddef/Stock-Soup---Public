@@ -1080,6 +1080,15 @@ function trendChip(p){
   if(t.adx!=null&&t.adx<20) return '<span class="sentc sc-mix">〰️ Choppy, no clear trend</span>';
   return '<span class="sentc sc-mix">😐 Mixed signals</span>';
 }
+// Value/dividend chip (#38/#59): P/E + dividend yield, shown as context — not a scoring input.
+// P/E cheap/rich is too sector-dependent to safely fold into the core score, so this stays informational.
+function valChip(p){
+  var v=p&&p.val; if(!v||(v.pe==null&&v.div_yield_pct==null)) return '';
+  var bits=[];
+  if(v.pe!=null) bits.push('P/E '+v.pe);
+  if(v.div_yield_pct!=null) bits.push('💰 '+v.div_yield_pct+'% yield'+(v.ex_div_date?' · ex-div '+esc(v.ex_div_date):''));
+  return '<span class="sentc sc-mix">'+bits.join(' · ')+'</span>';
+}
 // Market-aware header: prefer a per-market headline/chef when the run provides one
 // (D.headline[MKT] / D.chefByMkt[MKT]), else fall back to the single shared version.
 function hdl(D,k){var h=(D&&D.headline)||{}; if(h[MKT]&&h[MKT][k]!=null)return h[MKT][k]; return h[k]!=null?h[k]:'';}
@@ -1207,7 +1216,7 @@ function render(D,H){
         '<span class="px"><span class="p mono">'+esc(p.price)+'</span><br><span class="c mono '+chgTone(p.change,p.up)+'">'+esc(p.change)+'</span></span></div>'+
         /* miniTraj removed — inconsistent (only carried-over picks had it) + confusing 'since 23:33'; the range bar shows the trend */
         '<div class="buyat'+(p.nEntry?' ba-'+buyState(p):'')+'">'+(p.nEntry?'<span class="bl">🎯 Ideal buy</span> ~'+esc(rg.cur||'$')+p.nEntry+buyAction(p):'<span class="bl">Track this pick</span>')+'</div>'+
-        '<p class="plain">'+p.plain+'</p>'+((sentChip(p)||trendChip(p))?'<div class="sentrow">'+sentChip(p)+trendChip(p)+'</div>':'')+'<div class="lvls">'+p.levels+'</div>'+
+        '<p class="plain">'+p.plain+'</p>'+((sentChip(p)||trendChip(p)||valChip(p))?'<div class="sentrow">'+sentChip(p)+trendChip(p)+valChip(p)+'</div>':'')+'<div class="lvls">'+p.levels+'</div>'+
         (p.spark?rangeBar(p.spark,rg.cur||'$',p.tf,p.nEntry):'')+'</article>'+
         ((p.runnerUp && /wait|late|hold|skip|avoid|pass|don.t|steer/i.test(p.verdict||''))?ruCard(p.runnerUp,rg.id,idx):'')+'</div>';
     }).join('');
@@ -1485,6 +1494,7 @@ function openModal(p,region,cur){
         '<div class="lends"><span class="g">Cheap</span><span class="r">Overheated</span></div>'+
         '<div class="rsimeta">'+rsiWord+'</div>'+
         (trendChip(p)?'<div class="rsimeta" style="margin-top:8px">'+trendChip(p)+(p.trend&&p.trend.adx!=null?' <span class="muted" style="font-weight:600">· ADX '+p.trend.adx+(p.trend.adx>=25?' (strong trend)':p.trend.adx>=20?' (building)':' (choppy)')+'</span>':'')+'</div>':'')+
+        (valChip(p)?'<div class="rsimeta" style="margin-top:6px">'+valChip(p)+'</div>':'')+
       '</div>'+
       scoreHtml+
       '<p class="mtake"><span class="lead">Chef says:</span> '+esc(p.chefTake)+'</p>'+
