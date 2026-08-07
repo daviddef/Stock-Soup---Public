@@ -142,7 +142,8 @@
   @keyframes mkpulseO{0%,100%{box-shadow:0 0 0 2px var(--hold)}50%{box-shadow:0 0 0 6px rgba(255,197,61,.32)}}
   @media (prefers-reduced-motion:reduce){.mkf.phase-opening,.mkf.phase-closing{animation:none}}
   .mktwrap{position:relative;display:inline-flex;align-items:center}
-  .mktcap{position:absolute;left:50%;top:100%;transform:translateX(-50%);margin-top:6px;font-size:9.5px;font-weight:800;color:var(--muted);white-space:nowrap;letter-spacing:.02em;line-height:1;pointer-events:none}
+  .mktcap{margin-left:10px;font-size:11px;font-weight:800;color:var(--muted);white-space:nowrap;letter-spacing:.02em;line-height:1;pointer-events:none}
+  .toprow{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:12px}
   .mktcap.mc-open,.mktcap.mc-opening{color:var(--buy)} .mktcap.mc-closing{color:var(--hold)} .mktcap.mc-closed{color:var(--dont)}
   .toprail{display:flex;gap:12px;align-items:center}
   .burgerwrap{position:relative}
@@ -552,6 +553,8 @@
   .potcard{display:flex;flex-direction:column;gap:6px;border:1px solid var(--line);border-radius:13px;padding:12px 13px;text-decoration:none;color:var(--ink);cursor:pointer;transition:transform .12s,border-color .12s}
   .pmc-short{font-size:10px;font-weight:800;font-family:var(--mono);color:var(--dont);background:rgba(255,77,77,.12);border-radius:999px;padding:1px 6px}
   .mnews{font-size:13.5px;line-height:1.5;background:var(--surface-2);border:1px solid var(--line);border-radius:11px;padding:11px 13px;text-wrap:pretty}
+  .mnews a{color:var(--broth);font-weight:700}
+  .mnews a:visited{color:var(--broth)}
   .mfound{font-size:12px;color:var(--muted);margin-top:6px;line-height:1.45}
   .mshort{font-size:13px;line-height:1.5;color:var(--ink)}
   .potcard:hover{transform:translateY(-2px)}
@@ -633,14 +636,14 @@
     border-radius:10px;padding:11px 13px;font-family:var(--font);font-size:14px;text-transform:uppercase}
   .wlbar input:focus-visible{outline:2px solid var(--broth);outline-offset:1px}
   .wlseg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
-  .wlseg button{background:var(--surface);border:0;color:var(--muted);font-family:var(--font);font-weight:800;font-size:13px;padding:0 14px;cursor:pointer}
+  .wlseg button{background:var(--surface);border:0;color:var(--muted);font-family:var(--font);font-weight:800;font-size:13px;padding:13px 14px;min-height:44px;cursor:pointer}
   .wlseg button[aria-pressed="true"]{background:var(--broth);color:#1a0f06}
   /* Unified Favourites bar: one input, market toggle, two actions */
   .unibar{display:flex;gap:8px;flex-wrap:wrap;align-items:stretch}
   .unibar input{flex:1 1 180px;min-width:150px;background:var(--surface);border:1px solid var(--line);color:var(--ink);border-radius:11px;padding:11px 14px;font-family:var(--font);font-size:14px;font-weight:700}
   .unibar input:focus-visible{outline:2px solid var(--broth);outline-offset:1px}
   .unibar .wlseg{border-radius:11px}
-  .uni-watch,.uni-ask{border:0;font-family:var(--font);font-weight:900;font-size:13.5px;padding:0 15px;border-radius:11px;cursor:pointer;white-space:nowrap;line-height:1;display:inline-flex;align-items:center}
+  .uni-watch,.uni-ask{border:0;font-family:var(--font);font-weight:900;font-size:13.5px;padding:13px 15px;min-height:44px;border-radius:11px;cursor:pointer;white-space:nowrap;line-height:1;display:inline-flex;align-items:center}
   .uni-watch{background:var(--broth);color:#1a0f06}
   .uni-ask{background:var(--surface-2);color:var(--ink);border:1px solid var(--line)}
   .uni-ask:hover{border-color:var(--broth);color:var(--broth)} .uni-watch:hover{filter:brightness(1.05)}
@@ -703,7 +706,8 @@
   .wlgh{font-size:12px;font-weight:900;letter-spacing:.04em;text-transform:uppercase;color:var(--ink);display:flex;align-items:center;gap:8px}
   .wlgn{background:var(--surface-2);border:1px solid var(--line);border-radius:999px;padding:1px 9px;font-size:11px;color:var(--muted)}
   .wlgs{font-size:12px;color:var(--muted);margin:3px 0 11px}
-  .wlgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px;align-items:stretch;align-content:start;grid-auto-rows:min-content}
+  .wlgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:stretch;align-content:start;grid-auto-rows:min-content}
+  @media(min-width:640px){.wlgrid{grid-template-columns:repeat(auto-fill,minmax(240px,1fr))}}
   .wrow{display:flex;flex-direction:column;gap:7px;background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--faint);border-radius:12px;padding:12px 13px;height:100%}
   .wrow.wclick{cursor:pointer;transition:border-color .12s,transform .12s}
   .wrow.wclick:hover{border-color:var(--broth)}
@@ -1543,7 +1547,7 @@ function render(D,H){
 
   document.getElementById('app').innerHTML=
   '<header class="hero"><div class="brandrow"><div class="brand"><span class="hpot"><span class="hsteam"><i></i><i></i><i></i></span><span class="hpotbowl">🍲</span></span> The&nbsp;Stock&nbsp;Soup</div>'+
-    '<div class="toprail">'+mktBarHtml(D)+
+    '<div class="toprail">'+
       (isAdmin()?'<span class="adminbadge" title="Signed in as the admin account" style="margin-right:6px">ADMIN</span>':'')+
       '<div class="burgerwrap"><button class="burger" id="burgerBtn" aria-label="Menu" aria-haspopup="true" aria-expanded="false" aria-controls="burgerMenu">☰</button>'+
         '<div class="burgermenu" id="burgerMenu" role="menu" hidden>'+
@@ -1554,7 +1558,8 @@ function render(D,H){
           '<button class="bmitem" id="themeBtn" role="menuitem">🌗 Switch theme</button>'+
           '<button class="bmitem" id="docsBtn" role="menuitem" style="display:none">📖 Documentation</button>'+
         '</div></div>'+
-    '</div></div></header>'+
+    '</div></div>'+
+    '<div class="toprow">'+mktBarHtml(D)+'</div></header>'+
 
   // ===== TAB BAR =====
   '<nav class="tabbar" id="tabbar" role="tablist" aria-label="Sections">'+
@@ -2388,7 +2393,7 @@ function wlStatBlock(rows,title,icon,emptyMsg){
   var worst=usable.reduce(function(a,b){return (a.gap<b.gap)?a:b;});
   return '<div class="wlstat-card"><div class="wlstat-h">'+icon+' '+esc(title)+'</div>'+
     '<div class="wlstat-big '+(avg>=0?'up':'down')+'">'+(avg>=0?'+':'')+avg.toFixed(1)+'%</div>'+
-    '<div class="wlstat-sub">avg across '+usable.length+' name'+(usable.length===1?'':'s')+' with a captured buy price'+(rows.length>usable.length?' · '+(rows.length-usable.length)+' more not yet priced':'')+'</div>'+
+    '<div class="wlstat-sub">avg across '+usable.length+' name'+(usable.length===1?'':'s')+' with a captured buy price, since each was flagged'+(rows.length>usable.length?' · '+(rows.length-usable.length)+' more not yet priced':'')+' — dates vary per name, exact "since" dates coming soon</div>'+
     '<div class="wlstat-row"><span class="wlstat-wl"><span class="up">'+wins+'W</span> · <span class="down">'+losses+'L</span></span>'+
     '<span class="wlstat-be">🏆 '+esc(best.w.sym)+' '+(best.gap>=0?'+':'')+best.gap.toFixed(1)+'%'+(usable.length>1?' · 🥶 '+esc(worst.w.sym)+' '+(worst.gap>=0?'+':'')+worst.gap.toFixed(1)+'%':'')+'</span></div></div>';
 }
