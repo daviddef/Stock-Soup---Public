@@ -219,6 +219,12 @@
   .wlstat-wl .up{color:var(--buy)} .wlstat-wl .down{color:var(--dont)}
   .wlstat-be{color:var(--muted);font-weight:700}
   .wlstat-empty{font-size:12.5px;color:var(--faint);margin-top:6px;line-height:1.4}
+  .pxranges{display:flex;flex-direction:column;gap:10px;margin-top:4px}
+  .pxr-row{display:flex;align-items:center;gap:10px}
+  .pxr-lbl{width:52px;flex:0 0 auto;font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+  .pxr-track{flex:1;position:relative;height:6px;border-radius:999px;background:linear-gradient(90deg,rgba(255,77,77,.4),rgba(255,197,61,.35),rgba(35,194,103,.5))}
+  .pxr-dot{position:absolute;top:-4px;width:14px;height:14px;border-radius:50%;background:var(--ink);box-shadow:0 0 0 3px var(--surface);transform:translateX(-50%)}
+  .pxr-vals{flex:0 0 auto;font-size:11px;font-weight:700;color:var(--faint);font-variant-numeric:tabular-nums;white-space:nowrap}
   .docsov{position:fixed;inset:0;z-index:300;background:var(--ground);display:none;flex-direction:column}
   .docsbar{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--line);background:var(--surface)}
   .docstitle{font-weight:900;font-size:15px;display:inline-flex;align-items:center;gap:8px}
@@ -1258,6 +1264,22 @@ function signalDetailHtml(p,region,opts){
       '<div class="sigexplain">'+esc(r.explain)+'</div></div>';
   }).join('')+'</div>';
 }
+// Week/month/year price range — where the current price sits in each real historical window (#78).
+// p.ranges = {"1w":{lo,hi,pos}, "1m":{...}, "1y":{...}} from features._price_ranges(), pos is 0-1
+// (0=at the low, 1=at the high). Only renders windows we actually have data for.
+function rangeBarsHtml(p,cur){
+  var r=p&&p.ranges; if(!r) return '';
+  var LBL={"1w":"1 week","1m":"1 month","1y":"1 year"};
+  var order=["1w","1m","1y"].filter(function(k){return r[k];});
+  if(!order.length) return '';
+  var rows=order.map(function(k){
+    var w=r[k], pct=Math.max(0,Math.min(100,w.pos*100));
+    return '<div class="pxr-row"><span class="pxr-lbl">'+LBL[k]+'</span>'+
+      '<div class="pxr-track"><div class="pxr-dot" style="left:'+pct+'%"></div></div>'+
+      '<span class="pxr-vals">'+esc(cur)+w.lo+' – '+esc(cur)+w.hi+'</span></div>';
+  }).join('');
+  return '<div class="viz"><h4>Price range · low → high, and where we sit</h4><div class="pxranges">'+rows+'</div></div>';
+}
 // Market-aware header: prefer a per-market headline/chef when the run provides one
 // (D.headline[MKT] / D.chefByMkt[MKT]), else fall back to the single shared version.
 function hdl(D,k){var h=(D&&D.headline)||{}; if(h[MKT]&&h[MKT][k]!=null)return h[MKT][k]; return h[k]!=null?h[k]:'';}
@@ -1647,6 +1669,7 @@ function openModal(p,region,cur){
     }
   }
   var sparkHtml = p.spark ? '<div class="viz"><h4>Recent trend · last ~2 months</h4>'+sparkSVG(p.spark)+'<div class="rsimeta">'+(p.spark[p.spark.length-1]>=p.spark[0]?'📈 Up over the stretch':'📉 Down over the stretch')+'</div></div>' : '';
+  var rangesHtml = rangeBarsHtml(p,cur);
   // Other options — runner-up + same-market candidates, so there's always a Plan B inside the tap
   var _curS={}; (LAST.D.regions||[]).forEach(function(rg){(rg.picks||[]).forEach(function(pp){_curS[pp.sym]=1;});});
   var _alts=[];
@@ -1675,6 +1698,7 @@ function openModal(p,region,cur){
       '<span class="mverd '+esc(p.vclass)+'">'+esc(p.verdict)+'</span></div>'+
     '<div class="mbody">'+
       sparkHtml+
+      rangesHtml+
       '<div class="viz"><h4>Where the price sits · stop → target</h4>'+
         '<div class="ladder"><span class="cap now" style="left:'+nowPct+'%">Now '+esc(p.price)+'</span>'+
           '<span class="mk ent" style="left:'+entPct+'%"></span><span class="cap" style="left:'+entPct+'%">Buy</span>'+
