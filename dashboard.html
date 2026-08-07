@@ -991,10 +991,11 @@ function mktBarHtml(D){
   // The ring colour already shows open/closed per-market — repeating "closed" in the caption is
   // dead text. What the ring CAN'T show is which market is about to open/close (time-sensitive,
   // actionable), so prioritise surfacing THAT over just describing whichever tab is selected.
+  // Only show the caption when a market is about to open/close (time-sensitive, the ring can't say
+  // that). Plain open/closed is fully conveyed by the ring colour already — no caption needed then.
   var urgent=Object.keys(statuses).find(function(k){return statuses[k].phase==='opening'||statuses[k].phase==='closing';});
-  var sel=urgent?statuses[urgent]:(statuses[MKT]||marketStatus(MKT));
-  return '<div class="mktwrap"><div class="mktflags" role="tablist" aria-label="Filter market">'+flags+'</div>'+
-    '<div class="mktcap mc-'+sel.phase+'">'+esc(sel.txt)+'</div></div>';
+  var cap=urgent?'<div class="mktcap mc-'+statuses[urgent].phase+'">'+esc(statuses[urgent].txt)+'</div>':'';
+  return '<div class="mktwrap"><div class="mktflags" role="tablist" aria-label="Filter market">'+flags+'</div>'+cap+'</div>';
 }
 var LAST=null, LASTFOCUS=null;
 function yf(sym,region){var s=String(sym).replace(/\*$/,'');if(region==="au")s+=".AX";return "https://finance.yahoo.com/quote/"+encodeURIComponent(s);}
