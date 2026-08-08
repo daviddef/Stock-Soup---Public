@@ -547,10 +547,10 @@
   .upname{color:var(--muted);font-size:12px;font-weight:700}
   .upnote{color:var(--faint);font-size:11.5px;line-height:1.4}
   .upgap{color:var(--faint);font-size:11.5px;font-style:italic;margin-top:4px}
-  .annrow{border-radius:10px;padding:9px 12px;margin-bottom:6px;border:1px solid var(--line);background:var(--surface)}
-  .annrow.ann-bull{border-left:3px solid var(--buy)}
-  .annrow.ann-bear{border-left:3px solid var(--dont)}
-  .annrow.ann-neu{border-left:3px solid var(--faint)}
+  .annrow{border-radius:10px;padding:9px 12px;margin-bottom:6px;border:1px solid var(--line);background:var(--surface);border-left:3px solid var(--faint)}
+  .annrow.ann-bull{border-left-color:var(--buy);background:rgba(35,194,103,.09)}
+  .annrow.ann-bear{border-left-color:var(--dont);background:rgba(255,77,77,.09)}
+  .annrow.ann-neu{border-left-color:var(--faint)}
   .anntop{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
   .annic{font-size:13px}
   .annhead{flex:1;font-size:13px;color:var(--ink)}
@@ -561,6 +561,7 @@
   .t-dont{background:rgba(255,77,77,.16);color:var(--dont)}
   .t-watch{background:rgba(255,197,61,.16);color:var(--hold)}
   .t-hot{background:rgba(255,107,26,.18);color:var(--broth)}
+  .t-meh{background:rgba(255,77,77,.16);color:var(--dont)}
 
   /* FULL POT — candidate heatmap */
   .potlegend{display:flex;gap:14px;flex-wrap:wrap;font-size:11px;color:var(--muted);font-weight:700;margin-bottom:12px}
