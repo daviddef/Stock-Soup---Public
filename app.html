@@ -538,6 +538,15 @@
   .line .txt small{display:block;color:var(--muted);font-size:12px;margin-top:1px}
   .thlead{display:block;font-size:11px;font-weight:700;color:var(--broth);margin-top:3px}
   .thlead b{color:var(--ink)}
+  .uprow{display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:9px 12px;font-size:13px;margin-bottom:6px}
+  .upsym{font-weight:800;color:var(--ink)}
+  .upwhen{color:var(--muted);font-size:12px;font-weight:600}
+  .uptag{color:var(--broth);font-size:10.5px;font-weight:800;letter-spacing:.02em}
+  .upiro{flex-direction:column;align-items:stretch;gap:2px}
+  .uptop{display:flex;align-items:center;justify-content:space-between}
+  .upname{color:var(--muted);font-size:12px;font-weight:700}
+  .upnote{color:var(--faint);font-size:11.5px;line-height:1.4}
+  .upgap{color:var(--faint);font-size:11.5px;font-style:italic;margin-top:4px}
   .tag{font-size:11px;font-weight:900;padding:4px 9px;border-radius:7px;text-transform:uppercase;letter-spacing:.03em;white-space:nowrap}
   .t-buy{background:rgba(35,194,103,.16);color:var(--buy)}
   .t-dont{background:rgba(255,77,77,.16);color:var(--dont)}
@@ -939,6 +948,8 @@
   .dhname{font-size:14px} .dhstat{margin-left:auto;font-size:11px;font-weight:800;text-transform:uppercase;color:var(--muted)}
   .dhuse{font-size:12.5px;color:var(--muted);margin-top:4px}
   .dhnote{font-size:12px;color:var(--faint);margin-top:4px;font-style:italic}
+  .dhlink{display:inline-block;font-size:11.5px;font-weight:700;color:var(--broth);margin-top:5px;text-decoration:none}
+  .dhlink:hover{text-decoration:underline}
   .dhchecked{font-size:10.5px;color:var(--faint);margin-top:6px;font-weight:700;letter-spacing:.02em}
   .altmain b{font-size:15px;font-weight:900}
   .altnm{font-size:12px;color:var(--muted);font-weight:700}
@@ -1177,6 +1188,39 @@ function hotMoversHtml(D){
   return '<div class="callout" style="margin-bottom:14px"><b style="color:var(--ink)">🔴 Live movers · updated '+esc(hm.stamp||'this hour')+'</b> — '+
     'checked between major runs, not just at scan time. <b>On our radar</b> = already a pick, candidate or watchlist name; <b>Not tracked</b> = a fresh miss forming right now.</div>'+
     '<div class="missgrid">'+rows+'</div>';
+}
+// #85 — real upcoming earnings (7d) / dividends (30d) / IPOs (30d), sourced by bulk-fetching real
+// reporting-season + ex-dividend calendars each run (see CLAUDE.md Discovery Rule net 3 + Data-source
+// health). "We track this" highlights a sym already in tonight's picks or the user's own watchlist.
+function upcomingHtml(D){
+  var E=(D.upcomingEarnings||[]).filter(function(e){return !e.error&&(e.region||'us')===MKT;});
+  var DIV=D.upcomingDividends||{}, divItems=(DIV.items||[]).filter(function(d){return (d.region||'au')===MKT;});
+  var IPO=D.upcomingIPOs||[];
+  if(!E.length&&!divItems.length&&!IPO.length) return '';
+  var _curS={}; (D.regions||[]).forEach(function(rg){(rg.picks||[]).forEach(function(p){if(p.sym!=='NONE')_curS[p.sym]=1;});});
+  var wl={}; wlGet().forEach(function(w){wl[w.sym]=1;});
+  function weTrack(sym){return _curS[sym]||wl[sym];}
+  function trackTag(sym){return weTrack(sym)?' <span class="uptag">★ we track this</span>':'';}
+  var earnRows=E.slice(0,10).map(function(e){
+    var d=e.days_until, when=d===0?'today':d===1?'tomorrow':'in '+d+'d';
+    return '<div class="uprow"><span class="upsym">'+esc(e.sym)+'</span><span class="upwhen">'+esc(when)+' · '+esc((e.date||'').slice(5))+'</span>'+trackTag(e.sym)+'</div>';
+  }).join('');
+  var divRows=divItems.slice(0,10).map(function(d){
+    var when=d.days_until===0?'today':d.days_until===1?'tomorrow':'in '+d.days_until+'d';
+    return '<div class="uprow"><span class="upsym">'+esc(d.sym)+'</span><span class="upwhen">ex-div '+esc(when)+(d.div_yield_pct?' · '+d.div_yield_pct+'% yield':'')+'</span>'+trackTag(d.sym)+'</div>';
+  }).join('');
+  var ipoRows=IPO.slice(0,8).map(function(i){
+    var when=i.days_until===0?'today':i.days_until===1?'tomorrow':'in '+i.days_until+'d';
+    return '<div class="uprow upiro"><div class="uptop"><span class="upsym">'+esc(i.sym)+'</span><span class="upwhen">lists '+esc(when)+'</span></div>'+(i.name?'<div class="upname">'+esc(i.name)+'</div>':'')+(i.note?'<div class="upnote">'+esc(i.note)+'</div>':'')+'</div>';
+  }).join('');
+  return '<section id="upcoming"><div class="sec-head"><h2 class="display">📅 What\'s coming up</h2>'+infoBtn('upcoming')+'</div>'+
+    '<p class="sec-sub">Real dates, not predictions — reporting season, dividends, and new listings for the next few weeks.</p>'+
+    '<div class="cols">'+
+      (earnRows?'<div class="stack"><div class="eyebrow">📊 Earnings · next 7 days</div>'+earnRows+'</div>':'')+
+      (divRows?'<div class="stack"><div class="eyebrow">💰 Dividends · next 30 days</div>'+divRows+(DIV.usUnavailable&&MKT==='us'?'<p class="upgap">'+esc(DIV.usUnavailable)+'</p>':'')+'</div>':(MKT==='us'&&DIV.usUnavailable?'<div class="stack"><div class="eyebrow">💰 Dividends · next 30 days</div><p class="upgap">'+esc(DIV.usUnavailable)+'</p></div>':''))+
+    '</div>'+
+    (ipoRows?'<div class="eyebrow" style="margin-top:14px">🆕 New listings · next 30 days</div><div class="cols">'+ipoRows+'</div>':'')+
+  '</section>';
 }
 function missesSection(D){
   var mi=D.misses; var hmHtml=hotMoversHtml(D);
@@ -1787,6 +1831,7 @@ function render(D,H){
       (potLose?'<button class="potmore'+(!_keepIdx.length?' potmore-lead':'')+'" id="potMore" aria-expanded="false">➖ '+_loseIdx.length+' more — maybes &amp; passes ▾</button>'+
         '<div class="pot potlose" id="potLose" hidden>'+potLose+'</div>':'')+
       '</section>'+
+    upcomingHtml(D)+
     // hourly-runs list removed from the menu — it lives (unified) in Inside the Kitchen's run schedule
   '</div>'+
 
@@ -2098,6 +2143,17 @@ var INFO={
     '<p>Each card is a <b>Buy the theme / Watch / Skip</b> call with the tickers leading it. <b>Tap one</b> to see the leaders and our read on each. These themes feed the "why" behind individual picks (e.g. AUKUS → defence names).</p>'},
   commodities:{icon:'🛢️',title:'Commodities',body:
     '<p>The raw-material backdrop — <b>bullish vs bearish</b> across metals, energy and the emerging plays (rare earths, uranium, lithium). Australia is resource-heavy, so this often drives the ASX picks (e.g. a gold breakout lifts the miners).</p>'},
+  upcoming:{icon:'📅',title:"What's coming up",body:
+    '<p>Real, dated events in the next few weeks for names we watch — not predictions, just a calendar.</p>'+
+    '<h4>📊 Earnings (next 7 days)</h4><p>When a company is due to report its results. Prices often move a lot right after — a stock can jump or drop 5-20% same-day depending on whether results beat or missed what analysts expected. Worth knowing before you buy right before one.</p>'+
+    '<h4>💰 Dividends (next 30 days) — the confusing bit, explained plainly</h4>'+
+    '<ul class="infoul">'+
+    '<li><b>Ex-dividend date</b> — the cutoff. Own the stock the day <i>before</i> this date and you get the dividend; buy <i>on or after</i> it and you miss this round (you\'d get the next one). The stock price typically drops by roughly the dividend amount on this exact day — that\'s not a real loss, it\'s just the payout leaving the share price.</li>'+
+    '<li><b>Dividend yield</b> — the payout as a % of the share price. A "4% yield" means $4 a year for every $100 invested, roughly.</li>'+
+    '<li><b>Franking credits</b> (Australian shares only) — the company already paid 30% company tax on that profit before paying you the dividend. A "fully franked" dividend comes with a credit for that tax already paid, which you claim back at tax time (fully or partly, depending on your own tax rate) so you\'re not taxed on it twice. "0% franked" means no credit — you\'re taxed on the full amount as normal income.</li>'+
+    '</ul>'+
+    '<h4>🆕 New listings / IPOs (next 30 days)</h4><p>Companies about to start trading on the ASX for the first time. Very new listings have no price history yet, so our usual trend/RSI checks can\'t apply — treat these as higher-risk, "watch first" territory.</p>'+
+    '<p class="infofoot">Sourced by bulk-fetching real reporting-season and dividend calendars each run — see Inside the Kitchen → Data-source health for exactly which ones.</p>'},
   archive:{icon:'🗂️',title:'The Archive',body:
     '<p>Every menu we\'ve served, newest first — tap one to open that run\'s full report snapshot. Shows the last 3; expand for the rest. Each records that run\'s 6 picks and the risk read at the time.</p>'},
   misses:{icon:'😬',title:'The Misses',body:
@@ -2873,38 +2929,52 @@ function openAccount(){
 // by hand as gaps are found (EODHD's calendar/fundamentals plans, Yahoo's throttle, etc.), not pinged
 // live from the browser (no API keys client-side, and a live health-check adds no real value here).
 var DATA_HEALTH=[
-  {cat:'Priced APIs — keyed',name:'EODHD',use:'ASX prices, EOD bars, news feed + sentiment, forex, bulk quant scan',status:'ok',checked:'2026-08-07'},
-  {cat:'Priced APIs — keyed',name:'EODHD calendar/fundamentals',use:'Forward earnings calendar, P/E, dividends',status:'blocked',note:'403 Forbidden — not in our plan. Replaced by Yahoo (ASX) + Finnhub (US).',checked:'2026-08-05'},
-  {cat:'Priced APIs — keyed',name:'Finnhub',use:'US quotes, analyst recommendations, earnings calendar, metrics (P/E, div yield)',status:'ok',checked:'2026-08-07'},
-  {cat:'Priced APIs — keyed',name:'FMP — earnings calendar',use:'Earnings calendar (legacy)',status:'blocked',note:'Endpoint disabled for non-legacy subscribers.',checked:'2026-08-05'},
-  {cat:'Priced APIs — keyed',name:'FMP — company-screener',use:'Was being considered as a liquid-ASX-universe filter for the quant net',status:'blocked',note:'"Restricted Endpoint — not available under current subscription." Confirmed dead, not wired in.',checked:'2026-08-07'},
-  {cat:'Priced APIs — keyed',name:'Alpha Vantage',use:'Movers / earnings calendar (daily-cache only)',status:'ok',note:'25 calls/day cap — cached, not called live per-request.',checked:'2026-08-06'},
-  {cat:'Priced APIs — keyed',name:'Mediastack',use:'AU business news + keyword sweep (daily-cache only)',status:'ok',note:'100 calls/month cap — cached.',checked:'2026-08-06'},
-  {cat:'Priced APIs — keyed',name:'Twelve Data',use:'Usage/quota checks (daily-cache only)',status:'ok',note:'800 credits/month cap — cached.',checked:'2026-08-06'},
-  {cat:'Priced APIs — keyed',name:'eToro public API',use:'Holdings import (attempted #47/#69)',status:'blocked',note:'The moment both x-api-key + x-user-key are sent together, the request hangs indefinitely (45s+, no response) — reproduced with two different key pairs. Individually, each header alone gets an instant 401, so this is their auth backend specifically, not a client timeout or a bad key. Manual paste import queued instead (#67).',checked:'2026-08-07'},
-  {cat:'Keyless fallbacks',name:'Yahoo Finance (keyless)',use:'ASX earnings dates, P/E/dividend metrics, EOD fallback, gainers/most-active',status:'degraded',note:'Works, but rate-limits hard per IP on tight loops — the earnings-calendar handshake came back empty tonight after heavy same-session use, self-heals after ~90s+. Batch calls, add delay, never hammer it while testing.',checked:'2026-08-07'},
-  {cat:'Keyless fallbacks',name:'ASX announcements feed (Markit)',use:'Post-report ASX catalysts (price-sensitive announcements), per-ticker only',status:'ok',note:"No per-article URL field — links out to the ticker's ASX announcements page instead.",checked:'2026-08-07'},
-  {cat:'Keyless fallbacks',name:"ASX official market-wide announcements API",use:'Considered as a way to catch halts/price-sensitive news on names we haven’t discovered yet',status:'blocked',note:'404 — that endpoint path no longer exists. Not wired in.',checked:'2026-08-07'},
-  {cat:'Discovery net 1 — news/movers',name:'Stockhead RSS',use:'ASX news sweep',status:'ok',checked:'2026-08-07'},
-  {cat:'Discovery net 1 — news/movers',name:'Fool.com.au RSS',use:'ASX news sweep',status:'ok',checked:'2026-08-07'},
-  {cat:'Discovery net 1 — news/movers',name:'Yahoo gainers / most-active',use:'US top movers by % and by volume',status:'ok',checked:'2026-08-07'},
-  {cat:'Discovery net 1 — news/movers',name:'Benzinga upgrades',use:'Analyst upgrade feed',status:'blocked',note:'403 Forbidden, confirmed live tonight.',checked:'2026-08-07'},
-  {cat:'Discovery net 1 — news/movers',name:'DiscoveryAlert.com.au',use:'ASX mining/critical-minerals news',status:'ok',note:'Tested 8 Aug 2026: direct fetch is unreliable (feed/ redirects to the homepage, category pages 403 — Cloudflare-style protection, same family as SwingTradeBot/MarketIndex). But WebSearch scoped to this domain (allowed_domains) works cleanly and surfaces real, current, dated articles — confirmed live with a real critical-minerals query. Wired in as a WebSearch-only source, same pattern as the other blocked-but-searchable ASX sites.',checked:'2026-08-08'},
-  {cat:'Discovery net 1 — dropped',name:'ASX SwingTradeBot / MarketIndex scans / shorted.com.au family (shortinterest.au, fintel, CBOE, shortman, asxshort)',use:'ASX technical breakout scanners + 3rd-party short-interest',status:'blocked',note:'403/DNS-dead. Short interest replaced by ASIC’s own official short-position data instead — a better source, not a gap.',checked:'2026-08-05'},
-  {cat:'Discovery net 1 — dropped',name:'HotCopper',use:'Retail-sentiment community scraping',status:'blocked',note:'403 Forbidden.',checked:'2026-08-05'},
-  {cat:'Discovery net 1 — news/movers',name:'WSJ/Dow Jones Markets RSS',use:'Global markets news sweep',status:'ok',note:'Tested 8 Aug 2026: real, working RSS (feeds.a.dj.com/rss/RSSMarketsMain.xml). Wired in as a direct fetch alongside Stockhead/Fool.',checked:'2026-08-08'},
-  {cat:'Discovery net 1 — news/movers',name:'Investing.com RSS',use:'Global markets news sweep',status:'ok',note:'Tested 8 Aug 2026: real, working RSS, confirmed live content (a genuine NVDA headline was in the feed at test time). Wired in as a direct fetch.',checked:'2026-08-08'},
-  {cat:'Discovery net 1 — news/movers',name:'Seeking Alpha breaking news RSS',use:'US market-moving news sweep',status:'ok',note:'Tested 8 Aug 2026: real, working RSS (market_currents.xml). Wired in as a direct fetch.',checked:'2026-08-08'},
-  {cat:'Discovery net 1 — news/movers',name:'SMH Business RSS',use:'Australian business news — genuinely useful for ASX, distinct from Stockhead/Fool',status:'ok',note:'Tested 8 Aug 2026: real, working RSS (smh.com.au/rss/business.xml). Wired in as a direct fetch.',checked:'2026-08-08'},
-  {cat:'Discovery net 1 — untested, worth trying',name:'Finviz news, TradingView ideas, eToro discover/news',use:'US news blog / crowd-sourced trade ideas / retail sentiment',status:'untested',note:'Tested 8 Aug 2026: all return HTTP 200 (reachable), but likely JS-rendered pages — unclear if a plain fetch returns real parseable content vs an empty app shell. Worth a WebFetch trial run before treating as a real source.',checked:'2026-08-08'},
-  {cat:'Discovery net 1 — dead / not useful',name:'Reuters RSS',use:'Global markets news',status:'blocked',note:'401 — needs auth, not a public feed.',checked:'2026-08-08'},
-  {cat:'Discovery net 1 — dead / not useful',name:'Simply Wall St, Morningstar AU',use:'Stock analysis/ratings',status:'blocked',note:'404 — the RSS/feed paths tried don’t exist on these sites.',checked:'2026-08-08'},
-  {cat:'Discovery net 1 — dead / not useful',name:'Livewire Markets',use:'Australian fund-manager commentary',status:'blocked',note:'403 Forbidden.',checked:'2026-08-08'},
-  {cat:'Discovery net 1 — dead / not useful',name:'Google Finance quotes',use:'Price quotes',status:'blocked',note:'Redirects to a JS SPA (/finance/beta), not a fetchable data source — EODHD/Finnhub/Yahoo already cover pricing better anyway.',checked:'2026-08-08'},
+  {cat:'Priced APIs — keyed',name:'EODHD',use:'ASX prices, EOD bars, news feed + sentiment, forex, bulk quant scan',status:'ok',url:'https://eodhd.com/financial-apis/',urlLabel:'API docs',checked:'2026-08-07'},
+  {cat:'Priced APIs — keyed',name:'EODHD calendar/fundamentals',use:'Forward earnings calendar, P/E, dividends',status:'blocked',note:'403 Forbidden — not in our plan. Replaced by Yahoo (ASX) + Finnhub (US).',url:'https://eodhd.com/financial-apis/',urlLabel:'API docs',checked:'2026-08-05'},
+  {cat:'Priced APIs — keyed',name:'Finnhub',use:'US quotes, analyst recommendations, earnings calendar, metrics (P/E, div yield)',status:'ok',url:'https://finnhub.io/docs/api',urlLabel:'API docs',checked:'2026-08-07'},
+  {cat:'Priced APIs — keyed',name:'FMP — earnings calendar',use:'Earnings calendar (legacy)',status:'blocked',note:'The OLD /api/v3/earning_calendar path is dead (403, legacy-retired) — but /stable/earnings-calendar works fine for US names. Still no ASX unlock (402, premium-gated). See CLAUDE.md API Credentials.',url:'https://site.financialmodelingprep.com/developer/docs',urlLabel:'API docs',checked:'2026-08-08'},
+  {cat:'Priced APIs — keyed',name:'FMP — company-screener',use:'Was being considered as a liquid-ASX-universe filter for the quant net',status:'blocked',note:'"Restricted Endpoint — not available under current subscription." Confirmed dead, not wired in.',url:'https://site.financialmodelingprep.com/developer/docs',urlLabel:'API docs',checked:'2026-08-07'},
+  {cat:'Priced APIs — keyed',name:'Alpha Vantage',use:'Movers / earnings calendar (daily-cache only)',status:'ok',note:'25 calls/day cap — cached, not called live per-request.',url:'https://www.alphavantage.co/documentation/',urlLabel:'API docs',checked:'2026-08-06'},
+  {cat:'Priced APIs — keyed',name:'Mediastack',use:'AU business news + keyword sweep (daily-cache only)',status:'ok',note:'100 calls/month cap — cached.',url:'https://mediastack.com/documentation',urlLabel:'API docs',checked:'2026-08-06'},
+  {cat:'Priced APIs — keyed',name:'Twelve Data',use:'Usage/quota checks (daily-cache only)',status:'ok',note:'800 credits/month cap — cached.',url:'https://twelvedata.com/docs',urlLabel:'API docs',checked:'2026-08-06'},
+  {cat:'Priced APIs — keyed',name:'eToro public API',use:'Holdings import (attempted #47/#69)',status:'blocked',note:'The moment both x-api-key + x-user-key are sent together, the request hangs indefinitely (45s+, no response) — reproduced with two different key pairs. Individually, each header alone gets an instant 401, so this is their auth backend specifically, not a client timeout or a bad key. Manual paste import queued instead (#67).',url:'https://api-portal.etoro.com/',urlLabel:'API docs',checked:'2026-08-07'},
+  {cat:'Priced APIs — keyed',name:'Moomoo OpenAPI',use:'Investigated as a possible quotes/execution source',status:'blocked',note:'No ASX coverage (HK/US/China A-shares/Singapore/Malaysia/Japan/crypto only) and requires a locally-running OpenD gateway + funded account — same architectural mismatch as eToro. Not recommended (#94).',url:'https://openapi.moomoo.com/moomoo-api-doc/en/intro/intro.html',urlLabel:'API docs',checked:'2026-08-08'},
+  {cat:'Keyless fallbacks',name:'Yahoo Finance (keyless)',use:'ASX earnings dates, P/E/dividend metrics, EOD fallback, gainers/most-active',status:'degraded',note:'Works, but rate-limits hard per IP on tight loops — the earnings-calendar handshake came back empty tonight after heavy same-session use, self-heals after ~90s+. Batch calls, add delay, never hammer it while testing. Real bulk alternatives now cover the AU earnings/dividend cases this used to be the only source for — see the Earnings/Dividend Calendars category below.',url:'https://finance.yahoo.com/',urlLabel:'site',checked:'2026-08-08'},
+  {cat:'Keyless fallbacks',name:'ASX announcements feed (Markit)',use:'Post-report ASX catalysts (price-sensitive announcements), per-ticker only',status:'ok',note:"No per-article URL field — links out to the ticker's ASX announcements page instead.",url:'https://www.asx.com.au/markets/trade-our-cash-market/announcements',urlLabel:'ASX announcements',checked:'2026-08-07'},
+  {cat:'Keyless fallbacks',name:"ASX official market-wide announcements API",use:'Considered as a way to catch halts/price-sensitive news on names we haven’t discovered yet',status:'blocked',note:'404 — that endpoint path no longer exists. Not wired in.',url:'https://www.asx.com.au/',urlLabel:'site',checked:'2026-08-07'},
+  {cat:'Discovery net 1 — news/movers',name:'Stockhead RSS',use:'ASX news sweep',status:'ok',url:'https://stockhead.com.au/feed/',urlLabel:'RSS feed',checked:'2026-08-07'},
+  {cat:'Discovery net 1 — news/movers',name:'Fool.com.au RSS',use:'ASX news sweep',status:'ok',url:'https://www.fool.com.au/feed/',urlLabel:'RSS feed',checked:'2026-08-07'},
+  {cat:'Discovery net 1 — news/movers',name:'Yahoo gainers / most-active',use:'US top movers by % and by volume',status:'ok',url:'https://finance.yahoo.com/gainers/',urlLabel:'site',checked:'2026-08-07'},
+  {cat:'Discovery net 1 — news/movers',name:'Benzinga upgrades',use:'Analyst upgrade feed',status:'blocked',note:'403 Forbidden, confirmed live tonight.',url:'https://www.benzinga.com/analyst-stock-ratings/upgrades',urlLabel:'site',checked:'2026-08-07'},
+  {cat:'Discovery net 1 — news/movers',name:'DiscoveryAlert.com.au',use:'ASX mining/critical-minerals news',status:'ok',note:'Tested 8 Aug 2026: direct fetch is unreliable (feed/ redirects to the homepage, category pages 403 — Cloudflare-style protection, same family as SwingTradeBot/MarketIndex). But WebSearch scoped to this domain (allowed_domains) works cleanly and surfaces real, current, dated articles — confirmed live with a real critical-minerals query. Wired in as a WebSearch-only source, same pattern as the other blocked-but-searchable ASX sites.',url:'https://discoveryalert.com.au/',urlLabel:'site',checked:'2026-08-08'},
+  {cat:'Discovery net 1 — dropped',name:'ASX SwingTradeBot / MarketIndex scans / shorted.com.au family (shortinterest.au, fintel, CBOE, shortman, asxshort)',use:'ASX technical breakout scanners + 3rd-party short-interest',status:'blocked',note:'403/DNS-dead. Short interest replaced by ASIC’s own official short-position data instead — a better source, not a gap.',url:'https://www.marketindex.com.au/scans',urlLabel:'site',checked:'2026-08-05'},
+  {cat:'Discovery net 1 — dropped',name:'HotCopper',use:'Retail-sentiment community scraping',status:'blocked',note:'403 Forbidden.',url:'https://hotcopper.com.au/',urlLabel:'site',checked:'2026-08-05'},
+  {cat:'Discovery net 1 — news/movers',name:'WSJ/Dow Jones Markets RSS',use:'Global markets news sweep',status:'ok',note:'Tested 8 Aug 2026: real, working RSS. Wired in as a direct fetch alongside Stockhead/Fool.',url:'https://feeds.a.dj.com/rss/RSSMarketsMain.xml',urlLabel:'RSS feed',checked:'2026-08-08'},
+  {cat:'Discovery net 1 — news/movers',name:'Investing.com RSS',use:'Global markets news sweep',status:'ok',note:'Tested 8 Aug 2026: real, working RSS, confirmed live content (a genuine NVDA headline was in the feed at test time). Wired in as a direct fetch.',url:'https://www.investing.com/rss/news.rss',urlLabel:'RSS feed',checked:'2026-08-08'},
+  {cat:'Discovery net 1 — news/movers',name:'Seeking Alpha breaking news RSS',use:'US market-moving news sweep',status:'ok',note:'Tested 8 Aug 2026: real, working RSS. Wired in as a direct fetch.',url:'https://seekingalpha.com/market_currents.xml',urlLabel:'RSS feed',checked:'2026-08-08'},
+  {cat:'Discovery net 1 — news/movers',name:'SMH Business RSS',use:'Australian business news — genuinely useful for ASX, distinct from Stockhead/Fool',status:'ok',note:'Tested 8 Aug 2026: real, working RSS. Wired in as a direct fetch.',url:'https://www.smh.com.au/rss/business.xml',urlLabel:'RSS feed',checked:'2026-08-08'},
+  {cat:'Discovery net 1 — news/movers',name:'Smallcaps.com.au news RSS + mining sector page',use:'ASX small-cap news sweep, mining-specific sweep',status:'ok',note:'Tested 8 Aug 2026: /feed/ is a real working RSS; /sector/mining and /top-stocks are also fetchable (200) for a mining-specific or top-movers sweep. Already used for IPO discovery (net 4) — now also wired into net 1 for general/mining news.',url:'https://smallcaps.com.au/',urlLabel:'site',checked:'2026-08-08'},
+  {cat:'Discovery net 1 — untested, worth trying',name:'Finviz news, TradingView ideas, eToro discover/news',use:'US news blog / crowd-sourced trade ideas / retail sentiment',status:'untested',note:'Tested 8 Aug 2026: all return HTTP 200 (reachable), but likely JS-rendered pages — unclear if a plain fetch returns real parseable content vs an empty app shell. Worth a WebFetch trial run before treating as a real source.',url:'https://finviz.com/news.ashx',urlLabel:'Finviz news',checked:'2026-08-08'},
+  {cat:'Discovery net 1 — dead / not useful',name:'Reuters RSS',use:'Global markets news',status:'blocked',note:'401 — needs auth, not a public feed.',url:'https://www.reuters.com/markets/',urlLabel:'site',checked:'2026-08-08'},
+  {cat:'Discovery net 1 — dead / not useful',name:'Simply Wall St, Morningstar AU',use:'Stock analysis/ratings',status:'blocked',note:'404 — the RSS/feed paths tried don’t exist on these sites.',url:'https://simplywallst.com/',urlLabel:'site',checked:'2026-08-08'},
+  {cat:'Discovery net 1 — dead / not useful',name:'Livewire Markets',use:'Australian fund-manager commentary',status:'blocked',note:'403 Forbidden.',url:'https://www.livewiremarkets.com/',urlLabel:'site',checked:'2026-08-08'},
+  {cat:'Discovery net 1 — dead / not useful',name:'Google Finance quotes',use:'Price quotes',status:'blocked',note:'Redirects to a JS SPA (/finance/beta), not a fetchable data source — EODHD/Finnhub/Yahoo already cover pricing better anyway.',url:'https://www.google.com/finance/',urlLabel:'site',checked:'2026-08-08'},
+  {cat:'Earnings / dividend calendars (WebFetch, #85)',name:'Fool.com.au ASX reporting-season calendar',use:'Primary ASX earnings source — ~150 companies, real dates, one bulk fetch',status:'ok',note:'Tested 8 Aug 2026: real, comprehensive, dated. Replaces the fragile per-ticker Yahoo crumb-handshake as primary for ASX earnings — one fetch instead of one call per ticker, no throttle risk.',url:'https://www.fool.com.au/asx-reporting-season-calendar/',urlLabel:'reporting calendar',checked:'2026-08-08'},
+  {cat:'Earnings / dividend calendars (WebFetch, #85)',name:'CommSec ASX reporting season',use:'Cross-check for ASX earnings — also has DPS + NPAT per company',status:'ok',note:'Tested 8 Aug 2026: real, dated, independently agreed with Fool.com.au on CBA/AGL/ASX dates. Adds dividend-per-share and profit figures Fool doesn\'t show.',url:'https://www.commsec.com.au/market-news/reporting-season.html',urlLabel:'reporting calendar',checked:'2026-08-08'},
+  {cat:'Earnings / dividend calendars (WebFetch, #85)',name:'MarketIndex ASX reporting-season calendar',use:'Same content as Fool/CommSec, would be a 3rd cross-check',status:'blocked',note:'403 Forbidden — whole marketindex.com.au domain is blocked, not just /scans.',url:'https://www.marketindex.com.au/news/asx-reporting-season-calendar-august-2026-dates-and-forecasts-for-over-250-stocks',urlLabel:'article',checked:'2026-08-08'},
+  {cat:'Earnings / dividend calendars (WebFetch, #85)',name:'Investing.com earnings calendar',use:'Global earnings calendar — mostly US, some AU (WBC confirmed with a real date)',status:'degraded',note:'Tested 8 Aug 2026: real and fetchable, but "predominantly US-focused" — only a handful of AU names (WBC, ALS, Orica, Technology One mentioned). Useful as a secondary cross-check, not a primary ASX source.',url:'https://au.investing.com/earnings-calendar',urlLabel:'earnings calendar',checked:'2026-08-08'},
+  {cat:'Earnings / dividend calendars (WebFetch, #85)',name:'Snowball Analytics ASX ex-dividend calendar',use:'Primary ASX ex-dividend-date source',status:'ok',note:'Tested 8 Aug 2026: real bulk ex-div calendar, confirmed a genuine future date (RIO, 13 Aug 2026). Replaces the throttled per-ticker Yahoo ex-div path as primary.',url:'https://snowball-analytics.com/calendars/ex-dividend-calendar/asx',urlLabel:'ex-div calendar',checked:'2026-08-08'},
+  {cat:'Earnings / dividend calendars (WebFetch, #85)',name:'Morningstar AU upcoming dividends',use:'Secondary ASX dividend cross-check',status:'degraded',note:'Tested 8 Aug 2026: real data, but the page is sorted by PAY date, so most rows show an ex-div date already in the past — must filter for ex-div date > today, don\'t take the page at face value. Found one genuine future date (AAI, 10 Aug 2026).',url:'https://www.morningstar.com.au/market/upcoming-dividends',urlLabel:'dividends page',checked:'2026-08-08'},
+  {cat:'Earnings / dividend calendars (WebFetch, #85)',name:'Intelligent Investor dividends',use:'Considered as another ASX dividend source',status:'blocked',note:'Tested 8 Aug 2026: not fetchable — login-gated subscription content.',url:'https://www.intelligentinvestor.com.au/investment-tools/shares/dividends',urlLabel:'site',checked:'2026-08-08'},
+  {cat:'Earnings / dividend calendars (WebFetch, #85)',name:'Smallcaps.com.au upcoming dividends',use:'ASX dividend ticker coverage — cross-check for names, not dates',status:'degraded',note:'Tested 8 Aug 2026: real, fetchable, confirms real tickers (independently matched AAI + RIO already found via Snowball/Morningstar) — but the Ex-Date column doesn\'t come through on a single WebFetch, likely loads dynamically. Useful as a ticker cross-check, not a date source on its own.',url:'https://smallcaps.com.au/upcoming-dividends',urlLabel:'dividends page',checked:'2026-08-08'},
+  {cat:'Discovery net 4 — IPO/new-listing',name:'Smallcaps.com.au upcoming IPOs',use:'ASX new-listing discovery — already documented in CLAUDE.md net 4, confirmed working again tonight',status:'ok',url:'https://smallcaps.com.au/upcoming-ipos',urlLabel:'IPO page',checked:'2026-08-08'},
+  {cat:'Discovery net 4 — IPO/new-listing',name:'Listcorp.com upcoming IPOs',use:'ASX new-listing discovery — already documented in CLAUDE.md net 4',status:'blocked',note:'403 Forbidden on direct fetch — use WebSearch instead, same as the other blocked ASX sites.',url:'https://www.listcorp.com/asx/upcoming-ipos',urlLabel:'IPO page',checked:'2026-08-08'},
+  {cat:'Earnings / dividend calendars (WebFetch, #85)',name:'Kalkine upcoming ASX dividends',use:'Considered as another ASX dividend source',status:'blocked',note:'Tested 8 Aug 2026: 403 Forbidden.',url:'https://kalkine.com.au/news/dividend-stocks/upcoming-asx-dividends-2026-full-list-of-companies-ex-dividend-dates-and-investor-income-opportunities',urlLabel:'article',checked:'2026-08-08'},
 ];
 var DH_CATDESC={
   'Priced APIs — keyed':'Paid/keyed data providers — need an API key, usually rate-limited or metered.',
   'Keyless fallbacks':'Free, no-signup sources we fall back to when a keyed API is unavailable, forbidden, or exhausted.',
+  'Earnings / dividend calendars (WebFetch, #85)':'Bulk earnings/dividend calendar pages fetched via WebFetch (not a coded API call) — one fetch covers many companies at once, so these are the PRIMARY sources for "Tonight\'s Menu"\'s upcoming-earnings/dividends section; the keyless Yahoo per-ticker path is a fallback now.',
   'Discovery net 1 — news/movers':'Net 1 of the 4 discovery nets: live news, market movers, analyst actions, and a geopolitical/macro sweep — run every major scan, no exceptions.',
   'Discovery net 1 — dropped':'Sources net 1 used to fetch directly but no longer does — confirmed dead (403/DNS-fail) and removed to stop wasting tokens on them.',
   'Discovery net 1 — untested, worth trying':'Reachable (don\'t 403/404), but not yet confirmed to return real usable content — worth a trial fetch before relying on them.',
@@ -2917,6 +2987,7 @@ function openDataHealth(){
     var items=DATA_HEALTH.filter(function(s){return s.cat===cat;}).map(function(s){
       return '<div class="dhrow dh-'+s.status+'"><div class="dhtop"><span class="dhic">'+ic[s.status]+'</span><b class="dhname">'+esc(s.name)+'</b><span class="dhstat">'+lbl[s.status]+'</span></div>'+
         '<div class="dhuse">'+esc(s.use)+'</div>'+(s.note?'<div class="dhnote">'+esc(s.note)+'</div>':'')+
+        (s.url?'<a class="dhlink" href="'+esc(s.url)+'" target="_blank" rel="noopener">🔗 '+(s.urlLabel?esc(s.urlLabel):'site / docs')+' ↗</a>':'')+
         (s.checked?'<div class="dhchecked">Last checked '+esc(s.checked)+'</div>':'')+'</div>';
     }).join('');
     return '<div class="dhcat">'+esc(cat)+'</div>'+(DH_CATDESC[cat]?'<div class="dhcatdesc">'+esc(DH_CATDESC[cat])+'</div>':'')+items;
