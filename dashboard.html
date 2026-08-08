@@ -2125,7 +2125,7 @@ function favesHead(){
 function kitchenHead(D){
   var n=(typeof PULSES!=='undefined'&&PULSES)?PULSES.length:0;
   var last=(D&&D.stamp)?String(D.stamp).replace(/,?\s*20\d\d/,'').replace(/\s*AEST\b/,''):'—';
-  var stats=[tstat('Last cook',last),tstat('Target window',D&&D.next?'~'+D.next+' (manual)':'—'),tstat('Re-prices today',n)];
+  var stats=[tstat('Last cook',last),tstat('Next run',D&&D.next?'~'+D.next:'—'),tstat('Re-prices today',n)];
   return tabHead('👨‍🍳 Behind the pass','The engine room','Every run, every source, every score — no black box. This is where the soup actually gets made.',stats);
 }
 function runLogHtml(){
@@ -2140,7 +2140,11 @@ function runLogHtml(){
     if(!mm) return 0;
     return new Date(new Date().getFullYear(), MO.indexOf(mm[2]), +mm[1], tm?+tm[1]:0, tm?+tm[2]:0).getTime();
   }
-  function dur(ms){return ms?'<span class="rldur">· '+(ms/1000<10?(ms/1000).toFixed(1):Math.round(ms/1000))+'s</span>':'';}
+  function dur(ms){
+    if(!ms) return '';
+    var s=ms/1000, label=s<10?s.toFixed(1)+'s':s<60?Math.round(s)+'s':Math.round(s/60)+'m';
+    return '<span class="rldur">· '+label+'</span>';
+  }
   function pkline(arr,flag,lbl){
     var picks=(arr||[]).map(function(s,i){return '<span class="rlpk">'+tfB(['Day','Week','Long'][i])+' '+esc(s)+'</span>';}).join('');
     return '<div class="rlline"><span class="rlflag" title="'+lbl+'">'+flag+'</span>'+picks+'</div>';
