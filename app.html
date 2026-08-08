@@ -536,6 +536,8 @@
   .line .em{font-size:18px}
   .line .txt{flex:1}
   .line .txt small{display:block;color:var(--muted);font-size:12px;margin-top:1px}
+  .thlead{display:block;font-size:11px;font-weight:700;color:var(--broth);margin-top:3px}
+  .thlead b{color:var(--ink)}
   .tag{font-size:11px;font-weight:900;padding:4px 9px;border-radius:7px;text-transform:uppercase;letter-spacing:.03em;white-space:nowrap}
   .t-buy{background:rgba(35,194,103,.16);color:var(--buy)}
   .t-dont{background:rgba(255,77,77,.16);color:var(--dont)}
@@ -1682,7 +1684,10 @@ function render(D,H){
   }).join('');
   var tfLabel={Day:tfB('Day')+' Day trades',Week:tfB('Week')+' Week holds',Long:tfB('Long')+' Long holds'};
   var ocScorecard=(ocOn&&OUTCOMES.byTimeframe)?'<div class="tfscore">'+['Day','Week','Long'].map(function(tf){var a=OUTCOMES.byTimeframe[tf]||{};var wr=a.n?Math.round((a.winRate||0)*100):null;var cls=wr==null?'':(wr>=60?'good':wr>=40?'mid':'bad');return '<div class="tfs '+cls+(a.n?' tappable':'')+'"'+(a.n?' data-tf="'+tf+'" role="button" tabindex="0" title="See every '+tf+' call"':'')+'><div class="tft">'+tfLabel[tf]+'</div><div class="tfv">'+(wr==null?'—':wr+'%')+'</div><div class="tfn">'+(a.n?'right '+Math.round((a.winRate||0)*a.n)+' of '+a.n:'—')+'</div></div>';}).join('')+'</div>':'';
-  function lines(arr,key,src,off){off=off||0;return (arr||[]).map(function(x,i){return '<div class="line clickline" data-theme="'+esc(src)+'" data-ti="'+(off+i)+'" role="button" tabindex="0"><span class="em">'+esc(x.em)+'</span><div class="txt">'+esc(x[key])+'<small>'+x.note+'</small></div><span class="tag '+esc(x.tclass)+'">'+esc(x.tag)+'</span></div>';}).join('');}
+  function lines(arr,key,src,off){off=off||0;return (arr||[]).map(function(x,i){
+    var lead=x.leader?'<span class="thlead" title="Real model score behind this theme">→ <b>'+esc(x.leader.sym)+'</b> '+x.leader.buy_now+'/100 '+esc(x.leader.band)+'</span>':'';
+    return '<div class="line clickline" data-theme="'+esc(src)+'" data-ti="'+(off+i)+'" role="button" tabindex="0"><span class="em">'+esc(x.em)+'</span><div class="txt">'+esc(x[key])+'<small>'+x.note+'</small>'+lead+'</div><span class="tag '+esc(x.tclass)+'">'+esc(x.tag)+'</span></div>';
+  }).join('');}
   var story = (PULSES&&PULSES.length) ?
     ('<div class="panel"><h3>Tonight\'s hourly runs</h3><p class="panelsub"><b>Minor runs</b> — same menu, re-priced every hour ('+PULSES.length+' this session). The <b>major</b> menu changes are in The Journey. Newest first.</p>'+
      '<div class="pulselog">'+PULSES.slice().reverse().map(function(pu){
