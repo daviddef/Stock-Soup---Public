@@ -2106,8 +2106,7 @@ function reviewsHead(){
   if(!o||!o.outcomes) return tabHead('🍽️ The scorecard','How good were we?','We grade <b>every</b> past pick after its own timeframe — no cherry-picking. Numbers fill in as calls mature.',[]);
   var rec=o.record||'—', wr=Math.round((o.winRate||0)*100), bt=o.byTimeframe||{}, best=null;
   ['Day','Week','Long'].forEach(function(tf){var a=bt[tf];if(a&&a.n&&(!best||(a.winRate||0)>best.wr))best={tf:tf,wr:(a.winRate||0)};});
-  var LB={Day:'Day trades',Week:'Week holds',Long:'Month holds'};
-  var stats=[tstat('Record',rec),tstat('Win rate',wr+'%',wr>=50?'gd':'bd'),tstat('Sharpest',best?LB[best.tf]+' '+Math.round(best.wr*100)+'%':'—','gd')];
+  var stats=[tstat('Record',rec),tstat('Win rate',wr+'%',wr>=50?'gd':'bd'),tstat('Sharpest',best?tfB(best.tf)+' '+Math.round(best.wr*100)+'%':'—','gd')];
   var verdict=wr>=55?'Cooking with gas 🔥':wr>=45?'Honest and middling':'A humbling month — nothing hidden';
   return tabHead('🍽️ The scorecard',verdict,'We check <b>every</b> pick after its own timeframe — a day-trade the next day, a week pick after a week, a month pick after a month. Tap any call below for the story.',stats);
 }
