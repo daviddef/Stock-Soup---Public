@@ -676,6 +676,8 @@
   .acctrow{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid var(--line);font-size:14px}
   .acctk{color:var(--muted);font-weight:700;font-size:13px}
   .acctv{font-weight:700;text-align:right}
+  .acctsel{background:var(--surface-2);border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:7px 9px;font-size:12.5px;font-weight:700;font-family:var(--font)}
+  .acctsub{color:var(--faint);font-size:11.5px;padding:2px 0 13px;border-bottom:1px solid var(--line);line-height:1.5}
   .adminbadge{background:var(--broth);color:#fff;font-size:9px;font-weight:900;padding:2px 6px;border-radius:5px;letter-spacing:.06em;vertical-align:middle}
   .themeseg{display:inline-flex;gap:4px;background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:3px}
   .tseg{background:none;border:0;padding:6px 11px;border-radius:8px;font-size:12.5px;font-weight:700;cursor:pointer;color:var(--muted);font-family:inherit}
@@ -2801,6 +2803,9 @@ function openAccount(){
     body='<div class="acctrow"><span class="acctk">Signed in</span><span class="acctv">'+esc(email||'—')+(isAdmin()?' <span class="adminbadge">ADMIN</span>':'')+'</span></div>'+
       '<div class="acctrow"><span class="acctk">Sync</span><span class="acctv">✓ across your devices + price alerts</span></div>'+
       '<div class="acctrow"><span class="acctk">Appearance</span>'+seg()+'</div>'+
+      '<div class="acctrow"><span class="acctk">Run digest email</span><select class="acctsel" id="acctDigestMode">'+
+        '<option value="changes">Only when picks change</option><option value="always">Every published run</option><option value="off">Off</option></select></div>'+
+      '<div class="acctsub">Sent to '+esc(email||'you')+' — risk profile, ready-now actions, the 6 picks (HTML) plus the full report as a PDF.</div>'+
       (isAdmin()?'<div class="acctadmin"><div class="acctk" style="margin-bottom:8px">🛠 Admin</div><button class="acctbtn" id="acctArch">📐 Architecture &amp; data flow</button><button class="acctbtn" id="acctHealth">💓 Data-source health</button></div>':'')+
       '<div class="acctfoot"><button class="acctbtn ghost" id="acctSignOut">Sign out</button></div>'+
       '<div class="acctmsg" id="acctMsg"></div>'+
@@ -2829,6 +2834,13 @@ function openAccount(){
     }).catch(function(){ mg.textContent='Try again.'; }); };
   var ar=document.getElementById('acctArch'); if(ar) ar.onclick=function(){ closeModal(); openDocs(); };
   var ah=document.getElementById('acctHealth'); if(ah) ah.onclick=openDataHealth;
+  var dsel=document.getElementById('acctDigestMode');
+  if(dsel){
+    fetch(API_BASE+'/me/digest',{headers:apiHdr()}).then(function(r){return r.ok?r.json():null;}).then(function(j){
+      if(j&&j.digest_mode) dsel.value=j.digest_mode;
+    }).catch(function(){});
+    dsel.onchange=function(){ apiPush('POST','/me/digest',{mode:dsel.value}); };
+  }
 }
 // Admin: which upstream data sources are actually live, degraded, or blocked right now — maintained
 // by hand as gaps are found (EODHD's calendar/fundamentals plans, Yahoo's throttle, etc.), not pinged
