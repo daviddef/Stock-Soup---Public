@@ -1271,6 +1271,22 @@ function upcomingHtml(D){
 // #95 — Top Movers: the whole market's real gainers/losers/volume leaders, not just tonight's 26-46
 // candidates. Refreshed on FULL runs (agent-driven Yahoo gainers/losers fetch, same pattern as the
 // econ calendar — no keyless top-movers API exists for a pure-script pulse cycle to hit every 10min).
+// #97 — a consolidated "everything we read tonight, ranked" summary, not scattered across pick
+// blurbs/theme notes/candidate cards. User's own ask: summarise across ALL the news collected, not
+// just what ended up on a pick card. Market-scoped like the rest of the page; macro/geo items (no
+// sym) show in both views since they're not AU- or US-specific.
+function topNewsHtml(D){
+  var items=(D.topNews||[]).filter(function(n){return !n.region||n.region===MKT;});
+  if(!items.length) return '';
+  var TONE={bullish:{ic:'📈',cls:'ann-bull'},bearish:{ic:'📉',cls:'ann-bear'},neutral:{ic:'➖',cls:'ann-neu'},macro:{ic:'🌍',cls:'ann-neu'}};
+  var rows=items.slice(0,10).map(function(n){
+    var t=TONE[n.tone]||TONE.neutral;
+    return '<div class="annrow '+t.cls+'"><div class="anntop"><span class="annic">'+t.ic+'</span><b class="annhead">'+(n.sym?esc(n.sym)+' — ':'')+esc(n.headline)+'</b></div>'+
+      '<div class="annwhy">'+esc(n.why||'')+'</div></div>';
+  }).join('');
+  return '<section id="topnews"><div class="sec-head"><h2 class="display">📰 Tonight\'s news, consolidated</h2>'+infoBtn('topnews')+'</div>'+
+    '<p class="sec-sub">Everything real we read tonight across every source, ranked — not just what made a pick card.</p>'+rows+'</section>';
+}
 function topMoversHtml(D){
   var tm=(D.topMovers||{})[MKT]; if(!tm) return '';
   function row(m){
@@ -1910,6 +1926,7 @@ function render(D,H){
     '<section><div class="sec-head"><h2 class="display"><span class="k">02</span> Serving today in '+(MKT==='us'?'the U.S.':'Australia')+'</h2>'+infoBtn('menu')+'</div>'+
       '<p class="sec-sub" style="margin-top:4px">Three time horizons — '+tfB('Day')+' a quick feed · '+tfB('Week')+' a few days · '+tfB('Long')+' slow-cooked. Tap a card for the full serve; tap a name for Yahoo.</p>'+menus+'</section>'+
     // Change-environment retired — its trajectory + "ready to buy" now live inside each pick card (miniTraj + buyat + rangeBar).
+    topNewsHtml(D)+
     '<section><div class="sec-head"><h2 class="display"><span class="k">03</span> The world &amp; the sectors</h2>'+infoBtn('world')+'</div>'+
       '<p class="sec-sub">What\'s moving the pot, and which kitchens are hot vs which to skip.</p>'+
       '<div class="cols"><div class="stack"><div class="eyebrow">🌍 Geopolitics</div>'+lines(D.geo,'title','geo')+'</div>'+
@@ -2278,6 +2295,10 @@ var INFO={
     '</ul>'+
     '<h4>🆕 New listings / IPOs (next 30 days)</h4><p>Companies about to start trading on the ASX for the first time. Very new listings have no price history yet, so our usual trend/RSI checks can\'t apply — treat these as higher-risk, "watch first" territory.</p>'+
     '<p class="infofoot">Sourced by bulk-fetching real reporting-season and dividend calendars each run — see Inside the Kitchen → Data-source health for exactly which ones.</p>'},
+  topnews:{icon:'📰',title:"Tonight's news, consolidated",body:
+    '<p>Every real, useful headline tonight\'s discovery net actually read — company news, broker moves, and geopolitical/macro events — ranked in one place, not scattered one-per-pick.</p>'+
+    '<p>Green = we read it as good news for the stock/theme, red = bad, grey = the headline alone doesn\'t say either way, 🌍 = macro/geopolitical (not tied to one ticker).</p>'+
+    '<p class="infofoot">Built from the same real reads that feed picks, candidates and the geo/sector cards — this is just all of it in one consolidated list.</p>'},
   topmovers:{icon:'🔥',title:'Top Movers',body:
     '<p>The whole market\'s real biggest gainers and losers today — not just names in tonight\'s picks or Full Pot. A quick reality check on what\'s actually happening out there.</p>'+
     '<p>This is different from <b>The Misses</b> below: Misses checks movers against what we <i>scanned</i>; Top Movers is just the raw list, no judgement about whether we should have caught it.</p>'+
