@@ -1156,6 +1156,13 @@ function ruCard(ru,region,idx){var da=(region!=null?' data-region="'+region+'" d
   '<span class="runame">'+esc(ru.name)+'</span><span class="rupx">'+esc(ru.price)+' <span class="'+(ru.up?'up':'down')+'">'+(ru.up?'▲':'▼')+' '+esc(ru.change)+'</span></span></div>'+
   '<div class="ruline">'+esc(ru.line)+'</div></article>';}
 function money(cur,n){return cur+(Math.abs(n%1)<1e-9?String(n):n.toFixed(2));}
+// Real bug (8 Aug 2026): a handful of candidates carried price as a raw JS number with float-precision
+// garbage (0.026000000000000002 instead of 0.026 — classic binary-float artifact from upstream Python
+// math), and it was being concatenated straight into card HTML with no rounding at all, showing an
+// 18-digit price on the card. Numbers always get rounded to 2dp (matches the app's existing convention
+// for penny stocks — the watchlist already stores e.g. "A$0.03" this way); strings pass through as-is
+// since they're already formatted upstream (e.g. runner-up cards).
+function cleanPrice(p){return typeof p==='number'?p.toFixed(2):p;}
 function clamp(x){return Math.max(3,Math.min(97,x));}
 // Action that moves with the ideal-buy price: at/below → get in, above → wait for the dip.
 // The real discovery funnel (only shown once a full run logs D.discovery — makes "48" real & inspectable)
@@ -1758,7 +1765,7 @@ function render(D,H){
     return '<div class="potcard h-'+esc(c.heat)+'" data-ci="'+i+'" role="button" tabindex="0" aria-label="Details for '+esc(c.sym)+'">'+
       '<div class="pmc-top">'+(c.heat==='cold'?'<span class="ph no">⛔</span>':'<span class="ph"></span>')+'<b class="pmc-sym">'+esc(c.sym)+'</b>'+shortChip+'<span class="pmc-flag">'+(c.region==='au'?'AU':'US')+'</span></div>'+
       (c.name?'<div class="pmc-name">'+esc(c.name)+'</div>':'')+
-      '<div class="pmc-px">'+(c.price?'<span class="pmc-price">'+esc(c.price)+'</span>':'')+chg+'</div>'+
+      '<div class="pmc-px">'+(c.price?'<span class="pmc-price">'+esc(cleanPrice(c.price))+'</span>':'')+chg+'</div>'+
       (spk?'<div class="pmc-spark">'+spk+'</div>':'')+
       '<div class="pmc-note">'+esc(c.note||c.news)+'</div></div>';   // WHY it's rated this way beats a random news headline (was c.news||c.note)
   }
@@ -1957,7 +1964,7 @@ function openModal(p,region,cur){
     .forEach(function(x){_alts.push({sym:x.c.sym,region:x.c.region,note:x.c.note,heat:x.c.heat,price:x.c.price,change:x.c.change,up:x.c.up,spark:x.c.spark,ci:x.i});});
   var altsHtml=_alts.length?'<div class="malts"><h4 class="maltsh">🥈 Prefer another? · '+_alts.length+' other option'+(_alts.length>1?'s':'')+' this run</h4>'+
     _alts.map(function(a){
-      var px=a.price?'<span class="altpx '+(a.up?'up':'down')+'">'+esc(a.price)+(a.change?' '+esc(a.change):'')+'</span>':'<span class="altpx muted">live ↗</span>';
+      var px=a.price?'<span class="altpx '+(a.up?'up':'down')+'">'+esc(cleanPrice(a.price))+(a.change?' '+esc(a.change):'')+'</span>':'<span class="altpx muted">live ↗</span>';
       var asp=(a.spark&&a.spark.length>2)?'<div class="altspark">'+sparkSVG(a.spark.slice(-30))+'</div>':'';
       var tag=a.ci!=null?' data-alt-ci="'+a.ci+'" role="button" tabindex="0"':' href="'+yf(a.sym,a.region||region)+'" target="_blank" rel="noopener"';
       return '<a class="altcard'+(a.heat?' h-'+a.heat:'')+'"'+tag+'>'+
@@ -2492,7 +2499,7 @@ function openCandidate(idx){
     mShareBtn('sym/'+c.region+'/'+encodeURIComponent(c.sym),c.sym)+
     '<div class="mtf">🍲 Full-pot candidate · '+(c.region==='au'?'🇦🇺 ASX':'🇺🇸 International')+'</div>'+
     '<div class="mtop"><div><div class="msym">'+esc(c.sym)+'</div><div class="mco">'+esc(c.name||c.sym)+'</div></div>'+
-      '<div class="mpx"><div class="mp mono">'+esc(c.price||'—')+'</div>'+(c.change?'<div class="mono '+(c.up?'up':'down')+'" style="font-weight:700;font-size:13px">'+(c.up?'▲':'▼')+' '+esc(c.change)+'</div>':'')+'</div></div>'+
+      '<div class="mpx"><div class="mp mono">'+esc(c.price!=null?cleanPrice(c.price):'—')+'</div>'+(c.change?'<div class="mono '+(c.up?'up':'down')+'" style="font-weight:700;font-size:13px">'+(c.up?'▲':'▼')+' '+esc(c.change)+'</div>':'')+'</div></div>'+
     '<span class="mverd '+vc+'">'+esc(HEAT[c.heat]||c.heat)+'</span></div>'+
     '<div class="mbody">'+
       (spk?'<div class="viz"><h4>Recent trend · last ~6 weeks</h4>'+spk+'</div>':'')+
@@ -2794,7 +2801,7 @@ function renderWatchlist(){
     var w=r.w, it=r.intel;
     var cls = r.gap==null?'wt-none':(r.gap<=0.5?'wt-in':(r.gap<=4?'wt-close':'wt-wait'));
     var lbl = r.gap==null?'':(r.gap<=0.5?'at buy ✓':Math.round(r.gap)+'% above');
-    var px = r.price!=null?'<span class="pmc-price">'+r.cur+r.price+'</span>':'<span class="pmc-price wpx muted" data-hy-sym="'+esc(w.sym)+'" data-hy-region="'+esc(w.region)+'" data-hy-cur="'+r.cur+'">…</span>';
+    var px = r.price!=null?'<span class="pmc-price">'+r.cur+cleanPrice(r.price)+'</span>':'<span class="pmc-price wpx muted" data-hy-sym="'+esc(w.sym)+'" data-hy-region="'+esc(w.region)+'" data-hy-cur="'+r.cur+'">…</span>';
     var chg = r.change?'<span class="pmc-chg '+(r.up?'up':'down')+'">'+(r.up?'▲':'▼')+' '+esc(r.change)+'</span>':'';
     var spk = (r.spark&&r.spark.length>2)?'<div class="pmc-spark">'+sparkSVG(r.spark.slice(-30))+'</div>':'';
     var buyLine = (r.entry!=null||it.target!=null)?'<div class="wc-lv">'+(r.entry!=null?'🎯 buy '+r.cur+r.entry:'')+(it.target!=null?(r.entry!=null?' · ':'')+'target '+r.cur+it.target:'')+(lbl?'  <span class="wst">'+lbl+'</span>':'')+'</div>':(lbl?'<div class="wc-lv"><span class="wst">'+lbl+'</span></div>':'');
