@@ -940,7 +940,7 @@
   .tradj{margin:8px 0 0;padding-left:20px;display:flex;flex-direction:column;gap:7px;font-size:12.5px;line-height:1.5}
   .malts{border-top:1px solid var(--line);padding-top:15px}
   .maltsh{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--broth);font-weight:800;margin-bottom:10px}
-  .altcard{display:block;background:var(--surface-2);border:1px solid var(--line);border-left:3px solid var(--faint,var(--line));border-radius:11px;padding:11px 13px;text-decoration:none;color:var(--ink);margin-bottom:8px;transition:border-color .12s}
+  .altcard{display:block;background:var(--surface-2);border:1px solid var(--line);border-left:3px solid var(--faint,var(--line));border-radius:11px;padding:11px 13px;text-decoration:none;color:var(--ink);margin-bottom:8px;transition:border-color .12s;cursor:pointer}
   .altcard:last-child{margin-bottom:0}
   .altcard:hover{border-left-color:var(--broth)}
   .altcard.h-hot{border-left-color:var(--broth)} .altcard.h-good{border-left-color:var(--buy)} .altcard.h-mid{border-left-color:var(--hold)} .altcard.h-cold{border-left-color:var(--dont)}
@@ -1785,6 +1785,7 @@ function render(D,H){
           '<div class="bmhead"><span class="live"><span class="pulse"></span>LIVE</span><button class="bmupd" id="lastUpd">updated…</button></div>'+
           '<button class="bmitem" id="signInTop" role="menuitem">👤 Sign in</button>'+
           '<button class="bmitem" id="refreshBtn" role="menuitem">↻ Refresh prices</button>'+
+          '<button class="bmitem" id="refreshFullBtn" role="menuitem">🍳 Refresh full (new picks)</button>'+
           '<button class="bmitem" id="shareTabBtn" role="menuitem">🔗 Share this page</button>'+
           '<button class="bmitem" id="viewBtn" role="menuitem">😋 Simple view</button>'+
           '<button class="bmitem" id="themeBtn" role="menuitem">🌗 Switch theme</button>'+
@@ -1936,21 +1937,31 @@ function openModal(p,region,cur){
     '<div class="spmm"><span>'+esc(cur)+Math.min.apply(null,p.spark).toFixed(1)+'</span><span>'+esc(cur)+Math.max.apply(null,p.spark).toFixed(1)+'</span></div>'+
     '<div class="rsimeta">'+(p.spark[p.spark.length-1]>=p.spark[0]?'📈 Up over the stretch':'📉 Down over the stretch')+'</div></div>' : '';
   var rangesHtml = rangeBarsHtml(p,cur);
-  // Other options — runner-up + same-market candidates, so there's always a Plan B inside the tap
+  // Other options — runner-up + same-market candidates, so there's always a Plan B inside the tap.
+  // Real bug (8 Aug 2026): these used to link straight out to Yahoo, unlike every other tappable
+  // stock-card in the app (Full Pot cards open the in-app detail via openCandidate) — same ticker,
+  // two different behaviours depending on where you tapped it from. Fixed: when an alt has a real
+  // index into LAST.D.candidates, tapping it opens the SAME in-app detail modal; only a runnerUp that
+  // isn't itself a tracked candidate (no real score data to show) falls back to an external Yahoo link.
   var _curS={}; (LAST.D.regions||[]).forEach(function(rg){(rg.picks||[]).forEach(function(pp){_curS[pp.sym]=1;});});
+  var _allCands=LAST.D.candidates||[];
   var _alts=[];
-  if(p.runnerUp) _alts.push({sym:p.runnerUp.sym,region:p.runnerUp.region||region,name:p.runnerUp.name,price:p.runnerUp.price,change:p.runnerUp.change,up:p.runnerUp.up,note:p.runnerUp.line,spark:p.runnerUp.spark});
+  if(p.runnerUp){
+    var _rci=_allCands.findIndex(function(c){return c.sym===p.runnerUp.sym&&c.region===(p.runnerUp.region||region);});
+    _alts.push({sym:p.runnerUp.sym,region:p.runnerUp.region||region,name:p.runnerUp.name,price:p.runnerUp.price,change:p.runnerUp.change,up:p.runnerUp.up,note:p.runnerUp.line,spark:p.runnerUp.spark,ci:_rci>=0?_rci:null});
+  }
   var _ho={hot:0,good:1,mid:2,cold:3};
-  (LAST.D.candidates||[]).filter(function(c){return c.region===region&&c.sym!==p.sym&&!_curS[c.sym]&&!_alts.some(function(a){return a.sym===c.sym;});})
-    .sort(function(a,b){return (_ho[a.heat]==null?9:_ho[a.heat])-(_ho[b.heat]==null?9:_ho[b.heat]);})
+  _allCands.map(function(c,i){return {c:c,i:i};}).filter(function(x){return x.c.region===region&&x.c.sym!==p.sym&&!_curS[x.c.sym]&&!_alts.some(function(a){return a.sym===x.c.sym;});})
+    .sort(function(x,y){return (_ho[x.c.heat]==null?9:_ho[x.c.heat])-(_ho[y.c.heat]==null?9:_ho[y.c.heat]);})
     .slice(0,Math.max(0,3-_alts.length))
-    .forEach(function(c){_alts.push({sym:c.sym,region:c.region,note:c.note,heat:c.heat,price:c.price,change:c.change,up:c.up,spark:c.spark});});
+    .forEach(function(x){_alts.push({sym:x.c.sym,region:x.c.region,note:x.c.note,heat:x.c.heat,price:x.c.price,change:x.c.change,up:x.c.up,spark:x.c.spark,ci:x.i});});
   var altsHtml=_alts.length?'<div class="malts"><h4 class="maltsh">🥈 Prefer another? · '+_alts.length+' other option'+(_alts.length>1?'s':'')+' this run</h4>'+
     _alts.map(function(a){
       var px=a.price?'<span class="altpx '+(a.up?'up':'down')+'">'+esc(a.price)+(a.change?' '+esc(a.change):'')+'</span>':'<span class="altpx muted">live ↗</span>';
       var asp=(a.spark&&a.spark.length>2)?'<div class="altspark">'+sparkSVG(a.spark.slice(-30))+'</div>':'';
-      return '<a class="altcard'+(a.heat?' h-'+a.heat:'')+'" href="'+yf(a.sym,a.region||region)+'" target="_blank" rel="noopener">'+
-        '<div class="altmain"><b>'+esc(a.sym)+'</b>'+(a.name?' <span class="altnm">'+esc(a.name)+'</span>':'')+px+'<span class="altarrow">↗</span></div>'+
+      var tag=a.ci!=null?' data-alt-ci="'+a.ci+'" role="button" tabindex="0"':' href="'+yf(a.sym,a.region||region)+'" target="_blank" rel="noopener"';
+      return '<a class="altcard'+(a.heat?' h-'+a.heat:'')+'"'+tag+'>'+
+        '<div class="altmain"><b>'+esc(a.sym)+'</b>'+(a.name?' <span class="altnm">'+esc(a.name)+'</span>':'')+px+'<span class="altarrow">'+(a.ci!=null?'→':'↗')+'</span></div>'+
         asp+
         (a.note?'<div class="altnote">'+esc(a.note)+'</div>':'')+'</a>';
     }).join('')+'</div>':'';
@@ -1996,6 +2007,10 @@ function openModal(p,region,cur){
   var _vb=document.getElementById('mVerdictBtn'); if(_vb) _vb.onclick=function(){openVerdictExplain(p.verdict);};
   var _wb=m.querySelector('.watchbtn'); if(_wb) _wb.addEventListener('click',function(e){e.preventDefault();watchToggleFromEl(_wb);});
   var _ob=m.querySelector('.ownbtn'); if(_ob){ var _setOwn=function(on){_ob.textContent=on?'📦 Owned ✓':'📦 I own it';_ob.setAttribute('aria-pressed',on?'true':'false');_ob.classList.toggle('owned',on);}; _setOwn(wlOwns(p.sym,region)); _ob.addEventListener('click',function(e){e.preventDefault();var on=wlToggleOwn(p.sym,region,p.name);_setOwn(on);if(LAST&&LAST.D){var sc=window.pageYOffset;render(LAST.D,LAST.H);window.scrollTo(0,sc);}}); }
+  m.querySelectorAll('.altcard[data-alt-ci]').forEach(function(el){
+    var go=function(e){e.preventDefault();openCandidate(+el.dataset.altCi);};
+    el.addEventListener('click',go); el.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();go(e);}});
+  });
   syncWatchButtons();
   var ov=document.getElementById('overlay');
   ov.classList.add('open');ov.setAttribute('aria-hidden','false');
@@ -2276,7 +2291,12 @@ function runLogHtml(){
     '<div class="runlog-rest" id="runRest" hidden>'+restHtml.join('')+'</div>'):'';
   // Every run ATTEMPT that isn't a finished menu — cooking / failed / cancelled — so nothing silently vanishes.
   // A 'done' run already shows as its committed menu below, so we only surface the others here.
-  var live=(RUNLOG||[]).filter(function(e){return e&&e.startedAt&&e.status!=='done';}).map(function(e){
+  var live=(RUNLOG||[]).filter(function(e){return e&&(e.startedAt||e.requestedAt)&&e.status!=='done';}).map(function(e){
+    // #91 — a 'requested' row has no startedAt yet (nobody's picked it up), only requestedAt.
+    if(e.status==='requested'){
+      var qts=new Date(e.requestedAt).getTime();
+      return '<div class="rlrow rlfail" style="border-left-color:var(--broth);background:linear-gradient(90deg,rgba(255,107,26,.1),transparent 62%)"><div class="rltop"><span class="rltag" style="color:var(--broth)">⏳ Full re-cook · requested</span><span class="rlwhen">'+fmtWhen(qts)+'</span></div><div class="rlbody"><div class="rlline"><span class="qt">'+esc(e.label||'Queued — runs when a session next picks it up')+'</span></div></div></div>';
+    }
     var rts=new Date(e.startedAt).getTime(), isMenu=e.kind!=='reprice';
     if(e.status==='cooking'&&(Date.now()-rts)>25*60*1000) return '';   // a cooking marker this old is stale — hide it
     var kindTxt=(isMenu?'🍳 Menu':'⏱ Re-price');
@@ -2525,6 +2545,13 @@ function openMarketChip(key){
       '<p><b>'+esc(r.audusd||'')+'</b>'+(r.audusdChange?' <span class="'+(r.audusdUp?'up':'down')+'">'+esc(r.audusdChange)+'</span>':'')+'.</p>'+
       '<p>The exchange rate cuts two ways: a <b>weaker AUD</b> flatters Aussie exporters (miners, energy) and lifts the AUD value of your US holdings; a <b>stronger AUD</b> does the reverse. It\'s also how the US picks\' prices convert for you.</p>');
   } else if(key==='gold'){
+    // Real bug (8 Aug 2026): this pill used to show its own bare-text summary, different from —
+    // and less rich than — tapping the actual Gold commodity card (which opens openTheme() with
+    // real scored leader cards, price/spark, tap-through). Same info, one experience: delegate to
+    // the card's own overlay when a matching commodity card exists; the bare fallback below only
+    // fires if Gold genuinely isn't a commodity card this run.
+    var _gi=(D.commodities||[]).findIndex(function(c){return (c.name||'').toLowerCase().indexOf('gold')>=0;});
+    if(_gi>=0){ openTheme('commodities',_gi); return; }
     var g=(D.commodities||[]).filter(function(c){return (c.name||'').toLowerCase().indexOf('gold')>=0;})[0];
     var miners=(D.candidates||[]).filter(function(c){return /gold/i.test(c.note||'');}).map(function(c){return c.sym;});
     _mchipModal('🥇','Market context','Gold',
@@ -3133,6 +3160,7 @@ function wire(D){
   });
   var vb=document.getElementById('viewBtn'); if(vb) vb.onclick=function(){setView('simple');};
   var rb=document.getElementById('refreshBtn'); if(rb){ if(!isAdmin()){ rb.style.display='none'; } else { rb.onclick=function(){refreshPrices(rb);}; } }
+  var rfb=document.getElementById('refreshFullBtn'); if(rfb){ if(!isAdmin()){ rfb.style.display='none'; } else { rfb.onclick=function(){requestFullRun(rfb);}; } }
   var stb=document.getElementById('shareTabBtn'); if(stb) stb.onclick=shareCurrentTab;
   var atb=document.getElementById('alertsToggleBtn');
   if(atb){
@@ -3420,6 +3448,26 @@ function refreshPrices(btn){
       }, Math.max(0, 450-(Date.now()-started)));
     });
   });
+}
+// #91 — admin-only "Refresh full": requests a fresh full re-cook, distinct from refreshPrices() above
+// which just re-fetches whatever's already published. This can't run synchronously (no persistent 24/7
+// compute) — it queues a "requested" row on the Run Schedule that a live/next-scheduled session picks
+// up. Be honest about that in the toast; never imply it's instant.
+function requestFullRun(btn){
+  if(btn) btn.classList.add('spinning');
+  fetch(API_BASE+'/me/request-run',{method:'POST',headers:apiHdr()})
+    .then(function(r){return r.json().then(function(j){return {ok:r.ok,j:j};});})
+    .then(function(res){
+      if(btn) btn.classList.remove('spinning');
+      if(res.ok&&res.j.ok){
+        flashToast('🍳 Full re-cook requested — queued on the Run Schedule.<br><span style="opacity:.7;font-weight:600">Runs when a session next picks it up, not instantly — no 24/7 compute yet.</span>');
+        refreshPrices();
+      } else if(res.j&&res.j.error){
+        flashToast('Couldn\'t queue it: '+esc(res.j.error));
+      } else {
+        flashToast('Couldn\'t reach the server — try again shortly.');
+      }
+    }).catch(function(){ if(btn) btn.classList.remove('spinning'); flashToast('Couldn\'t reach the server — try again shortly.'); });
 }
 // capture the magic-link session handed back in the redirect hash (#session=…), then sync the list
 (function(){var m=(location.hash||'').match(/session=([^&]+)/);if(m){sessSet(decodeURIComponent(m[1]));try{history.replaceState(null,'',location.pathname+location.search);}catch(e){}}})();
