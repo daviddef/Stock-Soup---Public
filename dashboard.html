@@ -1902,7 +1902,7 @@ function render(D,H){
   var _rp2=(ocRecord||'').split(/[–-]/);
   var recClear2=(_rp2.length===2)?'<div class="sub" style="color:var(--ink);font-weight:700">'+_rp2[0].trim()+' win'+(_rp2[0].trim()==='1'?'':'s')+' · '+_rp2[1].trim()+' loss'+(_rp2[1].trim()==='1'?'':'es')+'</div>':recClear;
   var ocGraded=ocOn?Object.keys(OUTCOMES.outcomes).map(function(k){return OUTCOMES.outcomes[k];}).filter(function(o){return o.status==='graded';}):[];
-  var ocRows=ocGraded.slice().sort(function(a,b){return (b.date||'').localeCompare(a.date||'');}).slice(0,6).map(function(o){
+  var ocRows=ocGraded.slice().sort(function(a,b){return (b.date||'').localeCompare(a.date||'');}).slice(0,10).map(function(o){
     var w=o.correct, pct=(o.ret>=0?'+':'')+(Math.round(o.ret*1000)/10)+'%';
     return '<div class="row graderow" data-gsym="'+esc(o.sym)+'" role="button" tabindex="0" title="Tap to see what happened with '+esc(o.sym)+'"><span class="rsym">'+(tfBadge[o.tf]||'')+' '+esc(o.sym)+'</span><div class="bar"><span class="fill" style="'+(w?'left:50%;width:26%;background:var(--buy)':'right:50%;width:22%;background:var(--dont)')+'"></span></div><span class="res '+(w?'up':'down')+'">'+esc(pct)+(o.correctVsIndex?' <span class="idxbeat" title="also did better than the market">beat mkt</span>':'')+'</span></div>';
   }).join('');
