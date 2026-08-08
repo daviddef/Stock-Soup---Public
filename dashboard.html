@@ -625,7 +625,11 @@
   .missrow.m-scanned .missstat{color:var(--hold);background:rgba(255,197,61,.18)}
   .missnote{width:100%;color:var(--faint);font-size:12px}
   .misschart{width:100%;order:99}
+  .misschart-wrap{position:relative}
   .misschart .spark{width:100%;height:26px;display:block}
+  .mchk-line{stroke:var(--broth);stroke-width:1;stroke-dasharray:2,1.6;opacity:.85;vector-effect:non-scaling-stroke}
+  .mchk-dot{fill:var(--broth)}
+  .misschart-flag{position:absolute;top:-13px;transform:translateX(-50%);font-size:9px;font-weight:800;color:var(--broth);white-space:nowrap;letter-spacing:.01em}
   .misschart-mm{display:flex;justify-content:space-between;font-size:10px;font-weight:700;color:var(--faint);font-variant-numeric:tabular-nums;margin-top:1px}
   .misschart-mm .misschart-now{color:var(--muted);font-weight:800}
   .misschart-load{font-size:10px;color:var(--faint);letter-spacing:.15em}
@@ -1131,8 +1135,17 @@ function discoveryFunnel(D){
 }
 // "The Misses" (#63): the day's real top movers, checked against what we actually scanned/served —
 // so the run's accountability isn't only ever the winners. Built by misses.py, stored on latest.misses.
-function missChartSlot(sym,region,cur){
-  return '<div class="misschart" data-hydrate-chart data-sym="'+esc(sym)+'" data-region="'+esc(region)+'" data-cur="'+esc(cur)+'"><span class="misschart-load">····· 24h</span></div>';
+// "Fri 7 Aug 2026 · 11:34 AEST" -> epoch ms, so the chart can mark exactly when a miss was flagged
+// (reused shape from runLogHtml's majTs, standalone here since misses/charts render outside that scope).
+function parseStampTime(stamp){
+  var MO=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  var mm=(stamp||'').match(/(\d{1,2})\s+([A-Za-z]{3})\s+(\d{4})/), tm=(stamp||'').match(/(\d{1,2}):(\d{2})/);
+  if(!mm) return null;
+  return new Date(+mm[3], MO.indexOf(mm[2]), +mm[1], tm?+tm[1]:0, tm?+tm[2]:0).getTime();
+}
+function missChartSlot(sym,region,cur,checkStamp){
+  var ts=checkStamp?parseStampTime(checkStamp):null;
+  return '<div class="misschart" data-hydrate-chart data-sym="'+esc(sym)+'" data-region="'+esc(region)+'" data-cur="'+esc(cur)+'"'+(ts?' data-check-ts="'+ts+'"':'')+'><span class="misschart-load">····· 24h</span></div>';
 }
 function hotMoversHtml(D){
   // Live-ish movers between major runs (#83 follow-up): the 10-min re-price pulse now also checks
@@ -1172,7 +1185,7 @@ function missesSection(D){
       (r.name?'<span class="missnm">'+esc(r.name)+'</span>':'')+
       '<span class="misspct '+(up?'up':'down')+'">'+(up?'▲':'▼')+' '+Math.abs(r.pct)+'%</span>'+
       '<span class="missstat">'+s.lbl+'</span>'+(sig?'<div style="width:100%;margin-top:2px">'+sig+'</div>':'')+'<span class="missnote">'+esc(r.note)+'</span>'+
-      missChartSlot(r.sym,r.region,r.region==='au'?'A$':'$')+'</div>';
+      missChartSlot(r.sym,r.region,r.region==='au'?'A$':'$',mi.stamp)+'</div>';
   }).join('');
   return '<section id="misses"><div class="sec-head"><h2 class="display">😬 The Misses <span class="badcount">'+missedN+'</span></h2>'+infoBtn('misses')+'</div>'+
     hmHtml+
@@ -2913,13 +2926,42 @@ function openTrackRecord(){
   document.getElementById('mClose').focus();
 }
 
+function _timeHM(sec){ var d=new Date(sec*1000), h=d.getHours(), m=d.getMinutes(); var ap=h>=12?'pm':'am'; h=h%12; if(h===0)h=12; return h+':'+(m<10?'0':'')+m+ap; }
+// Marker-aware sparkline: draws a dashed line + dot at markIdx (when we flagged the miss), so the
+// chart reads as "here's what happened AFTER we checked", not a disconnected generic 24h window.
+function missSparkSVG(vals,markIdx){
+  var w=100,h=30,mn=Math.min.apply(null,vals),mx=Math.max.apply(null,vals),rng=(mx-mn)||1;
+  var xy=vals.map(function(v,i){return [(i/(vals.length-1))*w,h-((v-mn)/rng)*(h-4)-2];});
+  var poly=xy.map(function(p){return p[0].toFixed(1)+','+p[1].toFixed(1);}).join(' ');
+  var up=vals[vals.length-1]>=vals[0], last=xy[xy.length-1];
+  var mark='';
+  if(markIdx!=null&&markIdx>=0&&markIdx<xy.length){
+    var mp=xy[markIdx];
+    mark='<line x1="'+mp[0].toFixed(1)+'" y1="0" x2="'+mp[0].toFixed(1)+'" y2="'+h+'" class="mchk-line"/>'+
+      '<circle cx="'+mp[0].toFixed(1)+'" cy="'+mp[1].toFixed(1)+'" r="2.4" class="mchk-dot"/>';
+  }
+  return '<svg class="spark '+(up?'up':'down')+'" viewBox="0 0 '+w+' '+h+'" preserveAspectRatio="none" aria-hidden="true">'+
+    '<polygon points="0,'+h+' '+poly+' '+w+','+h+'"/><polyline points="'+poly+'"/>'+mark+
+    '<circle cx="'+last[0].toFixed(1)+'" cy="'+last[1].toFixed(1)+'" r="2.2"/></svg>';
+}
 function hydrateMissCharts(){
   document.querySelectorAll('.misschart[data-hydrate-chart]').forEach(function(slot){
-    var sym=slot.dataset.sym, reg=slot.dataset.region, cur=slot.dataset.cur||'';
+    var sym=slot.dataset.sym, reg=slot.dataset.region, cur=slot.dataset.cur||'', checkTs=slot.dataset.checkTs?+slot.dataset.checkTs:null;
     fetch(API_BASE+'/intraday?sym='+encodeURIComponent(sym)+'&region='+encodeURIComponent(reg)).then(function(r){return r.ok?r.json():null;}).then(function(j){
       if(!j||!j.closes||j.closes.length<2){ slot.innerHTML=''; return; }
-      var vals=j.closes, mn=Math.min.apply(null,vals), mx=Math.max.apply(null,vals), now=vals[vals.length-1];
-      slot.innerHTML=sparkSVG(vals)+'<div class="misschart-mm"><span>'+cur+mn.toFixed(2)+'</span><span class="misschart-now">now '+cur+now.toFixed(2)+'</span><span>'+cur+mx.toFixed(2)+'</span></div>';
+      var vals=j.closes, times=j.timestamps||[], mn=Math.min.apply(null,vals), mx=Math.max.apply(null,vals);
+      var lastSec=times.length?times[times.length-1]:null;
+      var markIdx=null;
+      if(checkTs&&times.length){
+        var target=Math.round(checkTs/1000), best=0, bestDiff=Infinity;
+        times.forEach(function(t,i){ var diff=Math.abs(t-target); if(diff<bestDiff){bestDiff=diff;best=i;} });
+        markIdx=best;
+      }
+      var isLive=lastSec&&(Date.now()/1000-lastSec)<20*60;   // last bar is fresh → really "now"; else say when it's from
+      var rightLbl=(isLive?'now':_timeHM(lastSec))+' '+cur+vals[vals.length-1].toFixed(2);
+      var flagLbl=(markIdx!=null)?'<div class="misschart-flag" style="left:'+((markIdx/(vals.length-1))*100).toFixed(0)+'%">flagged '+_timeHM(times[markIdx])+'</div>':'';
+      slot.innerHTML='<div class="misschart-wrap">'+missSparkSVG(vals,markIdx)+flagLbl+'</div>'+
+        '<div class="misschart-mm"><span>'+cur+mn.toFixed(2)+'</span><span class="misschart-now">'+rightLbl+'</span><span>'+cur+mx.toFixed(2)+'</span></div>';
     }).catch(function(){ slot.innerHTML=''; });
   });
 }
