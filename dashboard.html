@@ -930,6 +930,7 @@
   .dhgrid{display:flex;flex-direction:column;gap:8px}
   .dhcat{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--broth);margin:14px 0 2px}
   .dhcat:first-child{margin-top:0}
+  .dhcatdesc{font-size:12px;color:var(--muted);margin:0 0 8px;line-height:1.4}
   .dhrow{border:1px solid var(--line);border-radius:11px;padding:11px 14px;background:var(--surface-2)}
   .dhrow.dh-blocked{border-left:3px solid var(--dont)} .dhrow.dh-degraded{border-left:3px solid var(--hold)} .dhrow.dh-ok{border-left:3px solid var(--buy)} .dhrow.dh-untested{border-left:3px solid var(--faint)}
   .dhtop{display:flex;align-items:center;gap:8px}
@@ -2883,11 +2884,27 @@ var DATA_HEALTH=[
   {cat:'Discovery net 1 — news/movers',name:'Fool.com.au RSS',use:'ASX news sweep',status:'ok',checked:'2026-08-07'},
   {cat:'Discovery net 1 — news/movers',name:'Yahoo gainers / most-active',use:'US top movers by % and by volume',status:'ok',checked:'2026-08-07'},
   {cat:'Discovery net 1 — news/movers',name:'Benzinga upgrades',use:'Analyst upgrade feed',status:'blocked',note:'403 Forbidden, confirmed live tonight.',checked:'2026-08-07'},
-  {cat:'Discovery net 1 — news/movers',name:'DiscoveryAlert.com.au',use:'ASX mining/critical-minerals news',status:'untested',note:'Surfaced organically in a live search tonight as a legitimate source — not yet wired in as a direct fetch.',checked:'2026-08-07'},
+  {cat:'Discovery net 1 — news/movers',name:'DiscoveryAlert.com.au',use:'ASX mining/critical-minerals news',status:'ok',note:'Tested 8 Aug 2026: direct fetch is unreliable (feed/ redirects to the homepage, category pages 403 — Cloudflare-style protection, same family as SwingTradeBot/MarketIndex). But WebSearch scoped to this domain (allowed_domains) works cleanly and surfaces real, current, dated articles — confirmed live with a real critical-minerals query. Wired in as a WebSearch-only source, same pattern as the other blocked-but-searchable ASX sites.',checked:'2026-08-08'},
   {cat:'Discovery net 1 — dropped',name:'ASX SwingTradeBot / MarketIndex scans / shorted.com.au family (shortinterest.au, fintel, CBOE, shortman, asxshort)',use:'ASX technical breakout scanners + 3rd-party short-interest',status:'blocked',note:'403/DNS-dead. Short interest replaced by ASIC’s own official short-position data instead — a better source, not a gap.',checked:'2026-08-05'},
   {cat:'Discovery net 1 — dropped',name:'HotCopper',use:'Retail-sentiment community scraping',status:'blocked',note:'403 Forbidden.',checked:'2026-08-05'},
-  {cat:'Discovery net 1 — never wired in',name:'Reuters / Dow Jones / Investing.com RSS, Finviz, Simply Wall St, Seeking Alpha, SMH, Morningstar, Livewire, TradingView ideas, eToro discover/news, Google Finance quotes',use:'General market news/ideas — from an old pre-CLAUDE.md provenance list',status:'untested',note:'Never fetched by this pipeline. No evidence of value either way — lowest priority.',checked:'2026-08-07'},
+  {cat:'Discovery net 1 — news/movers',name:'WSJ/Dow Jones Markets RSS',use:'Global markets news sweep',status:'ok',note:'Tested 8 Aug 2026: real, working RSS (feeds.a.dj.com/rss/RSSMarketsMain.xml). Wired in as a direct fetch alongside Stockhead/Fool.',checked:'2026-08-08'},
+  {cat:'Discovery net 1 — news/movers',name:'Investing.com RSS',use:'Global markets news sweep',status:'ok',note:'Tested 8 Aug 2026: real, working RSS, confirmed live content (a genuine NVDA headline was in the feed at test time). Wired in as a direct fetch.',checked:'2026-08-08'},
+  {cat:'Discovery net 1 — news/movers',name:'Seeking Alpha breaking news RSS',use:'US market-moving news sweep',status:'ok',note:'Tested 8 Aug 2026: real, working RSS (market_currents.xml). Wired in as a direct fetch.',checked:'2026-08-08'},
+  {cat:'Discovery net 1 — news/movers',name:'SMH Business RSS',use:'Australian business news — genuinely useful for ASX, distinct from Stockhead/Fool',status:'ok',note:'Tested 8 Aug 2026: real, working RSS (smh.com.au/rss/business.xml). Wired in as a direct fetch.',checked:'2026-08-08'},
+  {cat:'Discovery net 1 — untested, worth trying',name:'Finviz news, TradingView ideas, eToro discover/news',use:'US news blog / crowd-sourced trade ideas / retail sentiment',status:'untested',note:'Tested 8 Aug 2026: all return HTTP 200 (reachable), but likely JS-rendered pages — unclear if a plain fetch returns real parseable content vs an empty app shell. Worth a WebFetch trial run before treating as a real source.',checked:'2026-08-08'},
+  {cat:'Discovery net 1 — dead / not useful',name:'Reuters RSS',use:'Global markets news',status:'blocked',note:'401 — needs auth, not a public feed.',checked:'2026-08-08'},
+  {cat:'Discovery net 1 — dead / not useful',name:'Simply Wall St, Morningstar AU',use:'Stock analysis/ratings',status:'blocked',note:'404 — the RSS/feed paths tried don’t exist on these sites.',checked:'2026-08-08'},
+  {cat:'Discovery net 1 — dead / not useful',name:'Livewire Markets',use:'Australian fund-manager commentary',status:'blocked',note:'403 Forbidden.',checked:'2026-08-08'},
+  {cat:'Discovery net 1 — dead / not useful',name:'Google Finance quotes',use:'Price quotes',status:'blocked',note:'Redirects to a JS SPA (/finance/beta), not a fetchable data source — EODHD/Finnhub/Yahoo already cover pricing better anyway.',checked:'2026-08-08'},
 ];
+var DH_CATDESC={
+  'Priced APIs — keyed':'Paid/keyed data providers — need an API key, usually rate-limited or metered.',
+  'Keyless fallbacks':'Free, no-signup sources we fall back to when a keyed API is unavailable, forbidden, or exhausted.',
+  'Discovery net 1 — news/movers':'Net 1 of the 4 discovery nets: live news, market movers, analyst actions, and a geopolitical/macro sweep — run every major scan, no exceptions.',
+  'Discovery net 1 — dropped':'Sources net 1 used to fetch directly but no longer does — confirmed dead (403/DNS-fail) and removed to stop wasting tokens on them.',
+  'Discovery net 1 — untested, worth trying':'Reachable (don\'t 403/404), but not yet confirmed to return real usable content — worth a trial fetch before relying on them.',
+  'Discovery net 1 — dead / not useful':'Checked and ruled out — blocked, needs auth, or doesn\'t exist as a usable feed. Not fetched.',
+};
 function openDataHealth(){
   var ic={ok:'🟢',degraded:'🟡',blocked:'🔴',untested:'⚪'}, lbl={ok:'Live',degraded:'Degraded',blocked:'Blocked',untested:'Untested'};
   var cats=[]; DATA_HEALTH.forEach(function(s){ if(cats.indexOf(s.cat)<0) cats.push(s.cat); });
@@ -2897,7 +2914,7 @@ function openDataHealth(){
         '<div class="dhuse">'+esc(s.use)+'</div>'+(s.note?'<div class="dhnote">'+esc(s.note)+'</div>':'')+
         (s.checked?'<div class="dhchecked">Last checked '+esc(s.checked)+'</div>':'')+'</div>';
     }).join('');
-    return '<div class="dhcat">'+esc(cat)+'</div>'+items;
+    return '<div class="dhcat">'+esc(cat)+'</div>'+(DH_CATDESC[cat]?'<div class="dhcatdesc">'+esc(DH_CATDESC[cat])+'</div>':'')+items;
   }).join('');
   LASTFOCUS=document.activeElement;
   var m=document.getElementById('modal'); m.className='modal';
