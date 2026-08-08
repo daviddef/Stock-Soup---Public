@@ -560,7 +560,8 @@
   .annrow.ann-neu{border-left-color:var(--faint)}
   .anntop{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
   .annic{font-size:13px}
-  .annhead{flex:1;font-size:13px;color:var(--ink)}
+  .annhead{flex:1;font-size:13px;color:var(--ink);text-decoration:none}
+  a.annhead:hover{text-decoration:underline;color:var(--broth)}
   .anndate{font-size:10.5px;color:var(--faint);font-weight:700;white-space:nowrap}
   .annwhy{font-size:12px;color:var(--muted);margin-top:3px;line-height:1.4}
   .tag{font-size:11px;font-weight:900;padding:4px 9px;border-radius:7px;text-transform:uppercase;letter-spacing:.03em;white-space:nowrap}
@@ -1171,6 +1172,10 @@ function money(cur,n){return cur+(Math.abs(n%1)<1e-9?String(n):n.toFixed(2));}
 // for penny stocks — the watchlist already stores e.g. "A$0.03" this way); strings pass through as-is
 // since they're already formatted upstream (e.g. runner-up cards).
 function cleanPrice(p){return typeof p==='number'?p.toFixed(2):p;}
+// Strip the redundant weekday token + year + AEST from a "Sat 8 Aug 2026 · 18:17 AEST" style stamp,
+// for single-moment displays ("today" is already implied) — the multi-day run log keeps weekday since
+// it spans different days and needs the disambiguation.
+function stampNoWeekday(s){return String(s||'').replace(/^[A-Za-z]{3}\s+/,'').replace(/,?\s*20\d\d/,'').replace(/\s*AEST\b/,'').trim();}
 function clamp(x){return Math.max(3,Math.min(97,x));}
 // Action that moves with the ideal-buy price: at/below → get in, above → wait for the dip.
 // The real discovery funnel (only shown once a full run logs D.discovery — makes "48" real & inspectable)
@@ -1821,7 +1826,7 @@ function render(D,H){
   // ===== 🍲 TONIGHT'S MENU =====
   '<div class="tabview active" id="tab-menu">'+
     '<div class="tabhead menuhead">'+
-      '<div class="eyebrow schedlink" data-info="schedule" role="button" tabindex="0" title="Major runs are manually triggered — this is the target window, not a guarantee" style="letter-spacing:.06em">'+esc((D.stamp||'').replace(/,?\s*20\d\d/,'').replace(/\s*AEST\b/,''))+(D.next?' · usually ~'+esc(D.next):'')+' <span class="schedi">i</span></div>'+
+      '<div class="eyebrow schedlink" data-info="schedule" role="button" tabindex="0" title="Major runs are manually triggered — this is the target window, not a guarantee" style="letter-spacing:.06em">'+esc(stampNoWeekday(D.stamp))+(D.next?' · next ~'+esc(D.next):'')+' <span class="schedi">i</span></div>'+
       '<h1 class="display">Two pots on the boil:<br><span class="hot">'+esc(hdl(D,'a'))+'</span> &amp; <span class="hot">'+esc(hdl(D,'b'))+'</span>.</h1>'+
       '<p class="chef">'+chefFor(D)+'</p>'+
       '<div class="metastrip"><span class="chip clickchip" data-mchip="risk" role="button" tabindex="0"><span class="dot" style="background:var(--hold)"></span> Risk: '+esc(r.label)+' <span class="chipi">i</span></span>'+
@@ -1906,7 +1911,7 @@ function render(D,H){
       '<p class="sec-sub">The recipe, in plain sight. No black box.</p>'+discoveryFunnel(D)+'<div class="panel trail">'+trail+'</div></section>'+
   '</div>'+
 
-  '<footer>Auto-generated for information only. <b>Not financial advice</b> — do your own research.<br>The Stock Soup · '+esc(D.stamp||'')+(D.next?' · target window ~'+esc(D.next)+' (manual trigger)':' · served hourly')+'</footer>';
+  '<footer>Auto-generated for information only. <b>Not financial advice</b> — do your own research.<br>The Stock Soup · '+esc(stampNoWeekday(D.stamp))+(D.next?' · next ~'+esc(D.next)+' (manual trigger)':' · served hourly')+'</footer>';
 
   wire(D);
 }
@@ -1918,7 +1923,8 @@ function announcementsHtml(items){
   var TONE={bullish:{ic:'📈',cls:'ann-bull'},bearish:{ic:'📉',cls:'ann-bear'},neutral:{ic:'➖',cls:'ann-neu'}};
   var rows=items.slice(0,5).map(function(a){
     var t=TONE[a.tone]||TONE.neutral;
-    return '<div class="annrow '+t.cls+'"><div class="anntop"><span class="annic">'+t.ic+'</span><b class="annhead">'+esc(a.headline||'')+'</b>'+(a.date?'<span class="anndate">'+esc(String(a.date).slice(0,10))+'</span>':'')+'</div>'+
+    var head=a.link?'<a class="annhead" href="'+esc(a.link)+'" target="_blank" rel="noopener">'+esc(a.headline||'')+' ↗</a>':'<b class="annhead">'+esc(a.headline||'')+'</b>';
+    return '<div class="annrow '+t.cls+'"><div class="anntop"><span class="annic">'+t.ic+'</span>'+head+(a.date?'<span class="anndate">'+esc(String(a.date).slice(0,10))+'</span>':'')+'</div>'+
       '<div class="annwhy">'+esc(a.why||'')+'</div></div>';
   }).join('');
   return '<div class="viz"><h4>📢 Key announcements</h4>'+rows+'</div>';
@@ -2248,10 +2254,22 @@ function favesHead(){
   var t=n?('You\'re watching '+n+(n===1?' name':' names')):'Your table is empty — for now';
   return tabHead('⭐ Your table',t,'Tap <b>＋ Watch</b> on any pick and we\'ll remember its ideal-buy price, then flag it the moment it gets there. Add your own below too. <b>Tap Watching/You own above</b> to filter the list.',n?stats:[]);
 }
+function lastFilled(slotIdx){
+  // Most recent menuHistory entry (current MKT) where the Day/Week (0/1) or Long (2) slot wasn't "NONE".
+  var H=(LAST&&LAST.H)||{}, menus=H.menus||[], key=MKT==='au'?'au':'us';
+  for(var i=0;i<menus.length;i++){
+    var arr=menus[i][key]||[];
+    if(arr[slotIdx]&&arr[slotIdx]!=='NONE') return menus[i].stamp+' · '+menus[i].time;
+  }
+  return null;
+}
 function kitchenHead(D){
   var n=(typeof PULSES!=='undefined'&&PULSES)?PULSES.length:0;
-  var last=(D&&D.stamp)?String(D.stamp).replace(/,?\s*20\d\d/,'').replace(/\s*AEST\b/,''):'—';
-  var stats=[tstat('Last cook',last),tstat('Next run',D&&D.next?'~'+D.next:'—'),tstat('Re-prices today',n)];
+  var last=stampNoWeekday(D&&D.stamp);
+  var lastShort=lastFilled(0)||lastFilled(1), lastLong=lastFilled(2);
+  var stats=[tstat('Last cook',last||'—'),tstat('Next run',D&&D.next?'~'+D.next:'—'),tstat('Re-prices today',n),
+    tstat('Last Day/Week pick',lastShort?stampNoWeekday(lastShort):'none yet'),
+    tstat('Last Long pick',lastLong?stampNoWeekday(lastLong):'none yet')];
   return tabHead('👨‍🍳 Behind the pass','The engine room','Every run, every source, every score — no black box. This is where the soup actually gets made.',stats);
 }
 function runLogHtml(){
@@ -3343,7 +3361,7 @@ var BIG = {"Day":"⚡ TODAY","Week":"📅 THIS WEEK","Long":"📈 LONG GAME"};
 
 function renderSimple(D){
   var r = D.risk||{};
-  var sStamp = (D.stamp||'').replace(/,?\s*20\d\d/,'').replace(/\s*AEST\b/,'');
+  var sStamp = stampNoWeekday(D.stamp);
   var btcUp = (r.btcChange||'').indexOf('-')<0;
   var riskWhat = (r.label&&r.label.indexOf('OFF')>=0) ? "🔴 Risk-off — playing defence, smaller bets."
                : (r.label&&r.label.indexOf('ON')>=0)  ? "🟢 Risk-on — leaning into growth."
