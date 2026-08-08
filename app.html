@@ -1234,7 +1234,7 @@ function upcomingHtml(D){
   var E=(D.upcomingEarnings||[]).filter(function(e){return !e.error&&(e.region||'us')===MKT;});
   var DIV=D.upcomingDividends||{}, divItems=(DIV.items||[]).filter(function(d){return (d.region||'au')===MKT;});
   var IPO=D.upcomingIPOs||[];
-  if(!E.length&&!divItems.length&&!IPO.length) return '';
+  if(!E.length&&!divItems.length&&!IPO.length&&!(D.upcomingEcon||[]).length) return '';
   var _curS={}; (D.regions||[]).forEach(function(rg){(rg.picks||[]).forEach(function(p){if(p.sym!=='NONE')_curS[p.sym]=1;});});
   var wl={}; wlGet().forEach(function(w){wl[w.sym]=1;});
   function weTrack(sym){return _curS[sym]||wl[sym];}
@@ -1251,11 +1251,18 @@ function upcomingHtml(D){
     var when=i.days_until===0?'today':i.days_until===1?'tomorrow':'in '+i.days_until+'d';
     return '<div class="uprow upiro"><div class="uptop"><span class="upsym">'+esc(i.sym)+'</span><span class="upwhen">lists '+esc(when)+'</span></div>'+(i.name?'<div class="upname">'+esc(i.name)+'</div>':'')+(i.note?'<div class="upnote">'+esc(i.note)+'</div>':'')+'</div>';
   }).join('');
+  // #60 — econ calendar: the countries that actually matter for each market view (AU picks care about
+  // AU/CN/US macro; US picks care about US/CN/GB) — a generic "every country" list would just be noise.
+  var ECON_CC=MKT==='au'?{AU:1,CN:1,US:1}:{US:1,CN:1,GB:1,JP:1};
+  var econRows=(D.upcomingEcon||[]).filter(function(e){return ECON_CC[e.country];}).slice(0,8).map(function(e){
+    return '<div class="uprow"><span class="upsym">'+esc(e.country)+'</span><span class="upwhen">'+esc(e.when||e.date||'')+' · '+esc(e.event||'')+'</span></div>';
+  }).join('');
   return '<section id="upcoming"><div class="sec-head"><h2 class="display">📅 What\'s coming up</h2>'+infoBtn('upcoming')+'</div>'+
-    '<p class="sec-sub">Real dates, not predictions — reporting season, dividends, and new listings for the next few weeks.</p>'+
+    '<p class="sec-sub">Real dates, not predictions — reporting season, dividends, new listings, and macro events for the next few weeks.</p>'+
     '<div class="cols">'+
       (earnRows?'<div class="stack"><div class="eyebrow">📊 Earnings · next 7 days</div>'+earnRows+'</div>':'')+
       (divRows?'<div class="stack"><div class="eyebrow">💰 Dividends · next 30 days</div>'+divRows+(DIV.usUnavailable&&MKT==='us'?'<p class="upgap">'+esc(DIV.usUnavailable)+'</p>':'')+'</div>':(MKT==='us'&&DIV.usUnavailable?'<div class="stack"><div class="eyebrow">💰 Dividends · next 30 days</div><p class="upgap">'+esc(DIV.usUnavailable)+'</p></div>':''))+
+      (econRows?'<div class="stack"><div class="eyebrow">🏛️ Macro calendar · next 7 days</div>'+econRows+'</div>':'')+
     '</div>'+
     (ipoRows?'<div class="eyebrow" style="margin-top:14px">🆕 New listings · next 30 days</div><div class="cols">'+ipoRows+'</div>':'')+
   '</section>';
@@ -1440,6 +1447,20 @@ function signalRows(p,region,opts){
     rows.push({icon:lead?'🏆':'🐌',label:'Vs '+idxNm,tone:lead?'pos':'neg',
       read:(lead?'Beating':'Lagging')+' by '+Math.abs(rs.rs)+'pt'+(Math.abs(rs.rs)===1?'':'s'),
       explain:'Performance vs the broader index over the same stretch — is it actually leading, or just drifting with the market?'});
+  }
+  var dz=p&&p.demand_zone, sz=p&&p.supply_zone;
+  if((dz||sz)&&p.rsi!=null){   // needs a live price context (nNow) to say near/far, same gate as other rows
+    var px=p.nNow!=null?p.nNow:null;
+    if(px!=null){
+      var nearD=dz&&Math.abs(px/dz.level-1)<=0.03, nearS=sz&&Math.abs(px/sz.level-1)<=0.03;
+      var tone=nearD?'pos':nearS?'neg':'mix';
+      var read=nearD?'Right at a recent demand zone ('+esc(String(dz.level))+') — real buying showed up here before'
+        :nearS?'Right at a recent supply zone ('+esc(String(sz.level))+') — real selling showed up here before'
+        :(dz&&sz?'Between recent demand ('+esc(String(dz.level))+') and supply ('+esc(String(sz.level))+') zones'
+          :dz?'Recent demand zone at '+esc(String(dz.level)):'Recent supply zone at '+esc(String(sz.level)));
+      rows.push({icon:'🧱',label:'Supply/demand',tone:tone,read:read,
+        explain:'The most recent swing high/low that printed on above-average volume — a level where real buying or selling pressure showed up before, not just an ordinary wiggle.'});
+    }
   }
   if(p&&p.news_sentiment!=null){
     var v=p.news_sentiment, tone=v>=0.12?'pos':v<=-0.12?'neg':'mix';
@@ -3073,6 +3094,7 @@ var DATA_HEALTH=[
   {cat:'Discovery net 1 — news/movers',name:'Investing.com RSS',use:'Global markets news sweep',status:'ok',note:'Tested 8 Aug 2026: real, working RSS, confirmed live content (a genuine NVDA headline was in the feed at test time). Wired in as a direct fetch.',url:'https://www.investing.com/rss/news.rss',urlLabel:'RSS feed',checked:'2026-08-08'},
   {cat:'Discovery net 1 — news/movers',name:'Seeking Alpha breaking news RSS',use:'US market-moving news sweep',status:'ok',note:'Tested 8 Aug 2026: real, working RSS. Wired in as a direct fetch.',url:'https://seekingalpha.com/market_currents.xml',urlLabel:'RSS feed',checked:'2026-08-08'},
   {cat:'Discovery net 1 — news/movers',name:'SMH Business RSS',use:'Australian business news — genuinely useful for ASX, distinct from Stockhead/Fool',status:'ok',note:'Tested 8 Aug 2026: real, working RSS. Wired in as a direct fetch.',url:'https://www.smh.com.au/rss/business.xml',urlLabel:'RSS feed',checked:'2026-08-08'},
+  {cat:'Discovery net 1 — news/movers',name:'TradingEconomics calendar',use:'Macro/econ calendar (#60) — rate decisions, CPI, jobless claims, GDP, retail sales',status:'ok',note:'Tested 9 Aug 2026: real, working, returns structured upcoming events. Needs the agent\'s own HTML parsing each run (same as the rest of net 1) — not a pure-script capability.',url:'https://tradingeconomics.com/calendar',urlLabel:'calendar',checked:'2026-08-09'},
   {cat:'Discovery net 1 — news/movers',name:'Smallcaps.com.au news RSS + mining sector page',use:'ASX small-cap news sweep, mining-specific sweep',status:'ok',note:'Tested 8 Aug 2026: /feed/ is a real working RSS; /sector/mining and /top-stocks are also fetchable (200) for a mining-specific or top-movers sweep. Already used for IPO discovery (net 4) — now also wired into net 1 for general/mining news.',url:'https://smallcaps.com.au/',urlLabel:'site',checked:'2026-08-08'},
   {cat:'Discovery net 1 — untested, worth trying',name:'Finviz news, TradingView ideas, eToro discover/news',use:'US news blog / crowd-sourced trade ideas / retail sentiment',status:'untested',note:'Tested 8 Aug 2026: all return HTTP 200 (reachable), but likely JS-rendered pages — unclear if a plain fetch returns real parseable content vs an empty app shell. Worth a WebFetch trial run before treating as a real source.',url:'https://finviz.com/news.ashx',urlLabel:'Finviz news',checked:'2026-08-08'},
   {cat:'Discovery net 1 — dead / not useful',name:'Reuters RSS',use:'Global markets news',status:'blocked',note:'401 — needs auth, not a public feed.',url:'https://www.reuters.com/markets/',urlLabel:'site',checked:'2026-08-08'},
