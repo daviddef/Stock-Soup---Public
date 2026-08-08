@@ -555,6 +555,18 @@
   .upname{color:var(--muted);font-size:12px;font-weight:700}
   .upnote{color:var(--faint);font-size:11.5px;line-height:1.4}
   .upgap{color:var(--faint);font-size:11.5px;font-style:italic;margin-top:4px}
+  .up3list{display:flex;flex-direction:column;gap:6px}
+  .uprow3{display:grid;grid-template-columns:110px 1fr;gap:2px 12px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+  @media(min-width:640px){.uprow3{grid-template-columns:110px 200px 1fr;align-items:start}}
+  .uprow3.uptracked{border-color:rgba(255,107,26,.4);background:linear-gradient(180deg,rgba(255,107,26,.06),transparent 60%),var(--surface)}
+  .up3when{color:var(--muted);font-size:12px;font-weight:700;display:flex;align-items:center;gap:5px;white-space:nowrap}
+  .up3ic{font-size:13px}
+  .up3what{font-weight:800;color:var(--ink);font-size:13px}
+  .up3sowhat{color:var(--faint);font-size:12px;line-height:1.4;grid-column:1/-1}
+  @media(min-width:640px){.up3sowhat{grid-column:3}}
+  .uppulse{display:inline-block;animation:uppulse 1.8s ease-in-out infinite}
+  @keyframes uppulse{0%,100%{opacity:1}50%{opacity:.45}}
+  @media (prefers-reduced-motion: reduce){.uppulse{animation:none}}
   .annrow{border-radius:10px;padding:9px 12px;margin-bottom:6px;border:1px solid var(--line);background:var(--surface);border-left:3px solid var(--faint)}
   .annrow.ann-bull{border-left-color:var(--buy);background:rgba(35,194,103,.09)}
   .annrow.ann-bear{border-left-color:var(--dont);background:rgba(255,77,77,.09)}
@@ -1231,41 +1243,50 @@ function hotMoversHtml(D){
 // #85 — real upcoming earnings (7d) / dividends (30d) / IPOs (30d), sourced by bulk-fetching real
 // reporting-season + ex-dividend calendars each run (see CLAUDE.md Discovery Rule net 3 + Data-source
 // health). "We track this" highlights a sym already in tonight's picks or the user's own watchlist.
+// #99 (9 Aug 2026 redesign) — ONE consolidated, date-sorted list instead of 4 separate stacked
+// category blocks (was: Earnings stack / Dividends stack / Econ stack / IPO stack, each requiring
+// its own scan to find "what's actually soonest"). Each row now carries a real "so what" actionability
+// line, not just a bare date, and a tracked item gets a genuine pulse animation, not just a static star.
 function upcomingHtml(D){
   var E=(D.upcomingEarnings||[]).filter(function(e){return !e.error&&(e.region||'us')===MKT;});
   var DIV=D.upcomingDividends||{}, divItems=(DIV.items||[]).filter(function(d){return (d.region||'au')===MKT;});
   var IPO=D.upcomingIPOs||[];
-  if(!E.length&&!divItems.length&&!IPO.length&&!(D.upcomingEcon||[]).length) return '';
+  var ECON_CC=MKT==='au'?{AU:1,CN:1,US:1}:{US:1,CN:1,GB:1,JP:1};
+  var econItems=(D.upcomingEcon||[]).filter(function(e){return ECON_CC[e.country];});
+  if(!E.length&&!divItems.length&&!IPO.length&&!econItems.length) return '';
   var _curS={}; (D.regions||[]).forEach(function(rg){(rg.picks||[]).forEach(function(p){if(p.sym!=='NONE')_curS[p.sym]=1;});});
   var wl={}; wlGet().forEach(function(w){wl[w.sym]=1;});
-  function weTrack(sym){return _curS[sym]||wl[sym];}
-  function trackTag(sym){return weTrack(sym)?' <span class="uptag">★ we track this</span>':'';}
-  var earnRows=E.slice(0,10).map(function(e){
-    var d=e.days_until, when=d===0?'today':d===1?'tomorrow':'in '+d+'d';
-    return '<div class="uprow"><span class="upsym">'+esc(e.sym)+'</span><span class="upwhen">'+esc(when)+' · '+esc((e.date||'').slice(5))+'</span>'+trackTag(e.sym)+'</div>';
-  }).join('');
-  var divRows=divItems.slice(0,10).map(function(d){
-    var when=d.days_until===0?'today':d.days_until===1?'tomorrow':'in '+d.days_until+'d';
-    return '<div class="uprow"><span class="upsym">'+esc(d.sym)+'</span><span class="upwhen">ex-div '+esc(when)+(d.div_yield_pct?' · '+d.div_yield_pct+'% yield':'')+'</span>'+trackTag(d.sym)+'</div>';
-  }).join('');
-  var ipoRows=IPO.slice(0,8).map(function(i){
-    var when=i.days_until===0?'today':i.days_until===1?'tomorrow':'in '+i.days_until+'d';
-    return '<div class="uprow upiro"><div class="uptop"><span class="upsym">'+esc(i.sym)+'</span><span class="upwhen">lists '+esc(when)+'</span></div>'+(i.name?'<div class="upname">'+esc(i.name)+'</div>':'')+(i.note?'<div class="upnote">'+esc(i.note)+'</div>':'')+'</div>';
-  }).join('');
-  // #60 — econ calendar: the countries that actually matter for each market view (AU picks care about
-  // AU/CN/US macro; US picks care about US/CN/GB) — a generic "every country" list would just be noise.
-  var ECON_CC=MKT==='au'?{AU:1,CN:1,US:1}:{US:1,CN:1,GB:1,JP:1};
-  var econRows=(D.upcomingEcon||[]).filter(function(e){return ECON_CC[e.country];}).slice(0,8).map(function(e){
-    return '<div class="uprow"><span class="upsym">'+esc(e.country)+'</span><span class="upwhen">'+esc(e.when||e.date||'')+' · '+esc(e.event||'')+'</span></div>';
+  function weTrack(sym){return sym&&(_curS[sym]||wl[sym]);}
+  function whenLabel(d){return d===0?'Today':d===1?'Tomorrow':'In '+d+'d';}
+  var rows=[];
+  E.forEach(function(e){ rows.push({kind:'earnings',ic:'📊',sym:e.sym,days:e.days_until,
+    what:esc(e.sym)+' reports',dateStr:(e.date||'').slice(5),
+    soWhat:'Prices often swing 5–20% same-day on the result — check before buying right in front of it.'}); });
+  divItems.forEach(function(d){ rows.push({kind:'dividend',ic:'💰',sym:d.sym,days:d.days_until,
+    what:esc(d.sym)+' goes ex-dividend',dateStr:'',
+    soWhat:'Own it the day before this date to get the payout'+(d.div_yield_pct?' (~'+d.div_yield_pct+'% yield)':'')+' — buy on/after and you miss this round.'}); });
+  IPO.forEach(function(i){ rows.push({kind:'ipo',ic:'🆕',sym:i.sym,days:i.days_until,
+    what:esc(i.sym)+' lists'+(i.name?' — '+esc(i.name):''),dateStr:'',
+    soWhat:(i.note?esc(i.note)+' ':'')+'No price history yet, so our usual trend/RSI checks can\'t apply — higher risk, watch-first territory.'}); });
+  econItems.forEach(function(e){ rows.push({kind:'econ',ic:'🏛️',sym:null,days:null,dateSort:e.date,
+    what:esc(e.country)+' — '+esc(e.event||''),dateStr:e.when||e.date||'',
+    soWhat:'Macro data release — can move the whole market same-day, not just one stock.'}); });
+  rows.sort(function(a,b){
+    var da=a.days!=null?a.days:(a.dateSort?(new Date(a.dateSort)-new Date())/864e5:99);
+    var db=b.days!=null?b.days:(b.dateSort?(new Date(b.dateSort)-new Date())/864e5:99);
+    return da-db;
+  });
+  var rowsHtml=rows.slice(0,20).map(function(r){
+    var tracked=weTrack(r.sym);
+    var when=r.days!=null?whenLabel(r.days)+(r.dateStr?' · '+esc(r.dateStr):''):esc(r.dateStr);
+    return '<div class="uprow3'+(tracked?' uptracked':'')+'"><span class="up3when"><span class="up3ic">'+r.ic+'</span>'+when+'</span>'+
+      '<span class="up3what">'+r.what+(tracked?' <span class="uptag uppulse">★ we track this</span>':'')+'</span>'+
+      '<span class="up3sowhat">'+r.soWhat+'</span></div>';
   }).join('');
   return '<section id="upcoming"><div class="sec-head"><h2 class="display">📅 What\'s coming up</h2>'+infoBtn('upcoming')+'</div>'+
-    '<p class="sec-sub">Real dates, not predictions — reporting season, dividends, new listings, and macro events for the next few weeks.</p>'+
-    '<div class="cols">'+
-      (earnRows?'<div class="stack"><div class="eyebrow">📊 Earnings · next 7 days</div>'+earnRows+'</div>':'')+
-      (divRows?'<div class="stack"><div class="eyebrow">💰 Dividends · next 30 days</div>'+divRows+(DIV.usUnavailable&&MKT==='us'?'<p class="upgap">'+esc(DIV.usUnavailable)+'</p>':'')+'</div>':(MKT==='us'&&DIV.usUnavailable?'<div class="stack"><div class="eyebrow">💰 Dividends · next 30 days</div><p class="upgap">'+esc(DIV.usUnavailable)+'</p></div>':''))+
-      (econRows?'<div class="stack"><div class="eyebrow">🏛️ Macro calendar · next 7 days</div>'+econRows+'</div>':'')+
-    '</div>'+
-    (ipoRows?'<div class="eyebrow" style="margin-top:14px">🆕 New listings · next 30 days</div><div class="cols">'+ipoRows+'</div>':'')+
+    '<p class="sec-sub">Real dates, not predictions — reporting season, dividends, new listings, and macro events, soonest first, with what to actually do about each.</p>'+
+    '<div class="up3list">'+rowsHtml+'</div>'+
+    (DIV.usUnavailable&&MKT==='us'?'<p class="upgap">'+esc(DIV.usUnavailable)+'</p>':'')+
   '</section>';
 }
 // #95 — Top Movers: the whole market's real gainers/losers/volume leaders, not just tonight's 26-46
