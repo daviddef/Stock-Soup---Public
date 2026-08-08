@@ -547,6 +547,15 @@
   .upname{color:var(--muted);font-size:12px;font-weight:700}
   .upnote{color:var(--faint);font-size:11.5px;line-height:1.4}
   .upgap{color:var(--faint);font-size:11.5px;font-style:italic;margin-top:4px}
+  .annrow{border-radius:10px;padding:9px 12px;margin-bottom:6px;border:1px solid var(--line);background:var(--surface)}
+  .annrow.ann-bull{border-left:3px solid var(--buy)}
+  .annrow.ann-bear{border-left:3px solid var(--dont)}
+  .annrow.ann-neu{border-left:3px solid var(--faint)}
+  .anntop{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+  .annic{font-size:13px}
+  .annhead{flex:1;font-size:13px;color:var(--ink)}
+  .anndate{font-size:10.5px;color:var(--faint);font-weight:700;white-space:nowrap}
+  .annwhy{font-size:12px;color:var(--muted);margin-top:3px;line-height:1.4}
   .tag{font-size:11px;font-weight:900;padding:4px 9px;border-radius:7px;text-transform:uppercase;letter-spacing:.03em;white-space:nowrap}
   .t-buy{background:rgba(35,194,103,.16);color:var(--buy)}
   .t-dont{background:rgba(255,77,77,.16);color:var(--dont)}
@@ -1885,6 +1894,18 @@ function render(D,H){
   wire(D);
 }
 
+// #96 — plain-English ASX filing headlines ("Ceasing to be a substantial holder" -> "big investor
+// selling down"), never a raw legal headline shown bare. Shared by openModal (picks) and openCandidate.
+function announcementsHtml(items){
+  if(!items||!items.length) return '';
+  var TONE={bullish:{ic:'📈',cls:'ann-bull'},bearish:{ic:'📉',cls:'ann-bear'},neutral:{ic:'➖',cls:'ann-neu'}};
+  var rows=items.slice(0,5).map(function(a){
+    var t=TONE[a.tone]||TONE.neutral;
+    return '<div class="annrow '+t.cls+'"><div class="anntop"><span class="annic">'+t.ic+'</span><b class="annhead">'+esc(a.headline||'')+'</b>'+(a.date?'<span class="anndate">'+esc(String(a.date).slice(0,10))+'</span>':'')+'</div>'+
+      '<div class="annwhy">'+esc(a.why||'')+'</div></div>';
+  }).join('');
+  return '<div class="viz"><h4>📢 Key announcements</h4>'+rows+'</div>';
+}
 var SCORE_FLAB={pead:"Earnings",rev:"Analysts",hi:"Trend/High",news:"Catalyst",vol:"Volume",ins:"Insider"};
 // Shared by openModal (the 6 picks) and openCandidate (Full Pot) — same real model, same bar, everywhere it applies.
 function scoreBarHtml(score){
@@ -1960,6 +1981,7 @@ function openModal(p,region,cur){
         signalDetailHtml(p,region,{skipRsi:true})+
       '</div>'+
       scoreHtml+
+      announcementsHtml(p.announcements)+
       '<p class="mtake"><span class="lead">Chef says:</span> '+esc(p.chefTake)+'</p>'+
       (p.news?'<div class="mnews">📰 <span class="lead">In the news:</span> '+(p.news_url?'<a href="'+esc(p.news_url)+'" target="_blank" rel="noopener">'+esc(p.news)+' ↗</a>':esc(p.news))+'</div>':'')+
       (p.short!=null?'<div class="mshort">🩳 <span class="lead">Short interest:</span> <b>'+p.short+'%</b>'+(p.short>=8?' — elevated (squeeze fuel)':p.short>=4?' — moderate':' — light')+'</div>':'')+
@@ -2457,6 +2479,7 @@ function openCandidate(idx){
       '<div class="mnews">🔎 <span class="lead">How we picked it up:</span> '+esc(c.note||'a signal in tonight\'s scan')+'<div class="mfound">'+(c.foundVia?esc(c.foundVia):'Caught by our wide-net scan — live news, market movers and analyst actions — then priced &amp; scored into the pot.')+'</div></div>'+
       (signalRows(c,c.region).length?'<h4 style="margin-top:16px">🧮 All the signals, in one place</h4>'+signalDetailHtml(c,c.region):'')+
       scoreBarHtml(c.score)+
+      announcementsHtml(c.announcements)+
       (c.news?'<div class="mnews">📰 <span class="lead">In the news:</span> '+(c.news_url?'<a href="'+esc(c.news_url)+'" target="_blank" rel="noopener">'+esc(c.news)+' ↗</a>':esc(c.news))+'</div>':'')+
       (c.short!=null?'<div class="mshort">🩳 <span class="lead">Short interest:</span> <b>'+c.short+'%</b> of shares sold short'+(c.short>=8?' — <b>elevated</b> (squeeze fuel / bearish crowd)':c.short>=4?' — moderate':' — light')+'</div>':'')+
       '<div class="mrisk" style="background:var(--surface-2);border-color:var(--line)"><b>Didn\'t make the top 3</b> — it\'s on the radar, not a pick this run.</div>'+
