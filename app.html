@@ -2086,10 +2086,9 @@ var INFO={
     '<h4>Why a real mover gets missed</h4><p>We search two ways: a <b>news &amp; catalyst search</b> (contracts, upgrades, earnings beats) every run, and a <b>whole-market technical scan</b> — a full sweep of every liquid stock for chart-based setups, which catches quiet momentum moves with no headline behind them. The technical scan is heavier and doesn\'t run on every single pass yet — when it\'s skipped, a name moving purely on chart momentum (no news) can slip through. Each miss below says exactly which of these applies.</p>'+
     '<p class="infofoot">This is the same accountability spirit as the grading ledger — we\'d rather show you the gap than hide it. A high miss count on a given day flags where the search needs to widen.</p>'},
   pricealerts:{icon:'🔔',title:'Price alerts — what actually happens',body:
-    '<p>Right now this means one real thing: when you\'re signed in and a stock on your table hits (or drops below) its buy price, you\'ll see a <b>banner right here on the Favourites tab</b> the next time you open it.</p>'+
-    '<p><b>It\'s not an email or push notification yet</b> — that\'s planned but not live. You have to actually open the app to see it.</p>'+
-    '<p>There\'s no per-user on/off switch because it isn\'t a notification channel you can be opted into or out of — it\'s just a banner that shows up when the condition is true. Nothing to turn off.</p>'+
-    '<p class="infofoot">Want a real email/push alert instead of having to check the app? That\'s a real, bigger build (queued) — tell us and we\'ll prioritise it.</p>'}
+    '<p>When a stock on your table hits (or drops below) its ideal-buy price, you\'ll see a <b>banner on the Favourites tab</b> — and as of 8 Aug 2026, we also <b>email you</b> (checked hourly, fires once per stock, never repeats).</p>'+
+    '<p>Tap the <b>Price alerts</b> pill to turn the email off — the in-app banner still works either way, this only controls whether we also email you.</p>'+
+    '<p class="infofoot">Emails come from thestocksoup@gmail.com and always link straight back to the stock — never a marketing list, just this one trigger.</p>'}
 };
 function infoBtn(key){ return '<button class="infobtn" data-info="'+esc(key)+'" aria-label="What is this?">i</button>'; }
 // ── Per-tab "what you need to know" headers ─────────────────────────────────
@@ -2117,7 +2116,7 @@ function favesHead(){
   var n=0,owned=0; try{var a=wlGet(); n=a.length; owned=a.filter(function(w){return w.own;}).length;}catch(e){}
   var stats=['<button class="tabstat wlfbtn'+(WL_FILTER==='all'?' on':'')+'" id="wlfAll" type="button"><span class="tk">Watching</span> <b>'+n+'</b></button>',
     '<button class="tabstat wlfbtn'+(WL_FILTER==='own'?' on':'')+'" id="wlfOwn" type="button"><span class="tk">You own</span> <b id="ownCount">'+owned+'</b></button>',
-    '<span class="tabstat"><span class="tk">Price alerts</span> <b>on</b> '+infoBtn('pricealerts')+'</span>'];
+    '<button class="tabstat wlfbtn on" id="alertsToggleBtn" type="button"><span class="tk">Price alerts</span> <b id="alertsToggleState">'+(alertsEnabled()?'on':'off')+'</b></button>'+infoBtn('pricealerts')];
   var t=n?('You\'re watching '+n+(n===1?' name':' names')):'Your table is empty — for now';
   return tabHead('⭐ Your table',t,'Tap <b>＋ Watch</b> on any pick and we\'ll remember its ideal-buy price, then flag it the moment it gets there. Add your own below too. <b>Tap Watching/You own above</b> to filter the list.',n?stats:[]);
 }
@@ -2532,6 +2531,18 @@ function sessSet(t){try{t?localStorage.setItem(SKEY,t):localStorage.removeItem(S
 function signedIn(){return !!sessGet();}
 function apiHdr(){return {'Authorization':'Bearer '+sessGet(),'Content-Type':'application/json'};}
 function apiPush(method,path,body){ if(!signedIn())return; try{fetch(API_BASE+path,{method:method,headers:apiHdr(),body:body?JSON.stringify(body):undefined}).then(function(r){if(r.status===401){sessSet('');}}).catch(function(){});}catch(e){} }
+// Price-alert emails now genuinely go out (Gmail SMTP, live since 8 Aug) — this is a real per-user
+// opt-out (#me/alerts), not the cosmetic always-"on" label it used to be.
+function alertsEnabled(){ try{ return localStorage.getItem('soup_alerts_enabled')!=='0'; }catch(e){ return true; } }
+function refreshAlertsToggle(){
+  if(!signedIn()) return;
+  fetch(API_BASE+'/me/alerts',{headers:apiHdr()}).then(function(r){return r.ok?r.json():null;}).then(function(j){
+    if(!j) return;
+    try{ localStorage.setItem('soup_alerts_enabled', j.alerts_enabled?'1':'0'); }catch(e){}
+    var el=document.getElementById('alertsToggleState'); if(el) el.textContent=j.alerts_enabled?'on':'off';
+    var btn=document.getElementById('alertsToggleBtn'); if(btn) btn.classList.toggle('on', !!j.alerts_enabled);
+  }).catch(function(){});
+}
 // Pull the server list on sign-in; merge any device-only items up first (nothing lost), then mirror down.
 function syncFromBackend(cb){
   if(!signedIn()){cb&&cb();return;}
@@ -2975,6 +2986,17 @@ function wire(D){
   var vb=document.getElementById('viewBtn'); if(vb) vb.onclick=function(){setView('simple');};
   var rb=document.getElementById('refreshBtn'); if(rb){ if(!isAdmin()){ rb.style.display='none'; } else { rb.onclick=function(){refreshPrices(rb);}; } }
   var stb=document.getElementById('shareTabBtn'); if(stb) stb.onclick=shareCurrentTab;
+  var atb=document.getElementById('alertsToggleBtn');
+  if(atb){
+    atb.onclick=function(){
+      var next=!alertsEnabled();
+      try{ localStorage.setItem('soup_alerts_enabled', next?'1':'0'); }catch(e){}
+      var el=document.getElementById('alertsToggleState'); if(el) el.textContent=next?'on':'off';
+      atb.classList.toggle('on', next);
+      apiPush('POST','/me/alerts',{enabled:next});
+    };
+    refreshAlertsToggle();
+  }
   document.querySelectorAll('[data-gsym]').forEach(function(el){
     function go(e){ if(e.target.closest('a'))return; e.stopPropagation(); openGrade(el.dataset.gsym); }
     el.addEventListener('click',go);
