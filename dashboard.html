@@ -928,6 +928,19 @@
   .scorelegend i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px;vertical-align:middle}
   .scorelegend .pen{color:var(--dont)}
   .scorenum{font-size:13px;font-weight:800;color:var(--ink)}
+  .juicebtn{background:rgba(255,140,0,.14);color:#FF8C00;border:1px solid rgba(255,140,0,.4);border-radius:7px;font-size:10.5px;font-weight:800;padding:3px 8px;margin-left:8px;cursor:pointer;vertical-align:middle}
+  .juicebtn:hover{background:rgba(255,140,0,.24)}
+  .jgrid{display:flex;flex-direction:column;gap:8px}
+  .jrow{display:grid;grid-template-columns:70px 1fr 130px;gap:8px;align-items:center;font-size:11.5px}
+  .jlabel{font-weight:800;color:var(--ink);text-transform:capitalize}
+  .jbarwrap{background:var(--surface-2);border-radius:5px;height:9px;overflow:hidden}
+  .jbar{display:block;height:100%;background:var(--broth);border-radius:5px}
+  .jnum{color:var(--muted);font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+  .jpen{background:var(--surface-2);border-radius:8px;padding:7px 10px;margin-bottom:6px}
+  .jpen .jlabel{font-size:12px}
+  .jpen .jnum{float:right;font-size:12px;font-weight:800}
+  .jpen .jnum.down{color:var(--dont)} .jpen .jnum.up{color:var(--buy)}
+  .jwhy{clear:both;font-size:11px;color:var(--faint);margin-top:2px}
   .mtake{font-size:15px;line-height:1.6;text-wrap:pretty}
   .mtake .lead{color:var(--broth);font-weight:800}
   .mcat{list-style:none;display:flex;flex-direction:column;gap:8px}
@@ -1067,6 +1080,7 @@ function mktBarHtml(D){
   return '<div class="mktwrap"><div class="mktflags" role="tablist" aria-label="Filter market">'+flags+'</div>'+cap+'</div>';
 }
 var LAST=null, LASTFOCUS=null;
+var JUICE_CACHE={}, JUICE_SEQ=0;   // #105 — admin-only "real juice" raw-logic detail, keyed by id (avoids embedding large JSON in HTML attrs)
 function yf(sym,region){var s=String(sym).replace(/\*$/,'');if(region==="au")s+=".AX";return "https://finance.yahoo.com/quote/"+encodeURIComponent(s);}
 function qlink(sym,region,label){return '<a class="q" href="'+yf(sym,region)+'" target="_blank" rel="noopener">'+esc(label==null?sym:label)+'</a>';}
 var CE_COLORS=['#FF6B1A','#23C267','#4C9AFF','#FFC53D','#B692FF','#FF4D4D'];
@@ -2044,10 +2058,54 @@ function scoreBarHtml(score){
   var segs=facs.map(function(fc){return '<span class="scoreseg s-'+fc.k+'" style="width:'+fc.pts+'%"></span>';}).join('');
   var leg=facs.map(function(fc){return '<span><i class="s-'+fc.k+'"></i>'+esc(SCORE_FLAB[fc.k]||fc.k)+' '+fc.pts+'</span>';}).join('');
   if(score.heat&&score.heat>1) leg+='<span class="pen">− overheated '+Math.round(score.heat)+'</span>';
-  return '<div class="viz"><h4>🧮 Buy-Now model score · <span class="scorenum">'+score.buy_now+'/100 · '+esc(score.band)+'</span></h4>'+
+  var juiceBtn='';
+  if(isAdmin()&&score.detail){
+    var jid=++JUICE_SEQ; JUICE_CACHE[jid]={detail:score.detail,buy_now:score.buy_now,band:score.band};
+    juiceBtn=' <button class="juicebtn" data-juice-id="'+jid+'" title="Admin: full raw-logic derivation">🧡 real juice</button>';
+  }
+  return '<div class="viz"><h4>🧮 Buy-Now model score · <span class="scorenum">'+score.buy_now+'/100 · '+esc(score.band)+'</span>'+juiceBtn+'</h4>'+
     '<div class="scorebar">'+segs+'</div><div class="scorelegend">'+leg+'</div>'+
     (score.verdict?'<div class="rsimeta" style="margin-top:6px"><b>'+esc(score.verdict)+'</b>'+(score.child_sentence?' — '+esc(score.child_sentence):'')+'</div>':'')+
   '</div>';
+}
+// #105 — admin-only "real juice": the full raw-logic derivation behind a score, not just the
+// top-2-factor summary bar. Every category's weight%/subscore/points, every penalty with its real
+// trigger value, every layered nudge (sentiment/trend/Bollinger/RS/short-trend/EMA) with its reason.
+function openJuice(id){
+  var j=JUICE_CACHE[id]; if(!j)return;
+  var d=j.detail||{};
+  LASTFOCUS=document.activeElement;
+  function bar(label,w,s,c){
+    return '<div class="jrow"><span class="jlabel">'+esc(SCORE_FLAB[label]||label)+'</span>'+
+      '<span class="jbarwrap"><span class="jbar" style="width:'+Math.max(2,c)+'%"></span></span>'+
+      '<span class="jnum">'+(w!=null?'w '+w+'% · ':'')+'raw '+(s!=null?(s*100).toFixed(0)+'%':'—')+' → '+c.toFixed(1)+'pt</span></div>';
+  }
+  var weights=d.weights||{}, subs=d.subscores||{}, contrib=d.contrib||{};
+  var catRows=Object.keys(contrib).sort(function(a,b){return contrib[b]-contrib[a];}).map(function(k){
+    return bar(k,weights[k],subs[k],contrib[k]);
+  }).join('');
+  var penRows=(d.penalty_detail||[]).map(function(p){
+    return '<div class="jpen"><span class="jlabel">'+esc(p.k.replace(/_/g,' '))+'</span><span class="jnum down">−'+p.pts+'pt</span><div class="jwhy">'+esc(p.why)+'</div></div>';
+  }).join('')||'<p class="muted" style="font-size:12px">No penalties applied.</p>';
+  var nudgeRows=(d.nudges||[]).map(function(n){
+    return '<div class="jpen"><span class="jlabel">'+esc(n.k.replace(/_/g,' '))+'</span><span class="jnum '+(n.pts>=0?'up':'down')+'">'+(n.pts>=0?'+':'')+n.pts+'pt</span><div class="jwhy">'+esc(n.why)+'</div></div>';
+  }).join('')||'<p class="muted" style="font-size:12px">No nudges applied.</p>';
+  var flags=[];
+  if(d.gated) flags.push('⚠️ capped — no real catalyst (pead/rev/news all thin)');
+  if(d.hard_excluded) flags.push('⛔ hard-excluded — too extended above its 20-day average');
+  var m=document.getElementById('modal'); m.className='modal';
+  m.innerHTML='<div class="mhead"><button class="mclose" id="mClose" aria-label="Close">✕</button><div class="mtf">🧡 Admin — real juice</div>'+
+    '<div class="mtop"><div class="msym" style="font-size:20px">'+j.buy_now+'/100 · '+esc(j.band)+'</div></div></div>'+
+    '<div class="mbody">'+
+      (flags.length?'<p class="mtake" style="color:var(--dont)">'+flags.join(' · ')+'</p>':'')+
+      '<h4 style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:800;margin:4px 0 8px">Category scores (weight × raw signal = points)</h4>'+
+      '<div class="jgrid">'+catRows+'</div>'+
+      '<h4 style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:800;margin:16px 0 8px">Penalties</h4>'+penRows+
+      '<h4 style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:800;margin:16px 0 8px">Layered nudges</h4>'+nudgeRows+
+      '<p style="font-size:11px;color:var(--faint);margin-top:14px">Dominant signal: <b>'+esc(SCORE_FLAB[d.dominant_signal]||d.dominant_signal||'—')+'</b>. This is the exact derivation the model used — same numbers, no rounding beyond display.</p>'+
+    '</div>';
+  var ov=document.getElementById('overlay'); ov.classList.add('open'); ov.setAttribute('aria-hidden','false');
+  document.getElementById('mClose').onclick=closeModal; document.getElementById('mClose').focus();
 }
 function openModal(p,region,cur){
   LASTFOCUS=document.activeElement;
@@ -2146,6 +2204,14 @@ function closeModal(){
   ov.classList.remove('open');ov.setAttribute('aria-hidden','true');
   if(LASTFOCUS&&LASTFOCUS.focus)LASTFOCUS.focus();
 }
+// #105 — one-time delegated listener for .juicebtn: it only ever appears inside dynamically-injected
+// modal HTML (openModal/openCandidate), so wiring it per-render like other buttons would mean
+// re-finding it after every innerHTML swap. Delegation on document means it always works, no re-wiring.
+document.addEventListener('click',function(e){
+  var b=e.target.closest('.juicebtn'); if(!b)return;
+  e.preventDefault(); e.stopPropagation();
+  openJuice(+b.dataset.juiceId);
+});
 function fmtDate(iso){var p=String(iso||'').split('-');if(p.length!==3)return iso||'';var mo=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];return (+p[2])+' '+(mo[(+p[1])-1]||'')+' '+p[0];}
 // Plain-English "what happened" for one graded call — the honesty of that exact pick on that run.
 function openGrade(sym){
