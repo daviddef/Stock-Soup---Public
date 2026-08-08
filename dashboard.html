@@ -2048,13 +2048,14 @@ var INFO={
     '<p class="infofoot">No black box: every number comes from live market data and the same engine behind the recommendation cards.</p>'},
   schedule:{icon:'⏱️',title:'The run schedule',body:
     '<p>The Stock Soup runs on two clocks — one heavy, one light.</p>'+
-    '<div class="callout" style="margin:10px 0 16px">⚠️ <b>Major runs are still triggered manually</b> — not on an automatic timer yet. The times below are the <b>target windows</b> a run aims for when one\'s kicked off, not a guarantee one fires automatically. Ask any time and a fresh menu gets cooked.</div>'+
-    '<h4>🍳 Major runs — a fresh menu</h4><p>The full re-cook: re-scan the market, re-score everything, pick 6 new stocks. This is what advances <b>The Journey</b>. Aimed at <b>~30 minutes before each market opens</b>, so the menu is fresh when you can act:</p>'+
-    '<ul class="infoul"><li>🇦🇺 <b>09:30 AEST</b> — before the ASX opens (10:00).</li>'+
-    '<li>🇺🇸 <b>23:00 AEST</b> — before the US opens (9:30am New York).</li>'+
-    '<li>☀️ <b>12:30 AEST</b> — a midday check while the ASX trades.</li></ul>'+
-    '<h4>⏱️ Minor runs — a re-price</h4><p>Every hour we re-price the current 6 picks + your watchlist and read the change — <i>same menu, fresh numbers</i>. These fill <b>Tonight\'s hourly runs</b> and the change-environment chart. They don\'t pick new stocks.</p>'+
-    '<p class="infofoot">So: <b>majors</b> change <i>what\'s on the menu</i> (market-open-timed); <b>minors</b> keep <i>the prices</i> live (hourly). The time up top is the next run — tap it any time to see this.</p>'},
+    '<div class="callout" style="margin:10px 0 16px">⚠️ <b>Major runs fire automatically on a schedule now</b> — 4 times a day, at the target windows below. The one durability gap: it\'s currently a <b>session-scoped</b> schedule (runs while the pipeline\'s coding session stays open; a fully persistent, reboot-proof version is still on the roadmap), so a run can occasionally slip if that session isn\'t live. Ask any time regardless and a fresh menu gets cooked on demand.</div>'+
+    '<h4>🍳 Major runs — a fresh menu</h4><p>The full re-cook: re-scan the market (all 4 discovery nets), re-score every candidate through the real model, pick 6 new stocks. This is what advances <b>The Journey</b>. Aimed at <b>~30 minutes before each market opens</b>, so the menu is fresh when you can act:</p>'+
+    '<ul class="infoul"><li>🇦🇺 <b>~09:00 AEST</b> — before the ASX opens (10:00).</li>'+
+    '<li>☀️ <b>~12:00 AEST</b> — a midday check while the ASX trades.</li>'+
+    '<li>🌆 <b>~16:00 AEST</b> — late-arvo re-scan, catches ASX-close and pre-US-evening moves.</li>'+
+    '<li>🇺🇸 <b>~22:45 AEST</b> — before the US opens (9:30am New York).</li></ul>'+
+    '<h4>⏱️ Minor runs — a re-price</h4><p>Every 10 minutes during AU awake hours we re-price the current 6 picks + your watchlist and read the change — <i>same menu, fresh numbers</i>. These fill <b>Tonight\'s hourly runs</b> and the change-environment chart. They don\'t pick new stocks.</p>'+
+    '<p class="infofoot">So: <b>majors</b> change <i>what\'s on the menu</i> (4×/day, market-open-timed); <b>minors</b> keep <i>the prices</i> live (~10 min). The time up top is the next run — tap it any time to see this.</p>'},
   menu:{icon:'🍽️',title:'Tonight\'s Menu',body:
     '<p>The <b>6 picks</b> this run — <b>3 Australian + 3 international</b>, in three time horizons:</p>'+
     '<ul class="infoul"><li>⚡ <b>Day</b> — a quick trade off a fresh catalyst.</li><li>📅 <b>Week</b> — simmer a few days.</li><li>📈 <b>Long</b> — slow-cooked conviction.</li></ul>'+
