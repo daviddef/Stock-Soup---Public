@@ -1224,11 +1224,21 @@ function clamp(x){return Math.max(3,Math.min(97,x));}
 // Action that moves with the ideal-buy price: at/below → get in, above → wait for the dip.
 // The real discovery funnel (only shown once a full run logs D.discovery — makes "48" real & inspectable)
 function discoveryFunnel(D){
-  var dv=D.discovery; if(!dv||!dv.scanned) return '';
-  var m=(D.candidates||[]).length;
+  var dv=D.discovery; if(!dv) return '';
+  var shortlisted=(D.candidates||[]).length;
+  var listedN=(dv.tickers||[]).length;
+  // #114 fix (9 Aug 2026): dv.scanned is a hand-recorded number and can go stale/wrong — real incident
+  // (user-caught, screenshot): "28 scanned -> 46 shortlisted", an internally impossible funnel since you
+  // can't shortlist more names than you scanned. Never trust a recorded "scanned" smaller than what was
+  // actually shortlisted or actually listed in discovery.tickers[] — floor it at the real numbers instead.
+  var scanned=Math.max(+dv.scanned||0, shortlisted, listedN);
+  if(!scanned) return '';
+  // "served" used to be a hardcoded literal 6 regardless of how many slots actually got a real pick
+  // (e.g. an insufficient-signal run legitimately serves fewer than 6) — count real picks instead.
+  var served=(D.regions||[]).reduce(function(n,rg){return n+(rg.picks||[]).filter(function(p){return p.sym&&p.sym!=='NONE';}).length;},0);
   var list=(dv.tickers||[]).map(function(t){return '<span class="dvpill"><b>'+esc(t.sym)+'</b>'+(t.signal?' <small>'+esc(t.signal)+'</small>':'')+'</span>';}).join('');
-  return '<div class="funnel"><div class="fnrow"><span class="fnn">'+dv.scanned+'</span> scanned <span class="fnar">→</span> <span class="fnn">'+m+'</span> shortlisted <span class="fnar">→</span> <span class="fnn">6</span> served</div>'+
-    (list?'<details class="dvdet"><summary>see the '+dv.scanned+' we scanned this run</summary><div class="dvlist">'+list+'</div></details>':'')+'</div>';
+  return '<div class="funnel"><div class="fnrow"><span class="fnn">'+scanned+'</span> scanned <span class="fnar">→</span> <span class="fnn">'+shortlisted+'</span> shortlisted <span class="fnar">→</span> <span class="fnn">'+served+'</span> served</div>'+
+    (list?'<details class="dvdet"><summary>see the '+listedN+' we can name from this run</summary><div class="dvlist">'+list+'</div></details>':'')+'</div>';
 }
 // "The Misses" (#63): the day's real top movers, checked against what we actually scanned/served —
 // so the run's accountability isn't only ever the winners. Built by misses.py, stored on latest.misses.
