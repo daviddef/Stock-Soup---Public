@@ -418,6 +418,14 @@
   .rlflag{font-size:12.5px;flex:0 0 auto}
   .rlpk{display:inline-flex;align-items:center;gap:3px;font-weight:700;color:var(--ink);white-space:nowrap}
   .rlmovers{color:var(--muted);font-size:11.5px}
+  .rlsteps{margin-top:4px}
+  .rlsteps summary{cursor:pointer;font-size:11px;font-weight:700;color:var(--muted);list-style:none;display:inline-flex;align-items:center;gap:4px}
+  .rlsteps summary::-webkit-details-marker{display:none}
+  .rlsteps summary::before{content:'▸';display:inline-block;transition:transform .15s}
+  .rlsteps[open] summary::before{transform:rotate(90deg)}
+  .rlstepsbody{margin:6px 0 2px;padding-left:14px;border-left:1px solid var(--line);display:flex;flex-direction:column;gap:3px}
+  .rlstep{display:flex;justify-content:space-between;gap:10px;font-size:11px;color:var(--muted)}
+  .rlstep span:last-child{color:var(--faint);font-weight:600}
   .rlmovers .up{color:var(--buy);font-weight:700} .rlmovers .dn{color:var(--dont);font-weight:700}
   .rlmovers .qt{color:var(--faint)}
   .jhead .when{font-weight:800;font-size:13px}
@@ -872,7 +880,7 @@
   .spmm{display:flex;justify-content:space-between;font-size:10.5px;font-weight:700;color:var(--faint);font-variant-numeric:tabular-nums;margin-top:3px}
   .scorebar{display:flex;height:16px;border-radius:8px;overflow:hidden;background:var(--surface);border:1px solid var(--line);margin:6px 0}
   .scoreseg{height:100%}
-  .s-pead{background:#23C267}.s-rev{background:#4C9AFF}.s-hi{background:#FF6B1A}.s-news{background:#FFC53D}.s-vol{background:#B692FF}
+  .s-pead{background:#23C267}.s-rev{background:#4C9AFF}.s-hi{background:#FF6B1A}.s-news{background:#FFC53D}.s-vol{background:#B692FF}.s-ins{background:#F472B6}
   .scorelegend{display:flex;flex-wrap:wrap;gap:12px;font-size:11px;color:var(--muted);font-weight:700;margin-top:10px}
   .scorelegend i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px;vertical-align:middle}
   .scorelegend .pen{color:var(--dont)}
@@ -1826,6 +1834,23 @@ function render(D,H){
   wire(D);
 }
 
+var SCORE_FLAB={pead:"Earnings",rev:"Analysts",hi:"Trend/High",news:"Catalyst",vol:"Volume",ins:"Insider"};
+// Shared by openModal (the 6 picks) and openCandidate (Full Pot) — same real model, same bar, everywhere it applies.
+function scoreBarHtml(score){
+  if(!score) return '';
+  if(score.pending){
+    return '<div class="viz"><h4>🧮 Buy-Now model score</h4>'+
+      '<div class="rsimeta">Pending — we don’t yet pull analyst &amp; earnings data for ASX stocks, so the model can’t score this one fairly yet. On the roadmap.</div></div>';
+  }
+  var facs=score.factors||[];
+  var segs=facs.map(function(fc){return '<span class="scoreseg s-'+fc.k+'" style="width:'+fc.pts+'%"></span>';}).join('');
+  var leg=facs.map(function(fc){return '<span><i class="s-'+fc.k+'"></i>'+esc(SCORE_FLAB[fc.k]||fc.k)+' '+fc.pts+'</span>';}).join('');
+  if(score.heat&&score.heat>1) leg+='<span class="pen">− overheated '+Math.round(score.heat)+'</span>';
+  return '<div class="viz"><h4>🧮 Buy-Now model score · <span class="scorenum">'+score.buy_now+'/100 · '+esc(score.band)+'</span></h4>'+
+    '<div class="scorebar">'+segs+'</div><div class="scorelegend">'+leg+'</div>'+
+    (score.verdict?'<div class="rsimeta" style="margin-top:6px"><b>'+esc(score.verdict)+'</b>'+(score.child_sentence?' — '+esc(score.child_sentence):'')+'</div>':'')+
+  '</div>';
+}
 function openModal(p,region,cur){
   LASTFOCUS=document.activeElement;
   var span=(p.nTarget-p.nStop)||1;
@@ -1834,21 +1859,7 @@ function openModal(p,region,cur){
   var rsi=p.rsi!=null?p.rsi:50;
   var rsiWord=rsi>=70?"🔥 hot — wait for it to cool":rsi<=35?"🧊 cheap — bargain zone":"😌 comfortable — not stretched";
   var cats=(p.catalysts||[]).map(function(c){return '<li>'+esc(c)+'</li>';}).join('');
-  var FLAB={pead:"Earnings",rev:"Analysts",hi:"Trend/High",news:"Catalyst",vol:"Volume"};
-  var scoreHtml='';
-  if(p.score){
-    if(p.score.pending){
-      scoreHtml='<div class="viz"><h4>🧮 Buy-Now model score</h4>'+
-        '<div class="rsimeta">Pending — we don’t yet pull analyst &amp; earnings data for ASX stocks, so the model can’t score this one fairly yet. On the roadmap.</div></div>';
-    } else {
-      var facs=p.score.factors||[];
-      var segs=facs.map(function(fc){return '<span class="scoreseg s-'+fc.k+'" style="width:'+fc.pts+'%"></span>';}).join('');
-      var leg=facs.map(function(fc){return '<span><i class="s-'+fc.k+'"></i>'+esc(FLAB[fc.k]||fc.k)+' '+fc.pts+'</span>';}).join('');
-      if(p.score.heat&&p.score.heat>1) leg+='<span class="pen">− overheated '+Math.round(p.score.heat)+'</span>';
-      scoreHtml='<div class="viz"><h4>🧮 Buy-Now model score · <span class="scorenum">'+p.score.buy_now+'/100 · '+esc(p.score.band)+'</span></h4>'+
-        '<div class="scorebar">'+segs+'</div><div class="scorelegend">'+leg+'</div></div>';
-    }
-  }
+  var scoreHtml=scoreBarHtml(p.score);
   var sparkHtml = p.spark ? '<div class="viz"><h4>Recent trend · last ~2 months</h4>'+sparkSVG(p.spark)+
     '<div class="spmm"><span>'+esc(cur)+Math.min.apply(null,p.spark).toFixed(1)+'</span><span>'+esc(cur)+Math.max.apply(null,p.spark).toFixed(1)+'</span></div>'+
     '<div class="rsimeta">'+(p.spark[p.spark.length-1]>=p.spark[0]?'📈 Up over the stretch':'📉 Down over the stretch')+'</div></div>' : '';
@@ -1901,7 +1912,7 @@ function openModal(p,region,cur){
       '<p class="mtake"><span class="lead">Chef says:</span> '+esc(p.chefTake)+'</p>'+
       (p.news?'<div class="mnews">📰 <span class="lead">In the news:</span> '+(p.news_url?'<a href="'+esc(p.news_url)+'" target="_blank" rel="noopener">'+esc(p.news)+' ↗</a>':esc(p.news))+'</div>':'')+
       (p.short!=null?'<div class="mshort">🩳 <span class="lead">Short interest:</span> <b>'+p.short+'%</b>'+(p.short>=8?' — elevated (squeeze fuel)':p.short>=4?' — moderate':' — light')+'</div>':'')+
-      '<div><h4 style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:800;margin-bottom:10px">🔎 How we found it · why it\'s on the menu</h4><div class="mfound" style="margin:-2px 0 9px">Surfaced in tonight\'s wide-net scan (news · movers · analyst actions), then scored to the top 6. The signals:</div><ul class="mcat">'+cats+'</ul></div>'+
+      '<div><h4 style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:800;margin-bottom:10px">🔎 How we found it · why it\'s on the menu</h4><div class="mfound" style="margin:-2px 0 9px">'+(p.foundVia?esc(p.foundVia):'Surfaced in tonight\'s wide-net scan (news · movers · analyst actions), then scored to the top 6.')+' The signals:</div><ul class="mcat">'+cats+'</ul></div>'+
       '<div class="mrisk"><b>Watch out:</b> '+esc(p.risk)+'</div>'+
       altsHtml+
       '<div class="mfoot"><button class="mbtn watchbtn" data-sym="'+esc(p.sym)+'" data-region="'+esc(region)+'"'+(p.name?' data-name="'+esc(p.name)+'"':'')+(p.nEntry!=null?' data-entry="'+p.nEntry+'"':'')+' aria-pressed="false">＋ Watch</button>'+
@@ -2140,11 +2151,11 @@ function runLogHtml(){
     if(!mm) return 0;
     return new Date(new Date().getFullYear(), MO.indexOf(mm[2]), +mm[1], tm?+tm[1]:0, tm?+tm[2]:0).getTime();
   }
-  function dur(ms){
+  function durLabel(ms){
     if(!ms) return '';
-    var s=ms/1000, label=s<10?s.toFixed(1)+'s':s<60?Math.round(s)+'s':Math.round(s/60)+'m';
-    return '<span class="rldur">· '+label+'</span>';
+    var s=ms/1000; return s<10?s.toFixed(1)+'s':s<60?Math.round(s)+'s':Math.round(s/60)+'m';
   }
+  function dur(ms){ var l=durLabel(ms); return l?'<span class="rldur">· '+l+'</span>':''; }
   function pkline(arr,flag,lbl){
     var picks=(arr||[]).map(function(s,i){return '<span class="rlpk">'+tfB(['Day','Week','Long'][i])+' '+esc(s)+'</span>';}).join('');
     return '<div class="rlline"><span class="rlflag" title="'+lbl+'">'+flag+'</span>'+picks+'</div>';
@@ -2160,9 +2171,13 @@ function runLogHtml(){
       // don't claim "new picks" when they're identical to the immediately-prior menu entry.
       var mi=(H.menus||[]).indexOf(m), prevM=(mi>=0&&H.menus[mi+1])?H.menus[mi+1]:null;
       var samePicks=prevM&&JSON.stringify(prevM.au||[])===JSON.stringify(m.au||[])&&JSON.stringify(prevM.us||[])===JSON.stringify(m.us||[]);
+      var steps=(m.steps||[]).filter(function(s){return s.durMs>0;});
+      var stepsHtml=steps.length?('<details class="rlsteps"><summary>⏱ step-by-step ('+steps.length+')</summary>'+
+        '<div class="rlstepsbody">'+steps.map(function(s){return '<div class="rlstep"><span>'+esc(s.label)+'</span><span class="mono">'+esc(durLabel(s.durMs))+'</span></div>';}).join('')+
+        '</div></details>'):'';
       return '<div class="rlrow rlmaj"><div class="rltop"><span class="rltag rltag-maj">🍳 Menu · '+(samePicks?'confirmed, no change':'new picks')+'</span>'+
         '<span class="rlwhen">'+fmtWhen(r.ts)+'</span>'+dur(m.durMs)+'</div>'+
-        '<div class="rlbody">'+pkline(m.au,'🇦🇺','Australia')+pkline(m.us,'🇺🇸','United States')+'</div></div>';
+        '<div class="rlbody">'+pkline(m.au,'🇦🇺','Australia')+pkline(m.us,'🇺🇸','United States')+stepsHtml+'</div></div>';
     }
     var pu=r.pu, snap=pu.snap||{}, ch=(pu.changes||[]).filter(function(c){return Math.abs(c[1])>=0.05;})
       .sort(function(a,b){return Math.abs(b[1])-Math.abs(a[1]);}).slice(0,3);
@@ -2377,8 +2392,9 @@ function openCandidate(idx){
     '<span class="mverd '+vc+'">'+esc(HEAT[c.heat]||c.heat)+'</span></div>'+
     '<div class="mbody">'+
       (spk?'<div class="viz"><h4>Recent trend · last ~6 weeks</h4>'+spk+'</div>':'')+
-      '<div class="mnews">🔎 <span class="lead">How we picked it up:</span> '+esc(c.note||'a signal in tonight\'s scan')+'<div class="mfound">Caught by our wide-net scan — live news, market movers and analyst actions — then priced &amp; scored into the pot.</div></div>'+
+      '<div class="mnews">🔎 <span class="lead">How we picked it up:</span> '+esc(c.note||'a signal in tonight\'s scan')+'<div class="mfound">'+(c.foundVia?esc(c.foundVia):'Caught by our wide-net scan — live news, market movers and analyst actions — then priced &amp; scored into the pot.')+'</div></div>'+
       (signalRows(c,c.region).length?'<h4 style="margin-top:16px">🧮 All the signals, in one place</h4>'+signalDetailHtml(c,c.region):'')+
+      scoreBarHtml(c.score)+
       (c.news?'<div class="mnews">📰 <span class="lead">In the news:</span> '+(c.news_url?'<a href="'+esc(c.news_url)+'" target="_blank" rel="noopener">'+esc(c.news)+' ↗</a>':esc(c.news))+'</div>':'')+
       (c.short!=null?'<div class="mshort">🩳 <span class="lead">Short interest:</span> <b>'+c.short+'%</b> of shares sold short'+(c.short>=8?' — <b>elevated</b> (squeeze fuel / bearish crowd)':c.short>=4?' — moderate':' — light')+'</div>':'')+
       '<div class="mrisk" style="background:var(--surface-2);border-color:var(--line)"><b>Didn\'t make the top 3</b> — it\'s on the radar, not a pick this run.</div>'+
