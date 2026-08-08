@@ -216,9 +216,16 @@
   .sigread.up{color:var(--buy)} .sigread.down{color:var(--dont)}
   .sigexplain{font-size:11.5px;color:var(--faint);margin-top:3px;line-height:1.4}
   .wlsummary:empty{display:none}
-  .wlstat-grid{display:grid;grid-template-columns:1fr;gap:10px;margin-bottom:16px}
-  @media(min-width:640px){.wlstat-grid{grid-template-columns:1fr 1fr}}
-  .wlstat-card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
+  .wlstat-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px}
+  .wlstat-card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px;min-width:0}
+  @media(max-width:420px){
+    .wlstat-grid{gap:6px}
+    .wlstat-card{padding:10px 11px}
+    .wlstat-big{font-size:20px}
+    .wlstat-h{font-size:10px}
+    .wlstat-sub{font-size:10px;line-height:1.3}
+    .wlstat-row{font-size:11px;margin-top:7px;flex-wrap:wrap;gap:4px}
+  }
   .wlstat-h{font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
   .wlstat-big{font-size:26px;font-weight:900;margin-top:4px;font-variant-numeric:tabular-nums}
   .wlstat-big.up{color:var(--buy)} .wlstat-big.down{color:var(--dont)}
@@ -1798,6 +1805,7 @@ function render(D,H){
           '<button class="bmitem" id="viewBtn" role="menuitem">😋 Simple view</button>'+
           '<button class="bmitem" id="themeBtn" role="menuitem">🌗 Switch theme</button>'+
           '<button class="bmitem" id="docsBtn" role="menuitem" style="display:none">📖 Documentation</button>'+
+          '<button class="bmitem" id="healthBtn" role="menuitem" style="display:none">💓 Data-source health</button>'+
         '</div></div>'+
     '</div></div>'+
     '<div class="toprow">'+mktBarHtml(D)+'</div></header>'+
@@ -3218,6 +3226,7 @@ function wire(D){
     bm.querySelectorAll('.bmitem,.bmupd').forEach(function(it){ it.addEventListener('click',closeBM); });
   }
   var db=document.getElementById('docsBtn'); if(db){ if(isAdmin()){ db.style.display=''; db.onclick=openDocs; } else { db.style.display='none'; } }
+  var hb=document.getElementById('healthBtn'); if(hb){ if(isAdmin()){ hb.style.display=''; hb.onclick=openDataHealth; } else { hb.style.display='none'; } }
   // Unified Favourites bar: one ticker input + market toggle → either ＋Watchlist or 🧠 What to do?
   (function(){ var inp=document.getElementById('uniInput'), au=document.getElementById('uniAu'), us=document.getElementById('uniUs'),
         watch=document.getElementById('uniWatch'), ask=document.getElementById('uniAsk'), reg={r:'au'};
@@ -3372,6 +3381,7 @@ function renderSimple(D){
           '<button class="bmitem" id="viewFull" role="menuitem">📋 Full view</button>'+
           '<button class="bmitem" id="themeBtn2" role="menuitem">🌗 Switch theme</button>'+
           '<button class="bmitem" id="docsBtnS" role="menuitem" style="display:none">📖 Documentation</button>'+
+          '<button class="bmitem" id="healthBtnS" role="menuitem" style="display:none">💓 Data-source health</button>'+
         '</div></div></div>'+
       '<div class="seyebrow schedlink" data-info="schedule" role="button" tabindex="0" title="Major runs are manually triggered — this is the target window, not a guarantee">'+esc(sStamp)+(D.next?' · usually <b>~'+esc(D.next)+'</b>':'')+' <span class="schedi">i</span></div>'+
       '<div class="stoprail">'+mktBarHtml(D)+'</div>'+
@@ -3404,6 +3414,7 @@ function wireSimple(D){
   var sitS=document.getElementById('signInTopS'); if(sitS){ sitS.textContent=signedIn()?'👤 Account':'👤 Sign in'; sitS.onclick=openAccount; }
   var rbS=document.getElementById('refreshBtnS'); if(rbS){ if(!isAdmin()) rbS.style.display='none'; else rbS.onclick=function(){refreshPrices(rbS);}; }
   var dbS=document.getElementById('docsBtnS'); if(dbS){ if(isAdmin()){ dbS.style.display=''; dbS.onclick=openDocs; } }
+  var hbS=document.getElementById('healthBtnS'); if(hbS){ if(isAdmin()){ hbS.style.display=''; hbS.onclick=openDataHealth; } }
   document.querySelectorAll('.stoprail .mkf[data-region]').forEach(function(b){b.onclick=function(){ if(b.dataset.region===MKT)return; MKT=b.dataset.region; renderSimple(D); };});
   function regionOf(id){return (D.regions||[]).filter(function(x){return x.id===id;})[0];}
   document.querySelectorAll('.scard').forEach(function(c){
