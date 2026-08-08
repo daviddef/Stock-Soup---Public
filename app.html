@@ -1322,9 +1322,13 @@ function topNewsHtml(D){
   var items=(D.topNews||[]).filter(function(n){return !n.region||n.region===MKT;});
   if(!items.length) return '';
   var TONE={bullish:{ic:'📈',cls:'ann-bull'},bearish:{ic:'📉',cls:'ann-bear'},neutral:{ic:'➖',cls:'ann-neu'},macro:{ic:'🌍',cls:'ann-neu'}};
+  // #118 — date + source tie-back, same visual language announcementsHtml() already uses (.anndate,
+  // linked headline via a.link/n.url) so a reader can tell how fresh an item is and go read it.
   var rows=items.slice(0,10).map(function(n){
     var t=TONE[n.tone]||TONE.neutral;
-    return '<div class="annrow '+t.cls+'"><div class="anntop"><span class="annic">'+t.ic+'</span><b class="annhead">'+(n.sym?esc(n.sym)+' — ':'')+esc(n.headline)+'</b></div>'+
+    var label=(n.sym?esc(n.sym)+' — ':'')+esc(n.headline);
+    var head=n.url?'<a class="annhead" href="'+esc(n.url)+'" target="_blank" rel="noopener">'+label+' ↗</a>':'<b class="annhead">'+label+'</b>';
+    return '<div class="annrow '+t.cls+'"><div class="anntop"><span class="annic">'+t.ic+'</span>'+head+(n.date?'<span class="anndate">'+esc(String(n.date).slice(0,10))+'</span>':'')+'</div>'+
       '<div class="annwhy">'+esc(n.why||'')+'</div></div>';
   }).join('');
   return '<section id="topnews"><div class="sec-head"><h2 class="display">📰 Tonight\'s news, consolidated</h2>'+infoBtn('topnews')+'</div>'+
