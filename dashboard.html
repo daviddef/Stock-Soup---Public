@@ -1335,7 +1335,8 @@ function topMoversHtml(D){
   var cur=MKT==='au'?'A$':'$';
   function card(m){
     return '<div class="movercard" data-sym="'+esc(m.sym)+'" data-region="'+esc(MKT)+'" role="button" tabindex="0" aria-label="'+esc(m.sym)+' details">'+
-      '<div class="movertop"><span class="upsym">'+esc(m.sym)+'</span><span class="'+(m.change_pct>=0?'up':'down')+'" style="font-weight:800;font-size:12.5px">'+(m.change_pct>=0?'▲':'▼')+' '+Math.abs(m.change_pct)+'%</span></div>'+
+      '<div class="movertop"><span class="upsym">'+esc(m.sym)+'</span><span class="'+(m.change_pct>=0?'up':'down')+'" style="font-weight:800;font-size:12.5px">'+(m.change_pct>=0?'▲':'▼')+' '+Math.abs(m.change_pct)+'%</span>'+
+      '<button class="watchbtn iconwatch" data-sym="'+esc(m.sym)+'" data-region="'+esc(MKT)+'" style="width:19px;height:19px;font-size:13px;margin-left:6px" aria-pressed="false" title="Add to watchlist">+</button></div>'+
       '<div class="upwhen">'+esc(cur)+esc(m.price)+(m.volume?' · vol '+esc(m.volume):'')+'</div>'+
       missChartSlot(m.sym,MKT,cur)+
     '</div>';
@@ -2674,7 +2675,8 @@ function openTheme(src,idx){
     return '<div class="tscard tappable" data-sym="'+esc(sym)+'" data-region="'+esc(reg)+'"'+hy+tap+'>'+
       '<div class="tsc-top"><a class="trsym" href="'+yf(sym,reg)+'" target="_blank" rel="noopener">'+esc(sym)+'</a>'+
         '<span class="pmc-flag">'+(reg==='au'?'AU':'US')+'</span>'+
-        (verd?'<span class="mverd '+esc(vcl)+'" style="margin-left:auto;font-size:10px;padding:3px 8px">'+esc(verd)+'</span>':'')+'</div>'+
+        (verd?'<span class="mverd '+esc(vcl)+'" style="margin-left:auto;font-size:10px;padding:3px 8px">'+esc(verd)+'</span>':'')+
+        '<button class="watchbtn iconwatch" data-sym="'+esc(sym)+'" data-region="'+esc(reg)+'"'+(!verd?' style="margin-left:auto"':'')+' aria-pressed="false" title="Add to watchlist">+</button></div>'+
       pxrow+spk+
       '<div class="tsc-why">'+why+'</div>'+nh+
       (cue?'<div class="tsc-cue">'+cue+'</div>':'')+'</div>';
@@ -2723,9 +2725,14 @@ function openTheme(src,idx){
       if(row.classList.contains('etfcard')){ openSym(row.dataset.sym,row.dataset.region); return; }
       openMover(row.dataset.sym,row.dataset.region);
     }
-    row.addEventListener('click',function(e){ if(e.target.closest('a'))return; open(); });
+    row.addEventListener('click',function(e){ if(e.target.closest('a,button'))return; open(); });
     row.addEventListener('keydown',function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); open(); } });
   });
+  // #115 — "+ Watchlist" everywhere a ticker appears: theme leader cards didn't have one at all.
+  m.querySelectorAll('.watchbtn[data-sym]').forEach(function(b){
+    b.addEventListener('click',function(e){ e.preventDefault(); e.stopPropagation(); watchToggleFromEl(b); });
+  });
+  syncWatchButtons();
 }
 function openCandidate(idx){
   var D=LAST.D||{}, c=(D.candidates||[])[idx]; if(!c)return;
@@ -3546,9 +3553,13 @@ function wire(D){
   });
   document.querySelectorAll('.movercard').forEach(function(c){
     function go(){ openMover(c.dataset.sym,c.dataset.region); }
-    c.addEventListener('click',function(e){if(e.target.closest('a'))return;go();});
+    c.addEventListener('click',function(e){if(e.target.closest('a,button'))return;go();});
     c.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();go();}});
   });
+  document.querySelectorAll('.movercard .watchbtn[data-sym]').forEach(function(b){
+    b.addEventListener('click',function(e){e.preventDefault();e.stopPropagation();watchToggleFromEl(b);});
+  });
+  syncWatchButtons();
   document.querySelectorAll('.card, .axcard:not(.axhold)').forEach(function(c){
     c.addEventListener('click',function(e){if(e.target.closest('a'))return;openFromEl(c);});
     c.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();openFromEl(c);}});
