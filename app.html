@@ -2604,6 +2604,11 @@ function themeLeaders(item,src,D){
   }
   var ordered=[],seen={};
   function add(s){ if(s&&!seen[s]){seen[s]=1;ordered.push(s);} }
+  // #116 fix (9 Aug 2026): theme-leaders.py already scored a REAL leader for this exact card
+  // (item.leader = {sym,name,buy_now,band,verdict}) — put it first, ahead of the keyword-fuzzy-match
+  // guesses below. Real incident: fuzzy matching alone showed the wrong ticker on a Strait of Hormuz
+  // card because no pick/candidate's prose happened to share 2+ keywords with the theme title.
+  if(item.leader&&item.leader.sym) add(item.leader.sym);
   (D.regions||[]).forEach(function(rg){(rg.picks||[]).forEach(function(p){ if(matches((p.catalysts||[]).join(' ')+' '+(p.plain||'')+' '+(p.name||''))) add(p.sym); });});
   var rank={hot:0,good:1,mid:2,cold:3};
   (D.candidates||[]).filter(function(c){return matches((c.note||'')+' '+(c.name||''));})
@@ -2648,11 +2653,17 @@ function openTheme(src,idx){
   var pm=wlPriceMap(D);
   var pickSyms=syms.filter(function(s){return themeIntel(s,D).kind==='pick';});
   function tcard(sym){
-    var it=themeIntel(sym,D), reg='us', verd='', vcl='hold', why='', news='', cue='', tap='';
-    if(it.kind==='pick'){ reg=it.region; verd=it.p.verdict; vcl=it.p.vclass||'v-hold'; var cat=(it.p.catalysts&&it.p.catalysts[0])||it.p.note||''; why='<b>In tonight\'s picks.</b> '+esc(cat); news=it.p.news||''; cue='card →'; tap=' data-kind="pick" data-region="'+esc(it.region)+'" data-idx="'+it.idx+'" role="button" tabindex="0"'; }
-    else if(it.kind==='cand'){ reg=it.c.region||'us'; verd='Shortlisted'; vcl='v-hold'; why='<b>Shortlisted in the full pot.</b> '+esc(it.c.note||''); news=it.c.news||''; cue='full read →'; tap=' data-kind="cand" data-ci="'+it.idx+'" role="button" tabindex="0"'; }
-    else if(it.kind==='intel'){ reg=it.wi.region||'us'; verd=it.wi.verdict||'On your watchlist'; vcl=/get in|buy/i.test(verd)?'v-buy':/late|wait|skip/i.test(verd)?'v-dont':'v-hold'; why='<b>On your watchlist.</b> '+esc(it.wi.trend||(it.wi.target!=null?'ideal buy near '+(it.wi.cur||'$')+it.wi.target:'we score it each run')); news=''; }
-    else { reg=(src==='commodities')?'au':'us'; verd='Live price'; vcl='v-hold'; why='<span class="muted">Live price &amp; trend below — not one of tonight\'s scored picks, just shown for reference.</span>'; }
+    var it=themeIntel(sym,D), reg='us', verd='', vcl='hold', why='', news='', cue='card →';
+    if(it.kind==='pick'){ reg=it.region; verd=it.p.verdict; vcl=it.p.vclass||'v-hold'; var cat=(it.p.catalysts&&it.p.catalysts[0])||it.p.note||''; why='<b>In tonight\'s picks.</b> '+esc(cat); news=it.p.news||''; }
+    else if(it.kind==='cand'){ reg=it.c.region||'us'; verd='Shortlisted'; vcl='v-hold'; why='<b>Shortlisted in the full pot.</b> '+esc(it.c.note||''); news=it.c.news||''; cue='full read →'; }
+    else if(it.kind==='intel'){ reg=it.wi.region||'us'; verd=it.wi.verdict||'On your watchlist'; vcl=/get in|buy/i.test(verd)?'v-buy':/late|wait|skip/i.test(verd)?'v-dont':'v-hold'; why='<b>On your watchlist.</b> '+esc(it.wi.trend||(it.wi.target!=null?'ideal buy near '+(it.wi.cur||'$')+it.wi.target:'we score it each run')); news=''; cue='full read →'; }
+    else { reg=(src==='commodities')?'au':'us'; verd='Live price'; vcl='v-hold'; why='<span class="muted">Live price &amp; trend below — not one of tonight\'s scored picks, just shown for reference.</span>'; cue='full read →'; }
+    // #116 fix (9 Aug 2026): every leader card is tappable now, not just pick/candidate ones — most
+    // real theme leaders (theme-leaders.py researches its own per-theme candidates) are neither, so
+    // `tap` used to stay empty and clicking did nothing. Routes through the shared .movercard click
+    // handler + openMover(), which opens the real pick/candidate card when there is one, else falls
+    // back to the generic per-ticker analyst read (works for any symbol).
+    var tap=' data-kind="'+esc(it.kind)+'" data-region="'+esc(reg)+'" role="button" tabindex="0"';
     var pi=pm[sym+'|'+reg]||pm[sym+'|au']||pm[sym+'|us']||{};
     var hasPx=pi.price!=null, hasSpk=(pi.spark&&pi.spark.length>2);
     var pxrow = hasPx ? '<div class="tsc-pxrow"><span class="tsc-px">'+esc(pi.price)+'</span>'+(pi.change?'<span class="tsc-chg '+(pi.up?'up':'down')+'">'+(pi.up?'▲':'▼')+' '+esc(pi.change)+'</span>':'')+'</div>'
@@ -2660,7 +2671,7 @@ function openTheme(src,idx){
     var spk = hasSpk ? '<div class="tsc-spark">'+sparkSVG(pi.spark.slice(-30))+'</div>' : '<div class="tsc-spark tsc-sparkslot"></div>';
     var nh=news?'<div class="tsc-news">📰 '+esc(news)+'</div>':'';
     var hy=(!hasPx||!hasSpk)?' data-hydrate="1"':'';
-    return '<div class="tscard'+(tap?' tappable':'')+'" data-sym="'+esc(sym)+'" data-region="'+esc(reg)+'"'+hy+tap+'>'+
+    return '<div class="tscard tappable" data-sym="'+esc(sym)+'" data-region="'+esc(reg)+'"'+hy+tap+'>'+
       '<div class="tsc-top"><a class="trsym" href="'+yf(sym,reg)+'" target="_blank" rel="noopener">'+esc(sym)+'</a>'+
         '<span class="pmc-flag">'+(reg==='au'?'AU':'US')+'</span>'+
         (verd?'<span class="mverd '+esc(vcl)+'" style="margin-left:auto;font-size:10px;padding:3px 8px">'+esc(verd)+'</span>':'')+'</div>'+
@@ -2703,11 +2714,14 @@ function openTheme(src,idx){
   var ov=document.getElementById('overlay'); ov.classList.add('open'); ov.setAttribute('aria-hidden','false');
   document.getElementById('mClose').focus();
   hydrateThemeCards(m);
+  // #116 fix (9 Aug 2026): this modal's cards are injected fresh every time openTheme() runs, so the
+  // page-load-time delegated .movercard listener (bound once in wire()) never reaches them — bind
+  // directly here instead, every open, same openMover() fallback chain the Top Movers panel uses
+  // (pick → real pick card; candidate → real candidate card; anything else → generic analyst read).
   m.querySelectorAll('.tscard.tappable').forEach(function(row){
     function open(){
       if(row.classList.contains('etfcard')){ openSym(row.dataset.sym,row.dataset.region); return; }
-      if(row.dataset.kind==='cand'){ openCandidate(+row.dataset.ci); return; }
-      var rg=(D.regions||[]).filter(function(x){return x.id===row.dataset.region;})[0]; if(rg){var p=rg.picks[+row.dataset.idx]; if(p)openModal(p,rg.id,rg.cur||'$');}
+      openMover(row.dataset.sym,row.dataset.region);
     }
     row.addEventListener('click',function(e){ if(e.target.closest('a'))return; open(); });
     row.addEventListener('keydown',function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); open(); } });
