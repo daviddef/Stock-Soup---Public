@@ -3556,10 +3556,9 @@ function wire(D){
     c.addEventListener('click',function(e){if(e.target.closest('a,button'))return;go();});
     c.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();go();}});
   });
-  document.querySelectorAll('.movercard .watchbtn[data-sym]').forEach(function(b){
-    b.addEventListener('click',function(e){e.preventDefault();e.stopPropagation();watchToggleFromEl(b);});
-  });
-  syncWatchButtons();
+  // (no separate .watchbtn binding needed here — the generic '.watchbtn[data-sym]' pass further below
+  // already covers these; a second bind here double-toggles on every click, a real bug caught live
+  // 9 Aug 2026 while verifying #115: click → add → same click's second listener → immediately remove.)
   document.querySelectorAll('.card, .axcard:not(.axhold)').forEach(function(c){
     c.addEventListener('click',function(e){if(e.target.closest('a'))return;openFromEl(c);});
     c.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();openFromEl(c);}});
