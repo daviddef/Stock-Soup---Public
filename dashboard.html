@@ -549,6 +549,11 @@
   .uprow{display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:9px 12px;font-size:13px;margin-bottom:6px}
   .upsym{font-weight:800;color:var(--ink)}
   .upwhen{color:var(--muted);font-size:12px;font-weight:600}
+  .movergrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .movercard{cursor:pointer;background:var(--surface);border:1px solid var(--line);border-radius:11px;padding:9px 10px;transition:border-color .12s,transform .05s}
+  .movercard:hover{border-color:var(--broth)} .movercard:active{transform:scale(.98)}
+  .movertop{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:2px}
+  .movertop .upsym{font-size:13px}
   .uptag{color:var(--broth);font-size:10.5px;font-weight:800;letter-spacing:.02em}
   .upiro{flex-direction:column;align-items:stretch;gap:2px}
   .uptop{display:flex;align-items:center;justify-content:space-between}
@@ -608,6 +613,9 @@
   .mnews{font-size:13.5px;line-height:1.5;background:var(--surface-2);border:1px solid var(--line);border-radius:11px;padding:11px 13px;text-wrap:pretty}
   .mnews a{color:var(--broth);font-weight:700}
   .mnews a:visited{color:var(--broth)}
+  .mnews-old{border-color:rgba(255,77,77,.35);background:rgba(255,77,77,.06)}
+  .mnews-age{display:inline-block;margin-left:7px;font-size:11px;font-weight:700;color:var(--muted);font-family:var(--mono)}
+  .mnews-old .mnews-age{color:var(--dont)}
   .mfound{font-size:12px;color:var(--muted);margin-top:6px;line-height:1.45}
   .mshort{font-size:13px;line-height:1.5;color:var(--ink)}
   .potcard:hover{transform:translateY(-2px)}
@@ -1324,21 +1332,25 @@ function topNewsHtml(D){
 }
 function topMoversHtml(D){
   var tm=(D.topMovers||{})[MKT]; if(!tm) return '';
-  function row(m){
-    var cur=MKT==='au'?'A$':'$';
-    return '<div class="uprow"><span class="upsym">'+esc(m.sym)+'</span><span class="upwhen">'+esc(cur)+esc(m.price)+' <span class="'+(m.change_pct>=0?'up':'down')+'">'+(m.change_pct>=0?'▲':'▼')+' '+Math.abs(m.change_pct)+'%</span>'+(m.volume?' · vol '+esc(m.volume):'')+'</span></div>';
+  var cur=MKT==='au'?'A$':'$';
+  function card(m){
+    return '<div class="movercard" data-sym="'+esc(m.sym)+'" data-region="'+esc(MKT)+'" role="button" tabindex="0" aria-label="'+esc(m.sym)+' details">'+
+      '<div class="movertop"><span class="upsym">'+esc(m.sym)+'</span><span class="'+(m.change_pct>=0?'up':'down')+'" style="font-weight:800;font-size:12.5px">'+(m.change_pct>=0?'▲':'▼')+' '+Math.abs(m.change_pct)+'%</span></div>'+
+      '<div class="upwhen">'+esc(cur)+esc(m.price)+(m.volume?' · vol '+esc(m.volume):'')+'</div>'+
+      missChartSlot(m.sym,MKT,cur)+
+    '</div>';
   }
-  var g=(tm.gainers||[]).slice(0,10).map(row).join('');
-  var l=(tm.losers||[]).slice(0,10).map(row).join('');
-  var v=(tm.byVolume||[]).slice(0,10).map(row).join('');
+  var g=(tm.gainers||[]).slice(0,10).map(card).join('');
+  var l=(tm.losers||[]).slice(0,10).map(card).join('');
+  var v=(tm.byVolume||[]).slice(0,10).map(card).join('');
   if(!g&&!l&&!v) return '';
   return '<section id="topmovers"><div class="sec-head"><h2 class="display">🔥 Top Movers</h2>'+infoBtn('topmovers')+'</div>'+
-    '<p class="sec-sub">The whole '+(MKT==='au'?'ASX':'US')+' market\'s real gainers, losers and volume leaders today — not just tonight\'s picks.</p>'+
+    '<p class="sec-sub">The whole '+(MKT==='au'?'ASX':'US')+' market\'s real gainers, losers and volume leaders today — not just tonight\'s picks. Tap any card for the full read.</p>'+
     '<div class="cols">'+
-      (g?'<div class="stack"><div class="eyebrow">📈 Top gainers</div>'+g+'</div>':'')+
-      (l?'<div class="stack"><div class="eyebrow">📉 Top losers</div>'+l+'</div>':'')+
+      (g?'<div class="stack"><div class="eyebrow">📈 Top gainers</div><div class="movergrid">'+g+'</div></div>':'')+
+      (l?'<div class="stack"><div class="eyebrow">📉 Top losers</div><div class="movergrid">'+l+'</div></div>':'')+
     '</div>'+
-    (v?'<div class="eyebrow" style="margin-top:14px">📊 Top by volume</div><div class="cols"><div class="stack">'+v+'</div></div>':'')+
+    (v?'<div class="eyebrow" style="margin-top:14px">📊 Top by volume</div><div class="cols"><div class="stack"><div class="movergrid">'+v+'</div></div></div>':'')+
   '</section>';
 }
 function missesSection(D){
@@ -1714,6 +1726,15 @@ function openSym(sym,region){
   if(it.kind==='pick'){var rg=((LAST.D||{}).regions||[]).filter(function(x){return x.id===it.region;})[0]; if(rg&&rg.picks[it.idx])openModal(rg.picks[it.idx],rg.id,rg.cur||'$'); return;}
   if(it.kind==='cand'){openCandidate(it.idx); return;}
   openWatchInsight(sym,region);
+}
+// Top Movers (#95) tap target (#120): most movers are neither a pick, candidate nor watchlist item,
+// so openSym's fallback (openWatchInsight, built for "your watchlist" context) would show an empty
+// shell. Fall back to the real generic per-ticker analyst read instead — works for any symbol.
+function openMover(sym,region){
+  var it=themeIntel(sym,LAST.D||{});
+  if(it.kind==='pick'){var rg=((LAST.D||{}).regions||[]).filter(function(x){return x.id===it.region;})[0]; if(rg&&rg.picks[it.idx]){openModal(rg.picks[it.idx],rg.id,rg.cur||'$'); return;}}
+  if(it.kind==='cand'){openCandidate(it.idx); return;}
+  openAnalyst(sym,region);
 }
 function actionsHtml(D){
   var ready=[];
@@ -2177,7 +2198,7 @@ function openModal(p,region,cur){
       scoreHtml+
       announcementsHtml(p.announcements)+
       '<p class="mtake"><span class="lead">Chef says:</span> '+esc(p.chefTake)+'</p>'+
-      (p.news?'<div class="mnews">📰 <span class="lead">In the news:</span> '+(p.news_url?'<a href="'+esc(p.news_url)+'" target="_blank" rel="noopener">'+esc(p.news)+' ↗</a>':esc(p.news))+'</div>':'')+
+      newsLineHtml(p.news, p.news_url, p.news_date)+
       (p.short!=null?'<div class="mshort">🩳 <span class="lead">Short interest:</span> <b>'+p.short+'%</b>'+(p.short>=8?' — elevated (squeeze fuel)':p.short>=4?' — moderate':' — light')+'</div>':'')+
       '<div><h4 style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:800;margin-bottom:10px">🔎 How we found it · why it\'s on the menu</h4><div class="mfound" style="margin:-2px 0 9px">'+(p.foundVia?esc(p.foundVia):'Surfaced in tonight\'s wide-net scan (news · movers · analyst actions), then scored to the top 6.')+' The signals:</div><ul class="mcat">'+cats+'</ul></div>'+
       '<div class="mrisk"><b>Watch out:</b> '+esc(p.risk)+'</div>'+
@@ -2711,7 +2732,7 @@ function openCandidate(idx){
       (signalRows(c,c.region).length?'<h4 style="margin-top:16px">🧮 All the signals, in one place</h4>'+signalDetailHtml(c,c.region):'')+
       scoreBarHtml(c.score)+
       announcementsHtml(c.announcements)+
-      (c.news?'<div class="mnews">📰 <span class="lead">In the news:</span> '+(c.news_url?'<a href="'+esc(c.news_url)+'" target="_blank" rel="noopener">'+esc(c.news)+' ↗</a>':esc(c.news))+'</div>':'')+
+      newsLineHtml(c.news, c.news_url, c.news_date)+
       (c.short!=null?'<div class="mshort">🩳 <span class="lead">Short interest:</span> <b>'+c.short+'%</b> of shares sold short'+(c.short>=8?' — <b>elevated</b> (squeeze fuel / bearish crowd)':c.short>=4?' — moderate':' — light')+'</div>':'')+
       '<div class="mrisk" style="background:var(--surface-2);border-color:var(--line)"><b>Didn\'t make the top 3</b> — it\'s on the radar, not a pick this run.</div>'+
       '<div class="mfoot"><button class="mbtn watchbtn" data-sym="'+esc(c.sym)+'" data-region="'+esc(c.region)+'"'+(c.name?' data-name="'+esc(c.name)+'"':'')+' aria-pressed="false">＋ Watch</button>'+
@@ -2728,6 +2749,20 @@ function timeAgo(iso){
   try{ var mins=Math.round((Date.now()-new Date(iso).getTime())/60000);
     if(mins<1) return 'just now'; if(mins<60) return mins+'m ago';
     var h=Math.floor(mins/60); return h+'h '+(mins%60)+'m ago'; }catch(e){ return ''; }
+}
+// News Staleness rule (CLAUDE.md): article >7 days old with no fresher update -> flag OLD, never
+// silently shown as if fresh. Real incident (9 Aug 2026, CQR): the single "In the news" headline
+// was 14 months stale while the same card's ASX announcements were hours old, with no age shown
+// on either to tell them apart.
+function newsLineHtml(news, newsUrl, newsDate){
+  if(!news) return '';
+  var days=null;
+  if(newsDate){ try{ days=Math.floor((Date.now()-new Date(newsDate).getTime())/86400000); }catch(e){} }
+  var old = days!=null && days>7;
+  var age = days==null ? '' : (days<1?'today':days===1?'1d ago':days+'d ago');
+  return '<div class="mnews'+(old?' mnews-old':'')+'">📰 <span class="lead">In the news'+(old?' ⚠️ OLD':'')+':</span> '+
+    (newsUrl?'<a href="'+esc(newsUrl)+'" target="_blank" rel="noopener">'+esc(news)+' ↗</a>':esc(news))+
+    (age?'<span class="mnews-age">'+age+'</span>':'')+'</div>';
 }
 function _mchipModal(icon,mtf,title,bodyHtml){
   LASTFOCUS=document.activeElement;
@@ -3492,6 +3527,11 @@ function wire(D){
       var idx=arr.findIndex(function(x){return (x.title||x.name)===title;});
       if(idx>=0) openTheme(src,idx);
     }
+    c.addEventListener('click',function(e){if(e.target.closest('a'))return;go();});
+    c.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();go();}});
+  });
+  document.querySelectorAll('.movercard').forEach(function(c){
+    function go(){ openMover(c.dataset.sym,c.dataset.region); }
     c.addEventListener('click',function(e){if(e.target.closest('a'))return;go();});
     c.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();go();}});
   });
