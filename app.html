@@ -1020,6 +1020,9 @@ var TFS=[tfB('Day'),tfB('Week'),tfB('Long')];
 // Market phase by AEST clock (user is in AU). ASX 10:00–16:00; US ~23:30–06:00 AEST.
 // phase: 'open' | 'opening' (≤1h to open) | 'closing' (≤1h to close) | 'closed'.
 function marketStatus(region){
+  // #96 — real holiday awareness first: pure time-of-day math can't know a Monday is Australia Day.
+  var ms=(LAST&&LAST.D&&LAST.D.marketStatus)||null, hs=ms&&ms[region];
+  if(hs&&hs.holiday) return {phase:'closed',open:false,txt:(region==='au'?'ASX':'US')+' closed · '+(hs.holidayName||'public holiday')};
   var d=new Date(), day=d.getDay(), h=d.getHours()+d.getMinutes()/60, wd=day>=1&&day<=5;
   function mins(to){return Math.max(1,Math.round((to-h)*60));}
   if(region==='au'){
