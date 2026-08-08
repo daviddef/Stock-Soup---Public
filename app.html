@@ -785,6 +785,7 @@
   .wst{margin-left:auto;font-size:11.5px;font-weight:800}
   .wt-in .wst{color:var(--buy)} .wt-close .wst{color:var(--hold)} .wt-wait .wst{color:var(--muted)}
   .wc-lv{font-size:11.5px;font-weight:800;color:var(--muted);font-variant-numeric:tabular-nums}
+  .wc-added{font-size:10.5px;color:var(--faint);margin-top:2px}
   .wc-tag{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:auto;padding-top:8px;border-top:1px dashed var(--line);font-size:11px}
   .wc-tag.none{color:var(--faint);font-style:italic;font-weight:600}
   .wic{background:var(--surface-2);border:1px solid var(--line);border-radius:999px;padding:3px 9px;font-weight:800;white-space:nowrap}
@@ -2736,7 +2737,7 @@ var WLKEY='soup_watchlist';
 function wlGet(){try{return JSON.parse(localStorage.getItem(WLKEY)||'[]');}catch(e){return[];}}
 function wlSet(a){try{localStorage.setItem(WLKEY,JSON.stringify(a));}catch(e){}}
 function wlHas(sym,region){return wlGet().some(function(w){return w.sym===sym&&w.region===region;});}
-function wlAddItem(it){var a=wlGet();if(!a.some(function(w){return w.sym===it.sym&&w.region===it.region;})){a.push(it);wlSet(a);apiPush('POST','/me/watchlist',{sym:it.sym,region:it.region,entry:(wlNum(it.entry)||it.entry||null)});}}
+function wlAddItem(it){var a=wlGet();if(!a.some(function(w){return w.sym===it.sym&&w.region===it.region;})){it.addedAt=it.addedAt||Date.now();a.push(it);wlSet(a);apiPush('POST','/me/watchlist',{sym:it.sym,region:it.region,entry:(wlNum(it.entry)||it.entry||null)});}}
 function wlRemove(sym,region){wlSet(wlGet().filter(function(w){return !(w.sym===sym&&w.region===region);}));apiPush('DELETE','/me/watchlist/'+region+'/'+sym);}
 function wlToggle(it){if(wlHas(it.sym,it.region)){wlRemove(it.sym,it.region);return false;}wlAddItem(it);return true;}
 // "I own it" — a holding. Marking own also keeps it on the watchlist so it syncs.
@@ -2791,9 +2792,20 @@ function wlStatBlock(rows,title,icon,emptyMsg){
   var wins=usable.filter(function(r){return r.gap>0;}).length, losses=usable.length-wins;
   var best=usable.reduce(function(a,b){return (a.gap>b.gap)?a:b;});
   var worst=usable.reduce(function(a,b){return (a.gap<b.gap)?a:b;});
+  var dated=usable.filter(function(r){return r.w.addedAt;});
+  var sinceTxt;
+  if(dated.length===usable.length && dated.length){
+    var oldest=dated.reduce(function(a,b){return a.w.addedAt<b.w.addedAt?a:b;});
+    var oldestStr=new Date(oldest.w.addedAt).toLocaleDateString('en-AU',{day:'numeric',month:'short'});
+    sinceTxt=(usable.length===1?'since '+esc(oldestStr):'since each was flagged (oldest: '+esc(oldestStr)+')');
+  } else if(dated.length){
+    sinceTxt='since each was flagged — '+dated.length+' of '+usable.length+' have a captured add-date, older ones don\'t (added before we started tracking it)';
+  } else {
+    sinceTxt='since each was flagged — add-dates aren\'t captured for names added before this feature shipped';
+  }
   return '<div class="wlstat-card"><div class="wlstat-h">'+icon+' '+esc(title)+'</div>'+
     '<div class="wlstat-big '+(avg>=0?'up':'down')+'">'+(avg>=0?'+':'')+avg.toFixed(1)+'%</div>'+
-    '<div class="wlstat-sub">avg across '+usable.length+' name'+(usable.length===1?'':'s')+' with a captured buy price, since each was flagged'+(rows.length>usable.length?' · '+(rows.length-usable.length)+' more not yet priced':'')+' — dates vary per name, exact "since" dates coming soon</div>'+
+    '<div class="wlstat-sub">avg across '+usable.length+' name'+(usable.length===1?'':'s')+' with a captured buy price, '+sinceTxt+(rows.length>usable.length?' · '+(rows.length-usable.length)+' more not yet priced':'')+'</div>'+
     '<div class="wlstat-row"><span class="wlstat-wl"><span class="up">'+wins+'W</span> · <span class="down">'+losses+'L</span></span>'+
     '<span class="wlstat-be">🏆 '+esc(best.w.sym)+' '+(best.gap>=0?'+':'')+best.gap.toFixed(1)+'%'+(usable.length>1?' · 🥶 '+esc(worst.w.sym)+' '+(worst.gap>=0?'+':'')+worst.gap.toFixed(1)+'%':'')+'</span></div></div>';
 }
@@ -2837,6 +2849,7 @@ function renderWatchlist(){
     var chg = r.change?'<span class="pmc-chg '+(r.up?'up':'down')+'">'+(r.up?'▲':'▼')+' '+esc(r.change)+'</span>':'';
     var spk = (r.spark&&r.spark.length>2)?'<div class="pmc-spark">'+sparkSVG(r.spark.slice(-30))+'</div>':'';
     var buyLine = (r.entry!=null||it.target!=null)?'<div class="wc-lv">'+(r.entry!=null?'🎯 buy '+r.cur+r.entry:'')+(it.target!=null?(r.entry!=null?' · ':'')+'target '+r.cur+it.target:'')+(lbl?'  <span class="wst">'+lbl+'</span>':'')+'</div>':(lbl?'<div class="wc-lv"><span class="wst">'+lbl+'</span></div>':'');
+    var addedLine = w.addedAt?'<div class="wc-added">added '+esc(new Date(w.addedAt).toLocaleDateString('en-AU',{day:'numeric',month:'short'}))+'</div>':'';
     var tag='';
     if(it.kind==='pick'){
       tag='<div class="wc-tag">'+(it.score?'<span class="wic sc">🧮 '+esc(it.score)+'</span>':'')+'<span class="wic vd '+esc(it.vclass)+'">'+esc(it.verdict)+'</span></div>';
@@ -2856,7 +2869,7 @@ function renderWatchlist(){
         '<span class="wc-btns"><button class="wan" data-sym="'+esc(w.sym)+'" data-region="'+esc(w.region)+'" aria-label="What would you do?" title="🧠 What would you do?">🧠</button>'+(it.kind==='none'?'<button class="wmon'+(wlMon(w.sym,w.region)?' on':'')+'" data-sym="'+esc(w.sym)+'" data-region="'+esc(w.region)+'" aria-pressed="'+(wlMon(w.sym,w.region)?'true':'false')+'" aria-label="Watch live" title="'+(wlMon(w.sym,w.region)?'Watching live ✓ — tap to stop':'Watch live — keep a live price &amp; chart on this')+'">📡</button>':'')+'<button class="wown'+(wlOwns(w.sym,w.region)?' owned':'')+'" data-sym="'+esc(w.sym)+'" data-region="'+esc(w.region)+'" aria-label="'+(wlOwns(w.sym,w.region)?'Owned — tap to unflag':'Flag as owned')+'" title="'+(wlOwns(w.sym,w.region)?'You own this ✓ — tap to unflag':'I own it')+'">📦</button>'+
         '<button class="wrm" data-sym="'+esc(w.sym)+'" data-region="'+esc(w.region)+'" aria-label="Remove '+esc(w.sym)+'">✕</button></span></div>'+
       '<div class="pmc-name"'+(r.name?'':' data-hy-name="'+esc(w.sym)+'|'+esc(w.region)+'" style="display:none"')+'>'+(r.name?esc(r.name):'')+'</div>'+
-      '<div class="wc-px">'+px+chg+'</div>'+spk+(it.kind==='none'?'<div class="wc-monspark"></div>':'')+buyLine+tag+'</div>';
+      '<div class="wc-px">'+px+chg+'</div>'+spk+(it.kind==='none'?'<div class="wc-monspark"></div>':'')+buyLine+addedLine+tag+'</div>';
   }
   var smart=rows.filter(function(r){return r.intel.kind!=='none';});
   var plain=rows.filter(function(r){return r.intel.kind==='none';});
