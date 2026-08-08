@@ -1268,6 +1268,28 @@ function upcomingHtml(D){
     (ipoRows?'<div class="eyebrow" style="margin-top:14px">🆕 New listings · next 30 days</div><div class="cols">'+ipoRows+'</div>':'')+
   '</section>';
 }
+// #95 — Top Movers: the whole market's real gainers/losers/volume leaders, not just tonight's 26-46
+// candidates. Refreshed on FULL runs (agent-driven Yahoo gainers/losers fetch, same pattern as the
+// econ calendar — no keyless top-movers API exists for a pure-script pulse cycle to hit every 10min).
+function topMoversHtml(D){
+  var tm=(D.topMovers||{})[MKT]; if(!tm) return '';
+  function row(m){
+    var cur=MKT==='au'?'A$':'$';
+    return '<div class="uprow"><span class="upsym">'+esc(m.sym)+'</span><span class="upwhen">'+esc(cur)+esc(m.price)+' <span class="'+(m.change_pct>=0?'up':'down')+'">'+(m.change_pct>=0?'▲':'▼')+' '+Math.abs(m.change_pct)+'%</span>'+(m.volume?' · vol '+esc(m.volume):'')+'</span></div>';
+  }
+  var g=(tm.gainers||[]).slice(0,10).map(row).join('');
+  var l=(tm.losers||[]).slice(0,10).map(row).join('');
+  var v=(tm.byVolume||[]).slice(0,10).map(row).join('');
+  if(!g&&!l&&!v) return '';
+  return '<section id="topmovers"><div class="sec-head"><h2 class="display">🔥 Top Movers</h2>'+infoBtn('topmovers')+'</div>'+
+    '<p class="sec-sub">The whole '+(MKT==='au'?'ASX':'US')+' market\'s real gainers, losers and volume leaders today — not just tonight\'s picks.</p>'+
+    '<div class="cols">'+
+      (g?'<div class="stack"><div class="eyebrow">📈 Top gainers</div>'+g+'</div>':'')+
+      (l?'<div class="stack"><div class="eyebrow">📉 Top losers</div>'+l+'</div>':'')+
+    '</div>'+
+    (v?'<div class="eyebrow" style="margin-top:14px">📊 Top by volume</div><div class="cols"><div class="stack">'+v+'</div></div>':'')+
+  '</section>';
+}
 function missesSection(D){
   var mi=D.misses; var hmHtml=hotMoversHtml(D);
   if((!mi||!mi.rows||!mi.rows.length)&&!hmHtml) return '';
@@ -1905,6 +1927,7 @@ function render(D,H){
         '<div class="pot potlose" id="potLose" hidden>'+potLose+'</div>':'')+
       '</section>'+
     upcomingHtml(D)+
+    topMoversHtml(D)+
     // hourly-runs list removed from the menu — it lives (unified) in Inside the Kitchen's run schedule
   '</div>'+
 
@@ -2255,6 +2278,10 @@ var INFO={
     '</ul>'+
     '<h4>🆕 New listings / IPOs (next 30 days)</h4><p>Companies about to start trading on the ASX for the first time. Very new listings have no price history yet, so our usual trend/RSI checks can\'t apply — treat these as higher-risk, "watch first" territory.</p>'+
     '<p class="infofoot">Sourced by bulk-fetching real reporting-season and dividend calendars each run — see Inside the Kitchen → Data-source health for exactly which ones.</p>'},
+  topmovers:{icon:'🔥',title:'Top Movers',body:
+    '<p>The whole market\'s real biggest gainers and losers today — not just names in tonight\'s picks or Full Pot. A quick reality check on what\'s actually happening out there.</p>'+
+    '<p>This is different from <b>The Misses</b> below: Misses checks movers against what we <i>scanned</i>; Top Movers is just the raw list, no judgement about whether we should have caught it.</p>'+
+    '<p class="infofoot">Refreshed each FULL run (not every 10-minute price update) — a live top-movers-by-volume feed needs a paid data source we don\'t have; the free/keyless sources this list comes from need a fresh read each time, not a cheap repeat call.</p>'},
   archive:{icon:'🗂️',title:'The Archive',body:
     '<p>Every menu we\'ve served, newest first — tap one to open that run\'s full report snapshot. Shows the last 3; expand for the rest. Each records that run\'s 6 picks and the risk read at the time.</p>'},
   misses:{icon:'😬',title:'The Misses',body:
@@ -3098,6 +3125,7 @@ var DATA_HEALTH=[
   {cat:'Discovery net 1 — news/movers',name:'Stockhead RSS',use:'ASX news sweep',status:'ok',url:'https://stockhead.com.au/feed/',urlLabel:'RSS feed',checked:'2026-08-07'},
   {cat:'Discovery net 1 — news/movers',name:'Fool.com.au RSS',use:'ASX news sweep',status:'ok',url:'https://www.fool.com.au/feed/',urlLabel:'RSS feed',checked:'2026-08-07'},
   {cat:'Discovery net 1 — news/movers',name:'Yahoo gainers / most-active',use:'US top movers by % and by volume',status:'ok',url:'https://finance.yahoo.com/gainers/',urlLabel:'site',checked:'2026-08-07'},
+  {cat:'Discovery net 1 — news/movers',name:'Yahoo AU gainers/losers',use:'ASX top movers by % (#95, Top Movers panel)',status:'degraded',note:'Tested 9 Aug 2026: real, working, but the ASX gainers/losers list is dominated by illiquid penny stocks with meaningless % swings (e.g. a $0.00 stock "+2025%") — filtered to price ≥ $0.02 before showing. marketindex.com.au/asx200-top-movers (a cleaner, liquid-only alternative) is 403-blocked.',url:'https://au.finance.yahoo.com/markets/stocks/gainers/',urlLabel:'site',checked:'2026-08-09'},
   {cat:'Discovery net 1 — news/movers',name:'Benzinga upgrades',use:'Analyst upgrade feed',status:'blocked',note:'403 Forbidden, confirmed live tonight.',url:'https://www.benzinga.com/analyst-stock-ratings/upgrades',urlLabel:'site',checked:'2026-08-07'},
   {cat:'Discovery net 1 — news/movers',name:'DiscoveryAlert.com.au',use:'ASX mining/critical-minerals news',status:'ok',note:'Tested 8 Aug 2026: direct fetch is unreliable (feed/ redirects to the homepage, category pages 403 — Cloudflare-style protection, same family as SwingTradeBot/MarketIndex). But WebSearch scoped to this domain (allowed_domains) works cleanly and surfaces real, current, dated articles — confirmed live with a real critical-minerals query. Wired in as a WebSearch-only source, same pattern as the other blocked-but-searchable ASX sites.',url:'https://discoveryalert.com.au/',urlLabel:'site',checked:'2026-08-08'},
   {cat:'Discovery net 1 — dropped',name:'ASX SwingTradeBot / MarketIndex scans / shorted.com.au family (shortinterest.au, fintel, CBOE, shortman, asxshort)',use:'ASX technical breakout scanners + 3rd-party short-interest',status:'blocked',note:'403/DNS-dead. Short interest replaced by ASIC’s own official short-position data instead — a better source, not a gap.',url:'https://www.marketindex.com.au/scans',urlLabel:'site',checked:'2026-08-05'},
