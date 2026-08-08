@@ -958,6 +958,11 @@
   .altspark svg{width:100%;height:100%}
   .dhgrid{display:flex;flex-direction:column;gap:8px}
   .dhcat{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--broth);margin:14px 0 2px}
+  .dhkw-block{background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:16px}
+  .dhkwgrp{margin-top:8px}
+  .dhkwgrp b{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+  .dhkwlist{display:flex;flex-wrap:wrap;gap:5px;margin-top:5px}
+  .dhkw{font-size:10.5px;font-family:ui-monospace,monospace;background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:3px 7px;color:var(--ink)}
   .dhcat:first-child{margin-top:0}
   .dhcatdesc{font-size:12px;color:var(--muted);margin:0 0 8px;line-height:1.4}
   .dhrow{border:1px solid var(--line);border-radius:11px;padding:11px 14px;background:var(--surface-2)}
@@ -3009,6 +3014,21 @@ function openAccount(){
     dsel.onchange=function(){ apiPush('POST','/me/digest',{mode:dsel.value}); };
   }
 }
+// #107 — the actual WebSearch keyword sweep run every FULL cycle (discovery net 1), same list every
+// time per stock-watch.md Phase 1B — shown once here rather than repeated per-source, since every
+// news-net source below is searched with this same list, not a different one per site.
+var KEYWORD_SWEEP={
+  'ASX signals':['"ASX" "broker upgrade" OR "price target raised"','"ASX" "contract win" OR "supply agreement" OR "offtake agreement"','"ASX" "record revenue" OR "beat expectations"','"ASX" "52 week high" OR "all time high"','"ASX" "director buying" OR "substantial holder"','"ASX" "trading halt" OR "price sensitive announcement"','"uranium" "demand" OR "contract" OR "spot price"','"ASX defence" OR "ASX defense" "contract" OR "AUKUS"','"ASX" "downgrade" OR "sell rating" OR "earnings miss"'],
+  'Global signals':['"NYSE" OR "NASDAQ" "earnings beat" "above estimate"','"analyst upgrade" "outperform" OR "buy" NASDAQ','"52 week high" NASDAQ OR NYSE','"unusual options activity" "bullish sweep"','"short squeeze" candidate "high short interest"','"government contract" "publicly traded" winner'],
+  'Geopolitical / macro sweep (every run, not optional)':['active conflict escalation OR de-escalation','oil OR major commodity price move','central bank OR interest rate decision','market outlook next week']
+};
+function keywordSweepHtml(){
+  var groups=Object.keys(KEYWORD_SWEEP).map(function(g){
+    return '<div class="dhkwgrp"><b>'+esc(g)+'</b><div class="dhkwlist">'+KEYWORD_SWEEP[g].map(function(q){return '<code class="dhkw">'+esc(q)+'</code>';}).join('')+'</div></div>';
+  }).join('');
+  return '<div class="dhkw-block"><h4 style="margin:0 0 6px">🔎 Keyword sweep (discovery net 1 — same list every run)</h4>'+
+    '<p class="sec-sub" style="margin-top:0">Signal words only, never ticker names — tickers only ever appear in results, not queries. Each is combined with a recency filter (yesterday/today). This exact list runs every FULL cycle.</p>'+groups+'</div>';
+}
 // Admin: which upstream data sources are actually live, degraded, or blocked right now — maintained
 // by hand as gaps are found (EODHD's calendar/fundamentals plans, Yahoo's throttle, etc.), not pinged
 // live from the browser (no API keys client-side, and a live health-check adds no real value here).
@@ -3081,6 +3101,7 @@ function openDataHealth(){
   m.innerHTML='<div class="mhead"><button class="mclose" id="mClose" aria-label="Close">✕</button><div class="mtf">🛠 Admin</div>'+
     '<div class="mtop"><div class="msym" style="font-size:22px">💓 Data-source health</div></div></div>'+
     '<div class="mbody"><p class="sec-sub" style="margin-top:0">Every source we\'ve tried — live, degraded, blocked, or never wired in — maintained by hand as gaps are found, not a live ping (no keys in the browser).</p>'+
+    keywordSweepHtml()+
     '<div class="dhgrid">'+rows+'</div>'+
     '<p class="infofoot">Full source-by-source detail lives in <b>The Kitchen Manual</b> → §11 Data APIs.</p></div>';
   var ov=document.getElementById('overlay'); ov.classList.add('open'); ov.setAttribute('aria-hidden','false');
