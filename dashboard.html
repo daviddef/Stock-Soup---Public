@@ -193,7 +193,8 @@
   .axt-wait{background:var(--surface-2);color:var(--muted)}
   .axhead2{margin-top:18px}
   .axv-buy{color:var(--buy)} .axv-sell{color:var(--dont)} .axv-warn{color:var(--hold)} .axv-hold{color:var(--muted)}
-  .axhold.ax-sell{border-color:rgba(255,77,77,.38);border-left-color:var(--dont);background:linear-gradient(180deg,rgba(255,77,77,.09),transparent 72%),var(--surface)}
+  .axhold.ax-sell,.axpivot.ax-sell{border-color:rgba(255,77,77,.38);border-left-color:var(--dont);background:linear-gradient(180deg,rgba(255,77,77,.09),transparent 72%),var(--surface)}
+  .axpivot{cursor:pointer;transition:border-color .12s,transform .05s} .axpivot:active{transform:scale(.995)}
   .axhold.ax-warn{border-color:rgba(255,197,61,.4);border-left-color:var(--hold);background:linear-gradient(180deg,rgba(255,197,61,.09),transparent 72%),var(--surface)}
   .axhold.ax-hold{border-color:var(--line);border-left-color:var(--muted);background:var(--surface)}
   .ownbtn.owned{background:rgba(35,194,103,.14);border-color:rgba(35,194,103,.4);color:var(--buy)}
@@ -1668,10 +1669,21 @@ function actionsHtml(D){
       '<div class="axtop"><span class="axverb axv-'+a.cls+'">'+ic+' '+esc(a.verb)+'</span><span class="axsym">'+esc(w.sym)+'</span>'+(pi.price!=null?'<span class="axpx mono">'+esc(pi.cur||'$')+pi.price+(pi.change?' <span class="'+(pi.up?'up':'down')+'">'+(pi.up?'▲':'▼')+esc(pi.change)+'</span>':'')+'</span>':'')+'</div>'+
       '<div class="axwhy">'+esc(a.why)+'</div></div>';
   }).join('');
+  // #92 — theme/sector/commodity pivots: a theme that was a real Buy last run and has cooled to
+  // Watch/Pass this run (or lost its scored leader entirely) is a real "consider trimming exposure
+  // here" signal, not just a passive tag-color change — surface it with the same urgency as a
+  // holdings action, since it's exactly that: a sell/reduce cue, just for a theme, not one ticker.
+  var pivots=(D.themePivots||[]);
+  var pivotCards=pivots.slice(0,4).map(function(pv){
+    return '<div class="axcard axpivot ax-sell" data-theme="'+esc(pv.cat)+'" data-title="'+esc(pv.title)+'" role="button" tabindex="0" aria-label="'+esc(pv.title)+' cooling off">'+
+      '<div class="axtop"><span class="axverb axv-sell">🔄 COOLING OFF</span><span class="axsym">'+esc(pv.em)+' '+esc(pv.title)+'</span></div>'+
+      '<div class="axwhy">'+esc(pv.why)+' — was <b>'+esc(pv.from.tag||'?')+'</b>, now <b>'+esc(pv.to.tag||'?')+'</b>.</div></div>';
+  }).join('');
   var out='';
   if(buyCards) out+='<div class="axhead">🎯 Ready right now <span class="axheadsub">— sensible, signalling, and at the price we’ve waited for</span></div><div class="axgrid">'+buyCards+'</div>';
   if(holdCards) out+='<div class="axhead axhead2">📦 Your holdings — needs a decision</div><div class="axgrid">'+holdCards+'</div>';
-  else if(ownCount) out+='<div class="axhead axhead2">📦 Your holdings</div><div class="axnone axnone2">All '+ownCount+' of your holdings are sitting tight — <b>nothing to do right now</b>. They live in <b>Favourites</b>; we’ll flag one here the moment it hits a target, cools off, or drops hard.</div>';
+  if(pivotCards) out+='<div class="axhead axhead2">🔄 Cooling off — themes turning</div><div class="axgrid">'+pivotCards+'</div>';
+  if(!holdCards) if(ownCount) out+='<div class="axhead axhead2">📦 Your holdings</div><div class="axnone axnone2">All '+ownCount+' of your holdings are sitting tight — <b>nothing to do right now</b>. They live in <b>Favourites</b>; we’ll flag one here the moment it hits a target, cools off, or drops hard.</div>';
   if(!out) out='<div class="axhead">🎯 Ready right now</div><div class="axnone">No green lights this second — nothing’s dropped to its buy price yet. That’s fine; patience is the edge. Tap <b>📦 I own it</b> on anything you hold and we’ll surface it here when there’s a real move to make. 🍲</div>';
   return '<div class="actions">'+out+'</div>';
 }
@@ -3334,6 +3346,16 @@ function wire(D){
   function openFromEl(el){var rg=regionOf(el.dataset.region);if(!rg)return;var p=rg.picks[+el.dataset.idx];if(p)openModal(p,rg.id,rg.cur||'$');}
   document.querySelectorAll('.axhold').forEach(function(c){
     function go(){ openSym(c.dataset.sym, c.dataset.region); }
+    c.addEventListener('click',function(e){if(e.target.closest('a'))return;go();});
+    c.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();go();}});
+  });
+  document.querySelectorAll('.axpivot').forEach(function(c){
+    function go(){
+      var src=c.dataset.theme, title=c.dataset.title;
+      var arr=src==='geo'?D.geo:(src==='commodities'?D.commodities:D.sectors); if(!arr)return;
+      var idx=arr.findIndex(function(x){return (x.title||x.name)===title;});
+      if(idx>=0) openTheme(src,idx);
+    }
     c.addEventListener('click',function(e){if(e.target.closest('a'))return;go();});
     c.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();go();}});
   });
