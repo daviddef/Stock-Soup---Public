@@ -3930,7 +3930,7 @@ function openAccount(){
       '<div class="acctrow"><span class="acctk">Price alerts</span><button class="tabstat wlfbtn on" id="alertsToggleBtn" type="button"><span class="tk">Alerts</span> <b id="alertsToggleState">'+(alertsEnabled()?'on':'off')+'</b></button>'+infoBtn('pricealerts')+'</div>'+
       '<div class="acctrow"><span class="acctk">Appearance</span>'+seg()+'</div>'+
       '<div class="acctrow"><span class="acctk">Run digest email</span><select class="acctsel" id="acctDigestMode">'+
-        '<option value="changes">Only when picks change</option><option value="always">Every published run</option><option value="off">Off</option></select></div>'+
+        '<option value="changes">Only when picks change</option><option value="always">Every published run</option><option value="morning">🌅 Morning run only</option><option value="off">Off</option></select></div>'+
       '<div class="acctsub">Sent to '+esc(email||'you')+' — risk profile, ready-now actions, the 6 picks (HTML) plus the full report as a PDF.</div>'+
       '<div class="acctrow"><span class="acctk">Risk tolerance</span><span class="themeseg" id="riskTolSeg">'+
         ['conservative','balanced','aggressive'].map(function(t){return '<button class="tseg'+(curRiskTol()===t?' on':'')+'" data-tol="'+t+'">'+(t==='conservative'?'🛡️ Low':t==='balanced'?'⚖️ Balanced':'🎢 High')+'</button>';}).join('')+
