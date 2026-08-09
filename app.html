@@ -511,6 +511,9 @@
 
   .cols{display:grid;grid-template-columns:1fr 1fr;gap:14px}
   @media(max-width:760px){.cols{grid-template-columns:1fr}}
+  .cols3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  @media(max-width:960px){.cols3{grid-template-columns:1fr 1fr}}
+  @media(max-width:640px){.cols3{grid-template-columns:1fr}}
   .stack{display:flex;flex-direction:column;gap:9px}
   .line{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:11px;padding:11px 13px;font-size:14px}
   .clickline{cursor:pointer;transition:border-color .12s,transform .1s}
@@ -2044,7 +2047,6 @@ function render(D,H){
   var _potN=_keepIdx.length+_loseIdx.length;
   var pot=_keepIdx.map(function(i){return potCard(_cands[i],i);}).join('');
   var potLose=_loseIdx.map(function(i){return potCard(_cands[i],i);}).join('');
-  var half=Math.ceil((D.commodities||[]).length/2);
   var trail=(D.trail||[]).map(function(t){var jump=(t.jump?' <a class="trailjump" href="#'+esc(t.jump)+'">'+esc(t.jumpLabel||'see the list →')+'</a>':'');return '<div class="step"><span class="n">'+esc(t.n)+'</span><div class="st-txt">'+t.text+jump+'<small>'+esc(t.note)+'</small></div></div>';}).join('');
 
   document.getElementById('app').innerHTML=
@@ -2107,8 +2109,15 @@ function render(D,H){
       '<div class="stack"><div class="eyebrow">🍳 Sectors — buy vs skip</div>'+lines(D.sectors,'title','sectors')+'</div></div></section>'+
     '<section><div class="sec-head"><h2 class="display"><span class="k">04</span> Commodities — simple</h2>'+infoBtn('commodities')+'</div>'+
       '<p class="sec-sub">No jargon. Just: worth a look, emerging (🔥), or leave it.</p>'+
-      '<div class="cols"><div class="stack">'+lines((D.commodities||[]).slice(0,half),'name','commodities',0)+'</div>'+
-      '<div class="stack">'+lines((D.commodities||[]).slice(half),'name','commodities',half)+'</div></div></section>'+
+      // #131 (9 Aug 2026, user ask) — 3 abreast instead of 2, own grid class (.cols3) so this doesn't
+      // also widen Geopolitics/Sectors above (still 2-up, deliberately — commodities just has more items).
+      (function(){
+        var items=D.commodities||[], n=items.length, third=Math.ceil(n/3);
+        var a=items.slice(0,third), b=items.slice(third,third*2), c=items.slice(third*2);
+        return '<div class="cols3"><div class="stack">'+lines(a,'name','commodities',0)+'</div>'+
+          '<div class="stack">'+lines(b,'name','commodities',third)+'</div>'+
+          '<div class="stack">'+lines(c,'name','commodities',third*2)+'</div></div>';
+      })()+'</section>'+
     '<section id="fullpot"><div class="sec-head"><h2 class="display"><span class="k">05</span> The full pot</h2>'+infoBtn('fullpot')+'</div>'+
       '<p class="sec-sub">Every '+(MKT==='au'?'🇦🇺 Australian':'🌏 international')+' candidate the scan shortlisted tonight — <b>'+_potN+' names</b>, priced and scored. These are the ones we chose from. Colour = how appetising it looks. <b>Tap any for the full read.</b></p>'+
       '<div class="potlegend"><span><i style="background:var(--broth)"></i>🔥 sizzling</span><span><i style="background:var(--buy)"></i>✅ tasty</span><span><i style="background:var(--hold)"></i>➖ maybe</span><span><span class="legno">⛔</span> send it back</span></div>'+
