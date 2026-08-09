@@ -3292,6 +3292,13 @@ function syncWatchButtons(){
   });
 }
 function watchToggleFromEl(b){
+  // #130 (9 Aug 2026): every watchbtn on the page (pick cards, candidate modals, movers, theme
+  // leaders — #115) funnels through here, but a "No pick this run" placeholder card (sym:"NONE")
+  // still renders a live watchbtn like any real pick — nothing ever gated it. A stray tap added the
+  // literal ticker "NONE" to a real watchlist, which then 404'd against /quote every single page
+  // load forever after (caught via a live console-error audit). Guard at the one funnel point
+  // instead of patching every render site.
+  if(b.dataset.sym==='NONE'){return;}
   var it={sym:b.dataset.sym,region:b.dataset.region};
   if(b.dataset.name)it.name=b.dataset.name;
   if(b.dataset.entry)it.entry=parseFloat(b.dataset.entry);
