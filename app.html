@@ -1669,6 +1669,21 @@ function signalRows(p,region,opts){
       explain:'The tone of recent news coverage — separate from the chart, this is what people are actually saying.',
       diagram:newsTop3Html(p.news_top3)});
   }
+  // #148 (9 Aug 2026 research thread) — insider buy/sell counts + the new cluster-buying nudge were
+  // feeding the score but had never once been surfaced on a card — the only place to see WHY was the
+  // admin-only "real juice" debug view. Real open-market buys/sells only (see signals.insider_signal).
+  var ins=p&&p.insider;
+  if(ins&&((ins.buyers90d||0)>0||(ins.sellers90d||0)>0)){
+    var buyers=ins.buyers90d||0, sellers=ins.sellers90d||0, cluster=ins.cluster30d||0;
+    var itone,iread;
+    if(cluster>=2){ itone='pos'; iread=cluster+' insiders bought together within 30 days'; }
+    else if(sellers>=3){ itone='neg'; iread=sellers+' distinct insiders sold in 90 days'; }
+    else if(buyers>0&&!sellers){ itone='pos'; iread=buyers+' insider'+(buyers>1?'s':'')+' bought in 90 days'; }
+    else if(sellers>0&&!buyers){ itone='neg'; iread=sellers+' insider'+(sellers>1?'s':'')+' sold in 90 days'; }
+    else { itone='mix'; iread=buyers+' bought, '+sellers+' sold in 90 days'; }
+    rows.push({icon:'🧑‍💼',label:'Insider activity',tone:itone,read:iread,
+      explain:'What the company\'s own officers and directors are doing with their own money — real open-market buys/sells only, not routine transfers or grants. Several insiders buying together in a short window is a stronger tell than any one of them acting alone.'});
+  }
   return rows;
 }
 function signalSummary(rows){
@@ -1718,6 +1733,7 @@ function checklistFun(row){
   if(/^Vs /.test(L)) return T==='pos'?{mark:'✅',line:'Beating the pack 🏆'}:{mark:'❌',line:'Falling behind 🐌'};
   if(/^Supply\/demand/.test(L)) return T==='pos'?{mark:'✅',line:'Standing on solid ground 🧱'}:T==='neg'?{mark:'❌',line:'Bonking its head on the ceiling 🧱'}:{mark:'➖',line:'Just passing through 🚶'};
   if(/^News buzz/.test(L)) return T==='pos'?{mark:'✅',line:'People are saying nice things 😃'}:T==='neg'?{mark:'❌',line:'People aren’t loving it 😬'}:{mark:'➖',line:'Nobody’s really talking 🤐'};
+  if(/^Insider activity/.test(L)) return T==='pos'?{mark:'✅',line:'The bosses are buying their own stock 💰'}:T==='neg'?{mark:'❌',line:'The bosses are cashing out 🚪'}:{mark:'➖',line:'Mixed signals from the top brass 🤷'};
   return {mark:T==='pos'?'✅':T==='neg'?'❌':'➖',line:row.read||''};
 }
 function checklistRowsHtml(rows){
