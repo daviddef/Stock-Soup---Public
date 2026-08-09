@@ -1145,10 +1145,22 @@ function marketStatus(region){
     if(h<9) return {phase:'closed',open:false,txt:'ASX opens in '+Math.round(10-h)+'h'};
     return {phase:'closed',open:false,txt:'ASX closed for the day'};
   }
-  // US markets, converted to AEST (~23:30 → 06:00 next day)
-  if(h>=23.5||h<6) return (h>=5&&h<6)?{phase:'closing',open:true,txt:'US closes in '+mins(6)+'m'}:{phase:'open',open:true,txt:'US open now'};
-  if(h>=22.5&&h<23.5) return {phase:'opening',open:false,txt:'US opens in '+mins(23.5)+'m'};
-  return {phase:'closed',open:false,txt:'US opens tonight'};
+  // US markets, converted to AEST (~23:30 → 06:00 next day). #159 fix (real bug, caught live on a
+  // Sunday evening — showed "US opens in 53m"): this used to be pure hour-of-day math with NO
+  // day-of-week check at all, unlike the ASX branch above. Because the US session crosses midnight
+  // AEST, the evening portion (>=22.5, still today) represents TODAY's session about to start, but
+  // the early-morning portion (<6, already tomorrow) represents the TAIL END of YESTERDAY's session
+  // — each needs the right day checked, not just "today."
+  var yestWd=((day+6)%7)>=1&&((day+6)%7)<=5;
+  if(h>=23.5||h<6){
+    if(!(h<6?yestWd:wd)) return {phase:'closed',open:false,txt:'US closed · weekend'};
+    return (h>=5&&h<6)?{phase:'closing',open:true,txt:'US closes in '+mins(6)+'m'}:{phase:'open',open:true,txt:'US open now'};
+  }
+  if(h>=22.5&&h<23.5){
+    if(!wd) return {phase:'closed',open:false,txt:'US closed · weekend'};
+    return {phase:'opening',open:false,txt:'US opens in '+mins(23.5)+'m'};
+  }
+  return {phase:'closed',open:false,txt:wd?'US opens tonight':'US closed · weekend'};
 }
 function mktBarHtml(D){
   var FLAG={au:'🇦🇺',us:'🇺🇸'}, NM={au:'ASX',us:'US'};
