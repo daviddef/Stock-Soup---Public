@@ -36,8 +36,16 @@
   a.q:hover{color:var(--broth);border-bottom-color:var(--broth)}
   a.q:focus-visible{outline:2px solid var(--broth);outline-offset:2px;border-radius:2px}
 
+  /* #140: .hero only ever holds the compact brand row + market toggle — the rich Menu-tab headline/
+     chef/meter actually lives in #tab-menu's own .tabhead.menuhead below it, not in here. .hero is
+     also the ONE persistent header shown above every tab, so its old clamp(20px,3.5vw,38px) padding
+     (up to 38px on all sides around just a brand row) read as an oversized, mostly-empty header on
+     the lighter tabs (Reviews/Faves/Kitchen), whose own .tabhead is a much tighter 16px. Original
+     diagnosis here was wrong about the mechanism (blamed the other tabs' own headers reusing this
+     padding — they don't, they use .tabhead) but right that .hero itself was too generous for what
+     it actually contains on every tab, not just the light ones. */
   .hero{background:radial-gradient(120% 140% at 100% 0%, rgba(255,107,26,.16), transparent 55%),var(--surface);
-    border:1px solid var(--line);border-radius:20px;padding:clamp(20px,3.5vw,38px);position:relative;overflow:hidden}
+    border:1px solid var(--line);border-radius:20px;padding:clamp(14px,2.4vw,26px);position:relative;overflow:hidden}
   .brandrow{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}
   .brand{display:flex;align-items:center;gap:10px;font-family:var(--disp);font-style:italic;font-weight:800;font-size:21px;letter-spacing:-.01em}
   .hpot{position:relative;display:inline-flex;font-size:24px;line-height:1;animation:hbob 4.2s ease-in-out infinite;transform-origin:50% 90%}
