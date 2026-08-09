@@ -254,6 +254,8 @@
   .anchip{display:inline-flex;align-items:center;gap:5px;background:var(--surface-2);border:1px solid var(--line);border-radius:9px;padding:6px 10px;font-size:12px;font-weight:800;color:var(--ink)}
   .anchip .ank{color:var(--muted);font-weight:700}
   .anchip.gd{border-color:rgba(35,194,103,.4);color:var(--buy)} .anchip.bd{border-color:rgba(255,77,77,.4);color:var(--dont)}
+  .anchip.antap{cursor:pointer} .anchip.antap:hover,.anchip.antap:focus-visible{border-color:var(--broth);outline:none}
+  .anchip.antap .chipi{opacity:.6}
   .anzones{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:4px}
   .anz{border-radius:11px;padding:10px 12px;font-weight:800;font-size:13px;border:1px solid var(--line)}
   .anz .ank{display:block;font-size:10px;font-weight:800;letter-spacing:.03em;margin-bottom:2px}
@@ -2930,17 +2932,66 @@ function streetHtml(a){
   return '<div class="stblock"><h4>🗣️ Word on the street <span class="sthint">— what everyone else reckons</span></h4>'+
     (a.streetSummary?'<p class="stsum">'+a.streetSummary+'</p>':'')+parts.join('')+'</div>';
 }
+// #127 (9 Aug 2026) — the analyst card's 5 signal chips (Trend/RSI/Volatility/vs-20-day/52wk) were
+// plain dead spans: no description of what the metric means, no diagram, no source, nothing happened
+// on tap (user screenshot + explicit ask: "I want to see details, descriptions, sources"). This is
+// the SAME class of gap signalRows() already solved for pick/candidate cards (#73/#83) — but the
+// /analyst endpoint's a.signals is a flatter, differently-shaped payload (s.trend is a plain string,
+// no s.bb/s.ema/s.relStrength exist here), so it needs its own row-builder rather than reusing
+// signalRows() directly. Once built into the same {icon,label,tone,read,explain,diagram} shape,
+// everything downstream (sigRowsHtml, SIG_CACHE, openSignalBreakdown, the global .sigsum listener)
+// is reused as-is.
+function analystSignalRows(a){
+  var s=a.signals||{}, rows=[];
+  if(s.trend){
+    var up=/up/.test(s.trend), down=/down/.test(s.trend), tone=up?'pos':down?'neg':'mix', strong=s.adx!=null&&s.adx>=25;
+    rows.push({icon:'📊',label:'Trend'+(s.adx!=null?' · ADX '+s.adx:''),tone:tone,
+      read:s.trend.charAt(0).toUpperCase()+s.trend.slice(1),
+      explain:'MACD shows direction, ADX shows trend strength — 25+ is a real trend, under 20 is choppy/no trend. Source: daily price history.',
+      diagram:sigDiagTrend(tone,strong)});
+  }
+  if(s.rsi!=null){
+    var tone=s.rsi>=70?'neg':s.rsi<=30?'pos':'mix';
+    rows.push({icon:'🌡️',label:'RSI '+s.rsi,tone:tone,
+      read:s.rsi>=70?'Overheated — wait for it to cool':s.rsi<=30?'Cheap — bargain zone':'Comfortable, not stretched',
+      explain:'Momentum gauge, 0–100. Above 70 = overbought (often pulls back); below 30 = oversold (often bounces). Source: 14-day RSI off daily closes.',
+      diagram:sigDiagRSI(s.rsi)});
+  }
+  if(s.atrPct!=null){
+    var tone=s.atrPct>=4?'neg':s.atrPct<=1.5?'pos':'mix';
+    rows.push({icon:'📶',label:'Volatility',tone:tone,
+      read:'~'+s.atrPct+'% average daily swing',
+      explain:'Average true range as a % of price — how much this name typically moves in a single day, up or down. Bigger swings mean bigger risk (and bigger potential reward) on any given trade. Source: recent daily high/low/close range.'});
+  }
+  if(s.ext20!=null){
+    var tone=s.ext20>=15?'neg':s.ext20<=-5?'pos':'mix';
+    rows.push({icon:'📏',label:'vs 20-day',tone:tone,
+      read:(s.ext20>=0?'+':'')+s.ext20+'% vs its 20-day average',
+      explain:'How far the price has run above (or below) its own recent average. 15%+ above usually means it’s extended and due to cool off; well below can mean it’s cheap, or that its recent story is bad. Source: 20-day simple moving average.'});
+  }
+  if(s.near52!=null){
+    var pct=Math.round(s.near52*100), tone=pct>=95?'neg':pct<=70?'pos':'mix';
+    rows.push({icon:'🏔️',label:'52-week range',tone:tone,
+      read:pct+'% of the way to its 52-week high',
+      explain:'Where the price sits between its 52-week low and high. Right at the top can mean real strength — or exactly the kind of overheated stretch that’s hardest to buy safely. Source: trailing 52 weeks of daily closes.'});
+  }
+  return rows;
+}
 function renderAnalyst(a){
   var m=document.getElementById('modal'), tc='v-'+(a.tone==='buy'?'buy':a.tone==='dont'?'dont':'hold'), s=a.signals||{};
-  function chip(k,v,cls){ return v==null?'':'<span class="anchip '+(cls||'')+'"><span class="ank">'+k+'</span> '+esc(v)+'</span>'; }
-  var trend= s.trend? '<span class="anchip '+(/up/.test(s.trend)?'gd':/down/.test(s.trend)?'bd':'')+'"><span class="ank">Trend</span> '+esc(s.trend)+(s.adx!=null?' · ADX '+s.adx:'')+'</span>':'';
-  var rsi= s.rsi!=null? '<span class="anchip '+(s.rsi>70?'bd':s.rsi<30?'gd':'')+'"><span class="ank">RSI</span> '+s.rsi+(s.rsi>70?' hot':s.rsi<30?' cold':'')+'</span>':'';
+  var _rows=analystSignalRows(a), _sigKey=null;
+  if(_rows.length){ _sigKey='sig'+(SIG_SEQ++); SIG_CACHE[_sigKey]={rows:_rows,title:(a.sym||'Signals')+' — signal breakdown'}; }
+  var _sk=_sigKey?' data-sigkey="'+_sigKey+'"':'';
+  function chip(k,v,cls){ return v==null?'':'<span class="anchip antap '+(cls||'')+'"'+_sk+'><span class="ank">'+k+'</span> '+esc(v)+(_sigKey?' <span class="chipi">i</span>':'')+'</span>'; }
+  var trend= s.trend? '<span class="anchip antap '+(/up/.test(s.trend)?'gd':/down/.test(s.trend)?'bd':'')+'"'+_sk+'><span class="ank">Trend</span> '+esc(s.trend)+(s.adx!=null?' · ADX '+s.adx:'')+(_sigKey?' <span class="chipi">i</span>':'')+'</span>':'';
+  var rsi= s.rsi!=null? '<span class="anchip antap '+(s.rsi>70?'bd':s.rsi<30?'gd':'')+'"'+_sk+'><span class="ank">RSI</span> '+s.rsi+(s.rsi>70?' hot':s.rsi<30?' cold':'')+(_sigKey?' <span class="chipi">i</span>':'')+'</span>':'';
   m.innerHTML='<div class="mhead '+tc+'"><button class="mclose" id="mClose" aria-label="Close">✕</button>'+
     '<div class="mtf">🧠 What would you do?</div>'+
     '<div class="mtop"><div><div class="msym">'+esc(a.sym)+'</div><div class="mco">'+esc(a.cur+a.price)+'</div></div><span class="mverd '+tc+'" style="align-self:flex-start">'+esc(a.verdict)+'</span></div></div>'+
     '<div class="mbody">'+
       '<p class="mtake"><span class="lead">'+esc(a.headline)+'.</span> '+a.action+'</p>'+
       '<div class="anchips">'+trend+rsi+chip('Volatility', s.atrPct!=null?('~'+s.atrPct+'%/day'):null)+chip('vs 20-day', s.ext20!=null?((s.ext20>=0?'+':'')+s.ext20+'%'):null, s.ext20>=15?'bd':'')+chip('52wk', s.near52!=null?(Math.round(s.near52*100)+'% of high'):null)+'</div>'+
+      (_sigKey?'<div class="mfound" style="margin:-4px 0 10px">🧮 Tap any signal above for what it means &amp; where it comes from</div>':'')+
       (s.support!=null?'<div class="anzones"><div class="anz anz-buy"><span class="ank">🟢 Buying zone</span> '+esc(a.cur+s.support)+'</div><div class="anz anz-sell"><span class="ank">🔴 Selling zone</span> '+esc(a.cur+s.resistance)+'</div></div>':'')+
       (a.drivers&&a.drivers.length?'<div class="anlist"><h4>Why</h4><ul>'+a.drivers.map(function(d){return '<li>'+d+'</li>';}).join('')+'</ul></div>':'')+
       (a.risks&&a.risks.length?'<div class="anlist anrisk"><h4>Watch out for</h4><ul>'+a.risks.map(function(d){return '<li>'+esc(d)+'</li>';}).join('')+'</ul></div>':'')+
@@ -2951,6 +3002,13 @@ function renderAnalyst(a){
     '</div>';
   document.getElementById('mClose').onclick=closeModal;
   var wb=m.querySelector('.watchbtn'); if(wb)wb.addEventListener('click',function(e){e.preventDefault();watchToggleFromEl(wb);}); syncWatchButtons();
+  if(_sigKey){
+    m.querySelectorAll('.antap[data-sigkey]').forEach(function(el){
+      el.setAttribute('tabindex','0'); el.setAttribute('role','button');
+      el.addEventListener('click',function(){openSignalBreakdown(el.dataset.sigkey);});
+      el.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();openSignalBreakdown(el.dataset.sigkey);}});
+    });
+  }
 }
 // Admin methodology docs — fetched privately from the Worker (admin-gated), shown in an isolated iframe.
 function openDocs(){
