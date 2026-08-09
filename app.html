@@ -83,7 +83,7 @@
   .chip .dot{width:8px;height:8px;border-radius:50%}
   .toggle{cursor:pointer;font-family:var(--font);color:var(--ink)}
   .toggle:focus-visible{outline:2px solid var(--broth);outline-offset:2px}
-  .meter{margin-top:18px}
+  .meter{margin-top:28px}  /* #174 — extra top room so the per-indicator emoji labels above the track don't crowd the row above */
   .meter .track{height:10px;border-radius:999px;background:linear-gradient(90deg,var(--dont),var(--hold),var(--buy));position:relative;opacity:.9}
   .meter .needle{position:absolute;top:-5px;width:4px;height:20px;border-radius:2px;background:var(--ink);box-shadow:0 0 0 3px var(--surface);left:50%;transition:left .8s cubic-bezier(.2,.8,.2,1)}
   .meter .needle.vixneedle{background:#9b6bff;width:3px;top:-3px;height:16px;box-shadow:0 0 0 2px var(--surface)}
@@ -92,9 +92,12 @@
   .meterleg i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:5px;vertical-align:middle}
   .meterleg i.ink{background:var(--ink)} .meterleg i.vix{background:#9b6bff}
   /* #174 — per-indicator markers on the risk line (was just Risk + VIX). Each of the 5 composite
-     inputs gets a tick at its own 0-100 sub-score, plus an emoji+score legend below. */
-  .factormark{position:absolute;top:-3px;bottom:-3px;width:2px;transform:translateX(-50%);border-radius:1px;background:var(--faint);opacity:.7}
-  .factorleg{display:flex;flex-wrap:wrap;gap:8px 14px;justify-content:center;margin-top:9px;font-size:11px;font-weight:700;color:var(--muted)}
+     inputs gets a tick at its own 0-100 sub-score WITH its emoji sitting right above it, so you can
+     tell which is which on the line itself (not just in the legend). Plus an emoji+score legend below. */
+  .factormark{position:absolute;top:0;bottom:0;width:0;transform:translateX(-50%);pointer-events:none}
+  .factormark::after{content:'';position:absolute;top:-3px;bottom:-3px;left:0;width:2px;transform:translateX(-50%);border-radius:1px;background:var(--ink);opacity:.55}
+  .factormark .fmi{position:absolute;top:-16px;left:0;transform:translateX(-50%);font-size:12px;line-height:1;white-space:nowrap}
+  .factorleg{display:flex;flex-wrap:wrap;gap:8px 14px;justify-content:center;margin-top:10px;font-size:11px;font-weight:700;color:var(--muted)}
   .factorleg span{white-space:nowrap} .factorleg b{color:var(--ink);font-variant-numeric:tabular-nums}
   .tagword{opacity:.7;font-weight:700}
 
@@ -446,8 +449,10 @@
   .jhright{display:flex;align-items:center;gap:5px;flex:0 0 auto;margin-left:auto}
   .jtally{display:inline-flex;gap:4px;font-size:10.5px;font-weight:900;background:var(--surface-2);border:1px solid var(--line);border-radius:999px;padding:2px 6px}
   .jtally .jt-w{color:var(--buy)} .jtally .jt-l{color:var(--dont)} .jtally .jt-p{color:var(--faint)}
-  .runlog{margin-top:4px;display:grid;grid-template-columns:1fr;gap:0 18px}
-  @media(min-width:640px){.runlog{grid-template-columns:1fr 1fr}}
+  .runlog{margin-top:4px;display:grid;grid-template-columns:1fr;gap:12px 16px;align-items:start}
+  @media(min-width:680px){.runlog{grid-template-columns:1fr 1fr}}
+  @media(min-width:1040px){.runlog{grid-template-columns:repeat(3,1fr)}}  /* #178 — user ask: runs 3 in a row */
+  .runlog>.rlrow{border-bottom:0;border:1px solid var(--line);border-left-width:2px;border-radius:12px;padding:10px 12px}
   .runlog-rest{display:contents}
   .runlog-rest[hidden]{display:none}
   .roadmapbox{margin-top:20px;padding-top:16px;border-top:1px solid var(--line)}
@@ -463,7 +468,9 @@
   .rmnote{font-size:11.5px;color:var(--faint);line-height:1.35;margin-top:2px;text-wrap:pretty}
   .rlrow{padding:9px 0 9px 11px;border-bottom:1px solid var(--line);border-left:2px solid transparent}
   .rlrow:last-child{border-bottom:0}
-  .rlrow.rlmaj,.rlrow.rllive,.rlrow.rlfail,.rlrow.rlcancel,.rlrow.rlquiet{grid-column:1/-1}
+  /* #178 — menu (rlmaj) rows now flow as grid cells (3-up) instead of spanning full width; only the
+     live/fail/cancel status banners and quiet-stretch summaries still span the whole row. */
+  .rlrow.rllive,.rlrow.rlfail,.rlrow.rlcancel,.rlrow.rlquiet{grid-column:1/-1}
   .rlrow.rlmaj{border-left-color:var(--broth);background:linear-gradient(90deg,rgba(255,107,26,.09),transparent 62%)}
   .rlrow.rlmin{border-left-color:var(--line)}
   .rltop{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:4px}
@@ -1067,6 +1074,7 @@
   .scorenum{font-size:13px;font-weight:800;color:var(--ink)}
   .juicebtn{background:rgba(255,140,0,.14);color:#FF8C00;border:1px solid rgba(255,140,0,.4);border-radius:7px;font-size:10.5px;font-weight:800;padding:3px 8px;margin-left:8px;cursor:pointer;vertical-align:middle}
   .juicebtn:hover{background:rgba(255,140,0,.24)}
+  .pmc-juice{margin-top:7px}  /* #173 — 🍊 chip on the Full Pot candidate card face */
   .jgrid{display:flex;flex-direction:column;gap:8px}
   /* Real bug (10 Aug 2026, user screenshot): this was named .jrow, same class the Journey feature's
      pick-history rows use (flex-based, see the earlier .jrow rule) — a name collision, not responsive
@@ -1230,7 +1238,7 @@ var RISK_FACT_IC={vix:'😨',btc:'₿',gold:'🥇',oil:'🛢️',audusd:'🇦�
 function riskFactorMarks(r){
   var F=(r&&r.factors)||[]; F=F.filter(function(f){return f&&f.score!=null;});
   if(!F.length) return {marks:'',leg:''};
-  var marks=F.map(function(f){ return '<div class="factormark" style="left:'+f.score+'%" title="'+esc(f.label)+' — '+f.score+'/100 on the risk line (weight '+f.weight+'%)"></div>'; }).join('');
+  var marks=F.map(function(f){ return '<div class="factormark" style="left:'+f.score+'%" title="'+esc(f.label)+' — '+f.score+'/100 on the risk line (weight '+f.weight+'%)"><span class="fmi">'+(RISK_FACT_IC[f.k]||'•')+'</span></div>'; }).join('');
   var leg='<div class="factorleg">'+F.map(function(f){ return '<span>'+(RISK_FACT_IC[f.k]||'•')+' '+esc(f.label)+' <b>'+f.score+'</b></span>'; }).join('')+'</div>';
   return {marks:marks,leg:leg};
 }
@@ -2216,7 +2224,7 @@ function render(D,H){
         '<span class="px"><span class="p mono">'+esc(p.price)+'</span><br><span class="c mono '+chgTone(p.change,p.up)+'">'+esc(p.change)+'</span></span></div>'+
         /* miniTraj removed — inconsistent (only carried-over picks had it) + confusing 'since 23:33'; the range bar shows the trend */
         '<div class="buyat'+(p.nEntry?' ba-'+buyState(p):'')+'">'+(p.nEntry?'<span class="bl">🎯 Ideal buy</span> ~'+esc(rg.cur||'$')+p.nEntry+buyAction(p):'<span class="bl">Track this pick</span>')+'</div>'+
-        '<p class="plain">'+esc(p.plain)+'</p>'+riskTolWarn(p)+((signalPillHtml(p,rg.id)||valChip(p))?'<div class="sentrow">'+signalPillHtml(p,rg.id)+valChip(p)+'</div>':'')+'<div class="lvls">'+(p.levels||'')+'</div>'+
+        '<p class="plain">'+esc(p.plain)+'</p>'+riskTolWarn(p)+(function(){var jc=juiceChip(p.score),sp=signalPillHtml(p,rg.id),vc=valChip(p);return (jc||sp||vc)?'<div class="sentrow">'+jc+sp+vc+'</div>':'';})()+'<div class="lvls">'+(p.levels||'')+'</div>'+
         (p.spark?rangeBar(p.spark,rg.cur||'$',p.tf,p.nEntry):'')+'</article>'+
         ((p.runnerUp && /wait|late|hold|skip|avoid|pass|don.t|steer/i.test(p.verdict||''))?ruCard(p.runnerUp,rg.id,idx):'')+'</div>';
     }).join('');
@@ -2309,12 +2317,13 @@ function render(D,H){
     var spk=(c.spark&&c.spark.length>2)?sparkSVG(c.spark.slice(-30)):'';
     var chg=c.change?'<span class="pmc-chg '+(c.up?'up':'down')+'">'+(c.up?'▲':'▼')+' '+esc(c.change)+'</span>':'';
     var shortChip=(c.short!=null&&c.short>=4)?'<span class="pmc-short">🩳 '+c.short+'%</span>':'';
+    var jc=juiceChip(c.score);   // #173 — 🍊 score chip on the candidate face too (tap → full breakdown)
     return '<div class="potcard h-'+esc(c.heat)+'" data-ci="'+i+'" role="button" tabindex="0" aria-label="Details for '+esc(c.sym)+'">'+
       '<div class="pmc-top">'+(c.heat==='cold'?'<span class="ph no">⛔</span>':'<span class="ph"></span>')+'<b class="pmc-sym">'+esc(c.sym)+'</b>'+shortChip+'<span class="pmc-flag">'+(c.region==='au'?'AU':'US')+'</span></div>'+
       (c.name?'<div class="pmc-name">'+esc(c.name)+'</div>':'')+
       '<div class="pmc-px">'+(c.price?'<span class="pmc-price">'+esc(cleanPrice(c.price))+'</span>':'')+chg+'</div>'+
       (spk?'<div class="pmc-spark">'+spk+'</div>':'')+
-      '<div class="pmc-note">'+esc(c.note||c.news)+'</div></div>';   // WHY it's rated this way beats a random news headline (was c.news||c.note)
+      '<div class="pmc-note">'+esc(c.note||c.news)+'</div>'+(jc?'<div class="pmc-juice">'+jc+'</div>':'')+'</div>';   // WHY it's rated this way beats a random news headline (was c.news||c.note)
   }
   var _cands=(D.candidates||[]);
   var _keepIdx=[],_loseIdx=[];
@@ -2489,6 +2498,15 @@ function announcementsHtml(items){
 }
 var SCORE_FLAB={pead:"Earnings",rev:"Analysts",hi:"Trend/High",news:"Catalyst",vol:"Volume",ins:"Insider"};
 // Shared by openModal (the 6 picks) and openCandidate (Full Pot) — same real model, same bar, everywhere it applies.
+// #173 follow-up (10 Aug 2026, user: "Im not seeing real juice icon on our cards?"). The 🍊 chip was
+// only inside scoreBarHtml, which renders in the tap-through detail modal — never on the card FACE. This
+// is the compact face chip: 🍊 + the score, tapping opens the exact same full openJuice() breakdown.
+// Reuses the JUICE_CACHE + the document-level .juicebtn delegated listener, so no extra wiring.
+function juiceChip(score){
+  if(!score||score.buy_now==null||!score.detail) return '';
+  var jid=++JUICE_SEQ; JUICE_CACHE[jid]={detail:score.detail,buy_now:score.buy_now,band:score.band};
+  return '<button class="juicebtn" data-juice-id="'+jid+'" title="Tap for the full score breakdown — '+esc(score.band||'')+'">🍊 '+score.buy_now+'</button>';
+}
 function scoreBarHtml(score){
   if(!score) return '';
   if(score.pending){
@@ -2653,11 +2671,15 @@ function closeModal(){
 // #105 — one-time delegated listener for .juicebtn: it only ever appears inside dynamically-injected
 // modal HTML (openModal/openCandidate), so wiring it per-render like other buttons would mean
 // re-finding it after every innerHTML swap. Delegation on document means it always works, no re-wiring.
+// CAPTURE phase (3rd arg true) so this runs BEFORE the per-element card click handlers (pick/pot/vcard/
+// mover) that would otherwise open the card modal first — the chip now lives INSIDE clickable cards
+// (#173 face chip), so stopPropagation in the bubble phase would be too late. Capturing + stopPropagation
+// intercepts the click cleanly for every card type at once, no per-card guard needed.
 document.addEventListener('click',function(e){
   var b=e.target.closest('.juicebtn'); if(!b)return;
   e.preventDefault(); e.stopPropagation();
   openJuice(+b.dataset.juiceId);
-});
+},true);
 function fmtDate(iso){var p=String(iso||'').split('-');if(p.length!==3)return iso||'';var mo=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];return (+p[2])+' '+(mo[(+p[1])-1]||'')+' '+p[0];}
 // Plain-English "what happened" for one graded call — the honesty of that exact pick on that run.
 function openGrade(sym){
