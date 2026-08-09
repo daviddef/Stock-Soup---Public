@@ -2521,6 +2521,7 @@ function openModal(p,region,cur){
       '<p class="mtake"><span class="lead">Chef says:</span> '+esc(p.chefTake)+'</p>'+
       newsLineHtml(p.news, p.news_url, p.news_date)+
       (p.short!=null?'<div class="mshort">🩳 <span class="lead">Short interest:</span> <b>'+p.short+'%</b>'+(p.short>=8?' — elevated (squeeze fuel)':p.short>=4?' — moderate':' — light')+'</div>':'')+
+      (p.shortDaysToCover!=null?'<div class="mshort">🩳 <span class="lead">Short interest:</span> <b>'+p.shortDaysToCover+' days to cover</b>'+(p.shortDaysToCover>=8?' — elevated (squeeze fuel)':p.shortDaysToCover>=4?' — moderate':' — light')+(p.shortDtcChange!=null?' <span class="'+(p.shortDtcChange<0?'up':'down')+'">('+(p.shortDtcChange>=0?'+':'')+p.shortDtcChange+'% since last cycle)</span>':'')+' <span class="mfoot">— FINRA, real US short-position data</span></div>':'')+
       '<div><h4 style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:800;margin-bottom:10px">🔎 How we found it · why it\'s on the menu</h4><div class="mfound" style="margin:-2px 0 9px">'+(p.foundVia?esc(p.foundVia):'Surfaced in tonight\'s wide-net scan (news · movers · analyst actions), then scored to the top 6.')+' The signals:</div><ul class="mcat">'+cats+'</ul></div>'+
       '<div class="mrisk"><b>Watch out:</b> '+esc(p.risk)+'</div>'+
       altsHtml+
