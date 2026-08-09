@@ -465,6 +465,12 @@
   .rlrow.rlfail{border-left-color:var(--dont);background:linear-gradient(90deg,rgba(255,77,77,.1),transparent 62%)}
   .rltag-fail{color:var(--dont)}
   .rlrow.rlcancel{border-left-color:var(--faint)} .rltag-cancel{color:var(--faint)}
+  /* #152 — model-tier toggle */
+  .tiertoggle{display:flex;align-items:center;gap:6px;margin:10px 0 4px;flex-wrap:wrap}
+  .tierbtn{background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:6px 13px;font-size:12px;font-weight:800;color:var(--muted);cursor:pointer}
+  .tierbtn.active{background:var(--broth);border-color:var(--broth);color:#fff}
+  .tierinfo{width:20px;height:20px;border-radius:50%;border:1px solid var(--line);background:var(--surface);color:var(--muted);font-size:11px;font-weight:800;font-style:italic;cursor:pointer;display:inline-flex;align-items:center;justify-content:center}
+  .tiersub{font-size:12px;color:var(--muted);margin:2px 0 10px;font-style:italic}
   /* #158 — 24h gantt strip */
   .ganttwrap{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin-bottom:16px;overflow-x:auto}
   .gantthead{display:flex;align-items:center;justify-content:space-between;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);flex-wrap:wrap;gap:6px}
@@ -1203,6 +1209,18 @@ function mktBarHtml(D){
   return '<div class="mktwrap"><div class="mktflags" role="tablist" aria-label="Filter market">'+flags+'</div>'+cap+'</div>';
 }
 var LAST=null, LASTFOCUS=null;
+var TIER='type1';   // #152 — selected model tier: type1 (production, default) / type2 (whole-market quant) / type3 (per-indicator leaderboards)
+// #152 — the ONE place that resolves "which picks array is this region actually showing right now."
+// Global (not nested in render()) because click handlers outside render() (openFromEl, ruCard, etc.)
+// need the exact same resolution to correctly index into whichever array built the card the user
+// tapped — using rg.picks directly in those handlers would open the wrong stock once a non-type1
+// tier is selected, since the card grid was built from a different array with different indices.
+function tierPicks(rg){
+  if(!rg) return [];
+  if(TIER==='type1') return rg.picks||[];
+  var D=(LAST&&LAST.D)||{}, mt=(D.modelTiers||{})[TIER]||{};
+  return mt[rg.id]||rg.picks||[];   // fall back to Type 1 if this tier hasn't been computed for this region yet
+}
 var JUICE_CACHE={}, JUICE_SEQ=0;   // #105 — admin-only "real juice" raw-logic detail, keyed by id (avoids embedding large JSON in HTML attrs)
 function yf(sym,region){var s=String(sym).replace(/\*$/,'');if(region==="au")s+=".AX";return "https://finance.yahoo.com/quote/"+encodeURIComponent(s);}
 function qlink(sym,region,label){return '<a class="q" href="'+yf(sym,region)+'" target="_blank" rel="noopener">'+esc(label==null?sym:label)+'</a>';}
@@ -2046,12 +2064,20 @@ function render(D,H){
   var soon='<button class="tab" disabled title="Coming soon">🌏 Asia-Pac · soon</button><button class="tab" disabled title="Coming soon">🇪🇺 Europe · soon</button>';
 
   var _H=(LAST&&LAST.H)||{}, _prevMenu=(_H.menus&&_H.menus.length>1)?_H.menus[1]:null;
+  var TIER_LABEL={type1:'Type 1 · Catalyst-driven',type2:'Type 2 · Whole-market quant',type3:'Type 3 · Per-indicator scan'};
+  var tierToggleHtml='<div class="tiertoggle" role="tablist" aria-label="Model tier">'+
+    ['type1','type2','type3'].map(function(t){return '<button class="tierbtn'+(TIER===t?' active':'')+'" data-tier="'+t+'" role="tab" aria-selected="'+(TIER===t)+'">'+esc(TIER_LABEL[t].split(' · ')[0])+'</button>';}).join('')+
+    '<button class="tierinfo" id="tierInfoBtn" title="What are model tiers?" aria-label="What are model tiers?">i</button></div>'+
+    (TIER!=='type1'?'<p class="tiersub">'+esc(TIER_LABEL[TIER])+' — a whole-market technical scan, not news-driven. No Day/Week diffing (fresh scan each time), and picks may be stale between full re-scans.</p>':'');
   var menus=(D.regions||[]).map(function(rg,i){
-    var prevSet=_prevMenu?(_prevMenu[rg.id]||[]):null;
-    var curSet=(rg.picks||[]).map(function(x){return x.sym;});
+    var rgPicks=tierPicks(rg);
+    // NEW/DROP diffing only makes sense for Type 1 (it's the only tier with real run-to-run history) —
+    // a Type 2/3 pick isn't "new" or "dropped" relative to anything, it's a fresh scan every time.
+    var prevSet=(TIER==='type1'&&_prevMenu)?(_prevMenu[rg.id]||[]):null;
+    var curSet=rgPicks.map(function(x){return x.sym;});
     var newPicks=prevSet?curSet.filter(function(s){return prevSet.indexOf(s)<0;}):[];
     var dropped=prevSet?prevSet.filter(function(s){return curSet.indexOf(s)<0;}):[];
-    var cards=(rg.picks||[]).map(function(p,idx){
+    var cards=rgPicks.map(function(p,idx){
       // #131 (9 Aug 2026, user ask) — a "no pick this run" placeholder was rendering the FULL card
       // template: a live ✓Watch button (watching a ticker called "NONE"), a "Track this pick" buyat
       // button, a "Limited signal data" pill — all implying there's a real name here to interact
@@ -2236,7 +2262,7 @@ function render(D,H){
       actionsHtml(D)+
     '</div>'+
     '<section><div class="sec-head"><h2 class="display"><span class="k">02</span> Serving today in '+(MKT==='us'?'the U.S.':'Australia')+'</h2>'+infoBtn('menu')+'</div>'+
-      '<p class="sec-sub" style="margin-top:4px">Three time horizons — '+tfB('Day')+' a quick feed · '+tfB('Week')+' a few days · '+tfB('Long')+' slow-cooked. Tap a card for the full serve; tap a name for Yahoo.</p>'+menus+'</section>'+
+      '<p class="sec-sub" style="margin-top:4px">Three time horizons — '+tfB('Day')+' a quick feed · '+tfB('Week')+' a few days · '+tfB('Long')+' slow-cooked. Tap a card for the full serve; tap a name for Yahoo.</p>'+tierToggleHtml+menus+'</section>'+
     // Change-environment retired — its trajectory + "ready to buy" now live inside each pick card (miniTraj + buyat + rangeBar).
     topNewsHtml(D)+
     '<section><div class="sec-head"><h2 class="display"><span class="k">03</span> The world &amp; the sectors</h2>'+infoBtn('world')+'</div>'+
@@ -3224,6 +3250,18 @@ function newsTop3Html(top3){
   }).join('');
   return '<div class="nt3list">'+rows+'</div>';
 }
+// #152 (10 Aug 2026) — explains the 3 model tiers. #151 found real evidence: on a night the
+// catalyst-driven net comes up thin, the whole-market technical scan finds real Buy-band names
+// the news-only net never saw (a live example: US Long was "insufficient signal" under Type 1
+// the same night Type 2/3 both found genuine 55/100 Buy names).
+function openTierInfo(){
+  _mchipModal('🍲','Market context','Model tiers',
+    '<p>Three different ways of finding tonight\'s picks — same real scoring model underneath, different starting pool.</p>'+
+    '<h4>Type 1 · Catalyst-driven (default)</h4><p>News, broker upgrades, earnings, contract wins — a real event has to exist first. Best when something\'s actually happening.</p>'+
+    '<h4>Type 2 · Whole-market quant</h4><p>Scans the ENTIRE market\'s technicals (trend, RSI, volume, breakouts), ranks by a blended quant score, takes the strongest ~150 — then runs those through the same real model. No news required.</p>'+
+    '<h4>Type 3 · Per-indicator scan</h4><p>Same whole-market idea, but built from the union of the top names on EACH individual indicator (RSI/MACD/ADX/EMA/Bollinger/SMA-stack) rather than one blended score — catches strong single-signal setups a blended rank might average away.</p>'+
+    '<p class="infofoot">Type 2/3 have no news catalyst, so there\'s no "fresh today" story and no NEW/DROP tracking — they\'re a fresh scan each time they\'re re-run, not every pulse. If Type 2/3 haven\'t been computed yet for a market, you\'ll see Type 1\'s picks instead.</p>');
+}
 function _mchipModal(icon,mtf,title,bodyHtml){
   LASTFOCUS=document.activeElement;
   var m=document.getElementById('modal'); m.className='modal';
@@ -3764,7 +3802,7 @@ function renderWatchlist(){
     }).catch(function(){ sp.textContent='—'; });
   });
   el.querySelectorAll('.wrow.wclick:not(.wclick-ins)').forEach(function(row){
-    function open(){var rg=(D.regions||[]).filter(function(x){return x.id===row.dataset.region;})[0];if(rg){var p=rg.picks[+row.dataset.idx];if(p)openModal(p,rg.id,rg.cur||'$');}}
+    function open(){var rg=(D.regions||[]).filter(function(x){return x.id===row.dataset.region;})[0];if(rg){var p=tierPicks(rg)[+row.dataset.idx];if(p)openModal(p,rg.id,rg.cur||'$');}}
     row.addEventListener('click',function(e){if(e.target.closest('a')||e.target.closest('.wrm'))return;open();});
     row.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();open();}});
   });
@@ -4205,8 +4243,18 @@ function wire(D){
     render(LAST.D,LAST.H);
     window.scrollTo(0,sc);
   });});
+  // #152 — model-tier toggle. Re-renders in place (same pattern as the market tabs above) so
+  // switching tiers doesn't lose scroll position or feel like a page reload.
+  document.querySelectorAll('.tierbtn[data-tier]').forEach(function(t){t.addEventListener('click',function(){
+    if(t.dataset.tier===TIER)return;
+    TIER=t.dataset.tier;
+    var sc=window.pageYOffset;
+    render(LAST.D,LAST.H);
+    window.scrollTo(0,sc);
+  });});
+  var tib=document.getElementById('tierInfoBtn'); if(tib) tib.onclick=openTierInfo;
   function regionOf(id){var a=(D.regions||[]).filter(function(x){return x.id===id;});return a[0];}
-  function openFromEl(el){var rg=regionOf(el.dataset.region);if(!rg)return;var p=rg.picks[+el.dataset.idx];if(p)openModal(p,rg.id,rg.cur||'$');}
+  function openFromEl(el){var rg=regionOf(el.dataset.region);if(!rg)return;var p=tierPicks(rg)[+el.dataset.idx];if(p)openModal(p,rg.id,rg.cur||'$');}
   document.querySelectorAll('.axhold').forEach(function(c){
     function go(){ openSym(c.dataset.sym, c.dataset.region); }
     c.addEventListener('click',function(e){if(e.target.closest('a'))return;go();});
@@ -4242,7 +4290,7 @@ function wire(D){
     c.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();openFromEl(c);}});
   });
   document.querySelectorAll('.rucard.tappable').forEach(function(rc){
-    function openRu(){var rg=regionOf(rc.dataset.region);if(rg){var p=rg.picks[+rc.dataset.idx];if(p&&p.runnerUp)openModal(p.runnerUp,rg.id,rg.cur||'$');}}
+    function openRu(){var rg=regionOf(rc.dataset.region);if(rg){var p=tierPicks(rg)[+rc.dataset.idx];if(p&&p.runnerUp)openModal(p.runnerUp,rg.id,rg.cur||'$');}}
     rc.addEventListener('click',function(e){if(e.target.closest('a'))return;openRu();});
     rc.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();openRu();}});
   });
@@ -4406,7 +4454,7 @@ function wireSimple(D){
   document.querySelectorAll('.stoprail .mkf[data-region]').forEach(function(b){b.onclick=function(){ if(b.dataset.region===MKT)return; MKT=b.dataset.region; renderSimple(D); };});
   function regionOf(id){return (D.regions||[]).filter(function(x){return x.id===id;})[0];}
   document.querySelectorAll('.vcard').forEach(function(c){
-    function open(){var rg=regionOf(c.dataset.region);if(rg){var p=rg.picks[+c.dataset.idx];if(p) openModal(p,rg.id,rg.cur||'$');}}
+    function open(){var rg=regionOf(c.dataset.region);if(rg){var p=tierPicks(rg)[+c.dataset.idx];if(p) openModal(p,rg.id,rg.cur||'$');}}
     c.addEventListener('click',function(e){if(e.target.closest('.vwatch'))return;open();});
     c.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();open();}});
   });
