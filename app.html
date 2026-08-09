@@ -60,6 +60,9 @@
   .chef{font-size:clamp(15px,2.2vw,19px);color:var(--muted);max-width:60ch;text-wrap:pretty}
   .chef b{color:var(--ink)}
   .metastrip{display:flex;flex-wrap:wrap;gap:8px;margin-top:20px}
+  /* #135: this now carries a full sentence, not a short label — the generic 999px-radius .chip pill
+     shape reads oddly at that length, so soften the corners and let it wrap onto 2 lines cleanly. */
+  .mktheadline{border-radius:14px;font-size:13.5px;font-weight:700;text-align:left;white-space:normal;line-height:1.4;padding:9px 13px;max-width:56ch}
   .chip{font-size:12px;font-weight:700;padding:6px 11px;border-radius:999px;border:1px solid var(--line);
     background:var(--surface-2);display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
   .chip .dot{width:8px;height:8px;border-radius:50%}
@@ -212,6 +215,20 @@
   .sigicon{font-size:13px}
   button.sigsum{font-family:var(--font);border:0;cursor:pointer}
   button.sigsum .chipi{opacity:.7}
+  /* #142 — signal checklist icon, sits next to the existing signal pill */
+  .chkbtn{font-family:var(--font);display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;
+    border-radius:7px;border:1px solid var(--line);background:var(--surface-2);cursor:pointer;font-size:12px;padding:0;line-height:1}
+  .chkbtn:hover{border-color:var(--broth)} .chkbtn:focus-visible{outline:2px solid var(--broth);outline-offset:2px}
+  .chkscore{font-size:14px;font-weight:800;margin:0 0 12px}
+  .chklist{display:flex;flex-direction:column;gap:8px}
+  .chkrow{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border-radius:12px;border:1px solid var(--line)}
+  .chkrow-y{background:rgba(35,194,103,.09);border-color:rgba(35,194,103,.3)}
+  .chkrow-n{background:rgba(255,77,77,.09);border-color:rgba(255,77,77,.3)}
+  .chkrow-m{background:var(--surface-2)}
+  .chkmark{font-size:18px;line-height:1.3;flex-shrink:0}
+  .chkbody{min-width:0}
+  .chkline{font-size:14.5px;font-weight:800}
+  .chkreal{font-size:11.5px;color:var(--muted);margin-top:2px}
   .sigdiag{display:block;margin:6px 0 2px;border-radius:6px}
   .sigread{margin-left:auto;font-weight:800;font-size:12px}
   .sigread.up{color:var(--buy)} .sigread.down{color:var(--dont)}
@@ -407,7 +424,7 @@
   .runlog-rest[hidden]{display:none}
   .rlrow{padding:9px 0 9px 11px;border-bottom:1px solid var(--line);border-left:2px solid transparent}
   .rlrow:last-child{border-bottom:0}
-  .rlrow.rlmaj,.rlrow.rllive,.rlrow.rlfail,.rlrow.rlcancel{grid-column:1/-1}
+  .rlrow.rlmaj,.rlrow.rllive,.rlrow.rlfail,.rlrow.rlcancel,.rlrow.rlquiet{grid-column:1/-1}
   .rlrow.rlmaj{border-left-color:var(--broth);background:linear-gradient(90deg,rgba(255,107,26,.09),transparent 62%)}
   .rlrow.rlmin{border-left-color:var(--line)}
   .rltop{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:4px}
@@ -602,6 +619,9 @@
   .potlegend span{display:inline-flex;align-items:center;gap:5px}
   .potlegend i{width:9px;height:9px;border-radius:50%;display:inline-block}
   .pot{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
+  /* #143 — a distinct highlight treatment so a real bargain reads as an event, not just another section */
+  .bargainsec{border:1px solid rgba(255,107,26,.35);background:linear-gradient(180deg,rgba(255,107,26,.07),transparent 140px);border-radius:18px;padding:16px 16px 4px;margin:22px 0}
+  .bargainsec .sec-head h2{font-size:clamp(19px,2.6vw,23px)}
   @media(max-width:640px){
     .pot{grid-template-columns:1fr 1fr;gap:8px}          /* 2-up on mobile — real-estate optimisation */
     .potcard{padding:10px 11px;gap:5px;border-radius:11px}
@@ -1261,9 +1281,19 @@ function discoveryFunnel(D){
   // being shown here. Open by default too — this is the whole point of "how we got here", not a
   // detail worth hiding behind a click.
   var candBySym={}; (D.candidates||[]).forEach(function(c){candBySym[c.sym+'|'+c.region]=c;});
+  // #138 (user ask): show each ticker with its real score AND name, sorted highest-score-first —
+  // was previously shown in whatever order discovery.tickers[] happened to be authored in, with
+  // just the bare symbol. Unscored entries (no matching candidate) sort last, not first.
   var list=(dv.tickers||[]).map(function(t){
     var c=candBySym[t.sym+'|'+t.region], sc=c&&c.score&&c.score.buy_now;
-    return '<span class="dvpill"><b>'+esc(t.sym)+'</b>'+(sc!=null?' <small>'+sc+'/100</small>':(t.signal?' <small>'+esc(t.signal)+'</small>':''))+'</span>';
+    return {t:t, c:c, sc:(sc!=null?sc:-1)};
+  }).sort(function(a,b){return b.sc-a.sc;}).map(function(x){
+    var t=x.t, c=x.c, sc=x.sc;
+    var tail=[];
+    if(c&&c.name) tail.push(esc(c.name));
+    tail.push(sc>=0?(sc+'/100'):(t.signal?esc(t.signal):''));
+    tail=tail.filter(Boolean).join(' · ');
+    return '<span class="dvpill"><b>'+esc(t.sym)+'</b>'+(tail?' <small>'+tail+'</small>':'')+'</span>';
   }).join('');
   return '<div class="funnel"><div class="fnrow"><span class="fnn">'+scanned+'</span> scanned <span class="fnar">→</span> <span class="fnn">'+shortlisted+'</span> shortlisted <span class="fnar">→</span> <span class="fnn">'+served+'</span> served</div>'+
     (list?'<details class="dvdet" open><summary>see the '+listedN+' we can name from this run</summary><div class="dvlist">'+list+'</div></details>':'')+'</div>';
@@ -1676,8 +1706,54 @@ function signalPillHtml(p,region,sym){
   var cls=s.verdict==='strong'?'sc-pos':s.verdict==='weak'?'sc-neg':s.verdict==='limited'?'sc-lim':'sc-mix';
   var key='sig'+(SIG_SEQ++);
   SIG_CACHE[key]={rows:rows,title:(sym||(p&&p.sym)||'Signals')+' — '+s.label};
-  return '<button type="button" class="sentc sigsum '+cls+'" data-sigkey="'+key+'">'+s.icon+' '+esc(s.label)+' <span class="chipi">i</span></button>';
+  return '<button type="button" class="sentc sigsum '+cls+'" data-sigkey="'+key+'">'+s.icon+' '+esc(s.label)+' <span class="chipi">i</span></button>'+checklistBtnHtml(rows,sym||(p&&p.sym));
 }
+// #142 (user ask) — "turn that signal list into a checklist... nicely presented, fun, dumb-proof."
+// Same rows signalPillHtml/sigRowsHtml already compute — a second, deliberately playful rendering
+// of the identical real data, not a second data source. The real label/value still shows on every
+// row (smaller, muted) so nothing is hidden behind the joke — same reasoning-transparency rule (#54)
+// the serious breakdown already follows.
+function checklistFun(row){
+  var L=row.label||'', T=row.tone;
+  if(/^RSI/.test(L)) return T==='pos'?{mark:'✅',line:'On sale right now 💰'}:T==='neg'?{mark:'❌',line:'Too hot — needs to cool down 🔥'}:{mark:'➖',line:'Comfy, not stretched 😌'};
+  if(/^Trend/.test(L)) return T==='pos'?{mark:'✅',line:'Riding the wave up 🚀'}:T==='neg'?{mark:'❌',line:'Sliding downhill 📉'}:{mark:'➖',line:'Can’t make up its mind 🤷'};
+  if(/^EMA/.test(L)) return T==='pos'?{mark:'✅',line:'Flexing short-term muscle 💪'}:T==='neg'?{mark:'❌',line:'Feeling sleepy 😴'}:{mark:'➖',line:'So-so, nothing special 🤏'};
+  if(/^Bollinger/.test(L)) return T==='pos'?{mark:'✅',line:'Coiled up, ready to bounce 🎈'}:T==='neg'?{mark:'❌',line:'Stretched like taffy 🥵'}:{mark:'➖',line:'Nothing wild going on 😐'};
+  if(/^Vs /.test(L)) return T==='pos'?{mark:'✅',line:'Beating the pack 🏆'}:{mark:'❌',line:'Falling behind 🐌'};
+  if(/^Supply\/demand/.test(L)) return T==='pos'?{mark:'✅',line:'Standing on solid ground 🧱'}:T==='neg'?{mark:'❌',line:'Bonking its head on the ceiling 🧱'}:{mark:'➖',line:'Just passing through 🚶'};
+  if(/^News buzz/.test(L)) return T==='pos'?{mark:'✅',line:'People are saying nice things 😃'}:T==='neg'?{mark:'❌',line:'People aren’t loving it 😬'}:{mark:'➖',line:'Nobody’s really talking 🤐'};
+  return {mark:T==='pos'?'✅':T==='neg'?'❌':'➖',line:row.read||''};
+}
+function checklistRowsHtml(rows){
+  if(!rows.length) return '<p class="muted" style="font-size:13px">No checklist yet — this one wasn’t in tonight’s scored run.</p>';
+  var ticked=rows.filter(function(r){return r.tone==='pos';}).length;
+  var body=rows.map(function(r){
+    var f=checklistFun(r);
+    return '<div class="chkrow chkrow-'+(r.tone==='pos'?'y':r.tone==='neg'?'n':'m')+'"><span class="chkmark">'+f.mark+'</span>'+
+      '<div class="chkbody"><div class="chkline">'+esc(f.line)+'</div><div class="chkreal">'+esc(r.label)+' — <b>'+esc(r.read)+'</b></div></div></div>';
+  }).join('');
+  return '<p class="chkscore">'+ticked+' / '+rows.length+' boxes ticked ✅</p><div class="chklist">'+body+'</div>';
+}
+var CHK_CACHE={}, CHK_SEQ=0;
+function checklistBtnHtml(rows,sym){
+  if(!rows.length) return '';
+  var key='chk'+(CHK_SEQ++);
+  CHK_CACHE[key]={rows:rows,title:sym||'Signals'};
+  return '<button type="button" class="chkbtn" data-chkkey="'+key+'" title="Signal checklist" aria-label="Signal checklist for '+esc(sym||'')+'">🧾</button>';
+}
+function openChecklist(key){
+  var c=CHK_CACHE[key]; if(!c) return;
+  LASTFOCUS=document.activeElement;
+  var m=document.getElementById('modal'); m.className='modal';
+  m.innerHTML='<div class="mhead"><button class="mclose" id="mClose" aria-label="Close">✕</button><div class="mtf">🧾 Signal checklist</div>'+
+    '<div class="mtop"><div class="msym" style="font-size:19px;line-height:1.2">'+esc(c.title)+'</div></div></div>'+
+    '<div class="mbody">'+checklistRowsHtml(c.rows)+'</div>';
+  var ov=document.getElementById('overlay'); ov.classList.add('open'); ov.setAttribute('aria-hidden','false');
+  document.getElementById('mClose').onclick=closeModal; document.getElementById('mClose').focus();
+}
+document.body.addEventListener('click',function(e){
+  var b=e.target.closest('.chkbtn[data-chkkey]'); if(b){ openChecklist(b.dataset.chkkey); }
+});
 function openSignalBreakdown(key){
   var c=SIG_CACHE[key]; if(!c) return;
   LASTFOCUS=document.activeElement;
@@ -1879,6 +1955,29 @@ function actionsHtml(D){
   return '<div class="actions">'+out+'</div>';
 }
 
+// #143 (user ask, scoped 9 Aug 2026): "how easily can we build a bargain alert — cheap, no real
+// negative indicators right now." Answer: no pipeline change needed — score_candidates() (score-pot.py)
+// already computes every field this needs onto every candidate (rsi, bb.bb_pctb, ema.above_ema20/50,
+// score.detail.penalty_detail, score.detail.hard_excluded, news_sentiment via pulse.py's CAND_PULSE_FIELDS
+// merge). This is a pure display-side filter over already-published data — real thresholds, not a
+// vague vibe: genuinely oversold (RSI<=40 AND pierced/near the lower Bollinger band), NOT in a
+// structural downtrend (must be above at least one of its 20/50-day EMAs — below both is a falling
+// knife, not a bargain), no active harsh penalty (capital raise / insider selling / stale or
+// already-priced-in catalyst), not hard-excluded, and news isn't actively negative.
+function isBargain(c){
+  if(!c||!c.score) return false;
+  var d=c.score.detail||{};
+  if(d.hard_excluded) return false;
+  if(c.rsi==null||c.rsi>40) return false;
+  var bb=c.bb&&c.bb.bb_pctb;
+  if(bb==null||bb>=0.3) return false;
+  var e=c.ema||{};
+  if(e.above_ema20===false&&e.above_ema50===false) return false;
+  var harsh=(d.penalty_detail||[]).filter(function(p){return /capital.raise|insider|stale|priced.in/i.test((p.k||'')+' '+(p.why||''));});
+  if(harsh.length) return false;
+  if(c.news_sentiment!=null&&c.news_sentiment<-0.1) return false;
+  return true;
+}
 function render(D,H){
   LAST={D:D,H:H};
   var r=D.risk||{};
@@ -1891,24 +1990,6 @@ function render(D,H){
     parts.forEach(function(t){ if(/\bgold\b/i.test(t)) gold=true; else rest.push(t); });
     return {gold:gold,rest:rest};
   })();
-  // #131 (9 Aug 2026, user ask) — "Defence hot"/"AI on fire" etc were plain non-interactive spans;
-  // tap should open the SAME real, scored overlay as the matching geo/sectors/commodities card
-  // (openTheme), same delegation pattern the Gold market-chip already uses. Resolve by stripping the
-  // trailing heat word ("hot"/"on fire"/"cooling"/"warm") and matching the remaining name against
-  // each card's own name — only wire a tap when a real match exists, never a fake/dead tappable.
-  function hotTagTarget(tag){
-    var name=tag.replace(/\s+(on fire|hot|cooling|warm)\s*$/i,'').trim().toLowerCase();
-    if(!name) return null;
-    var cats=[['geo',D.geo],['sectors',D.sectors],['commodities',D.commodities]];
-    for(var i=0;i<cats.length;i++){
-      var src=cats[i][0], arr=cats[i][1]||[];
-      for(var j=0;j<arr.length;j++){
-        var nm=(arr[j].name||arr[j].title||'').toLowerCase();
-        if(nm && (nm.indexOf(name)>=0 || name.indexOf(nm)>=0)) return {src:src,idx:j};
-      }
-    }
-    return null;
-  }
   // VIX marker on the same risk slider — same 0-100 scale as the risk needle, calm→right/risk-on,
   // fearful→left/risk-off. Purely visual pairing; VIX still isn't a scoring input (see CLAUDE.md).
   var vixLvl=(r.vix!=null)?Math.max(0,Math.min(100, 100-((r.vix-10)/25*100))):null;
@@ -2052,6 +2133,8 @@ function render(D,H){
     _loseIdx=_loseIdx.filter(function(i){return _cands[i].heat==='cold';});
   }
   var _potN=_keepIdx.length+_loseIdx.length;
+  var _bargainIdx=[]; _cands.forEach(function(c,i){ if((c.region||'us')===MKT&&isBargain(c)) _bargainIdx.push(i); });
+  var bargainCards=_bargainIdx.map(function(i){return potCard(_cands[i],i);}).join('');
   var pot=_keepIdx.map(function(i){return potCard(_cands[i],i);}).join('');
   var potLose=_loseIdx.map(function(i){return potCard(_cands[i],i);}).join('');
   var trail=(D.trail||[]).map(function(t){var jump=(t.jump?' <a class="trailjump" href="#'+esc(t.jump)+'">'+esc(t.jumpLabel||'see the list →')+'</a>':'');return '<div class="step"><span class="n">'+esc(t.n)+'</span><div class="st-txt">'+t.text+jump+'<small>'+esc(t.note)+'</small></div></div>';}).join('');
@@ -2089,16 +2172,7 @@ function render(D,H){
       '<div class="eyebrow schedlink" data-info="schedule" role="button" tabindex="0" title="Major runs are manually triggered — this is the target window, not a guarantee" style="letter-spacing:.06em">'+esc(stampNoWeekday(D.stamp))+(D.next?' · next ~'+esc(D.next):'')+' <span class="schedi">i</span></div>'+
       '<h1 class="display">Two pots on the boil:<br><span class="hot">'+esc(hdl(D,'a'))+'</span> &amp; <span class="hot">'+esc(hdl(D,'b'))+'</span>.</h1>'+
       '<p class="chef">'+chefFor(D)+'</p>'+
-      '<div class="metastrip"><span class="chip clickchip" data-mchip="risk" role="button" tabindex="0"><span class="dot" style="background:var(--hold)"></span> Risk: '+esc(r.label)+' <span class="chipi">i</span></span>'+
-      (r.vix!=null?'<span class="chip mono clickchip" data-mchip="vix" role="button" tabindex="0">😨 VIX '+esc(r.vix)+' <span class="'+(r.vixMood==='fearful'||r.vixMood==='jittery'?'down':'up')+'">'+esc(r.vixMood)+'</span></span>':'')+
-      '<span class="chip mono clickchip" data-mchip="btc" role="button" tabindex="0">₿ '+esc(r.btc)+' <span class="up">'+esc(r.btcChange)+'</span></span>'+
-      '<span class="chip mono clickchip" data-mchip="aud" role="button" tabindex="0">AUD/USD '+esc(r.audusd)+(r.audusdChange?' <span class="'+(r.audusdUp?'up':'down')+'">'+(r.audusdUp?'▲':'▼')+esc(r.audusdChange)+'</span>':'')+'</span>'+
-      '<span class="chip mono clickchip" data-mchip="gold" role="button" tabindex="0">'+(hotTagsList.gold?'🏅 ':'')+'Gold '+esc(r.gold)+(r.goldChange?' <span class="'+(r.goldUp?'up':'down')+'">'+(r.goldUp?'▲':'▼')+esc(r.goldChange)+'</span>':'')+(hotTagsList.gold?' <span class="tagword">hot</span>':'')+'</span>'+
-      hotTagsList.rest.map(function(t){
-        var tgt=hotTagTarget(t);
-        return tgt?'<span class="chip clickchip" data-theme-src="'+tgt.src+'" data-theme-idx="'+tgt.idx+'" role="button" tabindex="0">'+esc(t)+'</span>':'<span class="chip">'+esc(t)+'</span>';
-      }).join('')+
-      '</div>'+
+      '<div class="metastrip">'+(function(){var hl=marketHeadline(r,hotTagsList); return '<button type="button" class="chip clickchip mktheadline" id="mktHeadlineBtn">'+hl.icon+' '+esc(hl.text)+' <span class="chipi">i</span></button>';})()+'</div>'+
       '<div class="meter"><div class="track"><div class="needle" id="needle"></div>'+(vixLvl!=null?'<div class="needle vixneedle" id="needleVix" title="VIX marker"></div>':'')+'</div>'+
       '<div class="lbls"><span>🔴 Hide the cash</span><span>⚪ Steady</span><span>🟢 Send it</span></div>'+
       (vixLvl!=null?'<div class="meterleg"><span><i class="ink"></i> Risk</span><span><i class="vix"></i> VIX</span></div>':'')+'</div>'+
@@ -2125,6 +2199,9 @@ function render(D,H){
           '<div class="stack">'+lines(b,'name','commodities',third)+'</div>'+
           '<div class="stack">'+lines(c,'name','commodities',third*2)+'</div></div>';
       })()+'</section>'+
+    (bargainCards?'<section class="bargainsec"><div class="sec-head"><h2 class="display">🛍️ Bargain Alert!</h2></div>'+
+      '<p class="sec-sub">Genuinely cheap right now — oversold, not in freefall, and nothing actively wrong that we can see. <b>Tap any for the full read.</b></p>'+
+      '<div class="pot">'+bargainCards+'</div></section>':'')+
     '<section id="fullpot"><div class="sec-head"><h2 class="display"><span class="k">05</span> The full pot</h2>'+infoBtn('fullpot')+'</div>'+
       '<p class="sec-sub">Every '+(MKT==='au'?'🇦🇺 Australian':'🌏 international')+' candidate the scan shortlisted tonight — <b>'+_potN+' names</b>, priced and scored. These are the ones we chose from. Colour = how appetising it looks. <b>Tap any for the full read.</b></p>'+
       '<div class="potlegend"><span><i style="background:var(--broth)"></i>🔥 sizzling</span><span><i style="background:var(--buy)"></i>✅ tasty</span><span><i style="background:var(--hold)"></i>➖ maybe</span><span><span class="legno">⛔</span> send it back</span></div>'+
@@ -2958,6 +3035,85 @@ function _mchipModal(icon,mtf,title,bodyHtml){
     '<div class="mbody infobody">'+bodyHtml+'</div>';
   var ov=document.getElementById('overlay'); ov.classList.add('open'); ov.setAttribute('aria-hidden','false');
   document.getElementById('mClose').focus();
+}
+function stripHeatWord(t){ return (t||'').replace(/\s+(on fire|hot|cooling|warm)\s*$/i,'').trim(); }
+// #135 (user ask): Risk/VIX/BTC/AUD/Gold/hot-sector chips were really saying one synthesized thing
+// ("you're OK to take risk, especially in AI and defence") but showed as up to 7 separate chips.
+// Collapse to one plain-English headline; tap opens the individual reasoning underneath — same
+// pattern as the existing signal-pill collapse (#73). The 5 richer per-chip modals (openMarketChip)
+// aren't lost — each row below that has one stays tappable through to it.
+function marketHeadline(r,hotTagsList){
+  var off=r.label&&r.label.indexOf('OFF')>=0, on=r.label&&r.label.indexOf('ON')>=0;
+  var icon=off?'🔴':on?'🟢':'⚪';
+  var base=off?"Playing it safer tonight":on?"You're OK to take risk tonight":"Steady night — no strong lean either way";
+  var themeNames=hotTagsList.rest.map(stripHeatWord).filter(Boolean);
+  if(hotTagsList.gold) themeNames.unshift('Gold');
+  var themeTail=themeNames.length?(', especially in '+themeNames.slice(0,2).join(' and ')):'';
+  var vixTail=(r.vix!=null&&(r.vixMood==='fearful'||r.vixMood==='jittery')&&on)?' (though VIX is '+r.vixMood+')':'';
+  return {icon:icon, text:base+themeTail+vixTail+'.'};
+}
+function marketContextRows(r,hotTagsList,hotTagTarget){
+  var off=r.label&&r.label.indexOf('OFF')>=0, on=r.label&&r.label.indexOf('ON')>=0;
+  var rows=[{icon:off?'🔴':on?'🟢':'⚪',label:'Risk stance',tone:off?'neg':on?'pos':'neu',
+    read:r.label||'Neutral',explain:'Set mainly by Bitcoin’s 24h move as a fast risk-sentiment gauge — sets the tone for the whole run, doesn’t pick stocks by itself.',mchip:'risk'}];
+  if(r.vix!=null){
+    var vixBad=r.vixMood==='fearful'||r.vixMood==='jittery';
+    rows.push({icon:'😨',label:'VIX — fear gauge',tone:vixBad?'neg':'pos',
+      read:r.vix+' · '+(r.vixMood||''),explain:'How much swing the options market expects in the S&P 500 — a read on the whole market’s nerves, not any one stock.',mchip:'vix'});
+  }
+  rows.push({icon:'₿',label:'Bitcoin 24h',tone:(r.btcChange||'').indexOf('-')<0?'pos':'neg',
+    read:(r.btc||'')+' '+(r.btcChange||''),explain:'Crypto often leads risk sentiment by hours — a sharp move here is an early tell before equities react.',mchip:'btc'});
+  rows.push({icon:'💱',label:'AUD/USD',tone:r.audusdUp?'pos':'neg',
+    read:(r.audusd||'')+' '+(r.audusdChange||''),explain:'A rising Aussie dollar often tracks with risk appetite and commodity strength; a falling one often means safe-haven flows into USD.',mchip:'aud'});
+  rows.push({icon:'🏅',label:'Gold'+(hotTagsList.gold?' · hot':''),tone:r.goldUp?'pos':'neg',
+    read:(r.gold||'')+' '+(r.goldChange||''),explain:'Gold usually moves opposite to risk appetite — a rally often means investors are hedging, not chasing growth.',mchip:'gold'});
+  hotTagsList.rest.forEach(function(t){
+    var tgt=hotTagTarget(t);
+    rows.push({icon:'🔥',label:stripHeatWord(t),tone:'pos',read:t,
+      explain:'Flagged as a hot theme this run.'+(tgt?' Tap to see the real scored leader behind it.':' No matching scored card this run.'),themeTarget:tgt});
+  });
+  return rows;
+}
+function marketRowsHtml(rows){
+  return '<div class="sigdetail">'+rows.map(function(r){
+    var tgt=r.themeTarget;
+    var clickable=!!(r.mchip||tgt);
+    var attrs=r.mchip?(' data-mchip="'+r.mchip+'"'):tgt?(' data-theme-src="'+tgt.src+'" data-theme-idx="'+tgt.idx+'"'):'';
+    return '<div class="sigrow'+(clickable?' clickchip':'')+'"'+(clickable?' role="button" tabindex="0"'+attrs:'')+'>'+
+      '<div class="sigrow-top"><span class="sigicon">'+r.icon+'</span><b>'+esc(r.label)+'</b>'+
+      '<span class="sigread '+(r.tone==='pos'?'up':r.tone==='neg'?'down':'')+'">'+esc(r.read)+'</span>'+(clickable?' <span class="chipi">i</span>':'')+'</div>'+
+      '<div class="sigexplain">'+esc(r.explain)+'</div></div>';
+  }).join('')+'</div>';
+}
+function openMarketRead(){
+  var D=LAST.D||{}, r=D.risk||{};
+  var hotTagsList=(function(){
+    var parts=(D.hotTags||'').split('·').map(function(s){return s.trim();}).filter(Boolean);
+    var gold=false, rest=[];
+    parts.forEach(function(t){ if(/\bgold\b/i.test(t)) gold=true; else rest.push(t); });
+    return {gold:gold,rest:rest};
+  })();
+  function hotTagTarget(tag){
+    var name=stripHeatWord(tag).toLowerCase(); if(!name) return null;
+    var cats=[['geo',D.geo],['sectors',D.sectors],['commodities',D.commodities]];
+    for(var i=0;i<cats.length;i++){
+      var src=cats[i][0], arr=cats[i][1]||[];
+      for(var j=0;j<arr.length;j++){
+        var nm=(arr[j].name||arr[j].title||'').toLowerCase();
+        if(nm&&(nm.indexOf(name)>=0||name.indexOf(nm)>=0)) return {src:src,idx:j};
+      }
+    }
+    return null;
+  }
+  var hl=marketHeadline(r,hotTagsList);
+  var rows=marketContextRows(r,hotTagsList,hotTagTarget);
+  _mchipModal(hl.icon,'Market context','Tonight’s read',
+    '<p class="mtake" style="border:0;padding:0 0 10px">'+esc(hl.text)+'</p>'+marketRowsHtml(rows));
+  var mb=document.querySelector('#modal .mbody');
+  if(mb){
+    mb.querySelectorAll('[data-mchip]').forEach(function(el){ el.onclick=function(){ openMarketChip(el.dataset.mchip); }; el.onkeydown=function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); openMarketChip(el.dataset.mchip); } }; });
+    mb.querySelectorAll('[data-theme-src]').forEach(function(el){ el.onclick=function(){ openTheme(el.dataset.themeSrc,+el.dataset.themeIdx); }; el.onkeydown=function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); openTheme(el.dataset.themeSrc,+el.dataset.themeIdx); } }; });
+  }
 }
 function openMarketChip(key){
   var D=LAST.D||{}, r=D.risk||{};
@@ -3832,6 +3988,7 @@ function wire(D){
   else { if(tb)tb.style.display='none'; if(tc)tc.style.display='none'; }
   wireInfo();
   wireThemes();
+  var mkh=document.getElementById('mktHeadlineBtn'); if(mkh) mkh.onclick=openMarketRead;
   var tabs=document.querySelectorAll('.mkf[data-region], .tab[data-region]');
   tabs.forEach(function(t){t.addEventListener('click',function(){
     if(t.dataset.region===MKT)return;
