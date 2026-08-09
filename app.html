@@ -179,9 +179,13 @@
   .tabhead .thead{font-size:clamp(23px,5vw,36px);line-height:1.04;letter-spacing:-.01em;margin:0 0 9px;text-wrap:balance}
   .tabhead .tsub{font-size:14px;color:var(--muted);line-height:1.5;margin:0 0 13px;max-width:62ch}
   .tabhead .tsub b{color:var(--ink)}
-  .tabstats{display:flex;flex-wrap:wrap;gap:6px}
-  .tabstat{display:inline-flex;align-items:center;gap:6px;background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:6px 9px;font-size:12.5px;font-weight:800;color:var(--ink)}
-  .tabstat .tk{color:var(--muted);font-weight:700}
+  /* #155 (user ask, caught via screenshot — a ragged pill-wrap of uneven widths) — a clean, evenly
+     gridded "kanban card" layout instead: fixed 2-up on narrow screens (no more one lone pill per
+     row just because its text happened to be long), more columns as space allows. */
+  .tabstats{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  @media(min-width:560px){.tabstats{grid-template-columns:repeat(auto-fit,minmax(160px,1fr))}}
+  .tabstat{display:flex;flex-direction:column;align-items:flex-start;gap:3px;background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-size:14px;font-weight:800;color:var(--ink);text-align:left}
+  .tabstat .tk{color:var(--muted);font-weight:700;font-size:10.5px;letter-spacing:.04em;text-transform:uppercase}
   .tabstat .gd{color:var(--buy)} .tabstat .bd{color:var(--dont)}
   button.tabstat{font-family:var(--font);cursor:pointer}
   .wlfbtn:hover{border-color:var(--broth)}
