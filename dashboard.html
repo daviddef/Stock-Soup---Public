@@ -91,6 +91,11 @@
   .meterleg{display:flex;gap:14px;justify-content:center;margin-top:8px;font-size:10.5px;font-weight:700;color:var(--muted)}
   .meterleg i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:5px;vertical-align:middle}
   .meterleg i.ink{background:var(--ink)} .meterleg i.vix{background:#9b6bff}
+  /* #174 — per-indicator markers on the risk line (was just Risk + VIX). Each of the 5 composite
+     inputs gets a tick at its own 0-100 sub-score, plus an emoji+score legend below. */
+  .factormark{position:absolute;top:-3px;bottom:-3px;width:2px;transform:translateX(-50%);border-radius:1px;background:var(--faint);opacity:.7}
+  .factorleg{display:flex;flex-wrap:wrap;gap:8px 14px;justify-content:center;margin-top:9px;font-size:11px;font-weight:700;color:var(--muted)}
+  .factorleg span{white-space:nowrap} .factorleg b{color:var(--ink);font-variant-numeric:tabular-nums}
   .tagword{opacity:.7;font-weight:700}
 
   .pulsebar{background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--broth);border-radius:14px;padding:14px 16px}
@@ -167,6 +172,10 @@
   .burgerwrap{position:relative}
   .burger{width:38px;height:38px;border-radius:11px;border:1.5px solid var(--line);background:var(--surface-2);color:var(--ink);font-size:18px;line-height:1;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;padding:0}
   .burger:hover{border-color:var(--broth)}
+  /* #174 (10 Aug 2026, user ask) — a round Full/Simple toggle icon next to the burger, surfacing the
+     view switch that was buried in the burger menu. Same 38px footprint as the burger, round. */
+  .viewtoggle{width:38px;height:38px;border-radius:50%;border:1.5px solid var(--line);background:var(--surface-2);font-size:17px;line-height:1;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;padding:0;margin-right:7px}
+  .viewtoggle:hover{border-color:var(--broth)}
   .burgermenu{position:fixed;z-index:200;background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:7px;min-width:214px;max-width:calc(100vw - 24px);display:flex;flex-direction:column;gap:1px}
   .burgermenu[hidden]{display:none}
   .bmhead{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:5px 9px 9px;border-bottom:1px solid var(--line);margin-bottom:4px}
@@ -466,10 +475,14 @@
   .rltag-fail{color:var(--dont)}
   .rlrow.rlcancel{border-left-color:var(--faint)} .rltag-cancel{color:var(--faint)}
   /* #152 — model-tier toggle */
-  .tiertoggle{display:flex;align-items:center;gap:6px;margin:10px 0 4px;flex-wrap:wrap}
-  .tierbtn{background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:6px 13px;font-size:12px;font-weight:800;color:var(--muted);cursor:pointer}
-  .tierbtn.active{background:var(--broth);border-color:var(--broth);color:#fff}
-  .tierinfo{width:20px;height:20px;border-radius:50%;border:1px solid var(--line);background:var(--surface);color:var(--muted);font-size:11px;font-weight:800;font-style:italic;cursor:pointer;display:inline-flex;align-items:center;justify-content:center}
+  /* #152 tier selector, restyled (10 Aug 2026, user ask) to match the market AU/US filter: round
+     header pills (T1/T2/T3), same .mkf visual family, sitting in the header stoprail next to market. */
+  .tkbar{display:inline-flex;align-items:center;gap:8px}
+  .tkbar .tksep{width:1px;height:22px;background:var(--line);margin:0 2px}
+  .tkflags{display:inline-flex;gap:8px;align-items:center}
+  .tkf{width:34px;height:34px;border-radius:50%;border:0;background:var(--surface-2);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:800;line-height:1;padding:0;color:var(--muted);opacity:.55;transition:opacity .15s,transform .15s,background .15s}
+  .tkf.active{opacity:1;transform:scale(1.08);background:var(--broth);color:#fff}
+  .tierinfo{width:22px;height:22px;border-radius:50%;border:1px solid var(--line);background:var(--surface);color:var(--muted);font-size:11px;font-weight:800;font-style:italic;cursor:pointer;display:inline-flex;align-items:center;justify-content:center}
   .tiersub{font-size:12px;color:var(--muted);margin:2px 0 10px;font-style:italic}
   .risktolwarn{background:rgba(255,197,61,.14);border:1px solid rgba(255,197,61,.4);color:var(--hold);border-radius:8px;padding:6px 10px;font-size:12px;font-weight:800;margin:0 0 8px}
   /* #148 — sector rotation panel */
@@ -1211,6 +1224,16 @@ function marketStatus(region){
   }
   return {phase:'closed',open:false,txt:wd?'US opens tonight':'US closed · weekend'};
 }
+// #174 — the 5 risk-appetite indicators as markers on the risk line + an emoji/score legend, from
+// the per-factor sub-scores pulse.py now publishes (r.factors). Degrades to '' when absent (old data).
+var RISK_FACT_IC={vix:'😨',btc:'₿',gold:'🥇',oil:'🛢️',audusd:'🇦🇺'};
+function riskFactorMarks(r){
+  var F=(r&&r.factors)||[]; F=F.filter(function(f){return f&&f.score!=null;});
+  if(!F.length) return {marks:'',leg:''};
+  var marks=F.map(function(f){ return '<div class="factormark" style="left:'+f.score+'%" title="'+esc(f.label)+' — '+f.score+'/100 on the risk line (weight '+f.weight+'%)"></div>'; }).join('');
+  var leg='<div class="factorleg">'+F.map(function(f){ return '<span>'+(RISK_FACT_IC[f.k]||'•')+' '+esc(f.label)+' <b>'+f.score+'</b></span>'; }).join('')+'</div>';
+  return {marks:marks,leg:leg};
+}
 function mktBarHtml(D){
   var FLAG={au:'🇦🇺',us:'🇺🇸'}, NM={au:'ASX',us:'US'};
   var statuses={}; (D.regions||[]).forEach(function(rg){statuses[rg.id]=marketStatus(rg.id);});
@@ -1239,6 +1262,25 @@ function tierPicks(rg){
   if(TIER==='type1') return rg.picks||[];
   var D=(LAST&&LAST.D)||{}, mt=(D.modelTiers||{})[TIER]||{};
   return mt[rg.id]||rg.picks||[];   // fall back to Type 1 if this tier hasn't been computed for this region yet
+}
+var TIER_LABEL={type1:'Type 1 · Catalyst-driven',type2:'Type 2 · Whole-market quant',type3:'Type 3 · Per-indicator scan'};
+// #152 tier selector as round header pills, same visual family as the market AU/US filter (mktBarHtml).
+// Ordered T1 (safest/catalyst) · T2 (whole-market quant) · T3 (widest/per-indicator) left→right.
+function tierBarHtml(){
+  return '<div class="tkbar"><span class="tksep"></span><div class="tkflags" role="tablist" aria-label="Model tier">'+
+    ['type1','type2','type3'].map(function(t,i){
+      return '<button class="tkf'+(TIER===t?' active':'')+'" data-tier="'+t+'" role="tab" aria-selected="'+(TIER===t)+'" title="'+esc(TIER_LABEL[t])+'">T'+(i+1)+'</button>';
+    }).join('')+
+    '<button class="tierinfo" id="tierInfoBtn" title="What are model tiers?" aria-label="What are model tiers?">i</button></div></div>';
+}
+// #152 — bind the round tier pills (both views). Sets TIER, re-renders the CURRENT view in place
+// (preserving scroll), same interaction model as the market filter. Called from wire()/wireSimple().
+function bindTierPills(){
+  document.querySelectorAll('.tkf[data-tier]').forEach(function(b){ b.onclick=function(){
+    if(b.dataset.tier===TIER) return; TIER=b.dataset.tier;
+    var sc=window.pageYOffset; applyView(); window.scrollTo(0,sc);
+  };});
+  var tib=document.getElementById('tierInfoBtn'); if(tib) tib.onclick=openTierInfo;
 }
 var JUICE_CACHE={}, JUICE_SEQ=0;   // #105 — admin-only "real juice" raw-logic detail, keyed by id (avoids embedding large JSON in HTML attrs)
 function yf(sym,region){var s=String(sym).replace(/\*$/,'');if(region==="au")s+=".AX";return "https://finance.yahoo.com/quote/"+encodeURIComponent(s);}
@@ -2136,11 +2178,9 @@ function render(D,H){
   var soon='<button class="tab" disabled title="Coming soon">🌏 Asia-Pac · soon</button><button class="tab" disabled title="Coming soon">🇪🇺 Europe · soon</button>';
 
   var _H=(LAST&&LAST.H)||{}, _prevMenu=(_H.menus&&_H.menus.length>1)?_H.menus[1]:null;
-  var TIER_LABEL={type1:'Type 1 · Catalyst-driven',type2:'Type 2 · Whole-market quant',type3:'Type 3 · Per-indicator scan'};
-  var tierToggleHtml='<div class="tiertoggle" role="tablist" aria-label="Model tier">'+
-    ['type1','type2','type3'].map(function(t){return '<button class="tierbtn'+(TIER===t?' active':'')+'" data-tier="'+t+'" role="tab" aria-selected="'+(TIER===t)+'">'+esc(TIER_LABEL[t].split(' · ')[0])+'</button>';}).join('')+
-    '<button class="tierinfo" id="tierInfoBtn" title="What are model tiers?" aria-label="What are model tiers?">i</button></div>'+
-    (TIER!=='type1'?'<p class="tiersub">'+esc(TIER_LABEL[TIER])+' — a whole-market technical scan, not news-driven. No Day/Week diffing (fresh scan each time), and picks may be stale between full re-scans.</p>':'');
+  // #152 tier pills now live in the header (tierBarHtml, next to the market filter) — here we keep
+  // only the one-line caption explaining what the currently-selected non-default tier means.
+  var tierToggleHtml=(TIER!=='type1'?'<p class="tiersub">'+esc(TIER_LABEL[TIER])+' — a whole-market technical scan, not news-driven. No Day/Week diffing (fresh scan each time), and picks may be stale between full re-scans.</p>':'');
   var menus=(D.regions||[]).map(function(rg,i){
     var rgPicks=tierPicks(rg);
     // NEW/DROP diffing only makes sense for Type 1 (it's the only tier with real run-to-run history) —
@@ -2296,6 +2336,7 @@ function render(D,H){
   '<header class="hero"><div class="brandrow"><div class="brand"><span class="hpot"><span class="hsteam"><i></i><i></i><i></i></span><span class="hpotbowl">🍲</span></span> The&nbsp;Stock&nbsp;Soup</div>'+
     '<div class="toprail">'+
       (isAdmin()?'<span class="adminbadge" title="Signed in as the admin account" style="margin-right:6px">ADMIN</span>':'')+
+      '<button class="viewtoggle" id="viewToggle" title="Switch to Simple view" aria-label="Switch to Simple view">😋</button>'+
       '<div class="burgerwrap"><button class="burger" id="burgerBtn" aria-label="Menu" aria-haspopup="true" aria-expanded="false" aria-controls="burgerMenu">☰</button>'+
         '<div class="burgermenu" id="burgerMenu" role="menu" hidden>'+
           '<div class="bmhead"><span class="live"><span class="pulse"></span>LIVE</span><button class="bmupd" id="lastUpd">updated…</button></div>'+
@@ -2309,7 +2350,7 @@ function render(D,H){
           '<button class="bmitem" id="healthBtn" role="menuitem" style="display:none">💓 Data-source health</button>'+
         '</div></div>'+
     '</div></div>'+
-    '<div class="toprow">'+mktBarHtml(D)+'</div></header>'+
+    '<div class="toprow">'+mktBarHtml(D)+tierBarHtml()+'</div></header>'+
 
   // ===== TAB BAR =====
   '<nav class="tabbar" id="tabbar" role="tablist" aria-label="Sections">'+
@@ -2326,9 +2367,9 @@ function render(D,H){
       '<h1 class="display">Two pots on the boil:<br><span class="hot">'+esc(hdl(D,'a'))+'</span> &amp; <span class="hot">'+esc(hdl(D,'b'))+'</span>.</h1>'+
       '<p class="chef">'+chefFor(D)+'</p>'+
       '<div class="metastrip">'+(function(){var hl=marketHeadline(r,hotTagsList); return '<button type="button" class="chip clickchip mktheadline" id="mktHeadlineBtn">'+hl.icon+' '+esc(hl.text)+' <span class="chipi">i</span></button>';})()+'</div>'+
-      '<div class="meter"><div class="track"><div class="needle" id="needle"></div>'+(vixLvl!=null?'<div class="needle vixneedle" id="needleVix" title="VIX marker"></div>':'')+'</div>'+
+      (function(){var fm=riskFactorMarks(r); return '<div class="meter"><div class="track"><div class="needle" id="needle"></div>'+fm.marks+'</div>'+
       '<div class="lbls"><span>🔴 Hide the cash</span><span>⚪ Steady</span><span>🟢 Send it</span></div>'+
-      (vixLvl!=null?'<div class="meterleg"><span><i class="ink"></i> Risk</span><span><i class="vix"></i> VIX</span></div>':'')+'</div>'+
+      fm.leg+'</div>';})()+
       '<div class="sec-head" style="margin:26px 0 3px"><h2 class="display"><span class="k">01</span> Take your seat, it’s time to eat</h2>'+infoBtn('actions')+'</div>'+
       '<p class="sec-sub" style="margin:0 0 10px">Enough of the mood — here’s what’s worth <b>acting on</b> right now.</p>'+
       actionsHtml(D)+
@@ -2453,10 +2494,14 @@ function scoreBarHtml(score){
   var segs=facs.map(function(fc){return '<span class="scoreseg s-'+fc.k+'" style="width:'+fc.pts+'%"></span>';}).join('');
   var leg=facs.map(function(fc){return '<span><i class="s-'+fc.k+'"></i>'+esc(SCORE_FLAB[fc.k]||fc.k)+' '+fc.pts+'</span>';}).join('');
   if(score.heat&&score.heat>1) leg+='<span class="pen">− overheated '+Math.round(score.heat)+'</span>';
+  // #105 follow-up (10 Aug 2026, user ask): the "real juice" breakdown was admin-only and labelled
+  // with verbose text — now shown to EVERYONE as a compact orange 🍊 score-chip on every card, tapping
+  // it opens the same full scoring-chart/penalties/nudges modal. "only as the score" per the ask: the
+  // chip is just 🍊 + the number, the detail is one tap behind it.
   var juiceBtn='';
-  if(isAdmin()&&score.detail){
+  if(score.detail){
     var jid=++JUICE_SEQ; JUICE_CACHE[jid]={detail:score.detail,buy_now:score.buy_now,band:score.band};
-    juiceBtn=' <button class="juicebtn" data-juice-id="'+jid+'" title="Admin: full raw-logic derivation">🧡 real juice</button>';
+    juiceBtn=' <button class="juicebtn" data-juice-id="'+jid+'" title="Tap for the full score breakdown">🍊 '+score.buy_now+'</button>';
   }
   return '<div class="viz"><h4>🧮 Buy-Now model score · <span class="scorenum">'+score.buy_now+'/100 · '+esc(score.band)+'</span>'+juiceBtn+'</h4>'+
     '<div class="scorebar">'+segs+'</div><div class="scorelegend">'+leg+'</div>'+
@@ -2489,7 +2534,7 @@ function openJuice(id){
   if(d.gated) flags.push('⚠️ capped — no real catalyst (pead/rev/news all thin)');
   if(d.hard_excluded) flags.push('⛔ hard-excluded — too extended above its 20-day average');
   var m=document.getElementById('modal'); m.className='modal';
-  m.innerHTML='<div class="mhead"><button class="mclose" id="mClose" aria-label="Close">✕</button><div class="mtf">🧡 Admin — real juice</div>'+
+  m.innerHTML='<div class="mhead"><button class="mclose" id="mClose" aria-label="Close">✕</button><div class="mtf">🍊 Real juice — the full score breakdown</div>'+
     '<div class="mtop"><div class="msym" style="font-size:20px">'+j.buy_now+'/100 · '+esc(j.band)+'</div></div></div>'+
     '<div class="mbody">'+
       (flags.length?'<p class="mtake" style="color:var(--dont)">'+flags.join(' · ')+'</p>':'')+
@@ -4277,6 +4322,7 @@ function wire(D){
     root.setAttribute('data-theme',cur==='dark'?'light':'dark');
   });
   var vb=document.getElementById('viewBtn'); if(vb) vb.onclick=function(){setView('simple');};
+  var vt=document.getElementById('viewToggle'); if(vt) vt.onclick=function(){setView('simple');};   // #174 round toggle
   var rb=document.getElementById('refreshBtn'); if(rb){ if(!isAdmin()){ rb.style.display='none'; } else { rb.onclick=function(){refreshPrices(rb);}; } }
   var rfb=document.getElementById('refreshFullBtn'); if(rfb){ if(!isAdmin()){ rfb.style.display='none'; } else { rfb.onclick=function(){requestFullRun(rfb);}; } }
   var stb=document.getElementById('shareTabBtn'); if(stb) stb.onclick=shareCurrentTab;
@@ -4345,16 +4391,7 @@ function wire(D){
     render(LAST.D,LAST.H);
     window.scrollTo(0,sc);
   });});
-  // #152 — model-tier toggle. Re-renders in place (same pattern as the market tabs above) so
-  // switching tiers doesn't lose scroll position or feel like a page reload.
-  document.querySelectorAll('.tierbtn[data-tier]').forEach(function(t){t.addEventListener('click',function(){
-    if(t.dataset.tier===TIER)return;
-    TIER=t.dataset.tier;
-    var sc=window.pageYOffset;
-    render(LAST.D,LAST.H);
-    window.scrollTo(0,sc);
-  });});
-  var tib=document.getElementById('tierInfoBtn'); if(tib) tib.onclick=openTierInfo;
+  bindTierPills();   // #152 tier pills now live in the header (tierBarHtml), same as the market filter
   function regionOf(id){var a=(D.regions||[]).filter(function(x){return x.id===id;});return a[0];}
   function openFromEl(el){var rg=regionOf(el.dataset.region);if(!rg)return;var p=tierPicks(rg)[+el.dataset.idx];if(p)openModal(p,rg.id,rg.cur||'$');}
   document.querySelectorAll('.axhold').forEach(function(c){
@@ -4420,7 +4457,6 @@ function wire(D){
   var vixLvlN=((D.risk||{}).vix!=null)?Math.max(0,Math.min(100, 100-(((D.risk||{}).vix-10)/25*100))):null;
   requestAnimationFrame(function(){
     var n=document.getElementById('needle');if(n)n.style.left=lvl+'%';
-    var nv=document.getElementById('needleVix');if(nv&&vixLvlN!=null)nv.style.left=vixLvlN+'%';
   });
 }
 
@@ -4512,11 +4548,12 @@ function renderSimple(D){
   var region = (D.regions||[]).filter(function(x){return x.id===MKT;})[0] || (D.regions||[])[0];
   var rid = region?region.id:'au';
   var mood=villagerMood(r);
-  var cards=(region?region.picks:[]).map(function(p,idx){ return villagerCard(p,rid,idx); }).join('');
+  var cards=(region?tierPicks(region):[]).map(function(p,idx){ return villagerCard(p,rid,idx); }).join('');   // #152 — honour the selected tier in Simple view too
   var themeLine=villagerThemeLine(D);
   document.getElementById('app').innerHTML =
     '<div class="simple villager"><div class="shero"><div class="brandrow"><div class="brand"><span class="hpot"><span class="hsteam"><i></i><i></i><i></i></span><span class="hpotbowl">🍲</span></span> The&nbsp;Stock&nbsp;Soup&nbsp;Village</div>'+
       (isAdmin()?'<span class="adminbadge" title="Signed in as the admin account" style="margin-right:6px">ADMIN</span>':'')+
+      '<button class="viewtoggle" id="viewToggleS" title="Switch to Full view" aria-label="Switch to Full view">📋</button>'+
       '<div class="burgerwrap"><button class="burger" id="burgerBtnS" aria-label="Menu" aria-haspopup="true" aria-expanded="false" aria-controls="burgerMenuS">☰</button>'+
         '<div class="burgermenu" id="burgerMenuS" role="menu" hidden>'+
           '<div class="bmhead"><span class="live"><span class="pulse"></span>LIVE</span><button class="bmupd" id="lastUpdS">updated…</button></div>'+
@@ -4528,7 +4565,7 @@ function renderSimple(D){
           '<button class="bmitem" id="healthBtnS" role="menuitem" style="display:none">💓 Data-source health</button>'+
         '</div></div></div>'+
       '<div class="seyebrow schedlink" data-info="schedule" role="button" tabindex="0" title="Major runs are manually triggered — this is the target window, not a guarantee">'+esc(sStamp)+(D.next?' · usually <b>~'+esc(D.next)+'</b>':'')+' <span class="schedi">i</span></div>'+
-      '<div class="stoprail">'+mktBarHtml(D)+'</div>'+
+      '<div class="stoprail">'+mktBarHtml(D)+tierBarHtml()+'</div>'+
       '<div class="vmood"><div class="vmoodemoji">'+mood.emoji+'</div><div class="vmoodword">'+mood.word+'</div><div class="vmoodline">'+esc(mood.line)+'</div></div>'+
       '<div class="meter"><div class="track"><div class="needle" id="sneedle"></div></div>'+
       '<div class="lbls"><span>🙈 Hide!</span><span>😌 Chill</span><span>🚀 GO!</span></div></div>'+
@@ -4541,7 +4578,7 @@ function renderSimple(D){
 function wireSimple(D){
   var root=document.documentElement;
   var t=document.getElementById('themeBtn2'); if(t) t.onclick=function(){var c=root.getAttribute('data-theme')||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');root.setAttribute('data-theme',c==='dark'?'light':'dark');};
-  ['viewFull','viewFull2'].forEach(function(id){var b=document.getElementById(id);if(b) b.onclick=function(){setView('full');};});
+  ['viewFull','viewFull2','viewToggleS'].forEach(function(id){var b=document.getElementById(id);if(b) b.onclick=function(){setView('full');};});   // #174 round toggle in Simple view
   // Simple-view burger (parity with Full view)
   var bg=document.getElementById('burgerBtnS'), bm=document.getElementById('burgerMenuS');
   if(bg&&bm){ var closeBM=function(){ bm.setAttribute('hidden',''); bg.setAttribute('aria-expanded','false'); };
@@ -4554,6 +4591,7 @@ function wireSimple(D){
   var dbS=document.getElementById('docsBtnS'); if(dbS){ if(isAdmin()){ dbS.style.display=''; dbS.onclick=openDocs; } }
   var hbS=document.getElementById('healthBtnS'); if(hbS){ if(isAdmin()){ hbS.style.display=''; hbS.onclick=openDataHealth; } }
   document.querySelectorAll('.stoprail .mkf[data-region]').forEach(function(b){b.onclick=function(){ if(b.dataset.region===MKT)return; MKT=b.dataset.region; renderSimple(D); };});
+  bindTierPills();   // #152 tier pills in the simple-view header too
   function regionOf(id){return (D.regions||[]).filter(function(x){return x.id===id;})[0];}
   document.querySelectorAll('.vcard').forEach(function(c){
     function open(){var rg=regionOf(c.dataset.region);if(rg){var p=tierPicks(rg)[+c.dataset.idx];if(p) openModal(p,rg.id,rg.cur||'$');}}
