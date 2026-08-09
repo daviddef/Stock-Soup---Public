@@ -875,17 +875,21 @@
   .wview:hover{filter:brightness(1.08)}
 
   /* ARCHIVE */
-  .arch{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
-  .acard{display:block;background:var(--surface);border:1px solid var(--line);border-radius:13px;padding:14px;text-decoration:none;color:var(--ink);transition:transform .15s,border-color .15s}
-  .acard:hover{transform:translateY(-3px);border-color:var(--broth)}
-  .acard:focus-visible{outline:2px solid var(--broth);outline-offset:2px}
-  .acard .adate{font-weight:800;font-size:13px;margin-bottom:6px}
-  .acard .apicks{font-size:12px;color:var(--muted);line-height:1.5;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical}
-  .acard .arisk{font-size:10px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--broth);margin-top:8px;display:inline-block}
-  .archmore{text-align:center;color:var(--muted);font-size:12px;margin-top:12px}
-  .arch.archcollapsed .acard:nth-child(n+4){display:none}
-  .archtoggle{background:var(--surface-2);border:1px solid var(--line);color:var(--ink);font-family:var(--font);font-weight:800;font-size:12px;padding:8px 16px;border-radius:999px;cursor:pointer}
-  .archtoggle:hover{border-color:var(--broth);color:var(--broth)}
+  /* #132 — real per-run snapshot cards (verdict/price/reasoning at publish time), replacing the old
+     bare price-only cards that fetched a static report-index.json and duplicated Run Schedule. */
+  .archgrid2{display:grid;grid-template-columns:1fr;gap:12px}
+  @media(min-width:760px){.archgrid2{grid-template-columns:1fr 1fr}}
+  .archcard2{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px}
+  .archwhen{font-weight:800;font-size:12.5px;color:var(--muted);margin-bottom:10px}
+  .archcols{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .archcolh{font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--broth);margin-bottom:6px}
+  .archpick{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:6px}
+  .archpick:first-child{margin-top:0}
+  .archtf{font-size:9.5px;font-weight:800;color:var(--faint);letter-spacing:.04em;text-transform:uppercase}
+  .archsym{font-weight:800;font-size:12.5px}
+  .archpx{font-size:11px;color:var(--muted)}
+  .archwhy{font-size:11px;color:var(--faint);line-height:1.35;margin:1px 0 4px;text-wrap:pretty}
+  .archnone{font-size:11.5px;color:var(--faint);font-style:italic}
   .pulselog{display:flex;flex-direction:column;max-height:280px;overflow-y:auto}
   .plrow{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);font-size:12.5px;align-items:baseline}
   .plrow:last-child{border-bottom:0}
@@ -2236,9 +2240,9 @@ function render(D,H){
     kitchenHead(D)+
     '<section id="runsched"><div class="sec-head"><h2 class="display">⏱️ Run schedule</h2>'+infoBtn('schedule')+'</div>'+runLogHtml()+'</section>'+
     '<section><div class="sec-head"><h2 class="display">🗄️ The Archive</h2>'+infoBtn('archive')+'</div>'+
-      '<p class="sec-sub">Every menu we\'ve served. Tap one to open that run\'s full report.</p>'+
-      '<div class="arch" id="archList"><div class="wlempty">Loading past menus…</div></div>'+
-      '<div class="archmore" id="archMore"></div></section>'+
+      '<p class="sec-sub">Every menu we\'ve served — the real picks, verdicts and reasoning from that night, not a frozen price.</p>'+
+      archiveHtml(H)+
+    '</section>'+
     '<section><div class="sec-head"><h2 class="display">📋 How we got here</h2></div>'+
       '<p class="sec-sub">The recipe, in plain sight. No black box.</p>'+discoveryFunnel(D)+'<div class="panel trail">'+trail+'</div></section>'+
     // #131 (9 Aug 2026, user ask) — moved to the bottom, below the Archive/How-we-got-here sections
@@ -2615,7 +2619,7 @@ var INFO={
     '<p>This is different from <b>The Misses</b> below: Misses checks movers against what we <i>scanned</i>; Top Movers is just the raw list, no judgement about whether we should have caught it.</p>'+
     '<p class="infofoot">Refreshed each FULL run (not every 10-minute price update) — a live top-movers-by-volume feed needs a paid data source we don\'t have; the free/keyless sources this list comes from need a fresh read each time, not a cheap repeat call.</p>'},
   archive:{icon:'🗂️',title:'The Archive',body:
-    '<p>Every menu we\'ve served, newest first — tap one to open that run\'s full report snapshot. Shows the last 3; expand for the rest. Each records that run\'s 6 picks and the risk read at the time.</p>'},
+    '<p>Every menu we\'ve served, newest first — the real picks, verdicts and reasoning as they were written at the time, not a frozen price that goes stale. Runs from before this was added show as "no snapshot captured" rather than guessing.</p>'},
   misses:{icon:'😬',title:'The Misses',body:
     '<p>Every run we check the real biggest movers — <b>Day, Week and Month</b> (tap the tabs above) — against what our discovery process actually scanned — honestly, including the ones that got away.</p>'+
     '<ul class="infoul"><li>✅ <b>Served</b> — it was one of tonight\'s 6 picks.</li><li>👀 <b>Scanned, not served</b> — it was in the full-pot scan but scored below the cut.</li><li>❌ <b>Missed</b> — it wasn\'t in our search at all this run.</li></ul>'+
@@ -2663,6 +2667,34 @@ function lastFilled(slotIdx){
     if(arr[slotIdx]&&arr[slotIdx]!=='NONE') return menus[i].stamp+' · '+menus[i].time;
   }
   return null;
+}
+// #132 (user ask) — real per-run snapshot instead of a bare, frozen price string fetched from a
+// static reports/report-index.json (duplicated what Run Schedule already showed, gone stale the
+// moment it was captured). commit-run.py now stamps auSnap/usSnap (real sym/tf/verdict/price/plain
+// reasoning) into each menuHistory entry AT PUBLISH TIME — this just renders it, synchronously, no
+// fetch needed. Older runs (before this fix) won't have a snapshot — shown honestly, not silently.
+function archiveHtml(H){
+  var menus=(H&&H.menus)||[];
+  if(!menus.length) return '<div class="wlempty">No past menus yet — check back after tonight\'s run.</div>';
+  function pickBlock(p){
+    if(!p||!p.sym||p.sym==='NONE') return '';
+    var tfShort=(p.tf||'').split(' ')[1]||p.tf||'';
+    return '<div class="archpick"><span class="archtf">'+esc(tfShort)+'</span><span class="archsym">'+esc(p.sym)+'</span>'+
+      (p.verdict?'<span class="verdict '+esc(p.vclass||'')+'" style="font-size:9.5px;padding:3px 7px">'+esc(p.verdict)+'</span>':'')+
+      (p.price?'<span class="archpx mono">'+esc(p.price)+'</span>':'')+'</div>'+
+      (p.plain?'<div class="archwhy">'+esc(p.plain)+'</div>':'');
+  }
+  function side(snap){
+    if(!snap||!snap.length) return '<div class="archnone">No detailed snapshot captured for this run.</div>';
+    var out=snap.map(pickBlock).join('');
+    return out||'<div class="archnone">No picks this run.</div>';
+  }
+  var cards=menus.slice(0,20).map(function(m){
+    return '<div class="archcard2"><div class="archwhen">'+esc(m.stamp)+' · '+esc(m.time)+' AEST</div>'+
+      '<div class="archcols"><div><div class="archcolh">🇦🇺 AU</div>'+side(m.auSnap)+'</div>'+
+      '<div><div class="archcolh">🌏 US</div>'+side(m.usSnap)+'</div></div></div>';
+  }).join('');
+  return '<div class="archgrid2">'+cards+'</div>';
 }
 function kitchenHead(D){
   var n=(typeof PULSES!=='undefined'&&PULSES)?PULSES.length:0;
@@ -4058,25 +4090,6 @@ function wire(D){
     if(isAdmin() && (D.defaultWatchlist||[]).length) localStorage.setItem('soup_wl_seeded','1');
   }catch(e){}
   renderWatchlist();
-
-  // ---- Archive (live report index) ----
-  var arch=document.getElementById('archList');
-  function renderArch(items){
-    if(!arch)return;
-    if(!items||!items.length){arch.innerHTML='<div class="wlempty">The full archive loads on the live site.</div>';return;}
-    arch.innerHTML=items.map(function(e){
-      var risk=e.riskOff?'⛔ Risk-off':'⚪ Neutral';
-      return '<a class="acard" href="reports/'+esc(e.file)+'" target="_blank" rel="noopener"><div class="adate">'+esc(e.label||e.timestamp||e.file)+'</div><div class="apicks">'+esc((e.picks||'').slice(0,140))+'</div><span class="arisk">'+risk+'</span></a>';
-    }).join('');
-    var more=document.getElementById('archMore');
-    if(items.length>3){
-      arch.classList.add('archcollapsed');
-      if(more){ more.innerHTML='<button class="archtoggle" id="archTog">Show '+(items.length-3)+' more →</button>';
-        document.getElementById('archTog').onclick=function(){ var c=arch.classList.toggle('archcollapsed'); this.textContent=c?('Show '+(items.length-3)+' more →'):'Show fewer ↑'; };
-      }
-    } else if(more){ more.textContent=''; }
-  }
-  fetch('reports/report-index.json',{cache:'no-store'}).then(function(r){return r.ok?r.json():null;}).then(function(j){renderArch(j);}).catch(function(){renderArch(null);});
 
   var lvl=(D.risk&&D.risk.level!=null)?D.risk.level:50;
   var vixLvlN=((D.risk||{}).vix!=null)?Math.max(0,Math.min(100, 100-(((D.risk||{}).vix-10)/25*100))):null;
