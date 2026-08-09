@@ -1002,6 +1002,12 @@
   .dhkwgrp b{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
   .dhkwlist{display:flex;flex-wrap:wrap;gap:5px;margin-top:5px}
   .dhkw{font-size:10.5px;font-family:ui-monospace,monospace;background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:3px 7px;color:var(--ink)}
+  .dhsrow{background:var(--surface);border:1px solid var(--line);border-radius:9px;padding:9px 11px;margin-top:6px}
+  .dhsrow-empty{opacity:.6}
+  .dhsempty{font-size:12px;color:var(--muted);margin-left:8px}
+  .dhsstats{display:flex;flex-wrap:wrap;gap:10px;margin-top:5px}
+  .dhsstat{font-size:12px;color:var(--muted)}
+  .dhsstat b{color:var(--ink)}
   .dhcat:first-child{margin-top:0}
   .dhcatdesc{font-size:12px;color:var(--muted);margin:0 0 8px;line-height:1.4}
   .dhrow{border:1px solid var(--line);border-radius:11px;padding:11px 14px;background:var(--surface-2)}
@@ -3357,6 +3363,30 @@ var DH_CATDESC={
   'Discovery net 1 — untested, worth trying':'Reachable (don\'t 403/404), but not yet confirmed to return real usable content — worth a trial fetch before relying on them.',
   'Discovery net 1 — dead / not useful':'Checked and ruled out — blocked, needs auth, or doesn\'t exist as a usable feed. Not fetched.',
 };
+// #93 — real, over-time contribution stats per discovery net: is the quant net actually pulling its
+// weight, or just adding noise to score? Computed by source-stats.py, accumulated in bundle.sourceStats
+// since the run this was wired in — no historical archive existed before, so this genuinely starts from
+// zero rather than pretending to have retroactive data.
+var SOURCE_LABEL={news:'📰 News/macro net',quant:'📊 Whole-market quant net',earnings:'📅 Earnings-calendar net',ipo:'🆕 IPO net'};
+function sourceStatsHtml(){
+  var ss=(LAST.D||{}).sourceStats; if(!ss||!ss.bySource) return '';
+  var rows=['news','quant','earnings','ipo'].map(function(src){
+    var a=ss.bySource[src]||{runs:0,contributed:0,buyPlus:0,becamePick:0,scored:0,scoreSum:0};
+    if(!a.contributed) return '<div class="dhsrow dhsrow-empty"><b>'+esc(SOURCE_LABEL[src])+'</b><span class="dhsempty">No tagged contributions yet</span></div>';
+    var avg=a.scored?Math.round(a.scoreSum/a.scored*10)/10:null;
+    var hit=a.contributed?Math.round(a.becamePick/a.contributed*1000)/10:0;
+    return '<div class="dhsrow"><b>'+esc(SOURCE_LABEL[src])+'</b>'+
+      '<div class="dhsstats">'+
+        '<span class="dhsstat"><b>'+a.runs+'</b> runs</span>'+
+        '<span class="dhsstat"><b>'+a.contributed+'</b> contributed</span>'+
+        '<span class="dhsstat"><b>'+a.buyPlus+'</b> Buy+</span>'+
+        '<span class="dhsstat"><b>'+a.becamePick+'</b> became a pick <span class="muted">('+hit+'%)</span></span>'+
+        (avg!=null?'<span class="dhsstat">avg score <b>'+avg+'</b></span>':'')+
+      '</div></div>';
+  }).join('');
+  return '<div class="dhkw-block"><h4 style="margin:0 0 6px">📈 Source contribution over time (#93)</h4>'+
+    '<p class="sec-sub" style="margin-top:0">Real, accumulated per-net stats since this was wired in — '+esc(ss.history&&ss.history.length?ss.history.length+' run(s) tracked':'first run')+'. Not retroactive; older runs had no source tag to tally.</p>'+rows+'</div>';
+}
 function openDataHealth(){
   var ic={ok:'🟢',degraded:'🟡',blocked:'🔴',untested:'⚪'}, lbl={ok:'Live',degraded:'Degraded',blocked:'Blocked',untested:'Untested'};
   var cats=[]; DATA_HEALTH.forEach(function(s){ if(cats.indexOf(s.cat)<0) cats.push(s.cat); });
@@ -3374,6 +3404,7 @@ function openDataHealth(){
   m.innerHTML='<div class="mhead"><button class="mclose" id="mClose" aria-label="Close">✕</button><div class="mtf">🛠 Admin</div>'+
     '<div class="mtop"><div class="msym" style="font-size:22px">💓 Data-source health</div></div></div>'+
     '<div class="mbody"><p class="sec-sub" style="margin-top:0">Every source we\'ve tried — live, degraded, blocked, or never wired in — maintained by hand as gaps are found, not a live ping (no keys in the browser).</p>'+
+    sourceStatsHtml()+
     keywordSweepHtml()+
     '<div class="dhgrid">'+rows+'</div>'+
     '<p class="infofoot">Full source-by-source detail lives in <b>The Kitchen Manual</b> → §11 Data APIs.</p></div>';
