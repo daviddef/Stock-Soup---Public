@@ -2697,8 +2697,7 @@ function updateOwnCount(){ var el=document.getElementById('ownCount'); if(el){ t
 function favesHead(){
   var n=0,owned=0; try{var a=wlGet(); n=a.length; owned=a.filter(function(w){return w.own;}).length;}catch(e){}
   var stats=['<button class="tabstat wlfbtn'+(WL_FILTER==='all'?' on':'')+'" id="wlfAll" type="button"><span class="tk">Watching</span> <b>'+n+'</b></button>',
-    '<button class="tabstat wlfbtn'+(WL_FILTER==='own'?' on':'')+'" id="wlfOwn" type="button"><span class="tk">You own</span> <b id="ownCount">'+owned+'</b></button>',
-    '<button class="tabstat wlfbtn on" id="alertsToggleBtn" type="button"><span class="tk">Price alerts</span> <b id="alertsToggleState">'+(alertsEnabled()?'on':'off')+'</b></button>'+infoBtn('pricealerts')];
+    '<button class="tabstat wlfbtn'+(WL_FILTER==='own'?' on':'')+'" id="wlfOwn" type="button"><span class="tk">You own</span> <b id="ownCount">'+owned+'</b></button>'];
   var t=n?('You\'re watching '+n+(n===1?' name':' names')):'Your table is empty — for now';
   return tabHead('⭐ Your table',t,'Tap <b>＋ Watch</b> on any pick and we\'ll remember its ideal-buy price, then flag it the moment it gets there. Add your own below too. <b>Tap Watching/You own above</b> to filter the list.',n?stats:[]);
 }
@@ -3747,6 +3746,7 @@ function openAccount(){
   if(signed){
     body='<div class="acctrow"><span class="acctk">Signed in</span><span class="acctv">'+esc(email||'—')+(isAdmin()?' <span class="adminbadge">ADMIN</span>':'')+'</span></div>'+
       '<div class="acctrow"><span class="acctk">Sync</span><span class="acctv">✓ across your devices + price alerts</span></div>'+
+      '<div class="acctrow"><span class="acctk">Price alerts</span><button class="tabstat wlfbtn on" id="alertsToggleBtn" type="button"><span class="tk">Alerts</span> <b id="alertsToggleState">'+(alertsEnabled()?'on':'off')+'</b></button>'+infoBtn('pricealerts')+'</div>'+
       '<div class="acctrow"><span class="acctk">Appearance</span>'+seg()+'</div>'+
       '<div class="acctrow"><span class="acctk">Run digest email</span><select class="acctsel" id="acctDigestMode">'+
         '<option value="changes">Only when picks change</option><option value="always">Every published run</option><option value="off">Off</option></select></div>'+
@@ -3764,6 +3764,19 @@ function openAccount(){
   var ov=document.getElementById('overlay'); ov.classList.add('open'); ov.setAttribute('aria-hidden','false');
   document.getElementById('mClose').focus();
   m.querySelectorAll('.tseg').forEach(function(b){ b.onclick=function(){ setTheme(b.dataset.th); m.querySelectorAll('.tseg').forEach(function(x){x.classList.toggle('on',x===b);}); }; });
+  // #157 (user ask) — moved here from Favourites; dynamically-injected modal content needs its own
+  // local bind (same pattern as #115/#116's lesson), not the page-load-time generic wire() pass.
+  var atb=document.getElementById('alertsToggleBtn');
+  if(atb){
+    atb.onclick=function(){
+      var next=!alertsEnabled();
+      try{ localStorage.setItem('soup_alerts_enabled', next?'1':'0'); }catch(e){}
+      var el=document.getElementById('alertsToggleState'); if(el) el.textContent=next?'on':'off';
+      atb.classList.toggle('on', next);
+      apiPush('POST','/me/alerts',{enabled:next});
+    };
+    refreshAlertsToggle();
+  }
   var so=document.getElementById('acctSignOut'); if(so) so.onclick=function(){ sessSet(''); try{localStorage.removeItem(EKEY);}catch(e){} closeModal(); location.replace('index.html'); };
   var del=document.getElementById('acctDelete'); if(del) del.onclick=function(){
     if(del.dataset.c!=='1'){ del.dataset.c='1'; del.classList.add('arm'); del.textContent='⚠ Tap again to permanently delete everything'; return; }
@@ -4017,17 +4030,6 @@ function wire(D){
   var rb=document.getElementById('refreshBtn'); if(rb){ if(!isAdmin()){ rb.style.display='none'; } else { rb.onclick=function(){refreshPrices(rb);}; } }
   var rfb=document.getElementById('refreshFullBtn'); if(rfb){ if(!isAdmin()){ rfb.style.display='none'; } else { rfb.onclick=function(){requestFullRun(rfb);}; } }
   var stb=document.getElementById('shareTabBtn'); if(stb) stb.onclick=shareCurrentTab;
-  var atb=document.getElementById('alertsToggleBtn');
-  if(atb){
-    atb.onclick=function(){
-      var next=!alertsEnabled();
-      try{ localStorage.setItem('soup_alerts_enabled', next?'1':'0'); }catch(e){}
-      var el=document.getElementById('alertsToggleState'); if(el) el.textContent=next?'on':'off';
-      atb.classList.toggle('on', next);
-      apiPush('POST','/me/alerts',{enabled:next});
-    };
-    refreshAlertsToggle();
-  }
   document.querySelectorAll('[data-gsym]').forEach(function(el){
     function go(e){ if(e.target.closest('a'))return; e.stopPropagation(); openGrade(el.dataset.gsym); }
     el.addEventListener('click',go);
