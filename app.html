@@ -668,6 +668,10 @@
   .badcount{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:22px;padding:0 6px;border-radius:999px;background:var(--dont);color:#fff;font-size:12px;font-weight:900;vertical-align:middle;margin-left:2px}
   .missgrid{display:grid;grid-template-columns:1fr;gap:8px}
   @media(min-width:640px){.missgrid{grid-template-columns:1fr 1fr}}
+  .misstabs{display:flex;gap:6px;margin:10px 0 4px}
+  .misstab{font-family:var(--font);cursor:pointer;background:var(--surface-2);border:1px solid var(--line);border-radius:9px;padding:6px 12px;font-size:12.5px;font-weight:800;color:var(--ink)}
+  .misstab:hover{border-color:var(--broth)}
+  .misstab.on{background:var(--broth);border-color:var(--broth);color:#fff}
   .missrow{display:flex;flex-wrap:wrap;align-content:flex-start;align-items:center;gap:8px;padding:10px 14px;background:var(--surface);font-size:13px;border:1px solid var(--line);border-radius:10px}
   .missrow.m-missed{border-left:3px solid var(--dont)}
   .missrow.m-scanned{border-left:3px solid var(--hold)}
@@ -1368,32 +1372,45 @@ function topMoversHtml(D){
     (v?'<div class="eyebrow" style="margin-top:14px">📊 Top by volume</div><div class="cols"><div class="stack"><div class="movergrid">'+v+'</div></div></div>':'')+
   '</section>';
 }
-function missesSection(D){
-  var mi=D.misses; var hmHtml=hotMoversHtml(D);
-  if((!mi||!mi.rows||!mi.rows.length)&&!hmHtml) return '';
-  if(!mi||!mi.rows||!mi.rows.length){
-    return '<section id="misses"><div class="sec-head"><h2 class="display">😬 The Misses</h2>'+infoBtn('misses')+'</div>'+hmHtml+'</section>';
-  }
+var MISS_HORIZON='Day';
+function _missRows(mi, tfLabel){
   var STAT={served:{ic:'✅',lbl:'Served',cls:'m-served'},scanned:{ic:'👀',lbl:'Scanned, not served',cls:'m-scanned'},missed:{ic:'❌',lbl:'Missed',cls:'m-missed'}};
-  var mktRows=mi.rows.filter(function(r){return (r.region||'us')===MKT;});
-  if(!mktRows.length) return hmHtml?'<section id="misses"><div class="sec-head"><h2 class="display">😬 The Misses</h2>'+infoBtn('misses')+'</div>'+hmHtml+'</section>':'';
+  var mktRows=(mi&&mi.rows||[]).filter(function(r){return (r.region||'us')===MKT;});
   var missedN=mktRows.filter(function(r){return r.status==='missed';}).length;
-  // Today's Misses are all same-day movers (net 1 checks daily gainers/losers only — no week/month
-  // sweep yet, queued separately), so every row is honestly a "D" (Day) miss right now.
   var rows=mktRows.map(function(r){
     var s=STAT[r.status]||STAT.missed, up=r.pct>=0;
     var sig=signalPillHtml(r,r.region);   // gracefully empty until Misses rows carry signal data
-    return '<div class="missrow '+s.cls+'"><span class="missic">'+s.ic+'</span>'+tfB('Day')+
+    return '<div class="missrow '+s.cls+'"><span class="missic">'+s.ic+'</span>'+tfB(tfLabel)+
       '<a class="misssym" href="'+yf(r.sym,r.region)+'" target="_blank" rel="noopener">'+esc(r.sym)+'<span class="wflag" style="margin-left:5px">'+(r.region==='au'?'AU':'US')+'</span></a>'+
       (r.name?'<span class="missnm">'+esc(r.name)+'</span>':'')+
       '<span class="misspct '+(up?'up':'down')+'">'+(up?'▲':'▼')+' '+Math.abs(r.pct)+'%</span>'+
       '<span class="missstat">'+s.lbl+'</span>'+(sig?'<div style="width:100%;margin-top:2px">'+sig+'</div>':'')+'<span class="missnote">'+esc(r.note)+'</span>'+
       missChartSlot(r.sym,r.region,r.region==='au'?'A$':'$',mi.stamp)+'</div>';
   }).join('');
-  return '<section id="misses"><div class="sec-head"><h2 class="display">😬 The Misses <span class="badcount">'+missedN+'</span></h2>'+infoBtn('misses')+'</div>'+
-    hmHtml+
-    '<p class="sec-sub">'+(MKT==='au'?'🇦🇺 Australia\'s':'🌏 International')+' biggest real movers, checked as of <b>'+esc(mi.stamp||'tonight')+'</b> — against what tonight\'s net actually scanned. <b>'+missedN+' of '+mktRows.length+'</b> weren\'t in our net at all. Same-day (D) movers only for now — week/month misses are on the roadmap.</p>'+
-    '<div class="missgrid">'+rows+'</div></section>';
+  return {rows:rows, missedN:missedN, mktRows:mktRows};
+}
+// #80 — week/month movers (bulk-scan.py's movers_by_horizon()) alongside the original same-day feed.
+// Each horizon is its own KV block (latest.misses/missesWeek/missesMonth) so a run that only refreshed
+// Day still shows real Week/Month data from whenever those last ran, not silently blanked.
+function missesSection(D){
+  var HORIZONS=[{key:'Day',tf:'Day',data:D.misses},{key:'Week',tf:'Week',data:D.missesWeek},{key:'Month',tf:'Long',data:D.missesMonth}];
+  var have=HORIZONS.filter(function(h){return h.data&&h.data.rows&&h.data.rows.length;});
+  var hmHtml=hotMoversHtml(D);
+  if(!have.length&&!hmHtml) return '';
+  if(!have.length){
+    return '<section id="misses"><div class="sec-head"><h2 class="display">😬 The Misses</h2>'+infoBtn('misses')+'</div>'+hmHtml+'</section>';
+  }
+  if(!have.some(function(h){return MISS_HORIZON===h.key;})) MISS_HORIZON=have[0].key;
+  var active=have.filter(function(h){return h.key===MISS_HORIZON;})[0]||have[0];
+  var computed=_missRows(active.data, active.tf);
+  var tabs=have.length>1?'<div class="misstabs">'+have.map(function(h){
+    return '<button class="misstab'+(h.key===MISS_HORIZON?' on':'')+'" data-misshz="'+esc(h.key)+'" type="button">'+esc(h.key)+'</button>';
+  }).join('')+'</div>':'';
+  if(!computed.mktRows.length) return hmHtml?'<section id="misses"><div class="sec-head"><h2 class="display">😬 The Misses</h2>'+infoBtn('misses')+'</div>'+hmHtml+tabs+'</section>':'';
+  return '<section id="misses"><div class="sec-head"><h2 class="display">😬 The Misses <span class="badcount">'+computed.missedN+'</span></h2>'+infoBtn('misses')+'</div>'+
+    hmHtml+tabs+
+    '<p class="sec-sub">'+(MKT==='au'?'🇦🇺 Australia\'s':'🌏 International')+' biggest real movers over the last '+esc(MISS_HORIZON.toLowerCase())+', checked as of <b>'+esc(active.data.stamp||'tonight')+'</b> — against what the net actually scanned. <b>'+computed.missedN+' of '+computed.mktRows.length+'</b> weren\'t in our net at all.</p>'+
+    '<div class="missgrid">'+computed.rows+'</div></section>';
 }
 function buyState(p){ if(p.nEntry==null||p.nNow==null) return ''; var g=(p.nNow/p.nEntry-1)*100; return g<=1.5?'in':(g<=4?'close':'wait'); }
 // A move under ±0.05% is essentially flat — colour it neutral, not green/red (avoids a misleading "+0.0%" in green).
@@ -2429,7 +2446,7 @@ var INFO={
   archive:{icon:'🗂️',title:'The Archive',body:
     '<p>Every menu we\'ve served, newest first — tap one to open that run\'s full report snapshot. Shows the last 3; expand for the rest. Each records that run\'s 6 picks and the risk read at the time.</p>'},
   misses:{icon:'😬',title:'The Misses',body:
-    '<p>Every run we check the day\'s <b>real</b> biggest movers against what our discovery process actually scanned — honestly, including the ones that got away.</p>'+
+    '<p>Every run we check the real biggest movers — <b>Day, Week and Month</b> (tap the tabs above) — against what our discovery process actually scanned — honestly, including the ones that got away.</p>'+
     '<ul class="infoul"><li>✅ <b>Served</b> — it was one of tonight\'s 6 picks.</li><li>👀 <b>Scanned, not served</b> — it was in the full-pot scan but scored below the cut.</li><li>❌ <b>Missed</b> — it wasn\'t in our search at all this run.</li></ul>'+
     '<h4>Why a real mover gets missed</h4><p>We search two ways: a <b>news &amp; catalyst search</b> (contracts, upgrades, earnings beats) every run, and a <b>whole-market technical scan</b> — a full sweep of every liquid stock for chart-based setups, which catches quiet momentum moves with no headline behind them. The technical scan is heavier and doesn\'t run on every single pass yet — when it\'s skipped, a name moving purely on chart momentum (no news) can slip through. Each miss below says exactly which of these applies.</p>'+
     '<p class="infofoot">This is the same accountability spirit as the grading ledger — we\'d rather show you the gap than hide it. A high miss count on a given day flags where the search needs to widen.</p>'},
@@ -3588,6 +3605,9 @@ function wire(D){
     b.addEventListener('click',function(e){e.preventDefault();e.stopPropagation();watchToggleFromEl(b);});
   });
   syncWatchButtons();
+  document.querySelectorAll('.misstab[data-misshz]').forEach(function(b){
+    b.onclick=function(){ MISS_HORIZON=b.dataset.misshz; var sc=window.pageYOffset; render(LAST.D,LAST.H); window.scrollTo(0,sc); };
+  });
   // The seeded 'smart watching' list belongs to the ADMIN only — new users start with an empty watchlist.
   try{
     if(isAdmin() && !localStorage.getItem('soup_wl_seeded') && (D.defaultWatchlist||[]).length && !wlGet().length){
