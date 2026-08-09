@@ -551,7 +551,8 @@
   .uprow{display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:9px 12px;font-size:13px;margin-bottom:6px}
   .upsym{font-weight:800;color:var(--ink)}
   .upwhen{color:var(--muted);font-size:12px;font-weight:600}
-  .movergrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .movergrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  @media (max-width:640px){.movergrid{grid-template-columns:1fr 1fr}}
   .movercard{cursor:pointer;background:var(--surface);border:1px solid var(--line);border-radius:11px;padding:9px 10px;transition:border-color .12s,transform .05s}
   .movercard:hover{border-color:var(--broth)} .movercard:active{transform:scale(.98)}
   .movertop{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:2px}
@@ -1498,35 +1499,67 @@ function rsChip(p,region){
 // Small inline diagrams (#83) — a sentence like "pierced the upper Bollinger band" is still jargon
 // on first read. A tiny real picture of what actually happened (bands + a dot for where price sits)
 // makes it click faster than more words would. Kept tiny and schematic on purpose, not a real chart.
+// Diagram viewBox widened 200→500 (9 Aug 2026, user-reported "looks stretched"): these render at
+// width:100% of a modal that's often 500-900px wide, but height stays a fixed 34px — with
+// preserveAspectRatio="none" and the old 200-wide viewBox that's a 2.5-4.5x horizontal-only stretch,
+// visibly squashing anything round (the RSI/Bollinger marker dots) into ellipses. A wider viewBox
+// closer to the real rendered aspect ratio cuts that distortion down to barely-there instead of
+// eliminating the responsive fill (which needs some non-uniform scaling by design).
 function sigDiagRSI(rsi){
-  var x=8+184*Math.max(0,Math.min(100,rsi))/100;
-  return '<svg class="sigdiag" viewBox="0 0 200 34" width="100%" height="34" preserveAspectRatio="none">'+
+  var x=20+460*Math.max(0,Math.min(100,rsi))/100;
+  return '<svg class="sigdiag" viewBox="0 0 500 34" width="100%" height="34" preserveAspectRatio="none">'+
     '<defs><linearGradient id="rg1" x1="0" x2="1"><stop offset="0" stop-color="var(--buy)"/><stop offset=".5" stop-color="var(--hold)"/><stop offset="1" stop-color="var(--dont)"/></linearGradient></defs>'+
-    '<rect x="8" y="14" width="184" height="6" rx="3" fill="url(#rg1)"/>'+
+    '<rect x="20" y="14" width="460" height="6" rx="3" fill="url(#rg1)"/>'+
     '<circle cx="'+x+'" cy="17" r="6" fill="var(--ink)" stroke="var(--surface)" stroke-width="2"/>'+
-    '<text x="8" y="32" font-size="8" fill="var(--faint)">cheap</text><text x="192" y="32" font-size="8" fill="var(--faint)" text-anchor="end">overheated</text></svg>';
+    '<text x="20" y="32" font-size="8" fill="var(--faint)">cheap</text><text x="480" y="32" font-size="8" fill="var(--faint)" text-anchor="end">overheated</text></svg>';
 }
 function sigDiagBB(pb){
   var clamped=Math.max(-0.3,Math.min(1.3,pb)), y=28-clamped*22;
-  return '<svg class="sigdiag" viewBox="0 0 200 34" width="100%" height="34" preserveAspectRatio="none">'+
-    '<line x1="8" y1="6" x2="192" y2="6" stroke="var(--dont)" stroke-width="1.5" stroke-dasharray="3,3"/>'+
-    '<line x1="8" y1="17" x2="192" y2="17" stroke="var(--faint)" stroke-width="1" stroke-dasharray="2,2"/>'+
-    '<line x1="8" y1="28" x2="192" y2="28" stroke="var(--buy)" stroke-width="1.5" stroke-dasharray="3,3"/>'+
-    '<circle cx="150" cy="'+y+'" r="5" fill="var(--ink)" stroke="var(--surface)" stroke-width="2"/>'+
-    '<text x="8" y="34" font-size="0"></text></svg>';
+  return '<svg class="sigdiag" viewBox="0 0 500 34" width="100%" height="34" preserveAspectRatio="none">'+
+    '<line x1="20" y1="6" x2="480" y2="6" stroke="var(--dont)" stroke-width="1.5" stroke-dasharray="3,3"/>'+
+    '<line x1="20" y1="17" x2="480" y2="17" stroke="var(--faint)" stroke-width="1" stroke-dasharray="2,2"/>'+
+    '<line x1="20" y1="28" x2="480" y2="28" stroke="var(--buy)" stroke-width="1.5" stroke-dasharray="3,3"/>'+
+    '<circle cx="250" cy="'+y+'" r="5" fill="var(--ink)" stroke="var(--surface)" stroke-width="2"/>'+
+    '<text x="20" y="34" font-size="0"></text></svg>';
 }
 function sigDiagTrend(tone,strong){
-  var d=tone==='pos'?'M8,26 L70,20 L130,14 L192,'+(strong?4:8):tone==='neg'?'M8,8 L70,14 L130,20 L192,'+(strong?26:22):'M8,17 Q50,6 100,17 T192,17';
+  var d=tone==='pos'?'M20,26 L175,20 L325,14 L480,'+(strong?4:8):tone==='neg'?'M20,8 L175,14 L325,20 L480,'+(strong?26:22):'M20,17 Q125,6 250,17 T480,17';
   var col=tone==='pos'?'var(--buy)':tone==='neg'?'var(--dont)':'var(--hold)';
-  return '<svg class="sigdiag" viewBox="0 0 200 34" width="100%" height="34" preserveAspectRatio="none">'+
+  return '<svg class="sigdiag" viewBox="0 0 500 34" width="100%" height="34" preserveAspectRatio="none">'+
     '<path d="'+d+'" fill="none" stroke="'+col+'" stroke-width="2.5" stroke-linecap="round"/></svg>';
 }
 function sigDiagEMA(above20,above50){
-  var fast=above20?'M8,24 Q100,4 192,10':'M8,8 Q100,28 192,22';
-  var slow=above50?'M8,26 Q100,14 192,16':'M8,12 Q100,24 192,20';
-  return '<svg class="sigdiag" viewBox="0 0 200 34" width="100%" height="34" preserveAspectRatio="none">'+
+  var fast=above20?'M20,24 Q250,4 480,10':'M20,8 Q250,28 480,22';
+  var slow=above50?'M20,26 Q250,14 480,16':'M20,12 Q250,24 480,20';
+  return '<svg class="sigdiag" viewBox="0 0 500 34" width="100%" height="34" preserveAspectRatio="none">'+
     '<path d="'+slow+'" fill="none" stroke="var(--faint)" stroke-width="2" stroke-dasharray="4,3"/>'+
     '<path d="'+fast+'" fill="none" stroke="var(--broth)" stroke-width="2.5"/></svg>';
+}
+// #131 (9 Aug 2026, user ask) — "vs index" only ever had a text line ("Beating by 11.58pts"); we don't
+// have two full price series to overlay (only the differential the model computed), so the honest
+// version of "chart the two together" is a diverging bar off a zero line labelled "index" — real data,
+// no fabricated second price path.
+function sigDiagRS(rs,idxNm){
+  var maxAbs=15, clamped=Math.max(-maxAbs,Math.min(maxAbs,rs)), halfW=220, mid=250;
+  var barW=halfW*Math.abs(clamped)/maxAbs, x=clamped>=0?mid:mid-barW;
+  var col=clamped>=0?'var(--buy)':'var(--dont)';
+  return '<svg class="sigdiag" viewBox="0 0 500 34" width="100%" height="34" preserveAspectRatio="none">'+
+    '<line x1="250" y1="4" x2="250" y2="26" stroke="var(--faint)" stroke-width="2"/>'+
+    '<rect x="'+x+'" y="11" width="'+Math.max(barW,2)+'" height="10" rx="4" fill="'+col+'"/>'+
+    '<text x="250" y="34" font-size="8" fill="var(--faint)" text-anchor="middle">'+esc(idxNm)+'</text></svg>';
+}
+// #131 — supply/demand was text-only ("Recent supply zone at 34.4"); chart it the same way as the RSI
+// bar (a price axis with the zones as endpoints and a marker at the current price), reusing real
+// dz/sz/nNow — no fabricated levels when only one zone exists, just a padded reference range.
+function sigDiagZones(nNow,dz,sz){
+  var d=dz?dz.level:(sz?sz.level*0.9:nNow*0.9), s=sz?sz.level:(dz?dz.level*1.1:nNow*1.1);
+  if(s<=d) s=d*1.1||1;
+  var pct=Math.max(0,Math.min(1,(nNow-d)/(s-d))), x=20+460*pct;
+  return '<svg class="sigdiag" viewBox="0 0 500 34" width="100%" height="34" preserveAspectRatio="none">'+
+    '<defs><linearGradient id="zg1" x1="0" x2="1"><stop offset="0" stop-color="var(--buy)"/><stop offset="1" stop-color="var(--dont)"/></linearGradient></defs>'+
+    '<rect x="20" y="14" width="460" height="6" rx="3" fill="url(#zg1)"/>'+
+    '<circle cx="'+x+'" cy="17" r="6" fill="var(--ink)" stroke="var(--surface)" stroke-width="2"/>'+
+    '<text x="20" y="32" font-size="8" fill="var(--faint)">demand '+esc(String(Math.round(d*100)/100))+'</text><text x="480" y="32" font-size="8" fill="var(--faint)" text-anchor="end">supply '+esc(String(Math.round(s*100)/100))+'</text></svg>';
 }
 function signalRows(p,region,opts){
   opts=opts||{};
@@ -1573,7 +1606,8 @@ function signalRows(p,region,opts){
     var idxNm=region==='au'?'ASX 200':'S&P 500', lead=rs.rs>=0;
     rows.push({icon:lead?'🏆':'🐌',label:'Vs '+idxNm,tone:lead?'pos':'neg',
       read:(lead?'Beating':'Lagging')+' by '+Math.abs(rs.rs)+'pt'+(Math.abs(rs.rs)===1?'':'s'),
-      explain:'Performance vs the broader index over the same stretch — is it actually leading, or just drifting with the market?'});
+      explain:'Performance vs the broader index over the same stretch — is it actually leading, or just drifting with the market?',
+      diagram:sigDiagRS(rs.rs,idxNm)});
   }
   var dz=p&&p.demand_zone, sz=p&&p.supply_zone;
   if((dz||sz)&&p.rsi!=null){   // needs a live price context (nNow) to say near/far, same gate as other rows
@@ -1602,9 +1636,12 @@ function signalSummary(rows){
   if(scored.length<2) return {verdict:'limited',icon:'❔',label:'Limited signal data'};
   var pos=scored.filter(function(r){return r.tone==='pos';}).length;
   var neg=scored.filter(function(r){return r.tone==='neg';}).length;
-  if(pos-neg>=2&&pos>=2) return {verdict:'strong',icon:'✅',label:'Signals are strong'};
-  if(neg-pos>=2&&neg>=2) return {verdict:'weak',icon:'⚠️',label:'Signals are weak'};
-  return {verdict:'mixed',icon:'😐',label:'Signals are mixed'};
+  // User ask (9 Aug 2026): show the real tally, not just an adjective — "6 positive / 2 negative"
+  // reads as evidence; "mixed" alone makes you open the breakdown just to find out what "mixed" means.
+  var label=pos+' positive / '+neg+' negative';
+  if(pos-neg>=2&&pos>=2) return {verdict:'strong',icon:'✅',label:label};
+  if(neg-pos>=2&&neg>=2) return {verdict:'weak',icon:'⚠️',label:label};
+  return {verdict:'mixed',icon:'😐',label:label};
 }
 function sigRowsHtml(rows){
   if(!rows.length) return '<p class="muted" style="font-size:12.5px;margin:4px 0">No technical signals available for this name — it wasn\'t in tonight\'s scored candidates.</p>';
@@ -1647,17 +1684,18 @@ function signalDetailHtml(p,region,opts){
 // Week/month/year price range — where the current price sits in each real historical window (#78).
 // p.ranges = {"1w":{lo,hi,pos}, "1m":{...}, "1y":{...}} from features._price_ranges(), pos is 0-1
 // (0=at the low, 1=at the high). Only renders windows we actually have data for.
-function rangeBarsHtml(p,cur){
+function rangeBarsHtml(p,cur,decimals){
   var r=p&&p.ranges; if(!r) return '';
+  decimals=decimals==null?1:decimals;   // stock prices default to 1dp; forex rates need more (#131)
   var LBL={"1w":"1 week","1m":"1 month","1y":"1 year"};
   var order=["1w","1m","1y"].filter(function(k){return r[k];});
   if(!order.length) return '';
   var rows=order.map(function(k){
     var w=r[k], pct=Math.max(0,Math.min(100,w.pos*100));
     return '<div class="pxr-row"><span class="pxr-lbl">'+LBL[k]+'</span>'+
-      '<span class="pxr-min">'+esc(cur)+w.lo.toFixed(1)+'</span>'+
+      '<span class="pxr-min">'+esc(cur)+w.lo.toFixed(decimals)+'</span>'+
       '<div class="pxr-track"><div class="pxr-dot" style="left:'+pct+'%"></div></div>'+
-      '<span class="pxr-max">'+esc(cur)+w.hi.toFixed(1)+'</span></div>';
+      '<span class="pxr-max">'+esc(cur)+w.hi.toFixed(decimals)+'</span></div>';
   }).join('');
   return '<div class="viz"><h4>Price range · low → high, and where we sit</h4><div class="pxranges">'+rows+'</div></div>';
 }
@@ -1835,6 +1873,24 @@ function render(D,H){
     parts.forEach(function(t){ if(/\bgold\b/i.test(t)) gold=true; else rest.push(t); });
     return {gold:gold,rest:rest};
   })();
+  // #131 (9 Aug 2026, user ask) — "Defence hot"/"AI on fire" etc were plain non-interactive spans;
+  // tap should open the SAME real, scored overlay as the matching geo/sectors/commodities card
+  // (openTheme), same delegation pattern the Gold market-chip already uses. Resolve by stripping the
+  // trailing heat word ("hot"/"on fire"/"cooling"/"warm") and matching the remaining name against
+  // each card's own name — only wire a tap when a real match exists, never a fake/dead tappable.
+  function hotTagTarget(tag){
+    var name=tag.replace(/\s+(on fire|hot|cooling|warm)\s*$/i,'').trim().toLowerCase();
+    if(!name) return null;
+    var cats=[['geo',D.geo],['sectors',D.sectors],['commodities',D.commodities]];
+    for(var i=0;i<cats.length;i++){
+      var src=cats[i][0], arr=cats[i][1]||[];
+      for(var j=0;j<arr.length;j++){
+        var nm=(arr[j].name||arr[j].title||'').toLowerCase();
+        if(nm && (nm.indexOf(name)>=0 || name.indexOf(nm)>=0)) return {src:src,idx:j};
+      }
+    }
+    return null;
+  }
   // VIX marker on the same risk slider — same 0-100 scale as the risk needle, calm→right/risk-on,
   // fearful→left/risk-off. Purely visual pairing; VIX still isn't a scoring input (see CLAUDE.md).
   var vixLvl=(r.vix!=null)?Math.max(0,Math.min(100, 100-((r.vix-10)/25*100))):null;
@@ -2011,7 +2067,10 @@ function render(D,H){
       '<span class="chip mono clickchip" data-mchip="btc" role="button" tabindex="0">₿ '+esc(r.btc)+' <span class="up">'+esc(r.btcChange)+'</span></span>'+
       '<span class="chip mono clickchip" data-mchip="aud" role="button" tabindex="0">AUD/USD '+esc(r.audusd)+(r.audusdChange?' <span class="'+(r.audusdUp?'up':'down')+'">'+(r.audusdUp?'▲':'▼')+esc(r.audusdChange)+'</span>':'')+'</span>'+
       '<span class="chip mono clickchip" data-mchip="gold" role="button" tabindex="0">'+(hotTagsList.gold?'🏅 ':'')+'Gold '+esc(r.gold)+(r.goldChange?' <span class="'+(r.goldUp?'up':'down')+'">'+(r.goldUp?'▲':'▼')+esc(r.goldChange)+'</span>':'')+(hotTagsList.gold?' <span class="tagword">hot</span>':'')+'</span>'+
-      hotTagsList.rest.map(function(t){return '<span class="chip">'+esc(t)+'</span>';}).join('')+
+      hotTagsList.rest.map(function(t){
+        var tgt=hotTagTarget(t);
+        return tgt?'<span class="chip clickchip" data-theme-src="'+tgt.src+'" data-theme-idx="'+tgt.idx+'" role="button" tabindex="0">'+esc(t)+'</span>':'<span class="chip">'+esc(t)+'</span>';
+      }).join('')+
       '</div>'+
       '<div class="meter"><div class="track"><div class="needle" id="needle"></div>'+(vixLvl!=null?'<div class="needle vixneedle" id="needleVix" title="VIX marker"></div>':'')+'</div>'+
       '<div class="lbls"><span>🔴 Hide the cash</span><span>⚪ Steady</span><span>🟢 Send it</span></div>'+
@@ -2541,27 +2600,53 @@ function runLogHtml(){
   (H.menus||[]).slice(0,8).forEach(function(m){rows.push({t:'maj',ts:majTs(m),m:m});});
   (PULSES||[]).forEach(function(pu){rows.push({t:'min',ts:new Date(pu.iso||0).getTime(),pu:pu});});
   rows.sort(function(a,b){return b.ts-a.ts;});
-  var rowsHtml=rows.slice(0,40).map(function(r){
-    if(r.t==='maj'){var m=r.m;
-      // A run can republish (e.g. to refresh the Full Pot) without the 6 picks actually changing —
-      // don't claim "new picks" when they're identical to the immediately-prior menu entry.
-      var mi=(H.menus||[]).indexOf(m), prevM=(mi>=0&&H.menus[mi+1])?H.menus[mi+1]:null;
-      var samePicks=prevM&&JSON.stringify(prevM.au||[])===JSON.stringify(m.au||[])&&JSON.stringify(prevM.us||[])===JSON.stringify(m.us||[]);
-      var steps=(m.steps||[]).filter(function(s){return s.durMs>0;});
-      var stepsHtml=steps.length?('<details class="rlsteps"><summary>⏱ step-by-step ('+steps.length+')</summary>'+
-        '<div class="rlstepsbody">'+steps.map(function(s){return '<div class="rlstep"><span>'+esc(s.label)+'</span><span class="mono">'+esc(durLabel(s.durMs))+'</span></div>';}).join('')+
-        '</div></details>'):'';
-      return '<div class="rlrow rlmaj"><div class="rltop"><span class="rltag rltag-maj">🍳 Menu · '+(samePicks?'confirmed, no change':'new picks')+'</span>'+
-        '<span class="rlwhen">'+fmtWhen(r.ts)+'</span>'+dur(m.durMs)+'</div>'+
-        '<div class="rlbody">'+pkline(m.au,'🇦🇺','Australia')+pkline(m.us,'🇺🇸','United States')+stepsHtml+'</div></div>';
-    }
-    var pu=r.pu, snap=pu.snap||{}, ch=(pu.changes||[]).filter(function(c){return Math.abs(c[1])>=0.05;})
-      .sort(function(a,b){return Math.abs(b[1])-Math.abs(a[1]);}).slice(0,3);
-    var mv=ch.map(function(c){var up=c[1]>=0;var reg=(snap[c[0]]||{}).region;var fl=reg==='au'?'🇦🇺 ':reg==='us'?'🇺🇸 ':'';return '<span class="'+(up?'up':'dn')+'">'+fl+esc(c[0])+' '+(up?'+':'')+c[1]+'%</span>';}).join(' · ');
+  function majRowHtml(r){
+    var m=r.m;
+    // A run can republish (e.g. to refresh the Full Pot) without the 6 picks actually changing —
+    // don't claim "new picks" when they're identical to the immediately-prior menu entry.
+    var mi=(H.menus||[]).indexOf(m), prevM=(mi>=0&&H.menus[mi+1])?H.menus[mi+1]:null;
+    var samePicks=prevM&&JSON.stringify(prevM.au||[])===JSON.stringify(m.au||[])&&JSON.stringify(prevM.us||[])===JSON.stringify(m.us||[]);
+    var steps=(m.steps||[]).filter(function(s){return s.durMs>0;});
+    var stepsHtml=steps.length?('<details class="rlsteps"><summary>⏱ step-by-step ('+steps.length+')</summary>'+
+      '<div class="rlstepsbody">'+steps.map(function(s){return '<div class="rlstep"><span>'+esc(s.label)+'</span><span class="mono">'+esc(durLabel(s.durMs))+'</span></div>';}).join('')+
+      '</div></details>'):'';
+    return '<div class="rlrow rlmaj"><div class="rltop"><span class="rltag rltag-maj">🍳 Menu · '+(samePicks?'confirmed, no change':'new picks')+'</span>'+
+      '<span class="rlwhen">'+fmtWhen(r.ts)+'</span>'+dur(m.durMs)+'</div>'+
+      '<div class="rlbody">'+pkline(m.au,'🇦🇺','Australia')+pkline(m.us,'🇺🇸','United States')+stepsHtml+'</div></div>';
+  }
+  function minRowHtml(r,mv){
     return '<div class="rlrow rlmin"><div class="rltop"><span class="rltag rltag-min">⏱ Re-price · same picks</span>'+
-      '<span class="rlwhen">'+fmtWhen(r.ts)+'</span>'+dur(pu.durMs)+'</div>'+
+      '<span class="rlwhen">'+fmtWhen(r.ts)+'</span>'+dur(r.pu.durMs)+'</div>'+
       '<div class="rlbody"><div class="rlline rlmovers">'+(mv||'<span class="qt">quiet hour — nothing moved much</span>')+'</div></div></div>';
-  });
+  }
+  // #131 (9 Aug 2026, user ask) — a quiet stretch used to print one near-identical "Re-price · same
+  // picks · quiet hour" row per pulse (every ~15min), burying the one row that actually matters (the
+  // Menu row) under a wall of repeats. Collapse a RUN of consecutive quiet re-prices (no mover cleared
+  // the 0.05% floor) into one summary row spanning the run's time range; a re-price that DID have real
+  // movers still gets its own full row, never folded away.
+  function movers(pu){
+    var snap=pu.snap||{}, ch=(pu.changes||[]).filter(function(c){return Math.abs(c[1])>=0.05;})
+      .sort(function(a,b){return Math.abs(b[1])-Math.abs(a[1]);}).slice(0,3);
+    return ch.map(function(c){var up=c[1]>=0;var reg=(snap[c[0]]||{}).region;var fl=reg==='au'?'🇦🇺 ':reg==='us'?'🇺🇸 ':'';return '<span class="'+(up?'up':'dn')+'">'+fl+esc(c[0])+' '+(up?'+':'')+c[1]+'%</span>';}).join(' · ');
+  }
+  var rowsHtml=[]; var i=0; var capped=rows.slice(0,40);
+  while(i<capped.length){
+    var r=capped[i];
+    if(r.t==='maj'){ rowsHtml.push(majRowHtml(r)); i++; continue; }
+    var mv=movers(r.pu);
+    if(mv){ rowsHtml.push(minRowHtml(r,mv)); i++; continue; }
+    var j=i; while(j<capped.length&&capped[j].t==='min'&&!movers(capped[j].pu)) j++;
+    var runLen=j-i;
+    if(runLen>=3){
+      rowsHtml.push('<div class="rlrow rlmin rlquiet"><div class="rltop"><span class="rltag rltag-min">⏱ '+runLen+'× re-price · no moves</span>'+
+        '<span class="rlwhen">'+fmtWhen(capped[j-1].ts)+' → '+fmtWhen(capped[i].ts)+'</span></div>'+
+        '<div class="rlbody"><div class="rlline"><span class="qt">Quiet stretch — nothing cleared the move threshold across '+runLen+' re-prices.</span></div></div></div>');
+      i=j;
+    } else {
+      rowsHtml.push(minRowHtml(r,''));
+      i++;
+    }
+  }
   var body=rowsHtml.slice(0,12).join('');
   var restHtml=rowsHtml.slice(12);
   var rest=restHtml.length?('<button class="potmore" id="runMore" aria-expanded="false" style="grid-column:1/-1">➖ '+restHtml.length+' older runs ▾</button>'+
@@ -2719,7 +2804,7 @@ function openTheme(src,idx){
     return '<div class="tscard tappable" data-sym="'+esc(sym)+'" data-region="'+esc(reg)+'"'+hy+tap+'>'+
       '<div class="tsc-top"><a class="trsym" href="'+yf(sym,reg)+'" target="_blank" rel="noopener">'+esc(sym)+'</a>'+
         '<span class="pmc-flag">'+(reg==='au'?'AU':'US')+'</span>'+
-        (verd?'<span class="mverd '+esc(vcl)+'" style="margin-left:auto;font-size:10px;padding:3px 8px">'+esc(verd)+'</span>':'')+
+        (verd?'<span class="mverd '+esc(vcl)+'" style="margin-left:auto;margin-top:0;font-size:10px;padding:3px 8px">'+esc(verd)+'</span>':'')+
         '<button class="watchbtn iconwatch" data-sym="'+esc(sym)+'" data-region="'+esc(reg)+'"'+(!verd?' style="margin-left:auto"':'')+' aria-pressed="false" title="Add to watchlist">+</button></div>'+
       pxrow+spk+
       '<div class="tsc-why">'+why+'</div>'+nh+
@@ -2733,7 +2818,7 @@ function openTheme(src,idx){
     return '<div class="tscard etfcard tappable" data-sym="'+esc(e.s)+'" data-region="'+esc(reg)+'" data-hydrate="1" role="button" tabindex="0" aria-label="'+esc(e.n)+'">'+
       '<div class="tsc-top"><a class="trsym" href="'+yf(e.s,reg)+'" target="_blank" rel="noopener">'+esc(e.s)+'</a>'+
         '<span class="pmc-flag">'+(reg==='au'?'AU':'US')+'</span>'+
-        '<span class="mverd v-hold" style="margin-left:auto;font-size:10px;padding:3px 8px">🧺 ETF</span></div>'+
+        '<span class="mverd v-hold" style="margin-left:auto;margin-top:0;font-size:10px;padding:3px 8px">🧺 ETF</span></div>'+
       '<div class="tsc-pxrow tsc-slot"><span class="tsc-load">·····</span></div>'+
       '<div class="tsc-spark tsc-sparkslot"></div>'+
       '<div class="tsc-why"><b>'+esc(e.n)+'</b> — the whole theme, one ticker.</div>'+
@@ -2848,12 +2933,27 @@ function openMarketChip(key){
       '<ul class="infoul"><li>🟢 BTC &gt; +2% → <b>Risk-on</b> — lean into momentum.</li><li>⚪ −3% to +2% → <b>Neutral</b> — no change.</li><li>🔴 BTC &lt; −3% → <b>Risk-off</b> — trim conviction, favour safety.</li></ul>'+
       '<p class="infofoot">The needle below the chips shows where we sit. It sets the <i>tone</i> — it doesn\'t pick stocks.</p>');
   } else if(key==='btc'){
+    // #131 (9 Aug 2026, user ask): real "Recent trend" spark + "1w/1m/1y" range bars, same visual
+    // language and same underlying fields (spark/ranges) as every pick card — sparkSVG()/rangeBarsHtml()
+    // reused as-is, just fed Bitcoin's own daily closes instead of a stock's.
+    var bsp=r.btcSpark;
+    var trendHtml=(bsp&&bsp.length>2)?('<div class="viz"><h4>Recent trend · last '+bsp.length+' days</h4>'+sparkSVG(bsp)+
+      '<div class="spmm"><span>$'+Math.min.apply(null,bsp).toLocaleString()+'</span><span>$'+Math.max.apply(null,bsp).toLocaleString()+'</span></div>'+
+      '<div class="rsimeta">'+(bsp[bsp.length-1]>=bsp[0]?'📈 Up over the stretch':'📉 Down over the stretch')+'</div></div>'):'';
+    var rangeHtml=rangeBarsHtml({ranges:r.btcRanges},'$',0);
     _mchipModal('₿','Market context','Bitcoin — the risk gauge',
       '<p><b>'+esc(r.btc||'')+'</b> <span class="'+(/-/.test(r.btcChange||'')?'down':'up')+'">'+esc(r.btcChange||'')+'</span> over 24 hours.</p>'+
+      trendHtml+rangeHtml+
       '<p>We use Bitcoin as a <b>live proxy for risk appetite</b>. When crypto is ripping, the market\'s in a risk-on mood and momentum picks tend to work; when it\'s bleeding, we get defensive. It sets the tone for the whole run.</p>');
   } else if(key==='aud'){
+    var asp=r.audusdSpark;
+    var trendHtml2=(asp&&asp.length>2)?('<div class="viz"><h4>Recent trend · last '+asp.length+' days</h4>'+sparkSVG(asp)+
+      '<div class="spmm"><span>'+Math.min.apply(null,asp).toFixed(4)+'</span><span>'+Math.max.apply(null,asp).toFixed(4)+'</span></div>'+
+      '<div class="rsimeta">'+(asp[asp.length-1]>=asp[0]?'📈 Up over the stretch':'📉 Down over the stretch')+'</div></div>'):'';
+    var rangeHtml2=rangeBarsHtml({ranges:r.audusdRanges},'',4);
     _mchipModal('🇦🇺','Market context','AUD / USD',
       '<p><b>'+esc(r.audusd||'')+'</b>'+(r.audusdChange?' <span class="'+(r.audusdUp?'up':'down')+'">'+esc(r.audusdChange)+'</span>':'')+'.</p>'+
+      trendHtml2+rangeHtml2+
       '<p>The exchange rate cuts two ways: a <b>weaker AUD</b> flatters Aussie exporters (miners, energy) and lifts the AUD value of your US holdings; a <b>stronger AUD</b> does the reverse. It\'s also how the US picks\' prices convert for you.</p>');
   } else if(key==='gold'){
     // Real bug (8 Aug 2026): this pill used to show its own bare-text summary, different from —
@@ -2893,6 +2993,7 @@ function openPulseLog(){
 }
 function wireThemes(){ document.querySelectorAll('.clickline[data-theme]').forEach(function(l){ l.onclick=function(){ openTheme(l.dataset.theme,+l.dataset.ti); }; l.onkeydown=function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); openTheme(l.dataset.theme,+l.dataset.ti); } }; });
   document.querySelectorAll('[data-mchip]').forEach(function(c){ c.onclick=function(){ openMarketChip(c.dataset.mchip); }; c.onkeydown=function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); openMarketChip(c.dataset.mchip); } }; });
+  document.querySelectorAll('[data-theme-src]').forEach(function(c){ var go=function(){ openTheme(c.dataset.themeSrc,+c.dataset.themeIdx); }; c.onclick=go; c.onkeydown=function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); go(); } }; });
   document.querySelectorAll('.potcard[data-ci]').forEach(function(p){ p.onclick=function(e){ if(e.target.closest('a'))return; openCandidate(+p.dataset.ci); }; p.onkeydown=function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); openCandidate(+p.dataset.ci); } }; }); }
 function wireInfo(){ document.querySelectorAll('[data-info]').forEach(function(b){
   b.onclick=function(e){ e.preventDefault(); openInfo(b.dataset.info); };
