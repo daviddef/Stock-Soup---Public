@@ -598,7 +598,12 @@
   .upname{color:var(--muted);font-size:12px;font-weight:700}
   .upnote{color:var(--faint);font-size:11.5px;line-height:1.4}
   .upgap{color:var(--faint);font-size:11.5px;font-style:italic;margin-top:4px}
-  .up3list{display:flex;flex-direction:column;gap:6px}
+  .up3list{display:grid;grid-template-columns:1fr;gap:8px}
+  @media(min-width:860px){.up3list{grid-template-columns:1fr 1fr}}
+  .uprow3.uptappable{cursor:pointer}
+  .uprow3.uptappable:hover{border-color:var(--broth)}
+  .uprow3.uptappable:focus-visible{outline:2px solid var(--broth);outline-offset:2px}
+  .up3what a{color:var(--broth)}
   .uprow3{display:grid;grid-template-columns:110px 1fr;gap:2px 12px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
   @media(min-width:640px){.uprow3{grid-template-columns:110px 200px 1fr;align-items:start}}
   .uprow3.uptracked{border-color:rgba(255,107,26,.4);background:linear-gradient(180deg,rgba(255,107,26,.06),transparent 60%),var(--surface)}
@@ -1299,29 +1304,49 @@ function upcomingHtml(D){
   var wl={}; wlGet().forEach(function(w){wl[w.sym]=1;});
   function weTrack(sym){return sym&&(_curS[sym]||wl[sym]);}
   function whenLabel(d){return d===0?'Today':d===1?'Tomorrow':'In '+d+'d';}
+  // #137 (user ask) — every row kind used a different date format (or none at all): earnings showed
+  // a raw "MM-DD" slice with no day-of-week, dividends/IPOs hardcoded an empty dateStr even though
+  // real date fields exist (d.ex_div_date; i.date when an agent-authored IPO entry provides one),
+  // only econ rows got a nice "Sun 9 Aug" via their own e.when. One shared formatter now, everywhere.
+  function fmtUpDate(s){
+    if(!s) return '';
+    var d=new Date(s); if(isNaN(d.getTime())) return String(s);
+    var WD=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'], MO=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return WD[d.getDay()]+' '+d.getDate()+' '+MO[d.getMonth()];
+  }
   var rows=[];
-  E.forEach(function(e){ rows.push({kind:'earnings',ic:'📊',sym:e.sym,days:e.days_until,
-    what:esc(e.sym)+' reports',dateStr:(e.date||'').slice(5),
+  // whatLabel is RAW (unescaped) — qlink()/esc() below does the one-and-only escaping, matching how
+  // qlink is called everywhere else in this file. Don't pre-escape here or it double-escapes.
+  E.forEach(function(e){ rows.push({kind:'earnings',ic:'📊',sym:e.sym,region:e.region||MKT,days:e.days_until,
+    whatLabel:e.sym+' reports',dateStr:fmtUpDate(e.date),
     soWhat:'Prices often swing 5–20% same-day on the result — check before buying right in front of it.'}); });
-  divItems.forEach(function(d){ rows.push({kind:'dividend',ic:'💰',sym:d.sym,days:d.days_until,
-    what:esc(d.sym)+' goes ex-dividend',dateStr:'',
+  divItems.forEach(function(d){ rows.push({kind:'dividend',ic:'💰',sym:d.sym,region:d.region||MKT,days:d.days_until,
+    whatLabel:d.sym+' goes ex-dividend',dateStr:fmtUpDate(d.ex_div_date),
     soWhat:'Own it the day before this date to get the payout'+(d.div_yield_pct?' (~'+d.div_yield_pct+'% yield)':'')+' — buy on/after and you miss this round.'}); });
-  IPO.forEach(function(i){ rows.push({kind:'ipo',ic:'🆕',sym:i.sym,days:i.days_until,
-    what:esc(i.sym)+' lists'+(i.name?' — '+esc(i.name):''),dateStr:'',
+  IPO.forEach(function(i){ rows.push({kind:'ipo',ic:'🆕',sym:i.sym,region:i.region||MKT,days:i.days_until,
+    whatLabel:i.sym+' lists'+(i.name?' — '+i.name:''),dateStr:fmtUpDate(i.date),
     soWhat:(i.note?esc(i.note)+' ':'')+'No price history yet, so our usual trend/RSI checks can\'t apply — higher risk, watch-first territory.'}); });
   econItems.forEach(function(e){ rows.push({kind:'econ',ic:'🏛️',sym:null,days:null,dateSort:e.date,
-    what:esc(e.country)+' — '+esc(e.event||''),dateStr:e.when||e.date||'',
+    what:esc(e.country)+' — '+esc(e.event||''),dateStr:e.when||fmtUpDate(e.date),
     soWhat:'Macro data release — can move the whole market same-day, not just one stock.'}); });
   rows.sort(function(a,b){
     var da=a.days!=null?a.days:(a.dateSort?(new Date(a.dateSort)-new Date())/864e5:99);
     var db=b.days!=null?b.days:(b.dateSort?(new Date(b.dateSort)-new Date())/864e5:99);
     return da-db;
   });
+  // #137 — a real ticker link (same Yahoo quote-page pattern qlink() uses everywhere else in the
+  // app), and the whole row now opens the real per-ticker "What would you do?" read on tap — was
+  // static text with nowhere to go, even though every row with a sym has a real recommendation
+  // behind it one tap away everywhere else in the app.
   var rowsHtml=rows.slice(0,20).map(function(r){
     var tracked=weTrack(r.sym);
     var when=r.days!=null?whenLabel(r.days)+(r.dateStr?' · '+esc(r.dateStr):''):esc(r.dateStr);
-    return '<div class="uprow3'+(tracked?' uptracked':'')+'"><span class="up3when"><span class="up3ic">'+r.ic+'</span>'+when+'</span>'+
-      '<span class="up3what">'+r.what+(tracked?' <span class="uptag uppulse">★ we track this</span>':'')+'</span>'+
+    var whatHtml=r.sym?qlink(r.sym,r.region,r.whatLabel):r.what;
+    var tappable=!!r.sym;
+    return '<div class="uprow3'+(tracked?' uptracked':'')+(tappable?' uptappable':'')+'"'+
+      (tappable?' role="button" tabindex="0" data-up-sym="'+esc(r.sym)+'" data-up-region="'+esc(r.region||MKT)+'"':'')+'>'+
+      '<span class="up3when"><span class="up3ic">'+r.ic+'</span>'+when+'</span>'+
+      '<span class="up3what">'+whatHtml+(tracked?' <span class="uptag uppulse">★ we track this</span>':'')+'</span>'+
       '<span class="up3sowhat">'+r.soWhat+'</span></div>';
   }).join('');
   return '<section id="upcoming"><div class="sec-head"><h2 class="display">📅 What\'s coming up</h2>'+infoBtn('upcoming')+'</div>'+
@@ -3992,6 +4017,13 @@ function wire(D){
   });
   document.querySelectorAll('.movercard').forEach(function(c){
     function go(){ openMover(c.dataset.sym,c.dataset.region); }
+    c.addEventListener('click',function(e){if(e.target.closest('a,button'))return;go();});
+    c.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();go();}});
+  });
+  // #137 — "What's Coming Up" rows with a real ticker now open the real per-ticker analyst read on
+  // tap; the a,button guard lets the row's own Yahoo-quote link (qlink) still work independently.
+  document.querySelectorAll('.uprow3.uptappable[data-up-sym]').forEach(function(c){
+    function go(){ openAnalyst(c.dataset.upSym,c.dataset.upRegion); }
     c.addEventListener('click',function(e){if(e.target.closest('a,button'))return;go();});
     c.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();go();}});
   });
