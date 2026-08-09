@@ -437,6 +437,17 @@
   @media(min-width:640px){.runlog{grid-template-columns:1fr 1fr}}
   .runlog-rest{display:contents}
   .runlog-rest[hidden]{display:none}
+  .roadmapbox{margin-top:20px;padding-top:16px;border-top:1px solid var(--line)}
+  .rmhead{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--broth);font-weight:800;margin-bottom:10px}
+  .rmupdated{color:var(--faint);font-weight:600;letter-spacing:0;text-transform:none;font-size:10.5px;margin-left:4px}
+  .rmcols{display:grid;grid-template-columns:1fr;gap:16px}
+  @media(min-width:640px){.rmcols{grid-template-columns:1fr 1fr}}
+  .rmcolh{font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+  .rmrow{padding:8px 0;border-bottom:1px solid var(--line)}
+  .rmrow:last-child{border-bottom:0}
+  .rmtitle{font-size:12.5px;font-weight:800}
+  .rmid{color:var(--faint);font-weight:700;font-size:10.5px;font-family:var(--mono)}
+  .rmnote{font-size:11.5px;color:var(--faint);line-height:1.35;margin-top:2px;text-wrap:pretty}
   .rlrow{padding:9px 0 9px 11px;border-bottom:1px solid var(--line);border-left:2px solid transparent}
   .rlrow:last-child{border-bottom:0}
   .rlrow.rlmaj,.rlrow.rllive,.rlrow.rlfail,.rlrow.rlcancel,.rlrow.rlquiet{grid-column:1/-1}
@@ -2238,7 +2249,7 @@ function render(D,H){
   // ===== 👨‍🍳 INSIDE THE KITCHEN =====
   '<div class="tabview" id="tab-kitchen">'+
     kitchenHead(D)+
-    '<section id="runsched"><div class="sec-head"><h2 class="display">⏱️ Run schedule</h2>'+infoBtn('schedule')+'</div>'+runLogHtml()+'</section>'+
+    '<section id="runsched"><div class="sec-head"><h2 class="display">⏱️ Run schedule</h2>'+infoBtn('schedule')+'</div>'+runLogHtml()+roadmapHtml(D)+'</section>'+
     '<section><div class="sec-head"><h2 class="display">🗄️ The Archive</h2>'+infoBtn('archive')+'</div>'+
       '<p class="sec-sub">Every menu we\'ve served — the real picks, verdicts and reasoning from that night, not a frozen price.</p>'+
       archiveHtml(H)+
@@ -2806,6 +2817,26 @@ function runLogHtml(){
   return '<h4 style="'+hh+'">Every run — newest first</h4>'+
     '<p style="font-size:12px;color:var(--muted);margin:0 0 8px"><b style="color:var(--broth)">Menu</b> = a full re-cook (six new picks, timed ~30&nbsp;min before an open). <b>Re-price</b> = same picks, fresh numbers each hour.</p>'+
     '<div class="runlog">'+live+(body||(live?'':'<p class="muted">No runs yet.</p>'))+rest+'</div>';
+}
+// #134 (user ask) — the Roadmap ("what's shipped, what's still open") used to only live in the
+// separate Kitchen Manual doc; user chose to move it into real KV data (roadmap.py writes
+// latest.roadmap) so it renders live right here, next to the actual run history it describes,
+// instead of needing a second place to check. Full prose detail per item stays in the Kitchen
+// Manual — this is the compact, glanceable version.
+function roadmapHtml(D){
+  var rm=D.roadmap;
+  if(!rm||(!(rm.pending||[]).length&&!(rm.shipped||[]).length)) return '';
+  function row(item){
+    return '<div class="rmrow"><div class="rmtitle">'+esc(item.title)+' <span class="rmid">#'+esc(item.id)+'</span></div>'+
+      (item.note?'<div class="rmnote">'+esc(item.note)+'</div>':'')+'</div>';
+  }
+  var pendingHtml=(rm.pending||[]).map(row).join('');
+  var shippedHtml=(rm.shipped||[]).map(row).join('');
+  return '<div class="roadmapbox"><div class="rmhead">🗺️ Roadmap'+(rm.updatedAt?' <span class="rmupdated">updated '+timeAgo(rm.updatedAt)+'</span>':'')+'</div>'+
+    '<div class="rmcols">'+
+      (pendingHtml?'<div><div class="rmcolh">🚧 Still open</div>'+pendingHtml+'</div>':'')+
+      (shippedHtml?'<div><div class="rmcolh">✅ Recently shipped</div>'+shippedHtml+'</div>':'')+
+    '</div></div>';
 }
 function openInfo(key){
   var i=INFO[key]; if(!i) return;
