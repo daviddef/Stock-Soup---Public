@@ -465,6 +465,24 @@
   .rlrow.rlfail{border-left-color:var(--dont);background:linear-gradient(90deg,rgba(255,77,77,.1),transparent 62%)}
   .rltag-fail{color:var(--dont)}
   .rlrow.rlcancel{border-left-color:var(--faint)} .rltag-cancel{color:var(--faint)}
+  /* #158 — 24h gantt strip */
+  .ganttwrap{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin-bottom:16px;overflow-x:auto}
+  .gantthead{display:flex;align-items:center;justify-content:space-between;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);flex-wrap:wrap;gap:6px}
+  .ganttlegend{display:flex;gap:10px;flex-wrap:wrap;text-transform:none;letter-spacing:0;font-weight:700}
+  .gl{display:inline-flex;align-items:center;gap:4px;font-size:10.5px;color:var(--muted)}
+  .gl i{width:8px;height:8px;border-radius:2px;display:inline-block}
+  .gl i.glanchor{width:2px;height:10px;border-radius:0;background:repeating-linear-gradient(180deg,var(--broth) 0 3px,transparent 3px 5px)}
+  .ganttlane{position:relative;height:22px;margin-top:6px;min-width:640px;background:var(--surface-2);border-radius:6px}
+  .ganttlane-min{height:14px}
+  .ganttbar{position:absolute;top:3px;height:16px;border-radius:4px;min-width:3px;cursor:default}
+  .ganttlane-min .ganttbar{top:2px;height:10px}
+  .gantttick{position:absolute;top:2px;width:2px;height:10px;background:var(--faint);border-radius:1px}
+  .ganttanchor{position:absolute;top:0;bottom:0;width:0;border-left:1.5px dashed var(--broth);opacity:.55}
+  .ganttanchorlbl{position:absolute;top:-15px;left:2px;font-size:8.5px;font-weight:800;color:var(--broth);white-space:nowrap;opacity:.8}
+  .ganttgrid{position:absolute;top:0;bottom:0;width:0;border-left:1px solid var(--line)}
+  .ganttgridlbl{display:none}
+  .ganttfoot{position:relative;height:14px;margin-top:2px;min-width:640px}
+  .ganttfoot .ganttgridlbl{display:block;position:absolute;top:0;font-size:9.5px;font-weight:700;color:var(--muted);transform:translateX(-2px)}
   .rlspin{width:9px;height:9px;border-radius:50%;border:2px solid rgba(35,194,103,.3);border-top-color:var(--buy);display:inline-block;animation:rlspin .7s linear infinite}
   @keyframes rlspin{to{transform:rotate(360deg)}}
   @media (prefers-reduced-motion:reduce){.rlspin{animation:none}}
@@ -2281,7 +2299,7 @@ function render(D,H){
   // ===== 👨‍🍳 INSIDE THE KITCHEN =====
   '<div class="tabview" id="tab-kitchen">'+
     kitchenHead(D)+
-    '<section id="runsched"><div class="sec-head"><h2 class="display">⏱️ Run schedule</h2>'+infoBtn('schedule')+'</div>'+runLogHtml()+roadmapHtml(D)+'</section>'+
+    '<section id="runsched"><div class="sec-head"><h2 class="display">⏱️ Run schedule</h2>'+infoBtn('schedule')+'</div>'+runGanttHtml()+runLogHtml()+roadmapHtml(D)+'</section>'+
     '<section><div class="sec-head"><h2 class="display">🗄️ The Archive</h2>'+infoBtn('archive')+'</div>'+
       '<p class="sec-sub">Every menu we\'ve served — the real picks, verdicts and reasoning from that night, not a frozen price.</p>'+
       archiveHtml(H)+
@@ -2746,6 +2764,83 @@ function kitchenHead(D){
     tstat('Last Day/Week pick',lastShort?stampNoWeekday(lastShort):'none yet'),
     tstat('Last Long pick',lastLong?stampNoWeekday(lastLong):'none yet')];
   return tabHead('👨‍🍳 Behind the pass','The engine room','Every run, every source, every score — no black box. This is where the soup actually gets made.',stats);
+}
+// #158 — 24h gantt-style strip above the Run Schedule list. Real ask, dropped once already (flagged
+// 9 Aug 2026, never built). Rolling 24h window ending now: menu runs on one lane (width = real
+// duration, or a minimum tick if durMs is missing/near-zero), re-prices as thin ticks on a second
+// lane, PLUS the 4 real scheduled anchor times (09:03/12:04/16:06/22:47 AEST — the exact schedule
+// #156 fixed pulse.py's `next_major` to match) as dashed reference lines, so planned-vs-actual is
+// visible at a glance, not just implied by scrolling the list below.
+var MAJOR_ANCHORS=[[9,3],[12,4],[16,6],[22,47]];
+function runGanttHtml(){
+  var H=(LAST&&LAST.H)||{};
+  var now=new Date(), winStart=new Date(now.getTime()-24*3600*1000);
+  function pctOf(ts){ return Math.max(0,Math.min(100,(ts-winStart.getTime())/(24*3600*1000)*100)); }
+  function majTs(m){
+    if(m.iso) return new Date(m.iso).getTime();
+    var WD=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],MO=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    var mm=(m.stamp||'').match(/(\d{1,2})\s+([A-Za-z]{3})/), tm=(m.time||'').match(/(\d{1,2}):(\d{2})/);
+    if(!mm) return 0;
+    return new Date(new Date().getFullYear(), MO.indexOf(mm[2]), +mm[1], tm?+tm[1]:0, tm?+tm[2]:0).getTime();
+  }
+  // menu bars: done runs from menuHistory (real durMs) + any live/failed/cancelled from runLog
+  var menuBars=[];
+  (H.menus||[]).forEach(function(m){
+    var ts=majTs(m); if(ts<winStart.getTime()) return;
+    var durMin=Math.max(0.6,(m.durMs||60000)/60000); // floor so a 0-duration run is still visible as a tick
+    menuBars.push({x:pctOf(ts), w:Math.max(0.3,durMin/1440*100), status:'done', label:(m.stamp||'')+' '+(m.time||'')+' · done'+(m.durMs?' · '+Math.round(m.durMs/60000)+'m':'')});
+  });
+  (RUNLOG||[]).forEach(function(e){
+    if(!e||e.status==='done'||e.kind==='reprice') return;
+    var ts=e.startedAt?new Date(e.startedAt).getTime():(e.requestedAt?new Date(e.requestedAt).getTime():0);
+    if(!ts||ts<winStart.getTime()) return;
+    var status=e.status==='failed'?'fail':e.status==='cancelled'?'cancel':'live';
+    var durMin=e.durMs?e.durMs/60000:2;
+    menuBars.push({x:pctOf(ts), w:Math.max(0.3,durMin/1440*100), status:status, label:(e.label||status)+' · '+status});
+  });
+  // re-price ticks
+  var repriceTicks=(PULSES||[]).map(function(pu){
+    var ts=new Date(pu.iso||0).getTime(); if(!ts||ts<winStart.getTime()) return null;
+    return {x:pctOf(ts), label:'Re-price'};
+  }).filter(Boolean);
+  // scheduled anchor reference lines, today + yesterday (so the trailing part of a rolling 24h window still shows them)
+  var anchors=[];
+  [0,-1].forEach(function(dayOff){
+    MAJOR_ANCHORS.forEach(function(hm){
+      var d=new Date(now); d.setDate(d.getDate()+dayOff); d.setHours(hm[0],hm[1],0,0);
+      var ts=d.getTime();
+      if(ts>=winStart.getTime()&&ts<=now.getTime()) anchors.push({x:pctOf(ts), label:(hm[0]<10?'0':'')+hm[0]+':'+(hm[1]<10?'0':'')+hm[1]});
+    });
+  });
+  var statusColor={done:'var(--buy)',live:'var(--broth)',fail:'var(--dont)',cancel:'var(--faint)'};
+  var menuBarsHtml=menuBars.map(function(b){
+    return '<div class="ganttbar ganttbar-'+b.status+'" style="left:'+b.x.toFixed(2)+'%;width:'+b.w.toFixed(2)+'%;background:'+statusColor[b.status]+'" title="'+esc(b.label)+'"></div>';
+  }).join('');
+  var tickHtml=repriceTicks.map(function(t){
+    return '<div class="gantttick" style="left:'+t.x.toFixed(2)+'%" title="'+esc(t.label)+'"></div>';
+  }).join('');
+  var anchorHtml=anchors.map(function(a){
+    return '<div class="ganttanchor" style="left:'+a.x.toFixed(2)+'%"><span class="ganttanchorlbl">'+a.label+'</span></div>';
+  }).join('');
+  // hour gridlines every 3h across the rolling window, labelled in real AEST clock time
+  var gridLineHtml=[], gridLblHtml=[]; for(var i=0;i<=8;i++){
+    var gts=new Date(winStart.getTime()+i*3*3600*1000); var pct=i*12.5;
+    gridLineHtml.push('<div class="ganttgrid" style="left:'+pct+'%"></div>');
+    gridLblHtml.push('<span class="ganttgridlbl" style="left:'+pct+'%">'+(gts.getHours()<10?'0':'')+gts.getHours()+':00</span>');
+  }
+  var gridHtml=gridLineHtml.join('');
+  return '<div class="ganttwrap">'+
+    '<div class="gantthead"><span>Menu runs</span><span class="ganttlegend">'+
+      '<span class="gl"><i style="background:var(--buy)"></i>done</span>'+
+      '<span class="gl"><i style="background:var(--broth)"></i>cooking</span>'+
+      '<span class="gl"><i style="background:var(--dont)"></i>failed</span>'+
+      '<span class="gl"><i style="background:var(--faint)"></i>cancelled</span>'+
+      '<span class="gl"><i class="glanchor"></i>scheduled</span></span></div>'+
+    '<div class="ganttlane ganttlane-maj">'+gridHtml+anchorHtml+menuBarsHtml+'</div>'+
+    '<div class="gantthead" style="margin-top:6px"><span>Re-prices</span></div>'+
+    '<div class="ganttlane ganttlane-min">'+gridHtml+tickHtml+'</div>'+
+    '<div class="ganttfoot">'+gridLblHtml.join('')+'</div>'+
+  '</div>';
 }
 function runLogHtml(){
   var H=(LAST&&LAST.H)||{}, hh='font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--broth);font-weight:800;margin:18px 0 4px';
