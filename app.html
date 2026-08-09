@@ -1250,9 +1250,17 @@ function discoveryFunnel(D){
   // "served" used to be a hardcoded literal 6 regardless of how many slots actually got a real pick
   // (e.g. an insufficient-signal run legitimately serves fewer than 6) — count real picks instead.
   var served=(D.regions||[]).reduce(function(n,rg){return n+(rg.picks||[]).filter(function(p){return p.sym&&p.sym!=='NONE';}).length;},0);
-  var list=(dv.tickers||[]).map(function(t){return '<span class="dvpill"><b>'+esc(t.sym)+'</b>'+(t.signal?' <small>'+esc(t.signal)+'</small>':'')+'</span>';}).join('');
+  // #131 (9 Aug 2026, user ask) — ticker-only chips forced a second tap (open the card) just to see
+  // whether a name was any good; the real score already exists on the matching candidate, just wasn't
+  // being shown here. Open by default too — this is the whole point of "how we got here", not a
+  // detail worth hiding behind a click.
+  var candBySym={}; (D.candidates||[]).forEach(function(c){candBySym[c.sym+'|'+c.region]=c;});
+  var list=(dv.tickers||[]).map(function(t){
+    var c=candBySym[t.sym+'|'+t.region], sc=c&&c.score&&c.score.buy_now;
+    return '<span class="dvpill"><b>'+esc(t.sym)+'</b>'+(sc!=null?' <small>'+sc+'/100</small>':(t.signal?' <small>'+esc(t.signal)+'</small>':''))+'</span>';
+  }).join('');
   return '<div class="funnel"><div class="fnrow"><span class="fnn">'+scanned+'</span> scanned <span class="fnar">→</span> <span class="fnn">'+shortlisted+'</span> shortlisted <span class="fnar">→</span> <span class="fnn">'+served+'</span> served</div>'+
-    (list?'<details class="dvdet"><summary>see the '+listedN+' we can name from this run</summary><div class="dvlist">'+list+'</div></details>':'')+'</div>';
+    (list?'<details class="dvdet" open><summary>see the '+listedN+' we can name from this run</summary><div class="dvlist">'+list+'</div></details>':'')+'</div>';
 }
 // "The Misses" (#63): the day's real top movers, checked against what we actually scanned/served —
 // so the run's accountability isn't only ever the winners. Built by misses.py, stored on latest.misses.
@@ -2138,15 +2146,17 @@ function render(D,H){
   '<div class="tabview" id="tab-kitchen">'+
     kitchenHead(D)+
     '<section id="runsched"><div class="sec-head"><h2 class="display">⏱️ Run schedule</h2>'+infoBtn('schedule')+'</div>'+runLogHtml()+'</section>'+
-    (isAdmin()?'<section id="adminhealth"><div class="sec-head"><h2 class="display">💓 Data-source health <span class="adminbadge">ADMIN</span></h2></div>'+
-      '<p class="sec-sub">What is actually feeding tonight\'s picks, and any known gaps — maintained by hand, not a live ping. Only visible to you.</p>'+
-      '<button class="trackcta" id="kitchenHealthBtn">💓 Open data-source health →</button></section>':'')+
     '<section><div class="sec-head"><h2 class="display">🗄️ The Archive</h2>'+infoBtn('archive')+'</div>'+
       '<p class="sec-sub">Every menu we\'ve served. Tap one to open that run\'s full report.</p>'+
       '<div class="arch" id="archList"><div class="wlempty">Loading past menus…</div></div>'+
       '<div class="archmore" id="archMore"></div></section>'+
     '<section><div class="sec-head"><h2 class="display">📋 How we got here</h2></div>'+
       '<p class="sec-sub">The recipe, in plain sight. No black box.</p>'+discoveryFunnel(D)+'<div class="panel trail">'+trail+'</div></section>'+
+    // #131 (9 Aug 2026, user ask) — moved to the bottom, below the Archive/How-we-got-here sections
+    // that matter to every user; this one's admin-only anyway.
+    (isAdmin()?'<section id="adminhealth"><div class="sec-head"><h2 class="display">💓 Data-source health <span class="adminbadge">ADMIN</span></h2></div>'+
+      '<p class="sec-sub">What is actually feeding tonight\'s picks, and any known gaps — maintained by hand, not a live ping. Only visible to you.</p>'+
+      '<button class="trackcta" id="kitchenHealthBtn">💓 Open data-source health →</button></section>':'')+
   '</div>'+
 
   '<footer>Auto-generated for information only. <b>Not financial advice</b> — do your own research.<br>The Stock Soup · '+esc(stampNoWeekday(D.stamp))+(D.next?' · next ~'+esc(D.next)+' (manual trigger)':' · served hourly')+'</footer>';
