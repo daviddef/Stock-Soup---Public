@@ -650,6 +650,12 @@
   .mnews-old{border-color:rgba(255,77,77,.35);background:rgba(255,77,77,.06)}
   .mnews-age{display:inline-block;margin-left:7px;font-size:11px;font-weight:700;color:var(--muted);font-family:var(--mono)}
   .mnews-old .mnews-age{color:var(--dont)}
+  .nt3list{display:flex;flex-direction:column;gap:6px;margin-top:6px}
+  .nt3row{font-size:12.5px;line-height:1.4;background:var(--surface-2);border:1px solid var(--line);border-radius:9px;padding:8px 10px;text-wrap:pretty}
+  .nt3row a{color:var(--broth);font-weight:700} .nt3row a:visited{color:var(--broth)}
+  .nt3-old{border-color:rgba(255,77,77,.35);background:rgba(255,77,77,.06)}
+  .nt3age{display:inline-block;margin-left:6px;font-size:10.5px;font-weight:700;color:var(--muted);font-family:var(--mono)}
+  .nt3-old .nt3age{color:var(--dont)}
   .mfound{font-size:12px;color:var(--muted);margin-top:6px;line-height:1.45}
   .mshort{font-size:13px;line-height:1.5;color:var(--ink)}
   .potcard:hover{transform:translateY(-2px)}
@@ -1608,7 +1614,8 @@ function signalRows(p,region,opts){
     var v=p.news_sentiment, tone=v>=0.12?'pos':v<=-0.12?'neg':'mix';
     rows.push({icon:'📰',label:'News buzz',tone:tone,
       read:tone==='pos'?'Positive coverage':tone==='neg'?'Negative coverage':'Mixed coverage',
-      explain:'The tone of recent news coverage — separate from the chart, this is what people are actually saying.'});
+      explain:'The tone of recent news coverage — separate from the chart, this is what people are actually saying.',
+      diagram:newsTop3Html(p.news_top3)});
   }
   return rows;
 }
@@ -2963,6 +2970,21 @@ function newsLineHtml(news, newsUrl, newsDate){
   return '<div class="mnews'+(old?' mnews-old':'')+'">📰 <span class="lead">In the news'+(old?' ⚠️ OLD':'')+':</span> '+
     (newsUrl?'<a href="'+esc(newsUrl)+'" target="_blank" rel="noopener">'+esc(news)+' ↗</a>':esc(news))+
     (age?'<span class="mnews-age">'+age+'</span>':'')+'</div>';
+}
+// #136 (user ask) — the "News buzz" signal row used to show only a bare tone word ("Positive
+// coverage"); the underlying fetch already pulls up to 5 real articles for its sentiment average,
+// it just never surfaced more than 1. Same OLD-news staleness treatment as newsLineHtml above.
+function newsTop3Html(top3){
+  if(!top3||!top3.length) return '';
+  var rows=top3.slice(0,3).map(function(a){
+    var days=null; if(a.date){ try{ days=Math.floor((Date.now()-new Date(a.date).getTime())/86400000); }catch(e){} }
+    var old=days!=null&&days>7;
+    var age=days==null?'':(days<1?'today':days===1?'1d ago':days+'d ago');
+    return '<div class="nt3row'+(old?' nt3-old':'')+'">'+
+      (a.url?'<a href="'+esc(a.url)+'" target="_blank" rel="noopener">'+esc(a.title)+' ↗</a>':esc(a.title))+
+      (age?'<span class="nt3age">'+(old?'⚠️ ':'')+age+'</span>':'')+'</div>';
+  }).join('');
+  return '<div class="nt3list">'+rows+'</div>';
 }
 function _mchipModal(icon,mtf,title,bodyHtml){
   LASTFOCUS=document.activeElement;
