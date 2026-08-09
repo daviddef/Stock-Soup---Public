@@ -3209,9 +3209,13 @@ function wlIntel(w,D){
   var wi=(D.watchlistIntel||{})[w.sym];
   if(wi && wi.region===w.region && !wi.error){
     var vclass=/get in|buy|nibble/i.test(wi.verdict||'')?'buy':/wait|late|skip|pass/i.test(wi.verdict||'')?'dont':'hold';
+    // #131 (9 Aug 2026, user ask) — carry the raw wi through so openWatchInsight() can render the
+    // SAME signalRows()/scoreBarHtml() overlay picks and candidates get, instead of a thin text-only
+    // summary. wi now carries the same rsi/trend/ema/bb/relStrength/ranges/zone shapes score-pot.py
+    // attaches to candidates (watchlist-intel.py rewrite, same session).
     return {kind:'intel',cur:wi.cur||pcur,entry:wi.entry,target:wi.target,
       score:(wi.buy_now!=null?(wi.buy_now+'/100 · '+wi.band):null),
-      verdict:wi.verdict||null,vclass:vclass,trend:wi.trend,asx:!!wi.asx_limited,sent:wi.sent};
+      verdict:wi.verdict||null,vclass:vclass,trend:wi.trend_note,asx:!!wi.asx_limited,sent:wi.sent,raw:wi};
   }
   var c=(D.candidates||[]).filter(function(x){return x.sym===w.sym&&x.region===w.region;})[0];
   if(c) return {kind:'cand',note:c.note,heat:c.heat};
@@ -3367,6 +3371,15 @@ function openWatchInsight(sym,region){
   var price=info.price, gap=(entry&&price)?(price/entry-1)*100:null;
   var spk=(info.spark&&info.spark.length>2)?sparkSVG(info.spark.slice(-30)):'';
   var status=gap==null?'':(gap<=0.5?'<b class="up">at your buy price ✓ — act</b>':'<b>'+Math.round(gap)+'% above</b> your ideal buy — better on a dip');
+  // #131 (9 Aug 2026, user ask "smart watching — show the recommendation overlays, can we score
+  // these") — when watchlist-intel.py has real signal data (raw), render the SAME "All the signals"
+  // breakdown + score bar picks/candidates get, instead of a bare score line and one text sentence.
+  var raw=it.raw, scoreObj=null, sigHtml='';
+  if(raw && raw.buy_now!=null){
+    scoreObj={buy_now:raw.buy_now,band:raw.band,verdict:raw.verdict,factors:raw.factors,child_sentence:raw.sent};
+    var rows=signalRows(raw,region);
+    if(rows.length) sigHtml='<h4 style="margin-top:16px">🧮 All the signals, in one place</h4>'+sigRowsHtml(rows);
+  }
   LASTFOCUS=document.activeElement;
   var m=document.getElementById('modal'); m.className='modal';
   m.innerHTML='<div class="mhead"><button class="mclose" id="mClose" aria-label="Close">✕</button>'+
@@ -3376,9 +3389,9 @@ function openWatchInsight(sym,region){
       '<div class="mpx"><div class="mp mono">'+(price!=null?cur+price:'—')+'</div>'+(info.change?'<div class="mono '+(info.up?'up':'down')+'" style="font-weight:700;font-size:13px">'+(info.up?'▲':'▼')+' '+esc(info.change)+'</div>':'')+'</div></div></div>'+
     '<div class="mbody">'+
       (spk?'<div class="viz"><h4>Recent trend</h4>'+spk+'</div>':'')+
-      (entry!=null?'<div class="viz"><h4>Your buy trigger</h4><p style="margin:0;font-size:14px">🎯 Ideal buy <b>'+cur+entry+'</b>'+(it.target!=null?' · target <b>'+cur+it.target+'</b>':'')+'</p><div class="rsimeta">'+status+'</div></div>':'')+
-      (it.score?'<p class="mtake"><span class="lead">Buy-Now score:</span> '+esc(it.score)+(it.verdict?' — '+esc(it.verdict):'')+'</p>':(it.verdict?'<p class="mtake"><span class="lead">Verdict:</span> '+esc(it.verdict)+'</p>':''))+
-      (it.trend?'<div class="mshort">📊 <span class="lead">Technical read:</span> '+esc(it.trend)+'</div>':'')+
+      (entry!=null?'<div class="viz"><h4>Your buy trigger</h4><p style="margin:0;font-size:14px">🎯 Ideal buy <b>'+cur+entry+'</b>'+(it.target!=null?' · target <b>'+cur+it.target+'</b>':'')+'</p><div class="rsimeta">'+status+'</div>'+sigHtml+'</div>':sigHtml)+
+      (scoreObj?scoreBarHtml(scoreObj):(it.score?'<p class="mtake"><span class="lead">Buy-Now score:</span> '+esc(it.score)+(it.verdict?' — '+esc(it.verdict):'')+'</p>':(it.verdict?'<p class="mtake"><span class="lead">Verdict:</span> '+esc(it.verdict)+'</p>':'')))+
+      (!scoreObj&&it.trend?'<div class="mshort">📊 <span class="lead">Technical read:</span> '+esc(it.trend)+'</div>':'')+
       (it.note?'<p class="mtake"><span class="lead">Why it\'s of interest:</span> '+esc(it.note)+'</p>':'')+
       (it.kind==='none'?'<div class="mrisk" style="background:var(--surface-2);border-color:var(--line)">Not in this run\'s scan yet — we track the price and will assess it fully when it next surfaces.</div>':'')+
       '<div class="mfoot"><button class="mbtn watchbtn" data-sym="'+esc(sym)+'" data-region="'+esc(region)+'" aria-pressed="true">✓ Watching</button>'+
