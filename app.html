@@ -1538,8 +1538,13 @@ function topMoversHtml(D){
   var l=clean(tm.losers).slice(0,10).map(card).join('');
   var v=clean(tm.byVolume).slice(0,10).map(card).join('');
   if(!g&&!l&&!v) return '';
+  // #175 (user caught it, 10 Aug 2026): the copy said "today", but the whole-market movers come from
+  // the last COMPLETED EOD session (bulk snapshot) — on a pre-open/weekend view that's Friday, not today.
+  // Label the real session date (top-movers.py now writes sessionDate) instead of claiming "today".
+  var whenTxt='from the last market close';
+  if(tm.sessionDate){ var _sd=new Date(tm.sessionDate+'T00:00:00'); if(!isNaN(_sd.getTime())) whenTxt='from the '+_sd.toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short'})+' close'; }
   return '<section id="topmovers"><div class="sec-head"><h2 class="display">🔥 Top Movers</h2>'+infoBtn('topmovers')+'</div>'+
-    '<p class="sec-sub">The whole '+(MKT==='au'?'ASX':'US')+' market\'s real gainers, losers and volume leaders today — liquidity-filtered, not just tonight\'s picks. Tap any card for the full read.</p>'+
+    '<p class="sec-sub">The whole '+(MKT==='au'?'ASX':'US')+' market\'s real gainers, losers and volume leaders '+esc(whenTxt)+' — liquidity-filtered, not just tonight\'s picks. Tap any card for the full read.</p>'+
     '<div class="cols">'+
       (g?'<div class="stack"><div class="eyebrow">📈 Top gainers · by %</div><div class="movergrid">'+g+'</div></div>':'')+
       (l?'<div class="stack"><div class="eyebrow">📉 Top losers · by %</div><div class="movergrid">'+l+'</div></div>':'')+
@@ -2892,7 +2897,13 @@ function lastFilled(slotIdx){
 // fetch needed. Older runs (before this fix) won't have a snapshot — shown honestly, not silently.
 function archiveHtml(H){
   var menus=(H&&H.menus)||[];
-  if(!menus.length) return '<div class="wlempty">No past menus yet — check back after tonight\'s run.</div>';
+  // #176 (user caught it, 10 Aug 2026 — "if no archives, why do these cards show?"): the Archive is
+  // about REAL captured per-run snapshots (#132), which only exist for runs published after that landed.
+  // Older runs carry no snapshot, so a card for them was just a wall of "No detailed snapshot captured".
+  // Only show runs that actually have a captured snapshot on at least one side — no empty placeholder cards.
+  function hasSnap(m){ return (m&&m.auSnap&&m.auSnap.length) || (m&&m.usSnap&&m.usSnap.length); }
+  menus=menus.filter(hasSnap);
+  if(!menus.length) return '<div class="wlempty">No snapshot-captured menus yet — the Archive fills in as new runs are published.</div>';
   function pickBlock(p){
     if(!p||!p.sym||p.sym==='NONE') return '';
     var tfShort=(p.tf||'').split(' ')[1]||p.tf||'';
