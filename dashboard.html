@@ -1030,7 +1030,13 @@
   .juicebtn{background:rgba(255,140,0,.14);color:#FF8C00;border:1px solid rgba(255,140,0,.4);border-radius:7px;font-size:10.5px;font-weight:800;padding:3px 8px;margin-left:8px;cursor:pointer;vertical-align:middle}
   .juicebtn:hover{background:rgba(255,140,0,.24)}
   .jgrid{display:flex;flex-direction:column;gap:8px}
-  .jrow{display:grid;grid-template-columns:70px 1fr 130px;gap:8px;align-items:center;font-size:11.5px}
+  /* Real bug (10 Aug 2026, user screenshot): this was named .jrow, same class the Journey feature's
+     pick-history rows use (flex-based, see the earlier .jrow rule) — a name collision, not responsive
+     design. Because this rule comes later in the stylesheet, its display:grid silently overrode the
+     Journey rows' display:flex for every jrow on the page, scattering the NEW/DROP pick rows into a
+     3-column grid they were never built for (badge/symbol/pill landing in the wrong cells). Renamed to
+     .jbrow ("juice breakdown row") — scoped to this one modal, no longer touches Journey at all. */
+  .jbrow{display:grid;grid-template-columns:70px 1fr 130px;gap:8px;align-items:center;font-size:11.5px}
   .jlabel{font-weight:800;color:var(--ink);text-transform:capitalize}
   .jbarwrap{background:var(--surface-2);border-radius:5px;height:9px;overflow:hidden}
   .jbar{display:block;height:100%;background:var(--broth);border-radius:5px}
@@ -2033,7 +2039,8 @@ function render(D,H){
     return {gold:gold,rest:rest};
   })();
   // VIX marker on the same risk slider — same 0-100 scale as the risk needle, calm→right/risk-on,
-  // fearful→left/risk-off. Purely visual pairing; VIX still isn't a scoring input (see CLAUDE.md).
+  // fearful→left/risk-off. VIX is now a real 35%-weighted input to the risk needle itself (#153,
+  // 10 Aug 2026) — this marker is a visual cross-check, not a decorative extra.
   var vixLvl=(r.vix!=null)?Math.max(0,Math.min(100, 100-((r.vix-10)/25*100))):null;
   var regionTabs=(D.regions||[]).map(function(rg,i){return '<button class="tab" role="tab" id="tab-'+rg.id+'" aria-selected="'+(rg.id===MKT)+'" data-region="'+rg.id+'">'+esc(rg.label)+'</button>';}).join('');
   var soon='<button class="tab" disabled title="Coming soon">🌏 Asia-Pac · soon</button><button class="tab" disabled title="Coming soon">🇪🇺 Europe · soon</button>';
@@ -2365,7 +2372,7 @@ function openJuice(id){
   var d=j.detail||{};
   LASTFOCUS=document.activeElement;
   function bar(label,w,s,c){
-    return '<div class="jrow"><span class="jlabel">'+esc(SCORE_FLAB[label]||label)+'</span>'+
+    return '<div class="jbrow"><span class="jlabel">'+esc(SCORE_FLAB[label]||label)+'</span>'+
       '<span class="jbarwrap"><span class="jbar" style="width:'+Math.max(2,c)+'%"></span></span>'+
       '<span class="jnum">'+(w!=null?'w '+w+'% · ':'')+'raw '+(s!=null?(s*100).toFixed(0)+'%':'—')+' → '+c.toFixed(1)+'pt</span></div>';
   }
@@ -3309,10 +3316,18 @@ function openMarketChip(key){
   var D=LAST.D||{}, r=D.risk||{};
   if(key==='risk'){
     var lvl=r.level!=null?r.level:50;
+    var nUsed=r.factorsUsed!=null?r.factorsUsed:5;
     _mchipModal('🎛️','Market context','Risk appetite',
       '<p>Our read on <b>how aggressive to be</b> right now — currently <b>'+esc(r.label||'Neutral')+'</b> ('+lvl+'/100).</p>'+
-      '<h4>How it\'s set</h4><p>Driven mainly by <b>Bitcoin\'s 24h move</b> as a live risk-sentiment gauge:</p>'+
-      '<ul class="infoul"><li>🟢 BTC &gt; +2% → <b>Risk-on</b> — lean into momentum.</li><li>⚪ −3% to +2% → <b>Neutral</b> — no change.</li><li>🔴 BTC &lt; −3% → <b>Risk-off</b> — trim conviction, favour safety.</li></ul>'+
+      '<h4>How it\'s set (#153, 10 Aug 2026)</h4><p>A real blend of '+nUsed+' live market signals, recomputed every ~10min re-price — not a single BTC threshold hand-typed once per run:</p>'+
+      '<ul class="infoul">'+
+        '<li><b>VIX</b> (35%) — the market\'s own broad fear gauge; calm→risk-on, fearful→risk-off.</li>'+
+        '<li><b>Bitcoin 24h%</b> (30%) — fast, liquid, but crypto-specific noise, so it no longer decides the meter alone.</li>'+
+        '<li><b>Gold 24h%</b> (15%, inverse) — gold rising usually means flight-to-safety.</li>'+
+        '<li><b>Oil/Brent 24h%</b> (10%, inverse) — a spike usually reads as supply-shock fear, not demand strength.</li>'+
+        '<li><b>AUD/USD 24h%</b> (10%) — AUD is a classic "risk currency", weakens on risk-off.</li>'+
+      '</ul>'+
+      '<p><b>Not included:</b> geopolitical/macro tension isn\'t forced into this number — a fake-precise "tension score" from news text would be less honest than the qualitative geo/news sections elsewhere on this page. Read those alongside the meter, not instead of it.</p>'+
       '<p class="infofoot">The needle below the chips shows where we sit. It sets the <i>tone</i> — it doesn\'t pick stocks.</p>');
   } else if(key==='btc'){
     // #131 (9 Aug 2026, user ask): real "Recent trend" spark + "1w/1m/1y" range bars, same visual
@@ -3326,7 +3341,7 @@ function openMarketChip(key){
     _mchipModal('₿','Market context','Bitcoin — the risk gauge',
       '<p><b>'+esc(r.btc||'')+'</b> <span class="'+(/-/.test(r.btcChange||'')?'down':'up')+'">'+esc(r.btcChange||'')+'</span> over 24 hours.</p>'+
       trendHtml+rangeHtml+
-      '<p>We use Bitcoin as a <b>live proxy for risk appetite</b>. When crypto is ripping, the market\'s in a risk-on mood and momentum picks tend to work; when it\'s bleeding, we get defensive. It sets the tone for the whole run.</p>');
+      '<p>Bitcoin is <b>one of five real inputs</b> to the risk-appetite meter (with VIX, gold, oil and AUD/USD — see the meter\'s own info button) — a fast, liquid risk-on/off signal, but crypto-specific noise means it\'s no longer the whole story on its own.</p>');
   } else if(key==='aud'){
     var asp=r.audusdSpark;
     var trendHtml2=(asp&&asp.length>2)?('<div class="viz"><h4>Recent trend · last '+asp.length+' days</h4>'+sparkSVG(asp)+
