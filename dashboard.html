@@ -1912,6 +1912,16 @@ function render(D,H){
     var newPicks=prevSet?curSet.filter(function(s){return prevSet.indexOf(s)<0;}):[];
     var dropped=prevSet?prevSet.filter(function(s){return curSet.indexOf(s)<0;}):[];
     var cards=(rg.picks||[]).map(function(p,idx){
+      // #131 (9 Aug 2026, user ask) — a "no pick this run" placeholder was rendering the FULL card
+      // template: a live ✓Watch button (watching a ticker called "NONE"), a "Track this pick" buyat
+      // button, a "Limited signal data" pill — all implying there's a real name here to interact
+      // with when there genuinely isn't one. Short-circuit to one honest sentence instead.
+      if(p.sym==='NONE'){
+        return '<div class="pickcol"><article class="card card-none" tabindex="0" role="button" data-region="'+rg.id+'" data-idx="'+idx+'" aria-label="No pick this run for '+esc(tfBW(p.tf).replace(/<[^>]+>/g,''))+'">'+
+          '<div class="tf"><span class="name">'+tfBW(p.tf)+'</span><span class="tf-r"><span class="verdict '+esc(p.vclass||'v-hold')+'">'+esc(p.verdict||'No pick this run')+'</span></span></div>'+
+          '<p class="plain nonemsg">🤷 Not enough signal to make a real call this run — nothing cleared the bar for this slot. We\'ll fill it the moment something does.</p>'+
+          '</article></div>';
+      }
       var isNew=prevSet?(prevSet.indexOf(p.sym)<0):false;
       var repl=isNew?(dropped[newPicks.indexOf(p.sym)]||null):null;
       var newPill=isNew?' <span class="cnew">NEW</span>':(prevSet?' <span class="ckept">✓ kept</span>':'');
