@@ -995,6 +995,22 @@
   .vmoodword{font-size:27px;font-weight:900;letter-spacing:.02em;margin-top:2px}
   .vmoodline{font-size:14.5px;color:var(--muted);margin-top:3px}
   .vtheme{text-align:center;font-size:14px;font-weight:800;margin:14px 0 0;color:var(--ink);text-wrap:pretty}
+  /* #172 — the 3×3 tier × timeframe matrix (Villager view). Cols: Tier3→Tier2→Tier1 (wild→safe). Rows: D/W/M. */
+  .tmxwrap{max-width:540px;margin:20px auto 6px}
+  .tmx-title{text-align:center;font-size:13px;font-weight:900;letter-spacing:.01em;margin-bottom:9px}
+  .tmx{display:grid;grid-template-columns:44px 1fr 1fr 1fr;gap:6px;align-items:stretch}
+  .tmx-colh{text-align:center;display:flex;flex-direction:column;gap:1px;padding:2px 0;font-size:11.5px;font-weight:900}
+  .tmx-colh span{font-size:9.5px;font-weight:700;color:var(--muted)}
+  .tmx-rowh{display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:9.5px;font-weight:800;color:var(--muted);line-height:1.1;text-align:center}
+  .tmx-tf{font-size:16px}
+  .tmx-cell{border-radius:11px;min-height:42px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:14.5px;border:1px solid var(--line);font-family:inherit}
+  .tmx-empty{color:var(--faint);background:transparent}
+  .tmx-pick{cursor:pointer;transition:transform .1s}
+  .tmx-pick:hover{transform:translateY(-1px)}
+  .tmx-buy{border-color:var(--buy);color:var(--buy);background:rgba(35,194,103,.12)}
+  .tmx-skip{border-color:var(--dont);color:var(--dont);background:rgba(255,77,77,.09)}
+  .tmx-mid{border-color:var(--hold,#e0a92e);color:var(--ink);background:rgba(224,169,46,.12)}
+  .tmx-legend{text-align:center;font-size:10px;color:var(--faint);margin-top:7px;letter-spacing:.02em}
   .vgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;max-width:540px;margin:4px auto 0}
   @media(max-width:420px){.vgrid{grid-template-columns:1fr}}
   .vcard{position:relative;background:var(--surface);border:2px solid var(--line);border-radius:22px;
@@ -4575,6 +4591,36 @@ function villagerThemeLine(D){
   if(!names.length) return '';
   return names.slice(0,3).join(', ')+' '+(names.length>1?'are':'is')+' the popular kid'+(names.length>1?'s':'')+' at school today! 🌟';
 }
+// #172 (RE-BUILT 10 Aug 2026 — was wrongly marked done; the tier concept had only become header pills).
+// User's real ask: "a fun matrix of tier 3 on the risk side, then tier 2, then 1, and show D/W/M as 3 in
+// a column for each — a 3x3 fun view." Columns = Tier 3 (wildest/whole-market) → Tier 2 → Tier 1 (safest/
+// catalyst), left→right per the ask. Rows = Day/Week/Month. Each cell = that tier×timeframe's real pick for
+// the current market. Data: modelTiers.type3/type2[rid] (each carries tf Day/Week/Long) + Tier 1 = rg.picks.
+function matrixPickAt(D,rid,tierKey,tfk){
+  var arr;
+  if(tierKey==='type1'){ var rg=(D.regions||[]).filter(function(x){return x.id===rid;})[0]; arr=rg?rg.picks:[]; }
+  else arr=((D.modelTiers||{})[tierKey]||{})[rid]||[];
+  return (arr||[]).filter(function(p){return p&&(p.tf||'').indexOf(tfk)>=0;})[0]||null;
+}
+function tmxTone(p){var v=(p&&p.verdict||'').toLowerCase(); if(/get in|buy|strong|accumulate|grab/.test(v))return 'tmx-buy'; if(/skip|wait|avoid|pass|hold|steer|late|don/.test(v))return 'tmx-skip'; return 'tmx-mid';}
+function tierMatrixHtml(D,rid){
+  var mt=D.modelTiers||{};
+  if(!mt.type2&&!mt.type3) return '';   // only when the whole-market tier scans have actually run
+  var cols=[{k:'type3',lbl:'Tier 3',sub:'🌶️ wildest'},{k:'type2',lbl:'Tier 2',sub:'⚙️ quant'},{k:'type1',lbl:'Tier 1',sub:'🛡️ safest'}];
+  var rows=[{k:'Day',emoji:'⚡',lbl:'Today'},{k:'Week',emoji:'📅',lbl:'This week'},{k:'Long',emoji:'📈',lbl:'This month'}];
+  var head='<div class="tmx-corner"></div>'+cols.map(function(c){return '<div class="tmx-colh"><b>'+c.lbl+'</b><span>'+c.sub+'</span></div>';}).join('');
+  var body=rows.map(function(rw){
+    return '<div class="tmx-rowh"><span class="tmx-tf">'+rw.emoji+'</span><span>'+rw.lbl+'</span></div>'+
+      cols.map(function(c){
+        var p=matrixPickAt(D,rid,c.k,rw.k);
+        if(!p||!p.sym||p.sym==='NONE') return '<div class="tmx-cell tmx-empty" title="No '+rw.lbl.toLowerCase()+' pick in '+c.lbl+' this run">–</div>';
+        return '<button class="tmx-cell tmx-pick '+tmxTone(p)+'" data-tier="'+c.k+'" data-tf="'+rw.k+'" title="'+esc(p.sym)+(p.verdict?' · '+esc(p.verdict):'')+' — tap for the full read">'+esc(p.sym)+'</button>';
+      }).join('');
+  }).join('');
+  return '<div class="tmxwrap"><div class="tmx-title">🎲 The 3×3 — every tier, every timeframe</div>'+
+    '<div class="tmx">'+head+body+'</div>'+
+    '<div class="tmx-legend">🌶️ wilder, whole-market  ·  🛡️ safer, catalyst-backed → tap any square</div></div>';
+}
 function renderSimple(D){
   var r = D.risk||{};
   var sStamp = stampNoWeekday(D.stamp);
@@ -4603,6 +4649,7 @@ function renderSimple(D){
       '<div class="meter"><div class="track"><div class="needle" id="sneedle"></div></div>'+
       '<div class="lbls"><span>🙈 Hide!</span><span>😌 Chill</span><span>🚀 GO!</span></div></div>'+
       (themeLine?'<div class="vtheme">'+esc(themeLine)+'</div>':'')+'</div>'+
+    tierMatrixHtml(D,rid)+   // #172 — the 3×3 (tier × timeframe), right under the risk line
     '<div class="vgrid">'+cards+'</div>'+
     '<button class="sfull" id="viewFull2">🔍 Show me the boring grown-up version</button>'+
     '<footer>Not financial advice — just a friendly village guide. · The Stock Soup, served hot, hourly</footer></div>';
@@ -4626,6 +4673,10 @@ function wireSimple(D){
   document.querySelectorAll('.stoprail .mkf[data-region]').forEach(function(b){b.onclick=function(){ if(b.dataset.region===MKT)return; MKT=b.dataset.region; renderSimple(D); };});
   bindTierPills();   // #152 tier pills in the simple-view header too
   function regionOf(id){return (D.regions||[]).filter(function(x){return x.id===id;})[0];}
+  // #172 — 3×3 matrix cells open the real pick modal for that tier × timeframe
+  document.querySelectorAll('.tmx-pick[data-tier]').forEach(function(el){
+    el.onclick=function(){ var rg=regionOf(MKT); var p=matrixPickAt(D,MKT,el.dataset.tier,el.dataset.tf); if(p) openModal(p,MKT,(rg&&rg.cur)||'$'); };
+  });
   document.querySelectorAll('.vcard').forEach(function(c){
     function open(){var rg=regionOf(c.dataset.region);if(rg){var p=tierPicks(rg)[+c.dataset.idx];if(p) openModal(p,rg.id,rg.cur||'$');}}
     c.addEventListener('click',function(e){if(e.target.closest('.vwatch'))return;open();});
