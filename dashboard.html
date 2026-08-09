@@ -472,6 +472,12 @@
   .tierinfo{width:20px;height:20px;border-radius:50%;border:1px solid var(--line);background:var(--surface);color:var(--muted);font-size:11px;font-weight:800;font-style:italic;cursor:pointer;display:inline-flex;align-items:center;justify-content:center}
   .tiersub{font-size:12px;color:var(--muted);margin:2px 0 10px;font-style:italic}
   .risktolwarn{background:rgba(255,197,61,.14);border:1px solid rgba(255,197,61,.4);color:var(--hold);border-radius:8px;padding:6px 10px;font-size:12px;font-weight:800;margin:0 0 8px}
+  /* #148 — sector rotation panel */
+  .srowgrp{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:8px}
+  .srowgrp>b{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);display:block;margin-bottom:4px}
+  .srow{display:flex;justify-content:space-between;align-items:center;padding:4px 0;font-size:13px}
+  .sname{color:var(--ink)} .setf{color:var(--faint);font-size:11px;font-weight:700}
+  .sval{font-weight:800;font-variant-numeric:tabular-nums}
   /* #158 — 24h gantt strip */
   .ganttwrap{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin-bottom:16px;overflow-x:auto}
   .gantthead{display:flex;align-items:center;justify-content:space-between;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);flex-wrap:wrap;gap:6px}
@@ -1785,6 +1791,28 @@ function riskTolWarn(p){
   if(rt.score<=max) return '';
   return '<div class="risktolwarn">⚠️ '+esc(rt.tier)+' risk — above your '+esc(tol)+' tolerance setting</div>';
 }
+// #148 (10 Aug 2026, research thread #2) — real sector rotation: which sectors are gaining/losing
+// strength against the broad market (SPY), not a single stock's own relative strength (R2, already
+// built). US-only for now — sector-rotation.py's SPDR ETF proxies are well-established, certain
+// tickers; ASX sector ETF proxies exist but weren't confirmed live before shipping, so this stays
+// gated to the US view rather than guess a ticker (same caution as everywhere else in this app that
+// won't show a number it can't stand behind). 1×/day data (see CLAUDE.md's schedule section) — real,
+// not live-updated every pulse, disclosed via the "as of" timestamp.
+function sectorRotationHtml(D){
+  var sr=D.sectorRotation; if(MKT!=='us'||!sr||!sr.rows||!sr.rows.length) return '';
+  var rows=sr.rows.filter(function(r){return r.rs20d!=null;});
+  var top=rows.slice(0,3), bottom=rows.slice(-3).reverse();
+  function row(r){
+    var pos=r.rs20d>=0;
+    return '<div class="srow"><span class="sname">'+esc(r.sector)+' <span class="setf">'+esc(r.etf)+'</span></span>'+
+      '<span class="sval '+(pos?'up':'down')+'">'+(pos?'+':'')+r.rs20d+'pt</span></div>';
+  }
+  var upd=sr.updatedAt?new Date(sr.updatedAt):null;
+  return '<div class="stack" style="margin-top:14px"><div class="eyebrow">🔄 Sector rotation — US, vs SPY, 20-day</div>'+
+    '<p class="sec-sub" style="margin:2px 0 8px">Real relative strength, not a guess — which sectors are actually gaining or losing ground against the broad market.'+(upd?' Refreshed 1×/day, as of '+esc(upd.toLocaleDateString())+'.':'')+'</p>'+
+    '<div class="srowgrp"><b>Rotating in</b>'+top.map(row).join('')+'</div>'+
+    '<div class="srowgrp"><b>Rotating out</b>'+bottom.map(row).join('')+'</div></div>';
+}
 function signalPillHtml(p,region,sym){
   var rows=signalRows(p,region); if(!rows.length) return '';
   var s=signalSummary(rows);
@@ -2288,7 +2316,8 @@ function render(D,H){
     '<section><div class="sec-head"><h2 class="display"><span class="k">03</span> The world &amp; the sectors</h2>'+infoBtn('world')+'</div>'+
       '<p class="sec-sub">What\'s moving the pot, and which kitchens are hot vs which to skip.</p>'+
       '<div class="cols"><div class="stack"><div class="eyebrow">🌍 Geopolitics</div>'+lines(D.geo,'title','geo')+'</div>'+
-      '<div class="stack"><div class="eyebrow">🍳 Sectors — buy vs skip</div>'+lines(D.sectors,'title','sectors')+'</div></div></section>'+
+      '<div class="stack"><div class="eyebrow">🍳 Sectors — buy vs skip</div>'+lines(D.sectors,'title','sectors')+'</div></div>'+
+      sectorRotationHtml(D)+'</section>'+
     '<section><div class="sec-head"><h2 class="display"><span class="k">04</span> Commodities — simple</h2>'+infoBtn('commodities')+'</div>'+
       '<p class="sec-sub">No jargon. Just: worth a look, emerging (🔥), or leave it.</p>'+
       // #131 (9 Aug 2026, user ask) — 3 abreast instead of 2, own grid class (.cols3) so this doesn't
