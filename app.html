@@ -471,6 +471,7 @@
   .tierbtn.active{background:var(--broth);border-color:var(--broth);color:#fff}
   .tierinfo{width:20px;height:20px;border-radius:50%;border:1px solid var(--line);background:var(--surface);color:var(--muted);font-size:11px;font-weight:800;font-style:italic;cursor:pointer;display:inline-flex;align-items:center;justify-content:center}
   .tiersub{font-size:12px;color:var(--muted);margin:2px 0 10px;font-style:italic}
+  .risktolwarn{background:rgba(255,197,61,.14);border:1px solid rgba(255,197,61,.4);color:var(--hold);border-radius:8px;padding:6px 10px;font-size:12px;font-weight:800;margin:0 0 8px}
   /* #158 — 24h gantt strip */
   .ganttwrap{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin-bottom:16px;overflow-x:auto}
   .gantthead{display:flex;align-items:center;justify-content:space-between;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);flex-wrap:wrap;gap:6px}
@@ -1738,6 +1739,16 @@ function signalRows(p,region,opts){
     rows.push({icon:'🧑‍💼',label:'Insider activity',tone:itone,read:iread,
       explain:'What the company\'s own officers and directors are doing with their own money — real open-market buys/sells only, not routine transfers or grants. Several insiders buying together in a short window is a stronger tell than any one of them acting alone.'});
   }
+  // #154 (10 Aug 2026) — real per-stock risk tier (features.py's _risk_tier): ATR%/price-level/RSI-
+  // extremity/hard-exclude, NOT market cap (no data source for that on this plan — disclosed here,
+  // not silently implied). tone is deliberately 'mix' even for Low/Medium — risk isn't good-or-bad the
+  // way a bullish/bearish signal is, so it never colours green/red like the others.
+  var rt=p&&p.riskTier;
+  if(rt&&rt.tier){
+    var rtone=rt.tier==='Speculative'||rt.tier==='High'?'neg':'mix';
+    rows.push({icon:'🎢',label:'Risk tier · '+rt.tier,tone:rtone,read:(rt.why&&rt.why[0])||rt.tier+' risk',
+      explain:'Built from real volatility (ATR%) and price-extension signals — not market cap, which this app has no data source for. '+(rt.why&&rt.why.length?'Why: '+rt.why.join('; ')+'.':'')});
+  }
   return rows;
 }
 function signalSummary(rows){
@@ -1765,6 +1776,15 @@ function sigRowsHtml(rows){
 // is tappable and opens the SAME breakdown — one cache keyed by a sequence id so every render
 // site can just call signalPillHtml() without wiring its own click handler (#84).
 var SIG_CACHE={}, SIG_SEQ=0;
+// #154 (10 Aug 2026) — real per-stock risk tier vs the user's own tolerance setting. Informational
+// only: every pick still shows in full, this just adds a visible line when a pick is riskier than
+// what the user told us they're comfortable with — the user decides, the app doesn't hide anything.
+function riskTolWarn(p){
+  var rt=p&&p.riskTier; if(!rt||rt.score==null) return '';
+  var tol=curRiskTol(), max=RISK_TOL_MAX[tol]!=null?RISK_TOL_MAX[tol]:45;
+  if(rt.score<=max) return '';
+  return '<div class="risktolwarn">⚠️ '+esc(rt.tier)+' risk — above your '+esc(tol)+' tolerance setting</div>';
+}
 function signalPillHtml(p,region,sym){
   var rows=signalRows(p,region); if(!rows.length) return '';
   var s=signalSummary(rows);
@@ -2099,7 +2119,7 @@ function render(D,H){
         '<span class="px"><span class="p mono">'+esc(p.price)+'</span><br><span class="c mono '+chgTone(p.change,p.up)+'">'+esc(p.change)+'</span></span></div>'+
         /* miniTraj removed — inconsistent (only carried-over picks had it) + confusing 'since 23:33'; the range bar shows the trend */
         '<div class="buyat'+(p.nEntry?' ba-'+buyState(p):'')+'">'+(p.nEntry?'<span class="bl">🎯 Ideal buy</span> ~'+esc(rg.cur||'$')+p.nEntry+buyAction(p):'<span class="bl">Track this pick</span>')+'</div>'+
-        '<p class="plain">'+esc(p.plain)+'</p>'+((signalPillHtml(p,rg.id)||valChip(p))?'<div class="sentrow">'+signalPillHtml(p,rg.id)+valChip(p)+'</div>':'')+'<div class="lvls">'+(p.levels||'')+'</div>'+
+        '<p class="plain">'+esc(p.plain)+'</p>'+riskTolWarn(p)+((signalPillHtml(p,rg.id)||valChip(p))?'<div class="sentrow">'+signalPillHtml(p,rg.id)+valChip(p)+'</div>':'')+'<div class="lvls">'+(p.levels||'')+'</div>'+
         (p.spark?rangeBar(p.spark,rg.cur||'$',p.tf,p.nEntry):'')+'</article>'+
         ((p.runnerUp && /wait|late|hold|skip|avoid|pass|don.t|steer/i.test(p.verdict||''))?ruCard(p.runnerUp,rg.id,idx):'')+'</div>';
     }).join('');
@@ -2640,6 +2660,11 @@ function openVerdictExplain(verdict){
 }
 // ---- Reusable ⓘ explainers (no black box) ----
 var INFO={
+  risktol:{icon:'🎢',title:'Risk tolerance',body:
+    '<p>Sets which of your own picks get flagged as riskier than you\'d like — every pick still shows, nothing\'s hidden, this just adds a ⚠️ note where it applies.</p>'+
+    '<h4>How risk is measured</h4><p>Real volatility and price-extension signals — daily ATR% (typical swing), penny/micro price level, how stretched the RSI is, and whether the model itself already flagged the stock as overextended. <b>Not market cap</b> — this app has no data source for that, so it isn\'t faked.</p>'+
+    '<ul class="infoul"><li>🛡️ <b>Low</b> tolerance — flags anything above Low risk.</li><li>⚖️ <b>Balanced</b> (default) — flags High and Speculative only.</li><li>🎢 <b>High</b> tolerance — nothing gets flagged, you\'ve told us you\'re fine with volatility.</li></ul>'+
+    '<p class="infofoot">Tap the 🎢 risk-tier row on any card\'s signal breakdown to see exactly why it\'s classed the way it is.</p>'},
   actions:{icon:'🎯',title:'How the actions engine works',body:
     '<p>“Ready right now” is the sharp end — the tickers where <b>three things line up at once</b>:</p>'+
     '<ul class="infoul"><li><b>Sensible</b> — our model rates it a buy on a <i>real catalyst</i> (earnings beat, analyst upgrade, confirmed news), not just chart momentum.</li>'+
@@ -3884,6 +3909,14 @@ function myEmail(){try{return (localStorage.getItem(EKEY)||'').toLowerCase();}ca
 function isAdmin(){return signedIn() && myEmail()===ADMIN_EMAIL;}
 function curTheme(){return document.documentElement.getAttribute('data-theme')||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');}
 function setTheme(t){document.documentElement.setAttribute('data-theme',t);try{localStorage.setItem('soup_theme',t);}catch(e){}}
+// #154 (10 Aug 2026) — risk-tolerance slider. Conservative/Balanced/Aggressive, same localStorage
+// persistence pattern as the theme toggle above. Informational, not a filter — with only 6 picks a
+// night, hiding one outright can leave a slot looking broken; instead a pick above tolerance gets a
+// visible warning on its card (see menus builder) so the user decides, rather than the app deciding
+// for them silently.
+var RISK_TOL_MAX={conservative:25,balanced:45,aggressive:100};   // max riskTier.score this tolerance is comfortable with
+function curRiskTol(){try{return localStorage.getItem('soup_risktol')||'balanced';}catch(e){return 'balanced';}}
+function setRiskTol(t){try{localStorage.setItem('soup_risktol',t);}catch(e){}}
 // The header 👤 button → real account-management panel (settings, not the watchlist).
 function openAccount(){
   LASTFOCUS=document.activeElement;
@@ -3899,6 +3932,10 @@ function openAccount(){
       '<div class="acctrow"><span class="acctk">Run digest email</span><select class="acctsel" id="acctDigestMode">'+
         '<option value="changes">Only when picks change</option><option value="always">Every published run</option><option value="off">Off</option></select></div>'+
       '<div class="acctsub">Sent to '+esc(email||'you')+' — risk profile, ready-now actions, the 6 picks (HTML) plus the full report as a PDF.</div>'+
+      '<div class="acctrow"><span class="acctk">Risk tolerance</span><span class="themeseg" id="riskTolSeg">'+
+        ['conservative','balanced','aggressive'].map(function(t){return '<button class="tseg'+(curRiskTol()===t?' on':'')+'" data-tol="'+t+'">'+(t==='conservative'?'🛡️ Low':t==='balanced'?'⚖️ Balanced':'🎢 High')+'</button>';}).join('')+
+        '</span>'+infoBtn('risktol')+'</div>'+
+      '<div class="acctsub">Picks riskier than your setting get a ⚠️ warning on their card — nothing\'s hidden, this just flags it.</div>'+
       (isAdmin()?'<div class="acctadmin"><div class="acctk" style="margin-bottom:8px">🛠 Admin</div><button class="acctbtn" id="acctArch">📐 Architecture &amp; data flow</button><button class="acctbtn" id="acctHealth">💓 Data-source health</button></div>':'')+
       '<div class="acctfoot"><button class="acctbtn ghost" id="acctSignOut">Sign out</button></div>'+
       '<div class="acctmsg" id="acctMsg"></div>'+
@@ -3911,7 +3948,13 @@ function openAccount(){
   m.innerHTML='<div class="mhead"><button class="mclose" id="mClose" aria-label="Close">✕</button><div class="mtf">👤 Account</div><div class="mtop"><div class="msym" style="font-size:23px">Your account</div></div></div><div class="mbody">'+body+'</div>';
   var ov=document.getElementById('overlay'); ov.classList.add('open'); ov.setAttribute('aria-hidden','false');
   document.getElementById('mClose').focus();
-  m.querySelectorAll('.tseg').forEach(function(b){ b.onclick=function(){ setTheme(b.dataset.th); m.querySelectorAll('.tseg').forEach(function(x){x.classList.toggle('on',x===b);}); }; });
+  // #154 — .tseg is reused for both the theme toggle (data-th) and the new risk-tolerance segment
+  // (data-tol); each button only ever carries one of the two, so branch on which is present rather
+  // than assuming every .tseg is a theme button (that would've fired setTheme(undefined) on a tol click).
+  m.querySelectorAll('.tseg').forEach(function(b){ b.onclick=function(){
+    if(b.dataset.th){ setTheme(b.dataset.th); document.querySelectorAll('.tseg[data-th]').forEach(function(x){x.classList.toggle('on',x===b);}); }
+    else if(b.dataset.tol){ setRiskTol(b.dataset.tol); document.querySelectorAll('.tseg[data-tol]').forEach(function(x){x.classList.toggle('on',x===b);}); render(LAST.D,LAST.H); }
+  }; });
   // #157 (user ask) — moved here from Favourites; dynamically-injected modal content needs its own
   // local bind (same pattern as #115/#116's lesson), not the page-load-time generic wire() pass.
   var atb=document.getElementById('alertsToggleBtn');
