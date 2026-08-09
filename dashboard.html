@@ -915,6 +915,9 @@
   .mshare{position:absolute;top:14px;right:56px;background:var(--surface-2);border:1px solid var(--line);color:var(--ink);
     width:34px;height:34px;border-radius:10px;cursor:pointer;font-size:15px;line-height:1}
   .mshare:focus-visible{outline:2px solid var(--broth);outline-offset:2px}
+  /* .docsbar is a plain flex row (not the positioned .mheader .mshare was built for) — cancel the
+     absolute placement so the button sits in normal flow next to the close button, not floating. */
+  .docsbar .mshare{position:static}
   .hdrshare{background:var(--surface-2);border:1px solid var(--line);color:var(--ink);width:40px;height:40px;
     border-radius:12px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center}
   #toast{position:fixed;left:50%;bottom:88px;transform:translateX(-50%) translateY(12px);background:var(--ink);color:var(--ground);
@@ -1807,6 +1810,10 @@ function applyDeepLink(){
     var region=parts[1], sym=parts[2];
     switchTab('menu');
     setTimeout(function(){ try{ openSym(sym,region); }catch(e){} },30);
+    return;
+  }
+  if(parts[0]==='docs'){
+    setTimeout(function(){ try{ openDocs(parts[1]||null); }catch(e){} },30);
     return;
   }
   if(TABNAMES[parts[0]]) switchTab(parts[0]);
@@ -3141,17 +3148,41 @@ function renderAnalyst(a){
   }
 }
 // Admin methodology docs — fetched privately from the Worker (admin-gated), shown in an isolated iframe.
-function openDocs(){
+function openDocs(section){
+  // openDocs is wired as a bare `el.onclick=openDocs` in a couple of places (not a wrapped call),
+  // so the browser's click event would land here as `section` — guard so only a real string counts.
+  if(typeof section!=='string') section=null;
   var ov=document.getElementById('docsOverlay');
   if(!ov){ ov=document.createElement('div'); ov.id='docsOverlay'; ov.className='docsov'; document.body.appendChild(ov); }
-  ov.innerHTML='<div class="docsbar"><span class="docstitle">📖 The Kitchen Manual <span class="docsadmin">admin</span></span><button class="docsclose" id="docsClose" aria-label="Close">✕</button></div><div class="docsbody" id="docsBody"><div class="docsload">Loading the manual…</div></div>';
+  ov.innerHTML='<div class="docsbar"><span class="docstitle">📖 The Kitchen Manual <span class="docsadmin">admin</span></span><span style="display:flex;align-items:center;gap:8px">'+mShareBtn('/docs'+(section?('/'+section):''),'The Kitchen Manual')+'<button class="docsclose" id="docsClose" aria-label="Close">✕</button></span></div><div class="docsbody" id="docsBody"><div class="docsload">Loading the manual…</div></div>';
   ov.style.display='flex';
-  document.getElementById('docsClose').onclick=function(){ ov.style.display='none'; };
-  document.addEventListener('keydown',function esc(e){ if(e.key==='Escape'){ ov.style.display='none'; document.removeEventListener('keydown',esc); } });
+  // #145: openDocs never touched the URL at all, so a copied/shared link always landed back on
+  // whatever tab was underneath instead of the manual. Give it a real hash (#/docs, or #/docs/<section>
+  // once the reader navigates the manual's own in-page anchors — tracked live below).
+  try{ history.replaceState(null,'',location.pathname+location.search+'#/docs'+(section?('/'+encodeURIComponent(section)):'')); }catch(e){}
+  var closeDocs=function(){
+    ov.style.display='none';
+    try{ history.replaceState(null,'',location.pathname+location.search+'#/'+(TAB||'menu')); }catch(e){}
+  };
+  document.getElementById('docsClose').onclick=closeDocs;
+  document.addEventListener('keydown',function esc(e){ if(e.key==='Escape'){ closeDocs(); document.removeEventListener('keydown',esc); } });
   fetch(API_BASE+'/docs',{headers:{'Authorization':'Bearer '+sessGet()}}).then(function(r){ return r.ok?r.text():null; }).then(function(html){
     var body=document.getElementById('docsBody'); if(!body) return;
     if(!html){ body.innerHTML='<div class="docsload">Couldn’t load the docs — admin sign-in required.</div>'; return; }
     var f=document.createElement('iframe'); f.className='docsframe'; f.setAttribute('title','Documentation'); f.srcdoc=html; body.innerHTML=''; body.appendChild(f);
+    f.onload=function(){
+      try{
+        if(section) f.contentWindow.location.hash=section;
+        // The manual's own §-nav is plain <a href="#id">, so in-frame navigation already works —
+        // this just mirrors whichever section the reader lands on back onto the OUTER app URL, so
+        // "share this link" always reflects the exact section being read, not just the manual's top.
+        f.contentWindow.addEventListener('hashchange',function(){
+          var sec=(f.contentWindow.location.hash||'').replace(/^#/,'');
+          try{ history.replaceState(null,'',location.pathname+location.search+'#/docs'+(sec?('/'+encodeURIComponent(sec)):'')); }catch(e){}
+          var sb=ov.querySelector('[data-share-hash]'); if(sb) sb.dataset.shareHash='/docs'+(sec?('/'+sec):'');
+        });
+      }catch(e){}
+    };
   }).catch(function(){ var body=document.getElementById('docsBody'); if(body) body.innerHTML='<div class="docsload">Couldn’t load the docs.</div>'; });
 }
 // ---- Accounts / cross-device sync (Cloudflare backend) ----
