@@ -607,7 +607,10 @@
   .tvd{font-weight:800;text-transform:uppercase;font-size:10.5px}
   .tvd.buy{color:var(--buy)} .tvd.hold{color:var(--hold)} .tvd.dont{color:var(--dont)}
   .trcue{color:var(--broth);font-weight:800;font-size:11px;flex:0 0 auto}
-  .tsgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(158px,1fr));gap:10px}
+  .tsgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(172px,1fr));gap:10px}
+  /* #116 follow-up (10 Aug 2026) — verdict pill moved out of the cramped top row onto its own line
+     (see tcard()); small left-aligned chip, never collides with the symbol row's + button now. */
+  .tsc-verd{margin-top:1px;align-self:flex-start;font-size:10px;padding:3px 8px;letter-spacing:.03em}
   .tscard{border:1px solid var(--line);border-radius:13px;padding:11px 12px;display:flex;flex-direction:column;gap:6px;background:var(--surface-2)}
   .tscard.tappable{cursor:pointer;transition:transform .12s,border-color .12s}
   .tscard.tappable:hover{transform:translateY(-2px);border-color:var(--broth)}
@@ -644,20 +647,23 @@
   .upname{color:var(--muted);font-size:12px;font-weight:700}
   .upnote{color:var(--faint);font-size:11.5px;line-height:1.4}
   .upgap{color:var(--faint);font-size:11.5px;font-style:italic;margin-top:4px}
-  .up3list{display:grid;grid-template-columns:1fr;gap:8px}
-  @media(min-width:860px){.up3list{grid-template-columns:1fr 1fr}}
+  /* #137 layout redesign (10 Aug 2026, user ask "3 in a row"): was a 2-up grid of WIDE cards, each
+     using an internal 3-column row (110px 200px 1fr) — at 2-up the "so what" third column clipped off
+     the right edge (user screenshot). Fixed by making each card a compact VERTICAL stack (date · title
+     · so-what, top to bottom) so it fits a narrow column cleanly, and the outer grid goes up to 3-up. */
+  .up3list{display:grid;grid-template-columns:1fr;gap:10px}
+  @media(min-width:600px){.up3list{grid-template-columns:1fr 1fr}}
+  @media(min-width:980px){.up3list{grid-template-columns:1fr 1fr 1fr}}
   .uprow3.uptappable{cursor:pointer}
   .uprow3.uptappable:hover{border-color:var(--broth)}
   .uprow3.uptappable:focus-visible{outline:2px solid var(--broth);outline-offset:2px}
   .up3what a{color:var(--broth)}
-  .uprow3{display:grid;grid-template-columns:110px 1fr;gap:2px 12px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
-  @media(min-width:640px){.uprow3{grid-template-columns:110px 200px 1fr;align-items:start}}
+  .uprow3{display:flex;flex-direction:column;gap:5px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
   .uprow3.uptracked{border-color:rgba(255,107,26,.4);background:linear-gradient(180deg,rgba(255,107,26,.06),transparent 60%),var(--surface)}
-  .up3when{color:var(--muted);font-size:12px;font-weight:700;display:flex;align-items:center;gap:5px;white-space:nowrap}
+  .up3when{color:var(--muted);font-size:12px;font-weight:700;display:flex;align-items:center;gap:5px}
   .up3ic{font-size:13px}
-  .up3what{font-weight:800;color:var(--ink);font-size:13px}
-  .up3sowhat{color:var(--faint);font-size:12px;line-height:1.4;grid-column:1/-1}
-  @media(min-width:640px){.up3sowhat{grid-column:3}}
+  .up3what{font-weight:800;color:var(--ink);font-size:13.5px;line-height:1.3}
+  .up3sowhat{color:var(--faint);font-size:12px;line-height:1.4;margin-top:1px}
   .uppulse{display:inline-block;animation:uppulse 1.8s ease-in-out infinite}
   @keyframes uppulse{0%,100%{opacity:1}50%{opacity:.45}}
   @media (prefers-reduced-motion: reduce){.uppulse{animation:none}}
@@ -709,6 +715,12 @@
   .mnews-old{border-color:rgba(255,77,77,.35);background:rgba(255,77,77,.06)}
   .mnews-age{display:inline-block;margin-left:7px;font-size:11px;font-weight:700;color:var(--muted);font-family:var(--mono)}
   .mnews-old .mnews-age{color:var(--dont)}
+  /* #97 news list → 3-up grid (10 Aug 2026, user ask). The rows are .annrow cards; a grid lets them
+     sit 3-across on desktop, 2 at medium, 1 on mobile — no change to the card itself. */
+  .nt3grid{display:grid;grid-template-columns:1fr;gap:8px;margin-top:8px}
+  @media(min-width:640px){.nt3grid{grid-template-columns:1fr 1fr}}
+  @media(min-width:1000px){.nt3grid{grid-template-columns:1fr 1fr 1fr}}
+  .nt3grid .annrow{margin:0}
   .nt3list{display:flex;flex-direction:column;gap:6px;margin-top:6px}
   .nt3row{font-size:12.5px;line-height:1.4;background:var(--surface-2);border:1px solid var(--line);border-radius:9px;padding:8px 10px;text-wrap:pretty}
   .nt3row a{color:var(--broth);font-weight:700} .nt3row a:visited{color:var(--broth)}
@@ -1446,9 +1458,14 @@ function topNewsHtml(D){
   var items=(D.topNews||[]).filter(function(n){return !n.region||n.region===MKT;});
   if(!items.length) return '';
   var TONE={bullish:{ic:'📈',cls:'ann-bull'},bearish:{ic:'📉',cls:'ann-bear'},neutral:{ic:'➖',cls:'ann-neu'},macro:{ic:'🌍',cls:'ann-neu'}};
+  // Sort newest-first (10 Aug 2026, user caught it): the list was in hand-curated importance order,
+  // which for a DATED news feed reads as random — a 20 Jul item sat above 09 Aug ones, and yesterday's
+  // weren't at the top. A dated feed should be chronological; sort by date desc so freshness is obvious.
+  // (The set is still the curated top-10 — only the order changes.)
+  items = items.slice().sort(function(a,b){ return String(b.date||'').localeCompare(String(a.date||'')); });
   // #118 — date + source tie-back, same visual language announcementsHtml() already uses (.anndate,
   // linked headline via a.link/n.url) so a reader can tell how fresh an item is and go read it.
-  var rows=items.slice(0,10).map(function(n){
+  var rows=items.slice(0,12).map(function(n){
     var t=TONE[n.tone]||TONE.neutral;
     var label=(n.sym?esc(n.sym)+' — ':'')+esc(n.headline);
     var head=n.url?'<a class="annhead" href="'+esc(n.url)+'" target="_blank" rel="noopener">'+label+' ↗</a>':'<b class="annhead">'+label+'</b>';
@@ -1456,7 +1473,7 @@ function topNewsHtml(D){
       '<div class="annwhy">'+esc(n.why||'')+'</div></div>';
   }).join('');
   return '<section id="topnews"><div class="sec-head"><h2 class="display">📰 Tonight\'s news, consolidated</h2>'+infoBtn('topnews')+'</div>'+
-    '<p class="sec-sub">Everything real we read tonight across every source, ranked — not just what made a pick card.</p>'+rows+'</section>';
+    '<p class="sec-sub">Everything real we read tonight across every source — newest first. Not just what made a pick card.</p><div class="nt3grid">'+rows+'</div></section>';
 }
 function topMoversHtml(D){
   var tm=(D.topMovers||{})[MKT]; if(!tm) return '';
@@ -1469,17 +1486,24 @@ function topMoversHtml(D){
       missChartSlot(m.sym,MKT,cur)+
     '</div>';
   }
-  var g=(tm.gainers||[]).slice(0,10).map(card).join('');
-  var l=(tm.losers||[]).slice(0,10).map(card).join('');
-  var v=(tm.byVolume||[]).slice(0,10).map(card).join('');
+  // Render-time sanity guard (10 Aug 2026, user caught it — "really only 5 winners and 1 loser?" +
+  // a CEL card showing +2025% at A$2.55): a move that large on a real, priced stock is essentially
+  // always a data artifact (stale prev-close, a consolidation/split reference), not a real day's gain.
+  // CLAUDE.md's #95 price-floor filter alone doesn't catch it (CEL clears $0.02). Drop |%|>300 so junk
+  // never renders — belt-and-braces on top of top-movers.py's own liquidity filter at the source.
+  function clean(arr){ return (arr||[]).filter(function(m){ return m&&m.change_pct!=null&&Math.abs(m.change_pct)<=300; }); }
+  var g=clean(tm.gainers).slice(0,10).map(card).join('');
+  var l=clean(tm.losers).slice(0,10).map(card).join('');
+  var v=clean(tm.byVolume).slice(0,10).map(card).join('');
   if(!g&&!l&&!v) return '';
   return '<section id="topmovers"><div class="sec-head"><h2 class="display">🔥 Top Movers</h2>'+infoBtn('topmovers')+'</div>'+
-    '<p class="sec-sub">The whole '+(MKT==='au'?'ASX':'US')+' market\'s real gainers, losers and volume leaders today — not just tonight\'s picks. Tap any card for the full read.</p>'+
+    '<p class="sec-sub">The whole '+(MKT==='au'?'ASX':'US')+' market\'s real gainers, losers and volume leaders today — liquidity-filtered, not just tonight\'s picks. Tap any card for the full read.</p>'+
     '<div class="cols">'+
-      (g?'<div class="stack"><div class="eyebrow">📈 Top gainers</div><div class="movergrid">'+g+'</div></div>':'')+
-      (l?'<div class="stack"><div class="eyebrow">📉 Top losers</div><div class="movergrid">'+l+'</div></div>':'')+
+      (g?'<div class="stack"><div class="eyebrow">📈 Top gainers · by %</div><div class="movergrid">'+g+'</div></div>':'')+
+      (l?'<div class="stack"><div class="eyebrow">📉 Top losers · by %</div><div class="movergrid">'+l+'</div></div>':'')+
     '</div>'+
-    (v?'<div class="eyebrow" style="margin-top:14px">📊 Top by volume</div><div class="cols"><div class="stack"><div class="movergrid">'+v+'</div></div></div>':'')+
+    (v?'<div class="eyebrow" style="margin-top:14px">📊 Most traded · by dollar-volume</div><div class="cols"><div class="stack"><div class="movergrid">'+v+'</div></div></div>'
+      :'<p class="upgap" style="margin-top:10px">📊 Most-traded-by-volume isn\'t in this run\'s data yet — it\'s refreshed once a day from the whole-market snapshot.</p>')+
   '</section>';
 }
 var MISS_HORIZON='Day';
@@ -3177,11 +3201,16 @@ function openTheme(src,idx){
     var spk = hasSpk ? '<div class="tsc-spark">'+sparkSVG(pi.spark.slice(-30))+'</div>' : '<div class="tsc-spark tsc-sparkslot"></div>';
     var nh=news?'<div class="tsc-news">📰 '+esc(news)+'</div>':'';
     var hy=(!hasPx||!hasSpk)?' data-hydrate="1"':'';
+    // Layout fix (10 Aug 2026, user raised repeatedly): the verdict pill ("SHORTLISTED") used to sit
+    // in the top row alongside the symbol, flag and + button — and with TWO competing margin-left:auto
+    // (flag + pill) in a narrow card, the long pill overflowed and overlapped the + button, clipping
+    // off the card edge. Fixed by giving the top row only symbol · flag · + (+ pushed right, one auto-
+    // margin), and dropping the verdict pill onto its own full-width line below where it can't collide.
     return '<div class="tscard tappable" data-sym="'+esc(sym)+'" data-region="'+esc(reg)+'"'+hy+tap+'>'+
       '<div class="tsc-top"><a class="trsym" href="'+yf(sym,reg)+'" target="_blank" rel="noopener">'+esc(sym)+'</a>'+
         '<span class="pmc-flag">'+(reg==='au'?'AU':'US')+'</span>'+
-        (verd?'<span class="mverd '+esc(vcl)+'" style="margin-left:auto;margin-top:0;font-size:10px;padding:3px 8px">'+esc(verd)+'</span>':'')+
-        '<button class="watchbtn iconwatch" data-sym="'+esc(sym)+'" data-region="'+esc(reg)+'"'+(!verd?' style="margin-left:auto"':'')+' aria-pressed="false" title="Add to watchlist">+</button></div>'+
+        '<button class="watchbtn iconwatch" data-sym="'+esc(sym)+'" data-region="'+esc(reg)+'" style="margin-left:auto" aria-pressed="false" title="Add to watchlist">+</button></div>'+
+      (verd?'<span class="mverd '+esc(vcl)+' tsc-verd">'+esc(verd)+'</span>':'')+
       pxrow+spk+
       '<div class="tsc-why">'+why+'</div>'+nh+
       (cue?'<div class="tsc-cue">'+cue+'</div>':'')+'</div>';
