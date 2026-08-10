@@ -1514,6 +1514,26 @@ function missChartSlot(sym,region,cur,checkStamp){
   var ts=checkStamp?parseStampTime(checkStamp):null;
   return '<div class="misschart" data-hydrate-chart data-sym="'+esc(sym)+'" data-region="'+esc(region)+'" data-cur="'+esc(cur)+'"'+(ts?' data-check-ts="'+ts+'"':'')+'><span class="misschart-load">····· 24h</span></div>';
 }
+// #212 — the moment a recommendation became actionable: the intraday chart marks the timestamp of the
+// run that CONFIRMED this pick (the start of its current continuous streak on the menu), so you can see
+// the earliest point you could have bought and how it's moved since. Reuses the miss-chart hydration
+// (data-check-ts + data-hydrate-chart); the marker label reads "served" instead of "flagged".
+function servedChartSlot(sym,region,cur,iso){
+  var ts=iso?Date.parse(iso):NaN;
+  return '<div class="misschart" data-hydrate-chart data-sym="'+esc(sym)+'" data-region="'+esc(region)+'" data-cur="'+esc(cur)+'"'+(ts?' data-check-ts="'+ts+'" data-mark-label="served"':'')+'><span class="misschart-load">····· since we served it</span></div>';
+}
+// Earliest ISO of the current UNBROKEN run of menus that still contain this ticker in this region —
+// i.e. "we've served this continuously since HH:MM". menus[0] is newest; walk older until the streak
+// breaks. Falls back to the current run's commit time (this pick is brand-new this run).
+function pickServedISO(sym,regionId){
+  var H=(LAST&&LAST.H)||{}, ms=H.menus||[], iso=null;
+  for(var i=0;i<ms.length;i++){
+    var arr=ms[i]&&ms[i][regionId]; if(!arr||arr.indexOf(sym)<0) break;
+    iso=ms[i].iso||iso;
+  }
+  if(!iso){ var D=(LAST&&LAST.D)||{}; iso=D.generated||null; }
+  return iso;
+}
 function hotMoversHtml(D){
   // Live-ish movers between major runs (#83 follow-up): the 10-min re-price pulse now also checks
   // Yahoo's real US gainers/losers (hour-cached, keyless) so a big mover surfaces within ~an hour
@@ -2345,9 +2365,10 @@ function render(D,H){
         /* miniTraj removed — inconsistent (only carried-over picks had it) + confusing 'since 23:33'; the range bar shows the trend */
         '<div class="buyat'+(p.nEntry?' ba-'+buyState(p):'')+'">'+(p.nEntry?'<span class="bl">🎯 Ideal buy</span> ~'+esc(rg.cur||'$')+p.nEntry+buyAction(p):'<span class="bl">Track this pick</span>')+'</div>'+
         '<p class="plain">'+esc(p.plain)+'</p>'+riskTolWarn(p)+(function(){var jc=juiceChip(p.score,p.sym,p.name,signalRows(p,rg.id)),vc=valChip(p);return (jc||vc)?'<div class="sentrow">'+jc+vc+'</div>':'';})()+'<div class="lvls">'+(p.levels||'')+'</div>'+
-        /* #214 — the mini-chart is back on the pick card (data was always there via p.spark; it had
-           only been feeding the range bar). Windowed to the pick's own horizon so chart + range agree. */
-        (p.spark&&p.spark.length>2?(function(){var t=String(p.tf||'').toLowerCase();var win=t.indexOf('day')>=0?5:(t.indexOf('week')>=0?10:22);var s=p.spark.slice(-Math.min(p.spark.length,win));if(s.length<3)s=p.spark.slice(-Math.min(p.spark.length,5));return '<div class="cardtrend"><div class="mrlbl">recent trend</div>'+sparkSVG(s)+'</div>';})():'')+
+        /* #214/#212 — the mini-chart is back on the pick card, now as a live intraday view with a
+           vertical marker at the moment the confirming run SERVED this pick (the earliest you could
+           have acted). The longer 2-month daily trend still lives in the detail modal. */
+        (p.sym&&p.sym!=='NONE'?(function(){var iso=pickServedISO(p.sym,rg.id);return '<div class="cardtrend"><div class="mrlbl">since we served it</div>'+servedChartSlot(p.sym,rg.id,rg.cur||'$',iso)+'</div>';})():'')+
         (p.spark?rangeBar(p.spark,rg.cur||'$',p.tf,p.nEntry):'')+'</article>'+
         ((p.runnerUp && /wait|late|hold|skip|avoid|pass|don.t|steer/i.test(p.verdict||''))?ruCard(p.runnerUp,rg.id,idx):'')+'</div>';
     }).join('');
@@ -4533,13 +4554,20 @@ function hydrateMissCharts(){
       var lastSec=times.length?times[times.length-1]:null;
       var markIdx=null;
       if(checkTs&&times.length){
-        var target=Math.round(checkTs/1000), best=0, bestDiff=Infinity;
-        times.forEach(function(t,i){ var diff=Math.abs(t-target); if(diff<bestDiff){bestDiff=diff;best=i;} });
-        markIdx=best;
+        var target=Math.round(checkTs/1000);
+        // Only draw the marker if the confirm/flag time actually falls within this chart's window
+        // (with ~1h grace). A pick served days ago would otherwise clamp to the chart start and
+        // mislabel it as "served 09:30" — better to show no marker than a wrong one. (#212)
+        if(target>=times[0]-3600){
+          var best=0, bestDiff=Infinity;
+          times.forEach(function(t,i){ var diff=Math.abs(t-target); if(diff<bestDiff){bestDiff=diff;best=i;} });
+          markIdx=best;
+        }
       }
       var isLive=lastSec&&(Date.now()/1000-lastSec)<20*60;   // last bar is fresh → really "now"; else say when it's from
       var rightLbl=(isLive?'now':_timeHM(lastSec))+' '+cur+vals[vals.length-1].toFixed(2);
-      var flagLbl=(markIdx!=null)?'<div class="misschart-flag" style="left:'+((markIdx/(vals.length-1))*100).toFixed(0)+'%">flagged '+_timeHM(times[markIdx])+'</div>':'';
+      var mlab=slot.dataset.markLabel||'flagged';   // #212 — pick cards mark "served", misses mark "flagged"
+      var flagLbl=(markIdx!=null)?'<div class="misschart-flag" style="left:'+((markIdx/(vals.length-1))*100).toFixed(0)+'%">'+mlab+' '+_timeHM(times[markIdx])+'</div>':'';
       slot.innerHTML='<div class="misschart-wrap">'+missSparkSVG(vals,markIdx)+flagLbl+'</div>'+
         '<div class="misschart-mm"><span>'+cur+mn.toFixed(2)+'</span><span class="misschart-now">'+rightLbl+'</span><span>'+cur+mx.toFixed(2)+'</span></div>';
     }).catch(function(){ slot.innerHTML=''; });
