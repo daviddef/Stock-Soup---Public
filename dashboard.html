@@ -549,6 +549,17 @@
   .rltag-future{color:#ffcaa0;font-weight:800}
   .rlfuture .rlwhen{color:#fff;font-weight:800}
   .rlest{font-size:11.5px;color:#c9b7a8;font-weight:600;margin-top:3px}
+  .ri-hint{color:#8f8074;font-weight:600} .rlfuture .ri-hint{color:#8f8074}
+  .rltap{cursor:pointer} .runlog>.rltap:hover{border-color:var(--broth)}
+  /* #243 — "what this run does" overlay */
+  .ri-list{margin:6px 0 0;padding-left:18px;display:flex;flex-direction:column;gap:7px}
+  .ri-list li{font-size:13.5px;line-height:1.5;color:var(--ink)}
+  .ri-note{font-size:12.5px;color:var(--muted);line-height:1.55;margin:12px 0 0;padding:9px 11px;background:var(--surface-2);border-radius:10px}
+  .ri-mkt{margin-top:14px;border:1px solid var(--line);border-radius:12px;padding:11px 12px}
+  .ri-mkt-h{font-size:10.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin-bottom:7px}
+  .ri-mrow{display:flex;justify-content:space-between;gap:12px;font-size:13px;padding:3px 0}
+  .ri-mrow>span:first-child{font-weight:800} .ri-open{color:var(--buy)} .ri-shut{color:var(--muted)}
+  .ri-mnote{font-size:11.5px;color:var(--muted);line-height:1.5;margin-top:7px}
   .rlfuture-wrap .rltier-1{background:rgba(35,194,103,.22);color:#7ee2a6}
   .rlfuture-wrap .rltier-23{background:rgba(90,160,240,.22);color:#9cc4f5}
   .rlrow.rllive{border-left-color:var(--buy);background:linear-gradient(90deg,rgba(35,194,103,.12),transparent 62%)}
@@ -3250,6 +3261,17 @@ document.addEventListener('click',function(e){
   e.preventDefault(); e.stopPropagation();
   openJuice(+b.dataset.juiceId);
 },true);
+// #243 — tap any run row (log OR scheduled) → "what this run does" + market context. Delegated + bubble
+// phase so it works for the re-rendered run-log rows without per-row wiring.
+document.addEventListener('click',function(e){
+  var r=e.target.closest('.rltap'); if(!r)return;
+  if(e.target.closest('a')||e.target.closest('details'))return;
+  openRunInfo(r.dataset.runkind, +r.dataset.runts||null);
+});
+document.addEventListener('keydown',function(e){
+  if(e.key!=='Enter'&&e.key!==' ')return; var r=e.target.closest&&e.target.closest('.rltap'); if(!r)return;
+  e.preventDefault(); openRunInfo(r.dataset.runkind, +r.dataset.runts||null);
+});
 // #210 — tapping a "next best" suggestion card opens the real per-ticker read (openMover: pick/candidate
 // → analyst fallback). Delegated + bubble-phase so a tap on the 🍊 chip (its own capturing listener above,
 // which stopPropagation's) still opens juice instead; the closest('.juicebtn') guard is belt-and-braces.
@@ -3603,19 +3625,16 @@ function kitchenHead(D){
   }
   // #232 (user ask) — the "Next up" card and every "next" sub-line are GONE from the header; the next
   // scheduled fire of every run type now lives as tinted future rows at the top of the run log below
-  // (upcomingRunsHtml), so it isn't duplicated. These cards now show only what has actually HAPPENED.
+  // (upcomingRunsHtml), so it isn't duplicated. #244 (user ask) — the separate "Day/Week pick" and "Long
+  // pick" cards are ALSO gone: one menu run serves all three timeframes, so both just repeated the exact
+  // last-menu date that "Last cooked" already shows. Left with the two cards that carry UNIQUE glanceable
+  // info the run log below doesn't summarise: when each engine last ran, and today's re-price count.
   var stats=[
     // Cook + scan folded together: one card, T1 line(s) + T2·3 line
     _kmulti('Last cooked', lastCookedLines),
     _kmulti('Re-prices today',[
       {sub:'done', val:String(n)+(lastP?' · '+_hm(lastP):'')}
-    ]),
-    _kmulti('Day/Week pick',[
-      {sub:'last', val:lastShort?stampNoWeekday(lastShort):'none yet'}
-    ],'T1'),
-    _kmulti('Long pick',[
-      {sub:'last', val:lastLong?stampNoWeekday(lastLong):'none yet'}
-    ],'T1')
+    ])
   ];
   return tabHead('🚪 Behind the butler door','The engine room','Every run, every source, every score — no black box. <b>Type 1</b> = the catalyst menu, 4×/day, <b>AU + US in the one run</b>. <b>Type 2/3</b> = the daily whole-market scans, <b>each market on its own</b> (AU 03:00, US 14:00 AEST) — the T2·3 line shows whichever is soonest. On the pick cards, <b>next</b> is the next cook: one run decides all three timeframes, so Day/Week and Long share the same next time even though they were each <b>last</b> served on different days.',stats);
 }
@@ -3702,6 +3721,49 @@ function runGanttHtml(){
     '<div class="ganttfoot">'+gridLblHtml.join('')+'</div>'+
   '</div>';
 }
+// #243 (user ask) — tap any run row (past OR scheduled) for an overlay explaining EXACTLY what that run
+// type does + the market session context around its time. Answers the recurring "why does a re-price show
+// no changes / doesn't it refresh everything?" — it DOES (prices for all picks+candidates+watchlist+movers,
+// a fresh news+sentiment read, the risk meter); it just doesn't pick new stocks, and "nothing moved much"
+// only means the tracked prices barely changed that cycle.
+var RUN_KIND_INFO={
+  reprice:{ic:'⏱',title:'Re-price · same picks',tag:'every ~10 min while a market is awake',includes:[
+    'Re-fetches <b>live prices</b> (+ % move &amp; sparkline) for all 6 picks, <b>every Full-Pot candidate</b>, <b>your watchlist</b>, and the market\'s top movers — so your buy-triggers stay live.',
+    'Pulls a <b>fresh news headline + sentiment</b> for the picks and Full-Pot candidates (watchlist items get price only, not news).',
+    'Recomputes the <b>risk-appetite meter</b> — VIX, BTC, gold, oil, AUD/USD.'],
+    note:'It does <b>NOT</b> pick new stocks — the 6 picks stay put until the next Menu run. <b>“Nothing moved much”</b> just means the tracked prices barely changed this cycle (normal when the market\'s shut); everything above still refreshed.'},
+  menu:{ic:'🍳',title:'Menu · a full re-cook',tag:'~4×/day, ~30 min before a market open',includes:[
+    'Runs all four discovery nets: <b>live news &amp; macro</b>, the <b>whole-market quant screen</b>, the <b>earnings calendar</b>, and <b>new-listings / IPOs</b>.',
+    'Scores the <b>entire candidate pot</b> through the real Buy-Now model — not just the 6 that get served.',
+    'Serves <b>6 fresh picks</b> — 3 ASX + 3 Global — across Day / Week / Long.'],
+    note:'This is the only run that changes <b>which</b> stocks are on the menu.'},
+  scan:{ic:'🔬',title:'Whole-market scan · T2·3',tag:'1×/day per market (AU 03:00 · US 14:00 AEST)',includes:[
+    'Runs <b>every liquid name on the exchange</b> (~1,270 ASX / ~580 liquid US) through the model — the names the catalyst nets never mentioned.',
+    'Produces the <b>Type 2</b> (quant leaders) and <b>Type 3</b> (per-indicator leaders) tier picks.'],
+    note:'Separate from the catalyst Menu — it\'s hunting silent technical setups, not news.'}
+};
+function _kindOf(k){ k=k||''; if(/scan/.test(k)) return 'scan'; if(/reprice/.test(k)) return 'reprice'; return 'menu'; }
+// Market session context for a given run time (AEST clock; user is in AU). ASX 10:00–16:00 · US 23:30–06:00.
+function _sessionCtx(ts){
+  var d=ts?new Date(ts):new Date(), h=d.getHours()+d.getMinutes()/60, wd=d.getDay(), biz=(wd>=1&&wd<=5);
+  var auOpen=biz&&h>=10&&h<16, usOpen=biz&&(h>=23.5||h<6);
+  return '<div class="ri-mkt"><div class="ri-mkt-h">Market context at this run</div>'+
+    '<div class="ri-mrow"><span>🇦🇺 ASX</span><span>10:00–16:00 AEST · <b class="'+(auOpen?'ri-open':'ri-shut')+'">'+(auOpen?'was OPEN':'was closed')+'</b></span></div>'+
+    '<div class="ri-mrow"><span>🌏 US</span><span>23:30–06:00 AEST · <b class="'+(usOpen?'ri-open':'ri-shut')+'">'+(usOpen?'was OPEN':'was closed')+'</b></span></div>'+
+    '<div class="ri-mnote">Prices only move while a market is open — a run during a closed session refreshes the same last-traded numbers.</div></div>';
+}
+function openRunInfo(kind,ts){
+  var info=RUN_KIND_INFO[_kindOf(kind)]; if(!info) return;
+  LASTFOCUS=document.activeElement;
+  var m=document.getElementById('modal'); m.className='modal';
+  m.innerHTML='<div class="mhead"><button class="mclose" id="mClose" aria-label="Close">✕</button><div class="mtf">'+info.ic+' What this run does</div>'+
+    '<div class="mtop"><div class="msym" style="font-size:19px">'+esc(info.title)+'</div></div><span class="mverd v-hold">'+esc(info.tag)+'</span></div>'+
+    '<div class="mbody"><ul class="ri-list">'+info.includes.map(function(x){return '<li>'+x+'</li>';}).join('')+'</ul>'+
+    '<p class="ri-note">'+info.note+'</p>'+_sessionCtx(ts)+'</div>';
+  document.getElementById('mClose').onclick=closeModal;
+  var ov=document.getElementById('overlay'); ov.classList.add('open'); ov.setAttribute('aria-hidden','false');
+  document.getElementById('mClose').focus();
+}
 // #232 (user ask) — the "next scheduled run" now lives as future-styled rows at the TOP of the run log
 // (the "every run" list) instead of in the header stat cards, which duplicated it. Shows the next fire of
 // EVERY scheduled run type — split-aware for T1 (🇦🇺/🌏 when the per-market runs are on), plus both
@@ -3731,28 +3793,28 @@ function upcomingRunsHtml(){
   var splitOn=!!(D.nextAu||D.nextUs||D.lastCookAu||D.lastCookUs);
   if(splitOn){
     var au=fromStr(D.nextAu), us=fromStr(D.nextUs);
-    if(au) items.push({t:au,ic:'🍳',tier:'T1',lbl:'Menu · 🇦🇺 Australia',est:estFor('menu')});
-    if(us) items.push({t:us,ic:'🍳',tier:'T1',lbl:'Menu · 🌏 United States',est:estFor('menu')});
+    if(au) items.push({t:au,ic:'🍳',tier:'T1',kind:'menu',lbl:'Menu · 🇦🇺 Australia',est:estFor('menu')});
+    if(us) items.push({t:us,ic:'🍳',tier:'T1',kind:'menu',lbl:'Menu · 🌏 United States',est:estFor('menu')});
   } else {
-    var nx=fromStr(D.next); if(nx) items.push({t:nx,ic:'🍳',tier:'T1',lbl:'Menu · AU + US',est:estFor('menu')});
+    var nx=fromStr(D.next); if(nx) items.push({t:nx,ic:'🍳',tier:'T1',kind:'menu',lbl:'Menu · AU + US',est:estFor('menu')});
   }
   // Whole-market scans — fixed daily anchors (AU 03:00, US 14:00 AEST ≈ local for the AU user)
-  items.push({t:at(3,0),ic:'🔬',tier:'T2·3',lbl:'Whole-market scan · 🇦🇺 Australia',est:estFor('scan-au')});
-  items.push({t:at(14,0),ic:'🔬',tier:'T2·3',lbl:'Whole-market scan · 🌏 United States',est:estFor('scan-us')});
+  items.push({t:at(3,0),ic:'🔬',tier:'T2·3',kind:'scan',lbl:'Whole-market scan · 🇦🇺 Australia',est:estFor('scan-au')});
+  items.push({t:at(14,0),ic:'🔬',tier:'T2·3',kind:'scan',lbl:'Whole-market scan · 🌏 United States',est:estFor('scan-us')});
   // Next re-price ≈ last pulse + 10 min, else ~now+10
   var lastP=_pu.length?_pu[_pu.length-1].iso:null;
   var rep=lastP?new Date(new Date(lastP).getTime()+10*60000):new Date(now.getTime()+10*60000);
   if(rep<=now) rep=new Date(now.getTime()+10*60000);
-  items.push({t:rep,ic:'⏱',tier:null,lbl:'Re-price · same picks',est:estFor('reprice')});
+  items.push({t:rep,ic:'⏱',tier:null,kind:'reprice',lbl:'Re-price · same picks',est:estFor('reprice')});
   items.sort(function(a,b){return a.t-b.t;});
   if(!items.length) return '';
   // #241 (user ask) — group the scheduled-next rows inside one bordered, dark-background panel with a clear
   // "Future runs" label, so they read as a distinct block that hasn't happened yet, not loose rows that
-  // blend into the real run history below.
+  // blend into the real run history below. #243 — each row taps through to "what this run does".
   return '<div class="rlfuture-wrap"><div class="rlfuture-h">🔮 Future runs · scheduled next</div>'+items.map(function(o){
     var badge=o.tier?'<span class="rltier rltier-'+(o.tier==='T1'?'1':'23')+'">'+esc(o.tier)+'</span>':'';
-    return '<div class="rlrow rlfuture"><div class="rltop"><span class="rltag rltag-future">'+o.ic+' '+esc(o.lbl)+'</span>'+badge+'<span class="rlwhen">'+hm(o.t)+' · '+untilTxt(o.t)+'</span></div>'+
-      (o.est?'<div class="rlest">⏳ takes '+esc(o.est)+'</div>':'')+'</div>';
+    return '<div class="rlrow rlfuture rltap" data-runkind="'+o.kind+'" data-runts="'+o.t.getTime()+'" role="button" tabindex="0"><div class="rltop"><span class="rltag rltag-future">'+o.ic+' '+esc(o.lbl)+'</span>'+badge+'<span class="rlwhen">'+hm(o.t)+' · '+untilTxt(o.t)+'</span></div>'+
+      (o.est?'<div class="rlest">⏳ takes '+esc(o.est)+' · <span class="ri-hint">tap for what\'s included</span></div>':'')+'</div>';
   }).join('')+'</div>';
 }
 function runLogHtml(){
@@ -3806,13 +3868,13 @@ function runLogHtml(){
     var stepsHtml=steps.length?('<details class="rlsteps"><summary>⏱ step-by-step ('+steps.length+')</summary>'+
       '<div class="rlstepsbody">'+steps.map(function(s){return '<div class="rlstep"><span>'+esc(s.label)+'</span><span class="mono">'+esc(durLabel(s.durMs))+'</span></div>';}).join('')+
       '</div></details>'):'';
-    return '<div class="rlrow rlmaj"><div class="rltop"><span class="rltag rltag-maj">🍳 Menu · '+(samePicks?'confirmed, no change':'new picks')+'</span>'+
+    return '<div class="rlrow rlmaj rltap" data-runkind="menu" data-runts="'+r.ts+'" role="button" tabindex="0"><div class="rltop"><span class="rltag rltag-maj">🍳 Menu · '+(samePicks?'confirmed, no change':'new picks')+'</span>'+
       '<span class="rltier rltier-1" title="Type 1 — the catalyst-driven pipeline (news/earnings/analyst nets). Type 2/3 are the separate daily whole-market scans, shown on their own schedule.">T1</span>'+
       '<span class="rlwhen">'+fmtWhen(r.ts)+'</span>'+dur(m.durMs)+'</div>'+
       '<div class="rlbody">'+pkline(m.au,'🇦🇺','Australia')+pkline(m.us,'🇺🇸','United States')+stepsHtml+'</div></div>';
   }
   function minRowHtml(r,mv){
-    return '<div class="rlrow rlmin"><div class="rltop"><span class="rltag rltag-min">⏱ Re-price · same picks</span>'+
+    return '<div class="rlrow rlmin rltap" data-runkind="reprice" data-runts="'+r.ts+'" role="button" tabindex="0"><div class="rltop"><span class="rltag rltag-min">⏱ Re-price · same picks</span>'+
       '<span class="rlwhen">'+fmtWhen(r.ts)+'</span>'+dur(r.pu.durMs)+'</div>'+
       '<div class="rlbody"><div class="rlline rlmovers">'+(mv||'<span class="qt">quiet hour — nothing moved much</span>')+'</div></div></div>';
   }
@@ -3879,7 +3941,7 @@ function runLogHtml(){
     var cls=(e.status==='failed'||staleCook)?'rlfail':'rlscan';
     var st=staleCook?'stalled — no completion signal after 5h+ (the last good T2/T3 menu stands)':
       e.status==='cooking'?'<span class="rlspin"></span>scanning the whole market…':e.status==='failed'?(e.note||'scan didn’t finish — last good T2/T3 menu stands'):e.status==='cancelled'?'cancelled':('done'+(dl?' · '+dl:''));
-    return '<div class="rlrow '+cls+'"><div class="rltop"><span class="rltag rltag-scan">🔬 Whole-market scan</span><span class="rltier rltier-23" title="Type 2 (quant) + Type 3 (per-indicator) — the daily whole-market scans behind the T2/T3 tiers">T2·T3</span><span class="rlwhen">'+fmtWhen(rts)+' · '+mkt+'</span></div><div class="rlbody"><div class="rlline"><span class="qt">'+esc(st)+'</span></div></div></div>';
+    return '<div class="rlrow '+cls+' rltap" data-runkind="scan" data-runts="'+rts+'" role="button" tabindex="0"><div class="rltop"><span class="rltag rltag-scan">🔬 Whole-market scan</span><span class="rltier rltier-23" title="Type 2 (quant) + Type 3 (per-indicator) — the daily whole-market scans behind the T2/T3 tiers">T2·T3</span><span class="rlwhen">'+fmtWhen(rts)+' · '+mkt+'</span></div><div class="rlbody"><div class="rlline"><span class="qt">'+esc(st)+'</span></div></div></div>';
   }
   return '<h4 style="'+hh+'">Every run — newest first</h4>'+
     '<p style="font-size:12px;color:var(--muted);margin:0 0 8px"><b style="color:var(--broth)">Menu</b> = a full re-cook (six new picks, timed ~30&nbsp;min before an open). <b>Re-price</b> = same picks, fresh numbers each hour. The tinted rows up top are <b>scheduled next</b>, not yet run.</p>'+
