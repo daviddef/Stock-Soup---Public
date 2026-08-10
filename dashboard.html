@@ -92,9 +92,9 @@
   /* #184 — the composite "now" reading is a good-sized round black dot (was a thin vertical line),
      labelled "Risk", with a gentle pulse so it clearly reads as the live overall reading vs the small
      per-indicator emoji ticks above the track. */
-  .meter .needle{position:absolute;top:-3px;width:16px;height:16px;border-radius:50%;background:var(--ink);box-shadow:0 0 0 3px var(--surface);left:50%;transform:translateX(-50%);transition:left .8s cubic-bezier(.2,.8,.2,1);z-index:4;animation:riskpulse 2.6s ease-out infinite}
+  .meter .needle{position:absolute;top:-7px;width:24px;height:24px;border-radius:50%;background:var(--ink);box-shadow:0 0 0 3px var(--surface);left:50%;transform:translateX(-50%);transition:left .8s cubic-bezier(.2,.8,.2,1);z-index:4;animation:riskpulse 2.4s ease-out infinite}
   .meter .needle::after{content:"Risk";position:absolute;top:calc(100% + 3px);left:50%;transform:translateX(-50%);font-size:9px;font-weight:900;letter-spacing:.03em;color:var(--ink);background:var(--surface);padding:0 4px;border-radius:4px;white-space:nowrap}
-  @keyframes riskpulse{0%{box-shadow:0 0 0 3px var(--surface),0 0 0 3px rgba(120,120,120,.35)}70%{box-shadow:0 0 0 3px var(--surface),0 0 0 11px rgba(120,120,120,0)}100%{box-shadow:0 0 0 3px var(--surface),0 0 0 3px rgba(120,120,120,0)}}
+  @keyframes riskpulse{0%{box-shadow:0 0 0 3px var(--surface),0 0 0 3px var(--rcp,rgba(120,120,120,.35))}70%{box-shadow:0 0 0 3px var(--surface),0 0 0 16px rgba(120,120,120,0)}100%{box-shadow:0 0 0 3px var(--surface),0 0 0 3px rgba(120,120,120,0)}}
   @media(prefers-reduced-motion:reduce){.meter .needle{animation:none}}
   .meter .lbls{display:flex;justify-content:space-between;font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-top:20px;font-weight:800}
   .meterleg{display:flex;gap:14px;justify-content:center;margin-top:8px;font-size:10.5px;font-weight:700;color:var(--muted)}
@@ -105,7 +105,7 @@
      tell which is which on the line itself (not just in the legend). Plus an emoji+score legend below. */
   .factormark{position:absolute;top:0;bottom:0;width:0;transform:translateX(-50%);pointer-events:none}
   .factormark::after{content:'';position:absolute;top:-3px;bottom:-3px;left:0;width:2px;transform:translateX(-50%);border-radius:1px;background:var(--ink);opacity:.55}
-  .factormark .fmi{position:absolute;top:-20px;left:0;transform:translateX(-50%);font-size:15px;line-height:1;white-space:nowrap}
+  .factormark .fmi{position:absolute;top:-22px;left:0;transform:translateX(-50%);font-size:18px;line-height:1;white-space:nowrap}
   .factorleg{display:flex;flex-wrap:wrap;gap:9px 18px;justify-content:center;margin-top:12px;font-size:13.5px;font-weight:700;color:var(--muted)}
   .factorleg span{white-space:nowrap;display:inline-flex;align-items:center;gap:5px} .factorleg b{color:var(--ink);font-variant-numeric:tabular-nums;font-weight:800}
   .tagword{opacity:.7;font-weight:700}
@@ -2601,7 +2601,8 @@ function render(D,H){
       '<div class="eyebrow schedlink" data-info="schedule" role="button" tabindex="0" title="Major runs are manually triggered — this is the target window, not a guarantee" style="letter-spacing:.06em">'+esc(stampNoWeekday(D.stamp))+(D.next?' · next ~'+esc(D.next):'')+' <span class="schedi">i</span></div>'+
       '<h1 class="display">Two pots on the boil:<br><span class="hot">'+esc(hdl(D,'a'))+'</span> &amp; <span class="hot">'+esc(hdl(D,'b'))+'</span>.</h1>'+
       '<p class="chef">'+chefFor(D)+'</p>'+
-      '<div class="metastrip">'+(function(){var hl=marketHeadline(r,hotTagsList); return '<button type="button" class="chip clickchip mktheadline" id="mktHeadlineBtn">'+hl.icon+' '+esc(hl.text)+' <span class="chipi">i</span></button>';})()+'</div>'+
+      /* #risk polish — the standalone "you're OK to take risk…" pill is gone; that read now opens by
+         tapping the risk meter itself (#197), so the pill was redundant. */
       (function(){var fm=riskFactorMarks(r); return '<div class="meter tappable" id="riskMeterBtn" role="button" tabindex="0" title="Tap for tonight’s market read" aria-label="Open tonight’s market read"><div class="track"><div class="needle" id="needle"></div>'+fm.marks+'</div>'+
       '<div class="lbls"><span>🔴 Hide the cash</span><span>⚪ Steady</span><span>🟢 Send it</span></div>'+
       fm.leg+'</div>';})()+
@@ -4857,7 +4858,12 @@ function wire(D){
   var lvl=(D.risk&&D.risk.level!=null)?D.risk.level:50;
   var vixLvlN=((D.risk||{}).vix!=null)?Math.max(0,Math.min(100, 100-(((D.risk||{}).vix-10)/25*100))):null;
   requestAnimationFrame(function(){
-    var n=document.getElementById('needle');if(n)n.style.left=lvl+'%';
+    var n=document.getElementById('needle');
+    if(n){ n.style.left=lvl+'%';
+      // #risk polish — colour the pulsing dot by where it sits: red (hide the cash) → amber → green (send it)
+      var RC=lvl>=67?['#1fb862','rgba(31,184,98,.55)']:lvl>=34?['#f2a33d','rgba(242,163,61,.6)']:['#ff4d4d','rgba(255,77,77,.55)'];
+      n.style.background=RC[0]; n.style.setProperty('--rcp',RC[1]);
+    }
   });
 }
 
