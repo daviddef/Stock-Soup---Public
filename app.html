@@ -4951,7 +4951,14 @@ function applyBundle(b){
   if(tr&&tr.record) TRACK=tr;
   if(oc&&oc.outcomes) OUTCOMES=oc;
   RUNNING=b.running||null; RUNLOG=b.runLog||[];
-  if((d&&d.regions)||(h&&h.menus)||PULSES||TRACK||OUTCOMES){ boot(d&&d.regions?d:EMBEDDED, h&&h.menus?h:HIST_EMBED); watchRun(); return true; }
+  if((d&&d.regions)||(h&&h.menus)||PULSES||TRACK||OUTCOMES){
+    // Wrap boot() so a render throw can't be silently swallowed by loadGated's .catch — that turned a
+    // single malformed field (hotTags as a list, 10 Aug 2026) into a blank page with ZERO signal, which
+    // is what made it so hard to diagnose. Now it at least screams in the console, and we keep whatever
+    // was on screen rather than pretending the load simply "returned nothing".
+    try{ boot(d&&d.regions?d:EMBEDDED, h&&h.menus?h:HIST_EMBED); watchRun(); return true; }
+    catch(err){ console.error('applyBundle: render threw — the page could not update with fresh data:', err); return false; }
+  }
   return false;
 }
 // While a run is cooking, quietly re-poll /data so the finished menu (and its cleared marker) appears on its own.
