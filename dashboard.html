@@ -315,8 +315,14 @@
   .wlstat-big.up{color:var(--buy)} .wlstat-big.down{color:var(--dont)}
   .wlstat-sub{font-size:11px;color:var(--faint);margin-top:2px}
   .wlstat-row{display:flex;justify-content:space-between;align-items:center;margin-top:10px;font-size:12px;font-weight:700}
-  .wlstat-wl .up{color:var(--buy)} .wlstat-wl .down{color:var(--dont)}
+  .wlstat-wl{display:flex;align-items:baseline;gap:6px;flex-wrap:wrap} .wlstat-wl .up{color:var(--buy)} .wlstat-wl .down{color:var(--dont)}
+  .wlstat-wlnote{font-size:10px;font-weight:600;color:var(--faint)}
   .wlstat-be{color:var(--muted);font-weight:700}
+  /* #250 — Best/Worst as tappable chips */
+  .wlstat-bw{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+  .wlstat-chip{display:flex;align-items:baseline;gap:6px;flex-wrap:wrap;width:100%;text-align:left;font-family:var(--font);font-weight:700;font-size:12.5px;color:var(--ink);background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:8px 11px;cursor:pointer;transition:border-color .12s}
+  .wlstat-chip:hover{border-color:var(--broth)} .wlstat-chip .wlc-lbl{font-size:10px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+  .wlstat-chip .up{color:var(--buy)} .wlstat-chip .down{color:var(--dont)} .wlstat-chip small{color:var(--faint);font-weight:600}
   .wlstat-empty{font-size:12.5px;color:var(--faint);margin-top:6px;line-height:1.4}
   .pxranges{display:flex;flex-direction:column;gap:10px;margin-top:4px}
   .pxr-row{display:flex;align-items:center;gap:8px}
@@ -837,7 +843,12 @@
   .potmore:hover{border-color:var(--hold);color:var(--ink)}
   .potlose{margin-top:12px}
   .potlose[hidden]{display:none}
-  .potcard{display:flex;flex-direction:column;gap:6px;border:1px solid var(--line);border-radius:13px;padding:12px 13px;text-decoration:none;color:var(--ink);cursor:pointer;transition:transform .12s,border-color .12s}
+  /* #252 — min-width:0 is REQUIRED on a grid item or its default min-width:auto lets long content (a long
+     company name, a wide note) force the card WIDER than its 1fr track — which is why the "Send it back"
+     cards (longer names like "UnitedHealth Group Incorporated") pushed past the boundary while shorter-named
+     cards didn't. With min-width:0 every card respects its track and the nowrap name ellipsis-clips. */
+  .potcard{display:flex;flex-direction:column;gap:6px;min-width:0;border:1px solid var(--line);border-radius:13px;padding:12px 13px;text-decoration:none;color:var(--ink);cursor:pointer;transition:transform .12s,border-color .12s}
+  .potcard>*{min-width:0;max-width:100%}
   .pmc-short{font-size:10px;font-weight:800;font-family:var(--mono);color:var(--dont);background:rgba(255,77,77,.12);border-radius:999px;padding:1px 6px}
   .mnews{font-size:13.5px;line-height:1.5;background:var(--surface-2);border:1px solid var(--line);border-radius:11px;padding:11px 13px;text-wrap:pretty}
   .mnews a{color:var(--broth);font-weight:700}
@@ -3737,7 +3748,7 @@ var RUN_KIND_INFO={
   scan:{ic:'🔬',title:'Whole-market scan · T2·3',tag:'1×/day per market (AU 03:00 · US 14:00 AEST)',includes:[
     'Runs <b>every liquid name on the exchange</b> (~1,270 ASX / ~580 liquid US) through the model — the names the catalyst nets never mentioned.',
     'Produces the <b>Type 2</b> (quant leaders) and <b>Type 3</b> (per-indicator leaders) tier picks.'],
-    note:'Separate from the catalyst Menu — it\'s hunting silent technical setups, not news.'}
+    note:'Separate from the catalyst Menu — it\'s hunting silent technical setups, not news. It reads the <b>last session\'s end-of-day close</b> (which doesn\'t change overnight) and runs <b>off-peak</b> (AU 03:00 · US 14:00 AEST) so its long, heavy load never competes with the live menu runs — that\'s why it finishes hours before the open, and that\'s fine.'}
 };
 function _kindOf(k){ k=k||''; if(/scan/.test(k)) return 'scan'; if(/reprice/.test(k)) return 'reprice'; return 'menu'; }
 // Market session context for a given run time (AEST clock; user is in AU). ASX 10:00–16:00 · US 23:30–06:00.
@@ -3828,7 +3839,14 @@ function upcomingRunsHtml(){
     var badge=o.tier?'<span class="rltier rltier-'+(o.tier==='T1'?'1':'23')+'">'+esc(o.tier)+'</span>':'';
     var estTxt=o.est&&o.est.txt||'';
     // #246 — project the finish time and show how long before the next market open/close it lands.
-    var fin=''; if(o.est&&o.est.ms){ var ev=nextMktEvent(o.t.getTime()+o.est.ms, o.mkt); if(ev){ var mins=Math.max(0,Math.round((ev.t-(o.t.getTime()+o.est.ms))/60000)); fin=' · expected to finish <b>'+_gap(mins)+' before '+esc(ev.w)+'</b>'; } }
+    // #248/#251 — for a MENU (or re-price) the "finish X before the open" is the operative, reassuring
+    // deadline. For a SCAN it isn't: the scan reads the LAST session's end-of-day close (unchanged
+    // overnight) and runs off-peak on purpose, so a big "6h before open" gap reads as wasteful when it's
+    // actually correct — show the real rationale instead of the alarming number.
+    var fin='';
+    if(o.kind==='scan'){
+      fin=' · runs <b>off-peak on the last close</b> — ready well before '+(o.mkt==='us'?'the US opens':'the ASX opens');
+    } else if(o.est&&o.est.ms){ var ev=nextMktEvent(o.t.getTime()+o.est.ms, o.mkt); if(ev){ var mins=Math.max(0,Math.round((ev.t-(o.t.getTime()+o.est.ms))/60000)); fin=' · expected to finish <b>'+_gap(mins)+' before '+esc(ev.w)+'</b>'; } }
     return '<div class="rlrow rlfuture rltap" data-runkind="'+o.kind+'" data-runts="'+o.t.getTime()+'" role="button" tabindex="0"><div class="rltop"><span class="rltag rltag-future">'+o.ic+' '+esc(o.lbl)+'</span>'+badge+'<span class="rlwhen">'+hm(o.t)+' · '+untilTxt(o.t)+'</span></div>'+
       (estTxt?'<div class="rlest">⏳ takes '+esc(estTxt)+fin+' · <span class="ri-hint">tap for what\'s included</span></div>':'')+'</div>';
   }).join('')+'</div>';
@@ -4701,11 +4719,19 @@ function wlStatBlock(rows,title,icon,emptyMsg){
   } else {
     sinceTxt='since each was flagged — add-dates aren\'t captured for names added before this feature shipped';
   }
+  // #250 (user ask) — spell out W/L as Wins/Losses, and turn Best/Worst into tappable chips that state the
+  // period ("since added <date>") and open the full per-ticker detail (entry, current, the story) on tap.
+  var winTxt=wins+' '+(wins===1?'win':'wins'), lossTxt=losses+' '+(losses===1?'loss':'losses');
+  function bwChip(r,ic,lbl){
+    var d=r.w.addedAt?(' '+new Date(r.w.addedAt).toLocaleDateString('en-AU',{day:'numeric',month:'short'})):'';
+    return '<button class="wlstat-chip" data-wl-sym="'+esc(r.w.sym)+'" data-wl-region="'+esc(r.w.region||'au')+'" title="Tap for '+esc(r.w.sym)+'’s full detail — buy price, now, and the story">'+
+      ic+' <span class="wlc-lbl">'+lbl+'</span> <b>'+esc(r.w.sym)+'</b> <span class="'+(r.gap>=0?'up':'down')+'">'+(r.gap>=0?'+':'')+r.gap.toFixed(1)+'%</span> <small>since added'+esc(d)+'</small></button>';
+  }
   return '<div class="wlstat-card"><div class="wlstat-h">'+icon+' '+esc(title)+cnt+'</div>'+
     '<div class="wlstat-big '+(avg>=0?'up':'down')+'">'+(avg>=0?'+':'')+avg.toFixed(1)+'%</div>'+
     '<div class="wlstat-sub">avg across '+usable.length+' name'+(usable.length===1?'':'s')+' with a captured buy price, '+sinceTxt+(rows.length>usable.length?' · '+(rows.length-usable.length)+' more not yet priced':'')+'</div>'+
-    '<div class="wlstat-row"><span class="wlstat-wl"><span class="up">'+wins+'W</span> · <span class="down">'+losses+'L</span></span>'+
-    '<span class="wlstat-be">🏆 '+esc(best.w.sym)+' '+(best.gap>=0?'+':'')+best.gap.toFixed(1)+'%'+(usable.length>1?' · 🥶 '+esc(worst.w.sym)+' '+(worst.gap>=0?'+':'')+worst.gap.toFixed(1)+'%':'')+'</span></div></div>';
+    '<div class="wlstat-row"><span class="wlstat-wl"><span class="up">'+winTxt+'</span> · <span class="down">'+lossTxt+'</span> <span class="wlstat-wlnote">since each was flagged</span></span></div>'+
+    '<div class="wlstat-bw">'+bwChip(best,'🏆','Best')+(usable.length>1?bwChip(worst,'🥶','Worst'):'')+'</div></div>';
 }
 function renderWlSummary(rows){
   var el=document.getElementById('wlSummary'); if(!el) return;
@@ -4716,6 +4742,10 @@ function renderWlSummary(rows){
     wlStatBlock(owned,'Things you own','📦','Flag something as owned (📦 on a card) to see real performance here.')+
     wlStatBlock(watching,'What you could have owned','👀','Nothing on the watch-only list yet with a captured buy price.')+
     '</div>';
+  // #250 — Best/Worst chips tap through to the full per-ticker detail.
+  el.querySelectorAll('.wlstat-chip[data-wl-sym]').forEach(function(b){
+    b.addEventListener('click',function(e){ e.preventDefault(); openWatchInsight(b.dataset.wlSym,b.dataset.wlRegion); });
+  });
 }
 function renderWatchlist(){
   var el=document.getElementById('wlPills'); if(!el) return;
