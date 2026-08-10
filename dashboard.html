@@ -239,8 +239,10 @@
   .axv-buy{color:var(--buy)} .axv-sell{color:var(--dont)} .axv-warn{color:var(--hold)} .axv-hold{color:var(--muted)}
   .axhold.ax-sell,.axpivot.ax-sell{border-color:rgba(255,77,77,.38);border-left-color:var(--dont);background:linear-gradient(180deg,rgba(255,77,77,.09),transparent 72%),var(--surface)}
   .axpivot{cursor:pointer;transition:border-color .12s,transform .05s} .axpivot:active{transform:scale(.995)}
-  .axhold.ax-warn{border-color:rgba(255,197,61,.4);border-left-color:var(--hold);background:linear-gradient(180deg,rgba(255,197,61,.09),transparent 72%),var(--surface)}
+  .axhold.ax-warn,.axcoming.ax-warn{border-color:rgba(255,197,61,.4);border-left-color:var(--hold);background:linear-gradient(180deg,rgba(255,197,61,.09),transparent 72%),var(--surface)}
   .axhold.ax-hold{border-color:var(--line);border-left-color:var(--muted);background:var(--surface)}
+  .axcoming{cursor:pointer;transition:border-color .12s,transform .05s} .axcoming:active{transform:scale(.995)}
+  .axchip{display:inline-flex;align-items:center;margin-left:2px}   /* #181 — 🍊 score chip on every action card */
   .ownbtn.owned{background:rgba(35,194,103,.14);border-color:rgba(35,194,103,.4);color:var(--buy)}
   .sentrow{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 2px}
   .sentc{display:inline-flex;align-items:center;gap:4px;font-size:10.5px;font-weight:800;padding:3px 8px;border-radius:6px;letter-spacing:.02em}
@@ -2247,15 +2249,24 @@ function openMover(sym,region){
   openAnalyst(sym,region);
 }
 function actionsHtml(D){
+  // #181 — standardised action cards: every card shares one template (verb badge · subject · 🍊 score
+  // chip · one-line why), 3-across, each tapping to its real detail. The 🍊 chip is looked up from the
+  // scored picks/candidates so a card carries the same model score you see everywhere else.
+  function _axFind(sym,region){ var f=null;
+    (D.regions||[]).forEach(function(rg){ if(rg.id!==region)return; (rg.picks||[]).forEach(function(p){ if(p.sym===sym)f=p; }); });
+    if(!f)(D.candidates||[]).forEach(function(c){ if(c.sym===sym&&(c.region||'us')===region)f=c; });
+    return f; }
+  function _axChip(sym,region){ var o=_axFind(sym,region); return (o&&o.score)?'<span class="axchip">'+juiceChip(o.score,o.sym,o.name,signalRows(o,region))+'</span>':''; }
+  function _when(d){ return d===0?'Today':d===1?'Tomorrow':'In '+d+'d'; }
   var ready=[];
   (D.regions||[]).forEach(function(rg){ if(rg.id!==MKT) return;
     (rg.picks||[]).forEach(function(p,idx){ if(pickAction(p)==='buy') ready.push({p:p,rg:rg,idx:idx}); }); });
   ready.sort(function(a,b){return (a.p.nNow/a.p.nEntry)-(b.p.nNow/b.p.nEntry);});
   ready=ready.slice(0,3);
   var buyCards=ready.map(function(it){
-    var p=it.p, cur=it.rg.cur||'$', why=(p.catalysts&&p.catalysts[0])||p.news||'';
+    var p=it.p, cur=it.rg.cur||'$', why=(p.catalysts&&p.catalysts[0])||p.news||'', chip=(p.score?'<span class="axchip">'+juiceChip(p.score,p.sym,p.name,signalRows(p,it.rg.id))+'</span>':'');
     return '<div class="axcard" data-region="'+esc(it.rg.id)+'" data-idx="'+it.idx+'" role="button" tabindex="0" aria-label="Buy '+esc(p.sym)+'">'+
-      '<div class="axtop"><span class="axverb axv-buy">🟢 BUY</span>'+tfBW(p.tf)+'<span class="axsym">'+esc(p.sym)+'</span><span class="axpx mono">'+esc(p.price)+'</span></div>'+
+      '<div class="axtop"><span class="axverb axv-buy">🟢 BUY TARGET</span>'+tfBW(p.tf)+'<span class="axsym">'+esc(p.sym)+'</span>'+chip+'<span class="axpx mono">'+esc(p.price)+'</span></div>'+
       '<div class="axprice">✓ At your price — ideal buy ~'+esc(cur)+esc(p.nEntry)+'</div>'+
       (why?'<div class="axwhy">'+esc(why)+'</div>':'')+
       (timingLine(p)?'<div class="axfoot">'+timingLine(p)+'</div>':'')+
@@ -2268,9 +2279,9 @@ function actionsHtml(D){
   var acts=owned.map(function(w){ var a=holdingAction(w.sym,w.region,D); return a?{w:w,a:a}:null; }).filter(Boolean);
   var ownCount=owned.length, actCount=acts.length;
   var holdCards=acts.slice(0,8).map(function(x){
-    var w=x.w, a=x.a, pi=pm[w.sym+'|'+w.region]||{}, ic=a.cls==='sell'?'🎯':'⚠️';
+    var w=x.w, a=x.a, pi=pm[w.sym+'|'+w.region]||{}, ic=a.cls==='sell'?'🎯':'⚠️', chip=_axChip(w.sym,w.region);
     return '<div class="axcard axhold ax-'+a.cls+'" data-sym="'+esc(w.sym)+'" data-region="'+esc(w.region)+'" role="button" tabindex="0" aria-label="'+esc(a.verb)+' '+esc(w.sym)+'">'+
-      '<div class="axtop"><span class="axverb axv-'+a.cls+'">'+ic+' '+esc(a.verb)+'</span><span class="axsym">'+esc(w.sym)+'</span>'+(pi.price!=null?'<span class="axpx mono">'+esc(pi.cur||'$')+pi.price+(pi.change?' <span class="'+(pi.up?'up':'down')+'">'+(pi.up?'▲':'▼')+esc(pi.change)+'</span>':'')+'</span>':'')+'</div>'+
+      '<div class="axtop"><span class="axverb axv-'+a.cls+'">'+ic+' '+esc(a.verb)+'</span><span class="axsym">'+esc(w.sym)+'</span>'+chip+(pi.price!=null?'<span class="axpx mono">'+esc(pi.cur||'$')+pi.price+(pi.change?' <span class="'+(pi.up?'up':'down')+'">'+(pi.up?'▲':'▼')+esc(pi.change)+'</span>':'')+'</span>':'')+'</div>'+
       '<div class="axwhy">'+esc(a.why)+'</div></div>';
   }).join('');
   // #92 — theme/sector/commodity pivots: a theme that was a real Buy last run and has cooled to
@@ -2279,14 +2290,30 @@ function actionsHtml(D){
   // holdings action, since it's exactly that: a sell/reduce cue, just for a theme, not one ticker.
   var pivots=(D.themePivots||[]);
   var pivotCards=pivots.slice(0,4).map(function(pv){
+    var chip=(pv.leader&&pv.leader.sym)?_axChip(pv.leader.sym,MKT):'';
     return '<div class="axcard axpivot ax-sell" data-theme="'+esc(pv.cat)+'" data-title="'+esc(pv.title)+'" role="button" tabindex="0" aria-label="'+esc(pv.title)+' cooling off">'+
-      '<div class="axtop"><span class="axverb axv-sell">🔄 COOLING OFF</span><span class="axsym">'+esc(pv.em)+' '+esc(pv.title)+'</span></div>'+
+      '<div class="axtop"><span class="axverb axv-sell">🔄 COOLING OFF</span><span class="axsym">'+esc(pv.em)+' '+esc(pv.title)+'</span>'+chip+'</div>'+
       '<div class="axwhy">'+esc(pv.why)+' — was <b>'+esc(pv.from.tag||'?')+'</b>, now <b>'+esc(pv.to.tag||'?')+'</b>.</div></div>';
+  }).join('');
+  // #181 — "Coming up": the soonest catalysts on names we track (a pick tonight or on your watchlist),
+  // as standard action cards — tap opens that ticker's "What would you do?" read.
+  var _cs={}; (D.regions||[]).forEach(function(rg){(rg.picks||[]).forEach(function(p){if(p.sym!=='NONE')_cs[p.sym]=1;});});
+  var _wl={}; try{wlGet().forEach(function(w){_wl[w.sym]=1;});}catch(e){}
+  function _trk(s){return s&&(_cs[s]||_wl[s]);}
+  var upc=[];
+  (D.upcomingEarnings||[]).forEach(function(e){ if(!e.error&&(e.region||'us')===MKT&&_trk(e.sym)&&e.days_until!=null) upc.push({sym:e.sym,region:e.region||MKT,days:e.days_until,ic:'📊',what:e.sym+' reports',why:'Result can swing the price 5–20% same-day — decide before it prints.'}); });
+  ((( D.upcomingDividends||{}).items)||[]).forEach(function(d){ if((d.region||'au')===MKT&&_trk(d.sym)&&d.days_until!=null) upc.push({sym:d.sym,region:d.region||MKT,days:d.days_until,ic:'💰',what:d.sym+' goes ex-dividend',why:'Own it the day before to get the payout; buy on/after and you miss this round.'}); });
+  upc.sort(function(a,b){return a.days-b.days;}); upc=upc.slice(0,3);
+  var comingCards=upc.map(function(u){ var chip=_axChip(u.sym,u.region);
+    return '<div class="axcard axcoming ax-warn" data-up-sym="'+esc(u.sym)+'" data-up-region="'+esc(u.region)+'" role="button" tabindex="0" aria-label="Coming up: '+esc(u.sym)+'">'+
+      '<div class="axtop"><span class="axverb axv-warn">'+u.ic+' COMING UP</span><span class="axsym">'+esc(u.sym)+'</span>'+chip+'<span class="axpx mono">'+_when(u.days)+'</span></div>'+
+      '<div class="axwhy">'+esc(u.what)+' — '+esc(u.why)+'</div></div>';
   }).join('');
   var out='';
   if(buyCards) out+='<div class="axhead">🎯 Ready right now <span class="axheadsub">— sensible, signalling, and at the price we’ve waited for</span></div><div class="axgrid">'+buyCards+'</div>';
   if(holdCards) out+='<div class="axhead axhead2">📦 Your holdings — needs a decision</div><div class="axgrid">'+holdCards+'</div>';
   if(pivotCards) out+='<div class="axhead axhead2">🔄 Cooling off — themes turning</div><div class="axgrid">'+pivotCards+'</div>';
+  if(comingCards) out+='<div class="axhead axhead2">🔜 Coming up — on names you track</div><div class="axgrid">'+comingCards+'</div>';
   if(!holdCards) if(ownCount) out+='<div class="axhead axhead2">📦 Your holdings</div><div class="axnone axnone2">All '+ownCount+' of your holdings are sitting tight — <b>nothing to do right now</b>. They live in <b>Favourites</b>; we’ll flag one here the moment it hits a target, cools off, or drops hard.</div>';
   if(!out) out='<div class="axhead">🎯 Ready right now</div><div class="axnone">No green lights this second — nothing’s dropped to its buy price yet. That’s fine; patience is the edge. Tap <b>📦 I own it</b> on anything you hold and we’ll surface it here when there’s a real move to make. 🍲</div>';
   return '<div class="actions">'+out+'</div>';
@@ -4658,6 +4685,11 @@ function wire(D){
   function openFromEl(el){var rg=regionOf(el.dataset.region);if(!rg)return;var p=tierPicks(rg)[+el.dataset.idx];if(p)openModal(p,rg.id,rg.cur||'$');}
   document.querySelectorAll('.axhold').forEach(function(c){
     function go(){ openSym(c.dataset.sym, c.dataset.region); }
+    c.addEventListener('click',function(e){if(e.target.closest('a'))return;go();});
+    c.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();go();}});
+  });
+  document.querySelectorAll('.axcoming[data-up-sym]').forEach(function(c){   // #181 — Coming-up card → the ticker's analyst read
+    function go(){ openAnalyst(c.dataset.upSym, c.dataset.upRegion); }
     c.addEventListener('click',function(e){if(e.target.closest('a'))return;go();});
     c.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();go();}});
   });
