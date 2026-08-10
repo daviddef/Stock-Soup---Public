@@ -2347,6 +2347,25 @@ function signalRows(p,region,opts){
     rows.push({icon:'🩳',label:'Short interest',tone:stone,read:sread,
       explain:'How much of the tradeable stock is currently sold short — borrowed and sold by traders betting it falls. Elevated short interest (>10%) means a sizeable crowd is bearish; it can also become squeeze fuel if the price rises and they scramble to buy back. Source: exchange short-interest data (FINRA days-to-cover for US names).'});
   }
+  // #12 (11 Aug 2026) — Bollinger SQUEEZE: how compressed the band is vs its own 6-month range. A tight
+  // band (low-percentile bandwidth) is a coiled spring — energy building for a breakout. Directionless,
+  // so tone is 'mix' (it's a setup, not a buy/sell), and it only shows when genuinely compressed.
+  var bsq=p&&p.bb_squeeze;
+  if(bsq&&bsq.pctile!=null){
+    var tight=bsq.squeeze||bsq.pctile<=25;
+    if(tight){
+      rows.push({icon:'🪤',label:'Squeeze',tone:'mix',
+        read:'Coiled — band in the '+bsq.pctile+'th %ile (tight)',
+        explain:'How WIDE the Bollinger band is right now vs its own last 6 months. A narrow band (low percentile) means volatility has compressed into a coil — the best-studied cheap pre-breakout setup. It doesn\'t say which way it breaks; read that from the trend/momentum rows. Source: 20-day Bollinger bandwidth off daily closes.'});
+    }
+  }
+  // #19 (11 Aug 2026) — short-SQUEEZE SETUP: heavily shorted AND price still climbing = covering-rally fuel.
+  var ssq=p&&p.squeeze_setup;
+  if(ssq&&ssq.level&&ssq.level!=='low'){
+    rows.push({icon:'🎇',label:'Short-squeeze setup · '+ssq.level,tone:ssq.price_strength?'pos':'mix',
+      read:(ssq.short_pct!=null?ssq.short_pct+'% short':(ssq.days_to_cover!=null?ssq.days_to_cover+'d to cover':'heavily shorted'))+(ssq.price_strength?' & climbing':'')+(ssq.short_rising?' · shorts rising':''),
+      explain:'When a name is heavily shorted AND the price is still rising, shorts can be forced to buy back to cut losses — which pushes the price up further, forcing more covering: a squeeze. This flags when those conditions line up (it doesn\'t re-score — the raw short level is already in the score). Ingredients: exchange short interest / FINRA days-to-cover + short-interest trend + price vs its 52-week high & SMA20.'});
+  }
   // #154 (10 Aug 2026) — real per-stock risk tier (features.py's _risk_tier): ATR%/price-level/RSI-
   // extremity/hard-exclude, NOT market cap (no data source for that on this plan — disclosed here,
   // not silently implied). tone is deliberately 'mix' even for Low/Medium — risk isn't good-or-bad the
@@ -2361,15 +2380,20 @@ function signalRows(p,region,opts){
 }
 function signalSummary(rows){
   var scored=rows.filter(function(r){return r.tone==='pos'||r.tone==='neg';});
-  if(scored.length<2) return {verdict:'limited',icon:'❔',label:'Limited signal data'};
+  // #257 (11 Aug 2026, competitor research) — COVERAGE/CONFIDENCE: how many real signals actually back
+  // this read. A verdict from 2 signals is not as trustworthy as one from 8, so we say so plainly rather
+  // than presenting a thin read as if it were a full one. Extends the app's existing "insufficient
+  // signal" honesty (the ASX-renorm ethos) to the display side. `thin` = fewer than 4 total signals.
+  var cover=rows.length, thin=cover<4;
+  if(scored.length<2) return {verdict:'limited',icon:'❔',label:'Limited signal data',coverage:cover};
   var pos=scored.filter(function(r){return r.tone==='pos';}).length;
   var neg=scored.filter(function(r){return r.tone==='neg';}).length;
   // User ask (9 Aug 2026): show the real tally, not just an adjective — "6 positive / 2 negative"
   // reads as evidence; "mixed" alone makes you open the breakdown just to find out what "mixed" means.
-  var label=pos+' positive / '+neg+' negative';
-  if(pos-neg>=2&&pos>=2) return {verdict:'strong',icon:'✅',label:label};
-  if(neg-pos>=2&&neg>=2) return {verdict:'weak',icon:'⚠️',label:label};
-  return {verdict:'mixed',icon:'😐',label:label};
+  var label=pos+' positive / '+neg+' negative'+(thin?' · limited coverage':'');
+  if(pos-neg>=2&&pos>=2) return {verdict:'strong',icon:'✅',label:label,coverage:cover};
+  if(neg-pos>=2&&neg>=2) return {verdict:'weak',icon:'⚠️',label:label,coverage:cover};
+  return {verdict:'mixed',icon:'😐',label:label,coverage:cover};
 }
 function sigRowsHtml(rows){
   if(!rows.length) return '<p class="muted" style="font-size:12.5px;margin:4px 0">No technical signals available for this name — it wasn\'t in tonight\'s scored candidates.</p>';
