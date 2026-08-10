@@ -84,6 +84,10 @@
   .toggle{cursor:pointer;font-family:var(--font);color:var(--ink)}
   .toggle:focus-visible{outline:2px solid var(--broth);outline-offset:2px}
   .meter{margin-top:28px}  /* #174 — extra top room so the per-indicator emoji labels above the track don't crowd the row above */
+  .meter.tappable{cursor:pointer;border-radius:12px;padding:4px 8px 6px;margin-left:-8px;margin-right:-8px;transition:background .12s}   /* #197 — tap the whole meter → tonight's read */
+  .meter.tappable:hover{background:var(--surface-2)}
+  .meter.tappable:focus-visible{outline:2px solid var(--broth);outline-offset:2px}
+  .metertap{text-align:center;font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--faint);margin-top:10px}
   .meter .track{height:10px;border-radius:999px;background:linear-gradient(90deg,var(--dont),var(--hold),var(--buy));position:relative;opacity:.9}
   /* #184 — the composite "now" reading is a good-sized round black dot (was a thin vertical line),
      labelled "Risk", with a gentle pulse so it clearly reads as the live overall reading vs the small
@@ -2505,9 +2509,9 @@ function render(D,H){
       '<h1 class="display">Two pots on the boil:<br><span class="hot">'+esc(hdl(D,'a'))+'</span> &amp; <span class="hot">'+esc(hdl(D,'b'))+'</span>.</h1>'+
       '<p class="chef">'+chefFor(D)+'</p>'+
       '<div class="metastrip">'+(function(){var hl=marketHeadline(r,hotTagsList); return '<button type="button" class="chip clickchip mktheadline" id="mktHeadlineBtn">'+hl.icon+' '+esc(hl.text)+' <span class="chipi">i</span></button>';})()+'</div>'+
-      (function(){var fm=riskFactorMarks(r); return '<div class="meter"><div class="track"><div class="needle" id="needle"></div>'+fm.marks+'</div>'+
+      (function(){var fm=riskFactorMarks(r); return '<div class="meter tappable" id="riskMeterBtn" role="button" tabindex="0" title="Tap for tonight’s market read" aria-label="Open tonight’s market read"><div class="track"><div class="needle" id="needle"></div>'+fm.marks+'</div>'+
       '<div class="lbls"><span>🔴 Hide the cash</span><span>⚪ Steady</span><span>🟢 Send it</span></div>'+
-      fm.leg+'</div>';})()+
+      fm.leg+'<div class="metertap">tap for tonight’s read <span class="chipi">i</span></div></div>';})()+
       '<div class="sec-head" style="margin:26px 0 3px"><h2 class="display"><span class="k">01</span> Take your seat, it’s time to eat</h2>'+infoBtn('actions')+'</div>'+
       '<p class="sec-sub" style="margin:0 0 10px">Enough of the mood — here’s what’s worth <b>acting on</b> right now.</p>'+
       actionsHtml(D)+
@@ -3642,7 +3646,7 @@ function marketHeadline(r,hotTagsList){
 function marketContextRows(r,hotTagsList,hotTagTarget){
   var off=r.label&&r.label.indexOf('OFF')>=0, on=r.label&&r.label.indexOf('ON')>=0;
   var rows=[{icon:off?'🔴':on?'🟢':'⚪',label:'Risk stance',tone:off?'neg':on?'pos':'neu',
-    read:r.label||'Neutral',explain:'Set mainly by Bitcoin’s 24h move as a fast risk-sentiment gauge — sets the tone for the whole run, doesn’t pick stocks by itself.',mchip:'risk'}];
+    read:r.label||'Neutral',explain:'A blend of five real risk-appetite gauges — VIX (fear), Bitcoin 24h, gold, oil and AUD/USD — weighted into one 0–100 reading. It sets the tone for the whole run; it doesn’t pick stocks by itself.',mchip:'risk'}];
   if(r.vix!=null){
     var vixBad=r.vixMood==='fearful'||r.vixMood==='jittery';
     rows.push({icon:'😨',label:'VIX — fear gauge',tone:vixBad?'neg':'pos',
@@ -4610,6 +4614,7 @@ function wire(D){
   wireInfo();
   wireThemes();
   var mkh=document.getElementById('mktHeadlineBtn'); if(mkh) mkh.onclick=openMarketRead;
+  var rmb=document.getElementById('riskMeterBtn'); if(rmb){ rmb.onclick=openMarketRead; rmb.onkeydown=function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); openMarketRead(); } }; }   // #197 — tap the risk meter → tonight's read
   var tabs=document.querySelectorAll('.mkf[data-region], .tab[data-region]');
   tabs.forEach(function(t){t.addEventListener('click',function(){
     if(t.dataset.region===MKT)return;
