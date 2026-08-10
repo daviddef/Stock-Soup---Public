@@ -743,7 +743,8 @@
   .up3what{font-weight:800;color:var(--ink);font-size:13.5px;line-height:1.3;display:flex;align-items:center;gap:8px}
   .up3what>a,.up3what{min-width:0}
   .up3what>a{flex:1 1 auto}
-  .upwatch{flex:0 0 auto;width:20px;height:20px;font-size:13px;margin-left:auto}
+  .upchip{flex:0 0 auto} .upchip .juicebtn{font-size:11px;padding:2px 7px}
+  .upwatch{flex:0 0 auto;width:20px;height:20px;font-size:13px}
   .up3sowhat{color:var(--faint);font-size:12px;line-height:1.4;margin-top:1px}
   .uppulse{display:inline-block;animation:uppulse 1.8s ease-in-out infinite}
   @keyframes uppulse{0%,100%{opacity:1}50%{opacity:.45}}
@@ -1696,10 +1697,18 @@ function upcomingHtml(D){
   // app), and the whole row now opens the real per-ticker "What would you do?" read on tap — was
   // static text with nowhere to go, even though every row with a sym has a real recommendation
   // behind it one tap away everywhere else in the app.
+  // #229 (user ask) — show the 🍊 score chip on an upcoming row when its ticker is one we've actually
+  // scored (a pick or a Full Pot candidate). Tapping it opens the same breakdown as everywhere else.
+  var _upFind=function(sym,region){ if(!sym) return null; var found=null;
+    (D.regions||[]).forEach(function(rg){(rg.picks||[]).forEach(function(p){if(p.sym===sym&&p.sym!=='NONE')found=p;});});
+    if(!found)(D.candidates||[]).forEach(function(c){if(c.sym===sym&&(c.region||'us')===(region||MKT))found=c;});
+    return found; };
   var rowsHtml=rows.slice(0,20).map(function(r){
     var tracked=weTrack(r.sym);
     var when=r.days!=null?whenLabel(r.days)+(r.dateStr?' · '+esc(r.dateStr):''):esc(r.dateStr);
     var whatHtml=r.sym?qlink(r.sym,r.region,r.whatLabel):r.what;
+    var _o=r.sym?_upFind(r.sym,r.region):null;
+    var chip=(_o&&_o.score&&_o.score.buy_now!=null)?'<span class="upchip">'+juiceChip(_o.score,_o.sym,_o.name,signalRows(_o,r.region||MKT))+'</span>':'';
     var tappable=!!r.sym;
     // #217 — the passive "★ we track this" label became the standard actionable "+" watch toggle (per #115),
     // so tracking can be turned on/off right on the row. It's static page content, so the global
@@ -1708,7 +1717,7 @@ function upcomingHtml(D){
     return '<div class="uprow3'+(tracked?' uptracked':'')+(tappable?' uptappable':'')+'"'+
       (tappable?' role="button" tabindex="0" data-up-sym="'+esc(r.sym)+'" data-up-region="'+esc(r.region||MKT)+'"':'')+'>'+
       '<span class="up3when"><span class="up3ic">'+r.ic+'</span>'+when+'</span>'+
-      '<span class="up3what">'+whatHtml+wb+'</span>'+
+      '<span class="up3what">'+whatHtml+chip+wb+'</span>'+
       '<span class="up3sowhat">'+r.soWhat+'</span></div>';
   }).join('');
   return '<section id="upcoming"><div class="sec-head"><h2 class="display">📅 What\'s coming up</h2>'+infoBtn('upcoming')+'</div>'+
