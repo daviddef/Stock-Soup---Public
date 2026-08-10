@@ -644,6 +644,9 @@
   .srow{display:flex;justify-content:space-between;align-items:center;padding:4px 0;font-size:13px}
   .sname{color:var(--ink)} .setf{color:var(--faint);font-size:11px;font-weight:700}
   .sval{font-weight:800;font-variant-numeric:tabular-nums}
+  /* #249 — rotation nested inside the Sectors buy/skip column */
+  .srotwrap{margin-top:12px;padding-top:10px;border-top:1px dashed var(--line)}
+  .eyebrow-sub{font-size:12px;opacity:.92}
   /* #158 — 24h gantt strip */
   .ganttwrap{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin-bottom:16px;overflow-x:auto}
   .gantthead{display:flex;align-items:center;justify-content:space-between;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);flex-wrap:wrap;gap:6px}
@@ -2372,10 +2375,12 @@ function sectorRotationHtml(D){
       '<span class="sval '+(pos?'up':'down')+'">'+(pos?'+':'')+r.rs20d+'pt</span></div>';
   }
   var upd=sr.updatedAt?new Date(sr.updatedAt):null;
-  return '<div class="stack" style="margin-top:14px"><div class="eyebrow">🔄 Sector rotation — US, vs SPY, 20-day</div>'+
-    '<p class="sec-sub" style="margin:2px 0 8px">Real relative strength, not a guess — which sectors are actually gaining or losing ground against the broad market.'+(upd?' Refreshed 1×/day, as of '+esc(upd.toLocaleDateString())+'.':'')+'</p>'+
-    '<div class="srowgrp"><b>Rotating in</b>'+top.map(row).join('')+'</div>'+
-    '<div class="srowgrp"><b>Rotating out</b>'+bottom.map(row).join('')+'</div></div>';
+  // #249 — now a nested sub-block INSIDE the "Sectors — buy vs skip" column (they're both about sectors),
+  // with an in-brand heading instead of the off-brand "SECTOR ROTATION — US, VS SPY, 20-DAY".
+  return '<div class="srotwrap"><div class="eyebrow eyebrow-sub">🔥 Where the money’s actually flowing</div>'+
+    '<p class="sec-sub" style="margin:2px 0 8px;font-size:12.5px">Which US kitchens are heating up vs cooling — <b>real</b> 20-day strength against the market, not a guess.'+(upd?' Refreshed daily · '+esc(upd.toLocaleDateString())+'.':'')+'</p>'+
+    '<div class="srowgrp"><b>🔥 Heating up</b>'+top.map(row).join('')+'</div>'+
+    '<div class="srowgrp"><b>❄️ Cooling off</b>'+bottom.map(row).join('')+'</div></div>';
 }
 function signalPillHtml(p,region,sym){
   var rows=signalRows(p,region); if(!rows.length) return '';
@@ -3016,8 +3021,8 @@ function render(D,H){
     '<section><div class="sec-head"><h2 class="display"><span class="k">03</span> The world &amp; the sectors</h2>'+infoBtn('world')+'</div>'+
       '<p class="sec-sub">What\'s moving the pot, and which kitchens are hot vs which to skip.</p>'+
       '<div class="cols"><div class="stack"><div class="eyebrow">🌍 Geopolitics</div>'+lines(D.geo,'title','geo')+'</div>'+
-      '<div class="stack"><div class="eyebrow">🍳 Sectors — buy vs skip</div>'+lines(D.sectors,'title','sectors')+'</div></div>'+
-      sectorRotationHtml(D)+'</section>'+
+      '<div class="stack"><div class="eyebrow">🍳 Sectors — buy vs skip</div>'+lines(D.sectors,'title','sectors')+sectorRotationHtml(D)+'</div></div>'+
+      '</section>'+
     '<section><div class="sec-head"><h2 class="display"><span class="k">04</span> Commodities — simple</h2>'+infoBtn('commodities')+'</div>'+
       '<p class="sec-sub">No jargon. Just: worth a look, emerging (🔥), or leave it.</p>'+
       // #131 (9 Aug 2026, user ask) — 3 abreast instead of 2, own grid class (.cols3) so this doesn't
