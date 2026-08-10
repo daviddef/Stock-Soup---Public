@@ -2401,11 +2401,11 @@ function render(D,H){
   var _potN=_keepIdx.length+_loseIdx.length;
   var _bargainIdx=[]; _cands.forEach(function(c,i){ if((c.region||'us')===MKT&&isBargain(c)) _bargainIdx.push(i); });
   var bargainCards=_bargainIdx.map(function(i){return potCard(_cands[i],i);}).join('');
-  // #141 (user ask) — "Stock Pot Top 20": the single best-scored names across the WHOLE run,
-  // AU and US combined, ranked purely by the real model — deliberately ignores the AU/US toggle
-  // (ONE cross-market leaderboard, not two separate ones) since that's the whole point of it.
-  var _top20Idx=_cands.map(function(c,i){return {i:i,sc:(c.score&&c.score.buy_now!=null)?c.score.buy_now:-1};})
-    .filter(function(o){return o.sc>=0;}).sort(function(a,b){return b.sc-a.sc;}).slice(0,20).map(function(o){return o.i;});
+  // #141 → #196 (10 Aug 2026, user reversed the call): the Top 20 was a deliberate CROSS-market
+  // leaderboard (ignored the AU/US toggle). User wants it market-scoped like the rest of the page —
+  // now filtered to the selected market (MKT), re-rendered on the market toggle.
+  var _top20Idx=_cands.map(function(c,i){return {i:i,sc:(c.score&&c.score.buy_now!=null)?c.score.buy_now:-1,rg:(c.region||'us')};})
+    .filter(function(o){return o.sc>=0&&o.rg===MKT;}).sort(function(a,b){return b.sc-a.sc;}).slice(0,20).map(function(o){return o.i;});
   var top20Cards=_top20Idx.map(function(i){return potCard(_cands[i],i);}).join('');
   var pot=_keepIdx.map(function(i){return potCard(_cands[i],i);}).join('');
   var potLose=_loseIdx.map(function(i){return potCard(_cands[i],i);}).join('');
@@ -2485,7 +2485,7 @@ function render(D,H){
         '<div class="pot potlose" id="potLose" hidden>'+potLose+'</div>':'')+
       '</section>'+
     (top20Cards?'<section id="top20"><div class="sec-head"><h2 class="display">🏆 Stock Pot Top 20</h2></div>'+
-      '<p class="sec-sub">The single best-scored names tonight — AU and US combined, ranked purely by the model, ignoring the market toggle above. <b>Tap any for the full read.</b></p>'+
+      '<p class="sec-sub">The best-scored '+(MKT==='au'?'ASX':'US')+' names tonight, ranked purely by the model. <b>Tap any for the full read.</b></p>'+
       '<div class="pot">'+top20Cards+'</div></section>':'')+
     upcomingHtml(D)+
     topMoversHtml(D)+
