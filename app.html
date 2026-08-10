@@ -187,6 +187,7 @@
   .burgermenu{position:fixed;z-index:200;background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:7px;min-width:214px;max-width:calc(100vw - 24px);display:flex;flex-direction:column;gap:1px}
   .burgermenu[hidden]{display:none}
   .bmhead{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:5px 9px 9px;border-bottom:1px solid var(--line);margin-bottom:4px}
+  .bmadmin{display:flex;align-items:center;gap:7px;padding:6px 11px;font-size:11px;font-weight:700;color:var(--muted)}   /* #203 — ADMIN badge relocated from header into the burger */
   .bmupd{border:0;background:transparent;color:var(--muted);font-family:var(--font);font-size:12px;font-weight:700;cursor:pointer;text-decoration:underline;text-decoration-style:dotted;text-underline-offset:2px;padding:0}
   .bmupd:hover{color:var(--broth)}
   .bmitem{display:flex;align-items:center;gap:9px;text-align:left;width:100%;border:0;background:transparent;color:var(--ink);font-family:var(--font);font-size:14px;font-weight:700;padding:10px 9px;border-radius:9px;cursor:pointer}
@@ -522,7 +523,9 @@
   .gl i{width:8px;height:8px;border-radius:2px;display:inline-block}
   .gl i.glanchor{width:2px;height:10px;border-radius:0;background:repeating-linear-gradient(180deg,var(--broth) 0 3px,transparent 3px 5px)}
   .ganttlane{position:relative;height:22px;margin-top:6px;min-width:640px;background:var(--surface-2);border-radius:6px}
+  .ganttlane-maj{margin-top:22px}   /* #201 — clearance so the -15px anchor time labels don't overlap the legend above */
   .ganttlane-min{height:14px}
+  .ganttheadsub{text-transform:none;letter-spacing:0;font-weight:600;color:var(--faint);font-size:9.5px}   /* #201 — re-price cadence note */
   .ganttbar{position:absolute;top:3px;height:16px;border-radius:4px;min-width:3px;cursor:default}
   .ganttlane-min .ganttbar{top:2px;height:10px}
   .gantttick{position:absolute;top:2px;width:2px;height:10px;background:var(--faint);border-radius:1px}
@@ -776,6 +779,9 @@
   .pmc-top{display:flex;align-items:center;gap:7px}
   .pmc-sym{font-weight:900;font-size:16px}
   .pmc-flag{margin-left:auto;font-size:9px;color:var(--faint);font-weight:700}
+  .pmc-watch{width:19px;height:19px;font-size:13px;margin-left:3px}   /* #204 — compact + on Full Pot / Stock Pot cards */
+  .cardtrend{margin-top:8px}   /* #214 — restored mini-chart on the pick card */
+  .cardtrend .spark{height:38px;margin:2px 0 0}
   .pmc-name{font-size:11.5px;color:var(--muted);font-weight:700;margin-top:-2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .pmc-px{display:flex;align-items:baseline;gap:8px}
   .pmc-price{font-family:var(--mono);font-weight:800;font-size:14px}
@@ -832,6 +838,11 @@
   .trailjump{color:var(--broth);font-weight:800;text-decoration:none;white-space:nowrap}
   .trailjump:hover{text-decoration:underline}
   .badcount{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:22px;padding:0 6px;border-radius:999px;background:var(--dont);color:#fff;font-size:12px;font-weight:900;vertical-align:middle;margin-left:2px}
+  .missgroup{margin-top:14px}
+  .missgrp-h{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:900;letter-spacing:-.01em}
+  .missgrp-away{color:var(--dont)} .missgrp-wrong{color:var(--hold)}
+  .missgrp-n{font-size:11px;font-weight:800;font-family:var(--mono);background:var(--surface-2);color:var(--muted);border-radius:999px;padding:1px 8px}
+  .missgrp-sub{font-size:12px;color:var(--muted);margin:2px 0 8px}
   .missgrid{display:grid;grid-template-columns:1fr;gap:8px}
   @media(min-width:640px){.missgrid{grid-template-columns:1fr 1fr}}
   .misstabs{display:flex;gap:6px;margin:10px 0 4px}
@@ -853,7 +864,7 @@
   .missrow.m-scanned .missstat{color:var(--hold);background:rgba(255,197,61,.18)}
   .missnote{width:100%;color:var(--faint);font-size:12px}
   .misschart{width:100%;order:99}
-  .misschart-wrap{position:relative}
+  .misschart-wrap{position:relative;margin-top:15px}   /* #192 — reserve room so the 'flagged HH:MM' label (top:-13px) never sits on the chart/row above */
   .misschart .spark{width:100%;height:26px;display:block}
   .mchk-line{stroke:var(--broth);stroke-width:1;stroke-dasharray:2,1.6;opacity:.85;vector-effect:non-scaling-stroke}
   .mchk-dot{fill:var(--broth)}
@@ -1651,21 +1662,28 @@ function topMoversHtml(D){
   '</section>';
 }
 var MISS_HORIZON='Day';
-function _missRows(mi, tfLabel){
+function _missRow(r, mi, tfLabel){
   var STAT={served:{ic:'✅',lbl:'Served',cls:'m-served'},scanned:{ic:'👀',lbl:'Scanned, not served',cls:'m-scanned'},missed:{ic:'❌',lbl:'Missed',cls:'m-missed'}};
+  var s=STAT[r.status]||STAT.missed, up=r.pct>=0;
+  var sig=signalPillHtml(r,r.region);   // gracefully empty until Misses rows carry signal data
+  return '<div class="missrow '+s.cls+'"><span class="missic">'+s.ic+'</span>'+tfB(tfLabel)+
+    '<a class="misssym" href="'+yf(r.sym,r.region)+'" target="_blank" rel="noopener">'+esc(r.sym)+'<span class="wflag" style="margin-left:5px">'+(r.region==='au'?'AU':'US')+'</span></a>'+
+    (r.name?'<span class="missnm">'+esc(r.name)+'</span>':'')+
+    '<span class="misspct '+(up?'up':'down')+'">'+(up?'▲':'▼')+' '+Math.abs(r.pct)+'%</span>'+
+    '<span class="missstat">'+s.lbl+'</span>'+(sig?'<div style="width:100%;margin-top:2px">'+sig+'</div>':'')+'<span class="missnote">'+esc(r.note)+'</span>'+
+    missChartSlot(r.sym,r.region,r.region==='au'?'A$':'$',mi.stamp)+'</div>';
+}
+// #192 — split the movers into two honest buckets:
+//   • "got away"  = big movers that were NEVER in our net (status 'missed') — a coverage gap.
+//   • "wrong way" = movers that WERE in our net (scanned or served) but we didn't act on / didn't
+//                   call the direction — we saw it, but didn't capitalise.
+function _missRows(mi, tfLabel){
   var mktRows=(mi&&mi.rows||[]).filter(function(r){return (r.region||'us')===MKT;});
-  var missedN=mktRows.filter(function(r){return r.status==='missed';}).length;
-  var rows=mktRows.map(function(r){
-    var s=STAT[r.status]||STAT.missed, up=r.pct>=0;
-    var sig=signalPillHtml(r,r.region);   // gracefully empty until Misses rows carry signal data
-    return '<div class="missrow '+s.cls+'"><span class="missic">'+s.ic+'</span>'+tfB(tfLabel)+
-      '<a class="misssym" href="'+yf(r.sym,r.region)+'" target="_blank" rel="noopener">'+esc(r.sym)+'<span class="wflag" style="margin-left:5px">'+(r.region==='au'?'AU':'US')+'</span></a>'+
-      (r.name?'<span class="missnm">'+esc(r.name)+'</span>':'')+
-      '<span class="misspct '+(up?'up':'down')+'">'+(up?'▲':'▼')+' '+Math.abs(r.pct)+'%</span>'+
-      '<span class="missstat">'+s.lbl+'</span>'+(sig?'<div style="width:100%;margin-top:2px">'+sig+'</div>':'')+'<span class="missnote">'+esc(r.note)+'</span>'+
-      missChartSlot(r.sym,r.region,r.region==='au'?'A$':'$',mi.stamp)+'</div>';
-  }).join('');
-  return {rows:rows, missedN:missedN, mktRows:mktRows};
+  var away=mktRows.filter(function(r){return r.status==='missed';});
+  var wrong=mktRows.filter(function(r){return r.status==='served'||r.status==='scanned';});
+  var render=function(r){return _missRow(r, mi, tfLabel);};
+  return {awayRows:away.map(render).join(''), wrongRows:wrong.map(render).join(''),
+          awayN:away.length, wrongN:wrong.length, missedN:away.length, mktRows:mktRows};
 }
 // #80 — week/month movers (bulk-scan.py's movers_by_horizon()) alongside the original same-day feed.
 // Each horizon is its own KV block (latest.misses/missesWeek/missesMonth) so a run that only refreshed
@@ -1685,10 +1703,16 @@ function missesSection(D){
     return '<button class="misstab'+(h.key===MISS_HORIZON?' on':'')+'" data-misshz="'+esc(h.key)+'" type="button">'+esc(h.key)+'</button>';
   }).join('')+'</div>':'';
   if(!computed.mktRows.length) return hmHtml?'<section id="misses"><div class="sec-head"><h2 class="display">😬 The Misses</h2>'+infoBtn('misses')+'</div>'+hmHtml+tabs+'</section>':'';
+  var awayGroup=computed.awayN?'<div class="missgroup"><div class="missgrp-h missgrp-away">🏃 The ones that got away <span class="missgrp-n">'+computed.awayN+'</span></div>'+
+      '<p class="missgrp-sub">Big movers that were <b>never in our net</b> — a real coverage gap.</p>'+
+      '<div class="missgrid">'+computed.awayRows+'</div></div>':'';
+  var wrongGroup=computed.wrongN?'<div class="missgroup"><div class="missgrp-h missgrp-wrong">🔄 The ones we got the wrong way <span class="missgrp-n">'+computed.wrongN+'</span></div>'+
+      '<p class="missgrp-sub">We <b>saw these</b> (scanned or served) but didn\'t capitalise — in the net, not acted on.</p>'+
+      '<div class="missgrid">'+computed.wrongRows+'</div></div>':'';
   return '<section id="misses"><div class="sec-head"><h2 class="display">😬 The Misses <span class="badcount">'+computed.missedN+'</span></h2>'+infoBtn('misses')+'</div>'+
     hmHtml+tabs+
     '<p class="sec-sub">'+(MKT==='au'?'🇦🇺 Australia\'s':'🌏 International')+' biggest real movers over the last '+esc(MISS_HORIZON.toLowerCase())+', checked as of <b>'+esc(active.data.stamp||'tonight')+'</b> — against what the net actually scanned. <b>'+computed.missedN+' of '+computed.mktRows.length+'</b> weren\'t in our net at all.</p>'+
-    '<div class="missgrid">'+computed.rows+'</div></section>';
+    awayGroup+wrongGroup+'</section>';
 }
 function buyState(p){ if(p.nEntry==null||p.nNow==null) return ''; var g=(p.nNow/p.nEntry-1)*100; return g<=1.5?'in':(g<=4?'close':'wait'); }
 // A move under ±0.05% is essentially flat — colour it neutral, not green/red (avoids a misleading "+0.0%" in green).
@@ -2267,7 +2291,10 @@ function render(D,H){
   // individual chips; fold "Gold" specifically into the existing Gold price chip instead of
   // showing it twice (#79).
   var hotTagsList=(function(){
-    var parts=(D.hotTags||'').split('·').map(function(s){return s.trim();}).filter(Boolean);
+    // Tolerate hotTags being either a "·"-joined string (the authored form) OR an array — a run once
+    // wrote it as a list, and .split() on an array threw here, taking down the ENTIRE render (silent,
+    // because loadGated's .catch swallows it). Never let one malformed field kill the whole page.
+    var _raw=D.hotTags, parts=(Array.isArray(_raw)?_raw:String(_raw==null?'':_raw).split('·')).map(function(s){return String(s).trim();}).filter(Boolean);
     var gold=false, rest=[];
     parts.forEach(function(t){ if(/\bgold\b/i.test(t)) gold=true; else rest.push(t); });
     return {gold:gold,rest:rest};
@@ -2314,6 +2341,9 @@ function render(D,H){
         /* miniTraj removed — inconsistent (only carried-over picks had it) + confusing 'since 23:33'; the range bar shows the trend */
         '<div class="buyat'+(p.nEntry?' ba-'+buyState(p):'')+'">'+(p.nEntry?'<span class="bl">🎯 Ideal buy</span> ~'+esc(rg.cur||'$')+p.nEntry+buyAction(p):'<span class="bl">Track this pick</span>')+'</div>'+
         '<p class="plain">'+esc(p.plain)+'</p>'+riskTolWarn(p)+(function(){var jc=juiceChip(p.score,p.sym,p.name,signalRows(p,rg.id)),vc=valChip(p);return (jc||vc)?'<div class="sentrow">'+jc+vc+'</div>':'';})()+'<div class="lvls">'+(p.levels||'')+'</div>'+
+        /* #214 — the mini-chart is back on the pick card (data was always there via p.spark; it had
+           only been feeding the range bar). Windowed to the pick's own horizon so chart + range agree. */
+        (p.spark&&p.spark.length>2?(function(){var t=String(p.tf||'').toLowerCase();var win=t.indexOf('day')>=0?5:(t.indexOf('week')>=0?10:22);var s=p.spark.slice(-Math.min(p.spark.length,win));if(s.length<3)s=p.spark.slice(-Math.min(p.spark.length,5));return '<div class="cardtrend"><div class="mrlbl">recent trend</div>'+sparkSVG(s)+'</div>';})():'')+
         (p.spark?rangeBar(p.spark,rg.cur||'$',p.tf,p.nEntry):'')+'</article>'+
         ((p.runnerUp && /wait|late|hold|skip|avoid|pass|don.t|steer/i.test(p.verdict||''))?ruCard(p.runnerUp,rg.id,idx):'')+'</div>';
     }).join('');
@@ -2408,7 +2438,8 @@ function render(D,H){
     var shortChip=(c.short!=null&&c.short>=4)?'<span class="pmc-short">🩳 '+c.short+'%</span>':'';
     var jc=juiceChip(c.score,c.sym,c.name,signalRows(c,c.region||'us'));   // #173/#186 — 🍊 chip → the one consolidated breakdown
     return '<div class="potcard h-'+esc(c.heat)+'" data-ci="'+i+'" role="button" tabindex="0" aria-label="Details for '+esc(c.sym)+'">'+
-      '<div class="pmc-top">'+(c.heat==='cold'?'<span class="ph no">⛔</span>':'<span class="ph"></span>')+'<b class="pmc-sym">'+esc(c.sym)+'</b>'+shortChip+'<span class="pmc-flag">'+(c.region==='au'?'AU':'US')+'</span></div>'+
+      '<div class="pmc-top">'+(c.heat==='cold'?'<span class="ph no">⛔</span>':'<span class="ph"></span>')+'<b class="pmc-sym">'+esc(c.sym)+'</b>'+shortChip+'<span class="pmc-flag">'+(c.region==='au'?'AU':'US')+'</span>'+
+        '<button class="watchbtn iconwatch pmc-watch" data-sym="'+esc(c.sym)+'" data-region="'+esc(c.region||'us')+'"'+(c.name?' data-name="'+esc(c.name)+'"':'')+' aria-pressed="false" title="Add to watchlist">+</button></div>'+
       (c.name?'<div class="pmc-name">'+esc(c.name)+'</div>':'')+
       '<div class="pmc-px">'+(c.price?'<span class="pmc-price">'+esc(cleanPrice(c.price))+'</span>':'')+chg+'</div>'+
       (spk?'<div class="pmc-spark">'+spk+'</div>':'')+
@@ -2442,11 +2473,11 @@ function render(D,H){
   document.getElementById('app').innerHTML=
   '<header class="hero"><div class="brandrow"><div class="brand"><span class="hpot"><span class="hsteam"><i></i><i></i><i></i></span><span class="hpotbowl">🍲</span></span> The&nbsp;Stock&nbsp;Soup</div>'+
     '<div class="toprail">'+
-      (isAdmin()?'<span class="adminbadge" title="Signed in as the admin account" style="margin-right:6px">ADMIN</span>':'')+
       '<button class="viewtoggle" id="viewToggle" title="Switch to Simple view" aria-label="Switch to Simple view">😋</button>'+
       '<div class="burgerwrap"><button class="burger" id="burgerBtn" aria-label="Menu" aria-haspopup="true" aria-expanded="false" aria-controls="burgerMenu">☰</button>'+
         '<div class="burgermenu" id="burgerMenu" role="menu" hidden>'+
           '<div class="bmhead"><span class="live"><span class="pulse"></span>LIVE</span><button class="bmupd" id="lastUpd">updated…</button></div>'+
+          (isAdmin()?'<div class="bmadmin" title="You are signed in as the admin account"><span class="adminbadge">ADMIN</span> signed in as admin</div>':'')+
           '<button class="bmitem" id="signInTop" role="menuitem">👤 Sign in</button>'+
           '<button class="bmitem" id="refreshBtn" role="menuitem">↻ Refresh prices</button>'+
           '<button class="bmitem" id="refreshFullBtn" role="menuitem">🍳 Refresh full (new picks)</button>'+
@@ -2540,12 +2571,13 @@ function render(D,H){
     favesHead()+
     '<section>'+
       '<div class="wlalert" id="wlAlert" role="status" aria-live="polite" style="display:none"></div>'+
-      '<div class="wlsummary" id="wlSummary"></div>'+
+      /* #207 — add-ticker bar moved to the top, above the performance summary cards */
       '<div class="unibar"><input id="uniInput" placeholder="Type a ticker… e.g. BHP or PLTR" maxlength="8" aria-label="Ticker">'+
         '<span class="wlseg" role="group" aria-label="Market"><button id="uniAu" aria-pressed="true">🇦🇺 AU</button><button id="uniUs" aria-pressed="false">🇺🇸 US</button></span>'+
         '<button class="uni-watch" id="uniWatch">＋ Watchlist</button>'+
         '<button class="uni-ask" id="uniAsk">🧠 What to do?</button></div>'+
       '<p class="sec-sub" style="margin-top:9px">Type a ticker, pick its market, then <b>＋ Watchlist</b> to track it (we remember its ideal-buy and flag it when it hits) — or <b>🧠 What to do?</b> for an instant read. You can also tap <b>＋ Watch</b> on any pick. '+infoBtn('watchlist')+'</p>'+
+      '<div class="wlsummary" id="wlSummary"></div>'+
       '<div class="wlpills" id="wlPills"></div>'+
       '<div class="wlauth" id="wlAuth"></div></section>'+
   '</div>'+
@@ -3157,7 +3189,7 @@ function runGanttHtml(){
       '<span class="gl"><i class="glanchor"></i>scheduled</span>'+
       '<span class="gl"><i class="glnext"></i>upcoming ↑</span></span></div>'+
     '<div class="ganttlane ganttlane-maj">'+gridHtml+anchorHtml+nowHtml+menuBarsHtml+'</div>'+
-    '<div class="gantthead" style="margin-top:6px"><span>Re-prices</span></div>'+
+    '<div class="gantthead" style="margin-top:6px"><span>Re-prices</span><span class="ganttheadsub">every ~10 min while AU or US markets are awake — so they run from early morning (tail of the overnight US session) right through the ASX day</span></div>'+
     '<div class="ganttlane ganttlane-min">'+gridHtml+nowHtml+tickHtml+'</div>'+
     '<div class="ganttfoot">'+gridLblHtml.join('')+'</div>'+
   '</div>';
@@ -3643,7 +3675,10 @@ function marketRowsHtml(rows){
 function openMarketRead(){
   var D=LAST.D||{}, r=D.risk||{};
   var hotTagsList=(function(){
-    var parts=(D.hotTags||'').split('·').map(function(s){return s.trim();}).filter(Boolean);
+    // Tolerate hotTags being either a "·"-joined string (the authored form) OR an array — a run once
+    // wrote it as a list, and .split() on an array threw here, taking down the ENTIRE render (silent,
+    // because loadGated's .catch swallows it). Never let one malformed field kill the whole page.
+    var _raw=D.hotTags, parts=(Array.isArray(_raw)?_raw:String(_raw==null?'':_raw).split('·')).map(function(s){return String(s).trim();}).filter(Boolean);
     var gold=false, rest=[];
     parts.forEach(function(t){ if(/\bgold\b/i.test(t)) gold=true; else rest.push(t); });
     return {gold:gold,rest:rest};
@@ -3749,7 +3784,7 @@ function openPulseLog(){
 function wireThemes(){ document.querySelectorAll('.clickline[data-theme]').forEach(function(l){ l.onclick=function(){ openTheme(l.dataset.theme,+l.dataset.ti); }; l.onkeydown=function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); openTheme(l.dataset.theme,+l.dataset.ti); } }; });
   document.querySelectorAll('[data-mchip]').forEach(function(c){ c.onclick=function(){ openMarketChip(c.dataset.mchip); }; c.onkeydown=function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); openMarketChip(c.dataset.mchip); } }; });
   document.querySelectorAll('[data-theme-src]').forEach(function(c){ var go=function(){ openTheme(c.dataset.themeSrc,+c.dataset.themeIdx); }; c.onclick=go; c.onkeydown=function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); go(); } }; });
-  document.querySelectorAll('.potcard[data-ci]').forEach(function(p){ p.onclick=function(e){ if(e.target.closest('a'))return; openCandidate(+p.dataset.ci); }; p.onkeydown=function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); openCandidate(+p.dataset.ci); } }; }); }
+  document.querySelectorAll('.potcard[data-ci]').forEach(function(p){ p.onclick=function(e){ if(e.target.closest('a'))return; if(e.target.closest('.watchbtn'))return; if(e.target.closest('.juicebtn'))return; openCandidate(+p.dataset.ci); }; p.onkeydown=function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); openCandidate(+p.dataset.ci); } }; }); }
 function wireInfo(){ document.querySelectorAll('[data-info]').forEach(function(b){
   b.onclick=function(e){ e.preventDefault(); openInfo(b.dataset.info); };
   b.onkeydown=function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); openInfo(b.dataset.info); } };
@@ -3996,8 +4031,9 @@ function wlIntel(w,D){
 // field), and for a watched-not-owned item it's exactly "what you'd have made had you bought at the
 // flagged price". Only counts rows with BOTH a real entry and a real current price — no fabricated %s.
 function wlStatBlock(rows,title,icon,emptyMsg){
+  var cnt=rows.length?' ('+rows.length+')':'';   // #207 — fold the count into the card title
   var usable=rows.filter(function(r){return r.gap!=null;});
-  if(!usable.length) return '<div class="wlstat-card"><div class="wlstat-h">'+icon+' '+esc(title)+'</div><div class="wlstat-empty">'+esc(emptyMsg)+'</div></div>';
+  if(!usable.length) return '<div class="wlstat-card"><div class="wlstat-h">'+icon+' '+esc(title)+cnt+'</div><div class="wlstat-empty">'+esc(emptyMsg)+'</div></div>';
   var sum=0; usable.forEach(function(r){sum+=r.gap;});
   var avg=sum/usable.length;
   var wins=usable.filter(function(r){return r.gap>0;}).length, losses=usable.length-wins;
@@ -4014,7 +4050,7 @@ function wlStatBlock(rows,title,icon,emptyMsg){
   } else {
     sinceTxt='since each was flagged — add-dates aren\'t captured for names added before this feature shipped';
   }
-  return '<div class="wlstat-card"><div class="wlstat-h">'+icon+' '+esc(title)+'</div>'+
+  return '<div class="wlstat-card"><div class="wlstat-h">'+icon+' '+esc(title)+cnt+'</div>'+
     '<div class="wlstat-big '+(avg>=0?'up':'down')+'">'+(avg>=0?'+':'')+avg.toFixed(1)+'%</div>'+
     '<div class="wlstat-sub">avg across '+usable.length+' name'+(usable.length===1?'':'s')+' with a captured buy price, '+sinceTxt+(rows.length>usable.length?' · '+(rows.length-usable.length)+' more not yet priced':'')+'</div>'+
     '<div class="wlstat-row"><span class="wlstat-wl"><span class="up">'+wins+'W</span> · <span class="down">'+losses+'L</span></span>'+
@@ -4027,7 +4063,7 @@ function renderWlSummary(rows){
   var watching=rows.filter(function(r){return !r.w.own;});
   el.innerHTML='<div class="wlstat-grid">'+
     wlStatBlock(owned,'Things you own','📦','Flag something as owned (📦 on a card) to see real performance here.')+
-    wlStatBlock(watching,'Watchlist — what you could have owned','👀','Nothing on the watch-only list yet with a captured buy price.')+
+    wlStatBlock(watching,'What you could have owned','👀','Nothing on the watch-only list yet with a captured buy price.')+
     '</div>';
 }
 function renderWatchlist(){
@@ -4786,11 +4822,11 @@ function renderSimple(D){
   var themeLine=villagerThemeLine(D);
   document.getElementById('app').innerHTML =
     '<div class="simple villager"><div class="shero"><div class="brandrow"><div class="brand"><span class="hpot"><span class="hsteam"><i></i><i></i><i></i></span><span class="hpotbowl">🍲</span></span> The&nbsp;Stock&nbsp;Soup&nbsp;Village</div>'+
-      (isAdmin()?'<span class="adminbadge" title="Signed in as the admin account" style="margin-right:6px">ADMIN</span>':'')+
       '<button class="viewtoggle" id="viewToggleS" title="Switch to Full view" aria-label="Switch to Full view">📋</button>'+
       '<div class="burgerwrap"><button class="burger" id="burgerBtnS" aria-label="Menu" aria-haspopup="true" aria-expanded="false" aria-controls="burgerMenuS">☰</button>'+
         '<div class="burgermenu" id="burgerMenuS" role="menu" hidden>'+
           '<div class="bmhead"><span class="live"><span class="pulse"></span>LIVE</span><button class="bmupd" id="lastUpdS">updated…</button></div>'+
+          (isAdmin()?'<div class="bmadmin" title="You are signed in as the admin account"><span class="adminbadge">ADMIN</span> signed in as admin</div>':'')+
           '<button class="bmitem" id="signInTopS" role="menuitem">👤 Sign in</button>'+
           '<button class="bmitem" id="refreshBtnS" role="menuitem">↻ Refresh prices</button>'+
           '<button class="bmitem" id="viewFull" role="menuitem">📋 Full view</button>'+
