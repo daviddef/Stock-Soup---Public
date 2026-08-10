@@ -1146,6 +1146,9 @@
   .spot-h{text-align:center;font-size:13.5px;font-weight:800;color:var(--ink);margin-bottom:8px} .spot-h b{color:var(--broth)}
   .spot-ctl{display:flex;align-items:center;justify-content:center;gap:8px;font-size:12px;color:var(--muted);font-weight:700;margin-bottom:10px}
   .spot-ctl b{color:var(--ink);min-width:34px;text-align:center} .spot-ctl input[type=range]{flex:1;max-width:220px;accent-color:var(--broth)}
+  .potthr-ctl{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);font-weight:700;margin:0 0 12px}
+  .potthr-ctl b{color:var(--ink);min-width:34px;text-align:center} .potthr-ctl input[type=range]{flex:1;max-width:260px;accent-color:var(--broth)}
+  .potthr-none{color:var(--broth);font-weight:700}
   .spot-list{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
   @media(max-width:760px){.spot-list{grid-template-columns:1fr 1fr}}
   @media(max-width:480px){.spot-list{grid-template-columns:1fr}}
@@ -2756,7 +2759,7 @@ function render(D,H){
     var shortChip=(c.short!=null&&c.short>=4)?'<span class="pmc-short">🩳 '+c.short+'%</span>':'';
     var jc=juiceChip(c.score,c.sym,c.name,signalRows(c,c.region||'us'));   // #173/#186 — 🍊 chip → the one consolidated breakdown
     var rankBadge=rank?'<span class="pmc-rank">'+rank+'</span>':'';   // #211 — Stock Pot Top 20 is a numbered leaderboard
-    return '<div class="potcard h-'+esc(c.heat)+(rank?' ranked':'')+'" data-ci="'+i+'" role="button" tabindex="0" aria-label="Details for '+esc(c.sym)+'">'+
+    return '<div class="potcard h-'+esc(c.heat)+(rank?' ranked':'')+'" data-ci="'+i+'" data-score="'+((c.score&&c.score.buy_now!=null)?c.score.buy_now:0)+'" role="button" tabindex="0" aria-label="Details for '+esc(c.sym)+'">'+
       '<div class="pmc-top">'+rankBadge+(c.heat==='cold'?'<span class="ph no">⛔</span>':'<span class="ph"></span>')+'<b class="pmc-sym">'+esc(c.sym)+'</b>'+shortChip+'<span class="pmc-flag">'+(c.region==='au'?'AU':'US')+'</span>'+
         '<button class="watchbtn iconwatch pmc-watch" data-sym="'+esc(c.sym)+'" data-region="'+esc(c.region||'us')+'"'+(c.name?' data-name="'+esc(c.name)+'"':'')+' aria-pressed="false" title="Add to watchlist">+</button></div>'+
       (c.name?'<div class="pmc-name">'+esc(c.name)+'</div>':'')+
@@ -2856,6 +2859,10 @@ function render(D,H){
       '<div class="pot">'+bargainCards+'</div></section>':'')+
     '<section id="fullpot"><div class="sec-head"><h2 class="display"><span class="k">05</span> The full pot</h2>'+infoBtn('fullpot')+'</div>'+
       '<p class="sec-sub">Every '+(MKT==='au'?'🇦🇺 Australian':'🌏 international')+' candidate the scan shortlisted tonight — <b>'+_potN+' names</b>, sorted into buckets by how appetising the model found each one. Showing the <b>top 20</b>; the rest are one tap away. <b>Tap any for the full read.</b></p>'+
+      // #231 — same score-threshold slider as the Simple view's whole-pot (#199): drag to hide the weaker
+      // names client-side, no re-render. Filters every potcard by its model score; a band group whose cards
+      // all fall below the line hides its header too.
+      '<div class="potthr-ctl">Only show <b id="potThrLbl">'+FULL_POT_THR+'+</b> <input type="range" id="potThr" min="0" max="90" step="5" value="'+FULL_POT_THR+'" aria-label="Minimum score to show"> <span class="potthr-none" id="potThrNone" hidden>nothing that high — drag left</span></div>'+
       (potBands||'<p class="potempty">Nothing scored in '+(MKT==='au'?'🇦🇺 Australia':'🌏 international')+' tonight.</p>')+
       (_hidN>0?'<button class="potmore'+(potBands?'':' potmore-lead')+'" id="potMore" data-n="'+_hidN+'" aria-expanded="false">➖ '+_hidN+' more below the top 20 ▾</button>'+
         '<div id="potLose" hidden>'+potHidden+'</div>':'')+
@@ -5078,6 +5085,26 @@ function wire(D){
   if(sit){ sit.textContent=signedIn()?'👤 Account':'👤 Sign in'; sit.onclick=openAccount; }
   var pm=document.getElementById('potMore'), pl=document.getElementById('potLose');
   if(pm&&pl){ var _pn=pm.dataset.n||''; pm.onclick=function(){ var open=pl.hasAttribute('hidden'); if(open)pl.removeAttribute('hidden'); else pl.setAttribute('hidden',''); pm.setAttribute('aria-expanded',open?'true':'false'); pm.innerHTML=(open?'▴ Hide the rest':'➖ '+_pn+' more below the top 20 ▾'); }; }
+  // #231 — Full Pot score-threshold slider (parity with #199's Simple-view slider). Hides potcards below
+  // the threshold + any band group left empty, across BOTH the top-20 and the collapsed "more" section.
+  var potThr=document.getElementById('potThr');
+  if(potThr){
+    var applyPotThr=function(){
+      FULL_POT_THR=+potThr.value;
+      var lbl=document.getElementById('potThrLbl'); if(lbl) lbl.textContent=FULL_POT_THR+'+';
+      var shown=0;
+      document.querySelectorAll('#fullpot .potcard[data-score]').forEach(function(c){
+        var ok=(+c.getAttribute('data-score'))>=FULL_POT_THR; c.style.display=ok?'':'none'; if(ok) shown++;
+      });
+      // hide a band group whose visible cards are all filtered out
+      document.querySelectorAll('#fullpot .potband').forEach(function(g){
+        var any=Array.prototype.some.call(g.querySelectorAll('.potcard[data-score]'),function(c){return c.style.display!=='none';});
+        g.style.display=any?'':'none';
+      });
+      var none=document.getElementById('potThrNone'); if(none) none.hidden=shown>0||FULL_POT_THR===0;
+    };
+    potThr.addEventListener('input',applyPotThr); applyPotThr();
+  }
   var rm=document.getElementById('runMore'), rr=document.getElementById('runRest');
   if(rm&&rr){ var rrN=rr.children.length; rm.onclick=function(){ var open=rr.hasAttribute('hidden'); if(open)rr.removeAttribute('hidden'); else rr.setAttribute('hidden',''); rm.setAttribute('aria-expanded',open?'true':'false'); rm.innerHTML=(open?'▴ Hide older runs':'➖ '+rrN+' older runs ▾'); }; }
   var kh=document.getElementById('kitchenHealthBtn'); if(kh) kh.onclick=openDataHealth;
@@ -5209,6 +5236,7 @@ document.getElementById('overlay').addEventListener('click',function(e){if(e.tar
 /* ---- View mode: simple (mobile default) vs full, with toggle ---- */
 var VIEW = null, SREGION = 'au', PULSES = null, TRACK = null, MKT = 'au', OUTCOMES = null, TAB = null, RUNNING = null, RUNLOG = [], WL_FILTER = 'all';
 var SIMPLE_POT_THR = 50;   // #199 — the Simple-view whole-pot score threshold (persists across re-renders)
+var FULL_POT_THR = 0;      // #231 — the Full-view Full Pot score threshold (default 0 = show all, unlike Simple's 50)
 var TABLABEL={menu:"Tonight's Menu",reviews:'Dinner Reviews',faves:'Favourite Course',kitchen:'Inside the Kitchen'};
 function switchTab(t){
   TAB = t; try{ localStorage.setItem('soup_tab', t); }catch(e){}
