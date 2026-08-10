@@ -5703,8 +5703,10 @@ function renderSimple(D){
           '<button class="bmitem" id="docsBtnS" role="menuitem" style="display:none">📖 Documentation</button>'+
           '<button class="bmitem" id="healthBtnS" role="menuitem" style="display:none">💓 Data-source health</button>'+
         '</div></div></div>'+
-      '<div class="seyebrow schedlink" data-info="schedule" role="button" tabindex="0" title="Major runs are manually triggered — this is the target window, not a guarantee">'+esc(sStamp)+(D.next?' · usually <b>~'+esc(D.next)+'</b>':'')+' <span class="schedi">i</span></div>'+
-      '<div class="stoprail">'+mktBarHtml(D)+tierBarHtml()+'</div>'+
+      // #261 (user ask) — Simple is the dumb-simple view: drop the date/next-run line, the AU/US market
+      // toggle and the T1/T2/T3 tier pills. Both markets + all tiers now show together in the stacked 3×3s,
+      // so those filters are redundant here (they stay in Full view). Date/schedule is still one tap away
+      // via the burger's run-schedule link.
       // #234 — Simple view used to show TWO risk read-outs (the villager mood gauge + a second dumbed-down
       // needle). Now it's the villager MASCOT (emoji + word — character, not a chart) sitting above the ONE
       // real risk meter, identical to Full view: same needle, same 5 factor ticks, same legend, same tap →
