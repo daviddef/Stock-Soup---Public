@@ -717,6 +717,7 @@
   @media (max-width:640px){.movergrid{grid-template-columns:1fr 1fr}}
   .movercard{cursor:pointer;background:var(--surface);border:1px solid var(--line);border-radius:11px;padding:9px 10px;transition:border-color .12s,transform .05s}
   .movercard:hover{border-color:var(--broth)} .movercard:active{transform:scale(.98)}
+  .mvchip{flex:0 0 auto;margin-left:4px} .mvchip .juicebtn{font-size:10.5px;padding:1px 6px}
   .movertop{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:2px}
   .movertop .upsym{font-size:13px}
   .uptag{color:var(--broth);font-size:10.5px;font-weight:800;letter-spacing:.02em}
@@ -1127,11 +1128,15 @@
   .tmx-cell{line-height:1.15}
   .tmx-symrow{min-height:20px}
   /* #199 — the Simple-view whole-pot: score-sorted, both markets, one threshold slider */
-  .spotwrap{max-width:540px;margin:20px auto 4px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px 14px 8px}
+  /* #199 follow-up (user ask) — break out to the same full width as the 3×3 above, and lay the rows
+     3-abreast (2 on tablet, 1 on phone) so the pot doesn't run as one tall narrow column. */
+  .spotwrap{width:min(96vw,860px);position:relative;left:50%;transform:translateX(-50%);margin:20px 0 6px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px 16px 10px}
   .spot-h{text-align:center;font-size:13.5px;font-weight:800;color:var(--ink);margin-bottom:8px} .spot-h b{color:var(--broth)}
   .spot-ctl{display:flex;align-items:center;justify-content:center;gap:8px;font-size:12px;color:var(--muted);font-weight:700;margin-bottom:10px}
   .spot-ctl b{color:var(--ink);min-width:34px;text-align:center} .spot-ctl input[type=range]{flex:1;max-width:220px;accent-color:var(--broth)}
-  .spot-list{display:flex;flex-direction:column;gap:5px}
+  .spot-list{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+  @media(max-width:760px){.spot-list{grid-template-columns:1fr 1fr}}
+  @media(max-width:480px){.spot-list{grid-template-columns:1fr}}
   .spot-row{display:flex;align-items:center;gap:8px;padding:7px 9px;border:1px solid var(--line);border-radius:10px;background:var(--surface-2);cursor:pointer;transition:border-color .12s}
   .spot-row:hover{border-color:var(--broth)}
   .spot-flag{flex:0 0 auto;font-size:13px}
@@ -1766,9 +1771,18 @@ function topNewsHtml(D){
 function topMoversHtml(D){
   var tm=(D.topMovers||{})[MKT]; if(!tm) return '';
   var cur=MKT==='au'?'A$':'$';
+  // #230 — show the 🍊 score chip on a mover we've actually scored (a pick or Full Pot candidate). Most
+  // whole-market movers aren't in our pot, so the chip only appears on the few that are — a handy
+  // "we already have a read on this one" cue.
+  var _mvFind=function(sym){ var found=null;
+    (D.regions||[]).forEach(function(rg){(rg.picks||[]).forEach(function(p){if(p.sym===sym&&p.sym!=='NONE')found=p;});});
+    if(!found)(D.candidates||[]).forEach(function(c){if(c.sym===sym&&(c.region||'us')===MKT)found=c;});
+    return found; };
   function card(m){
+    var o=_mvFind(m.sym);
+    var chip=(o&&o.score&&o.score.buy_now!=null)?'<span class="mvchip">'+juiceChip(o.score,o.sym,o.name,signalRows(o,MKT))+'</span>':'';
     return '<div class="movercard" data-sym="'+esc(m.sym)+'" data-region="'+esc(MKT)+'" role="button" tabindex="0" aria-label="'+esc(m.sym)+' details">'+
-      '<div class="movertop"><span class="upsym">'+esc(m.sym)+'</span><span class="'+(m.change_pct>=0?'up':'down')+'" style="font-weight:800;font-size:12.5px">'+(m.change_pct>=0?'▲':'▼')+' '+Math.abs(m.change_pct)+'%</span>'+
+      '<div class="movertop"><span class="upsym">'+esc(m.sym)+'</span><span class="'+(m.change_pct>=0?'up':'down')+'" style="font-weight:800;font-size:12.5px">'+(m.change_pct>=0?'▲':'▼')+' '+Math.abs(m.change_pct)+'%</span>'+chip+
       '<button class="watchbtn iconwatch" data-sym="'+esc(m.sym)+'" data-region="'+esc(MKT)+'" style="width:19px;height:19px;font-size:13px;margin-left:6px" aria-pressed="false" title="Add to watchlist">+</button></div>'+
       '<div class="upwhen">'+esc(cur)+esc(m.price)+(m.volume?' · vol '+esc(m.volume):'')+'</div>'+
       missChartSlot(m.sym,MKT,cur)+
@@ -5279,12 +5293,15 @@ function simpleFullPotHtml(D){
     var chip=juiceChip(c.score,c.sym,c.name,signalRows(c,c.region||'au'));
     return '<div class="spot-row" data-spot-score="'+(c.score.buy_now||0)+'" data-sugg-sym="'+esc(c.sym)+'" data-sugg-region="'+esc(c.region||'au')+'" role="button" tabindex="0" aria-label="'+esc(c.sym)+' details">'+
       '<span class="spot-flag">'+((c.region||'au')==='au'?'🇦🇺':'🌏')+'</span>'+
+      '<span class="rltier rltier-1" title="Type 1 — the catalyst pot">T1</span>'+
       '<span class="spot-sym">'+esc(c.sym)+'</span>'+
       '<span class="spot-name">'+esc(c.name||'')+'</span>'+
       '<span class="spot-px">'+esc(c.price||'')+'</span>'+
       '<span class="spot-chip">'+chip+'</span></div>';
   }).join('');
-  return '<div class="spotwrap"><div class="spot-h">🍲 The whole pot — <b>'+cands.length+'</b> names we scored, ranked</div>'+
+  // #233 — this pot is the Type 1 catalyst candidate pool (the T2/T3 whole-market scans are the separate
+  // 3×3 above), so every row carries a T1 badge and the header says so.
+  return '<div class="spotwrap"><div class="spot-h">🍲 The whole <span class="rltier rltier-1">T1</span> pot — <b>'+cands.length+'</b> catalyst names we scored, ranked</div>'+
     '<div class="spot-ctl">Only show <b id="spotThrLbl">'+SIMPLE_POT_THR+'+</b> <input type="range" id="spotThr" min="0" max="90" step="5" value="'+SIMPLE_POT_THR+'" aria-label="Minimum score to show"></div>'+
     '<div class="spot-list" id="spotList">'+rows+'</div>'+
     '<div class="spot-none" id="spotNone" hidden>Nothing scoring that high right now — drag the slider down.</div></div>';
