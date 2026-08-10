@@ -1112,8 +1112,10 @@
   .plmv .up{color:var(--buy)} .plmv .down{color:var(--dont)}
   .plquiet{color:var(--faint);font-style:italic}
 
-  /* SIMPLE (mobile-first) VIEW */
-  .simple{max-width:540px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+  /* SIMPLE (mobile-first) VIEW — #247: ONE consistent device-width column. Everything (hero, 3×3, pot)
+     shares this width and aligns edge-to-edge; the old per-section 96vw breakouts caused the ragged
+     misalignment the user flagged. */
+  .simple{width:min(94vw,600px);margin:0 auto;display:flex;flex-direction:column;gap:16px}
   .shero{background:radial-gradient(120% 140% at 100% 0%, rgba(255,107,26,.18), transparent 55%),var(--surface);
     border:1px solid var(--line);border-radius:20px;padding:22px}
   .shero .brand{margin-bottom:14px}
@@ -1131,27 +1133,30 @@
   .vmoodword{font-size:27px;font-weight:900;letter-spacing:.02em;margin-top:2px}
   .vmoodline{font-size:14.5px;color:var(--muted);margin-top:3px}
   .vtheme{text-align:center;font-size:14px;font-weight:800;margin:14px 0 0;color:var(--ink);text-wrap:pretty}
-  /* #172 — the 3×3 tier × timeframe matrix (Villager view). Cols: Tier3→Tier2→Tier1 (wild→safe). Rows: DAY/WEEK/MONTH.
-     Breaks out of the 540px villager column to run full-width so the 9 cards get room + align with the risk slider. */
-  .tmxwrap{width:min(96vw,860px);position:relative;left:50%;transform:translateX(-50%);margin:22px 0 8px}
+  /* #172/#247 — the 3×3 type × timeframe matrix (Villager view). Cols: Type3→Type2→Type1 (wild→safe). Rows:
+     DAY/WEEK/MONTH. Now shares the .simple column width (no more 96vw breakout) so it aligns edge-to-edge
+     with the hero/risk-chart above it. */
+  .tmxwrap{width:100%;margin:6px 0 4px}
   .tmx-title{text-align:center;font-size:14px;font-weight:900;letter-spacing:.01em;margin-bottom:10px}
-  .tmx{display:grid;grid-template-columns:52px 1fr 1fr 1fr;gap:8px;align-items:stretch}
-  .tmx-colh{text-align:center;display:flex;flex-direction:column;gap:1px;padding:2px 0 5px;font-size:12.5px;font-weight:900;border-bottom:3px solid var(--line)}
-  .tmx-colh span{font-size:10px;font-weight:700;color:var(--muted)}
+  .tmx{display:grid;grid-template-columns:26px 1fr 1fr 1fr;gap:6px;align-items:stretch}
+  .tmx-colh{text-align:center;display:flex;flex-direction:column;gap:1px;padding:2px 0 5px;font-size:12px;font-weight:900;border-bottom:2px solid var(--line)}
+  .tmx-colh span{font-size:9.5px;font-weight:700;color:var(--muted)}
   .tmx-colh-t3{border-bottom-color:var(--dont)} .tmx-colh-t2{border-bottom-color:var(--hold,#e0a92e)} .tmx-colh-t1{border-bottom-color:var(--buy)}
   /* risk strip under the headers — mirrors the risk slider (red=wilder/Tier 3 left → green=safer/Tier 1 right) */
   .tmx-riskbar{height:8px;border-radius:999px;background:linear-gradient(90deg,var(--dont),var(--hold,#e0a92e),var(--buy));display:flex;justify-content:space-between;align-items:center;padding:0 8px;margin:2px 0 4px;position:relative}
   .tmx-rl{font-size:8.5px;font-weight:900;color:#fff;text-shadow:0 0 3px rgba(0,0,0,.35);letter-spacing:.03em;white-space:nowrap}
   .tmx-rowh{display:flex;align-items:center;justify-content:center;font-size:10.5px;font-weight:900;letter-spacing:.06em;color:var(--muted)}
-  /* #182 — each cell is a mini Villager card: mascot + ticker + %chg + name + mini chart + YUM/NAH sticker + 🍊 */
-  .tmx-cell{border-radius:14px;min-height:158px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:2px;padding:10px 7px;border:1.5px solid var(--line);background:var(--card,var(--surface));font-family:inherit;line-height:1.05}
+  /* #182/#247 — each cell is a compact mini card: mascot + ticker + %chg + YUM/NAH + 🍊. Uniform height
+     (no per-cell chart — that was inconsistent + cluttered; the chart is one tap away in the detail),
+     hairline borders + a whisper of tone tint instead of the old loud 1.5px coloured frames. */
+  .tmx-cell{border-radius:13px;min-height:112px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:11px 6px;border:1px solid var(--line);background:var(--card,var(--surface));font-family:inherit;line-height:1.1}
   .tmx-empty{color:var(--faint);background:transparent;justify-content:center;gap:4px}
   .tmx-zzz{font-size:9px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--faint)}
   .tmx-vcell{cursor:pointer;transition:transform .1s;position:relative}
   .tmx-sugg{opacity:.82;border-style:dashed}
   .tmx-suggtag{position:absolute;top:5px;left:0;right:0;text-align:center;font-size:8.5px;font-weight:800;letter-spacing:.04em;color:var(--broth)}
   .tmx-vcell:hover{transform:translateY(-2px)}
-  .tmx-masc{font-size:30px;line-height:1}
+  .tmx-masc{font-size:26px;line-height:1}
   .tmx-symrow{display:flex;align-items:baseline;gap:6px;flex-wrap:wrap;justify-content:center}
   .tmx-sym{font-weight:900;font-size:15px;letter-spacing:-.01em}
   .tmx-chg{font-size:11px;font-weight:900}
@@ -1161,9 +1166,9 @@
   .tmx-botrow{display:flex;align-items:center;gap:5px;flex-wrap:wrap;justify-content:center;margin-top:auto}
   .tmx-stick{font-size:8.5px !important;padding:1px 7px !important}
   .tmx-jz{font-size:9px;font-weight:900;color:#e07b00;background:rgba(255,140,0,.13);border:1px solid rgba(255,140,0,.35);border-radius:6px;padding:1px 5px}
-  .tmx-buy{border-color:var(--buy)} .tmx-buy .tmx-sym{color:var(--buy)}
-  .tmx-skip{border-color:var(--dont)} .tmx-skip .tmx-sym{color:var(--dont)}
-  .tmx-mid{border-color:var(--hold,#e0a92e)}
+  .tmx-buy{border-color:rgba(35,194,103,.5);background:rgba(35,194,103,.06)} .tmx-buy .tmx-sym{color:var(--buy)}
+  .tmx-skip{border-color:rgba(214,69,69,.4);background:rgba(214,69,69,.05)} .tmx-skip .tmx-sym{color:var(--dont)}
+  .tmx-mid{border-color:rgba(224,169,46,.45);background:rgba(224,169,46,.05)}
   .tmx-legend{text-align:center;font-size:10px;color:var(--faint);margin-top:8px;letter-spacing:.02em}
   /* #193 — 3×3 polish: a touch more breathing room + consistent baseline so the 9 cells read as one tidy set */
   .tmx-cell{line-height:1.15}
@@ -1171,7 +1176,7 @@
   /* #199 — the Simple-view whole-pot: score-sorted, both markets, one threshold slider */
   /* #199 follow-up (user ask) — break out to the same full width as the 3×3 above, and lay the rows
      3-abreast (2 on tablet, 1 on phone) so the pot doesn't run as one tall narrow column. */
-  .spotwrap{width:min(96vw,860px);position:relative;left:50%;transform:translateX(-50%);margin:20px 0 6px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px 16px 10px}
+  .spotwrap{width:100%;margin:6px 0;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px 16px 10px}
   .spot-h{text-align:center;font-size:13.5px;font-weight:800;color:var(--ink);margin-bottom:8px} .spot-h b{color:var(--broth)}
   .spot-ctl{display:flex;align-items:center;justify-content:center;gap:8px;font-size:12px;color:var(--muted);font-weight:700;margin-bottom:10px}
   .spot-ctl b{color:var(--ink);min-width:34px;text-align:center} .spot-ctl input[type=range]{flex:1;max-width:220px;accent-color:var(--broth)}
@@ -5514,9 +5519,10 @@ function tierMatrixHtml(D,rid){
         return '<button class="tmx-cell tmx-vcell '+tmxTone(p)+(p._sugg?' tmx-sugg':'')+'" data-tier="'+c.k+'" data-tf="'+rw.k+'" title="'+esc(p.sym)+(p._sugg?' · next best (not a served pick)':(p.verdict?' · '+esc(p.verdict):''))+' — tap for the full read">'+
           (p._sugg?'<span class="tmx-suggtag">💡 next best</span>':'')+
           '<span class="tmx-masc">'+villagerMascot(p.sym)+'</span>'+
-          '<span class="tmx-symrow"><span class="tmx-sym">'+esc(p.sym)+'</span>'+(p.change?'<span class="tmx-chg '+tone+'">'+chgArrow(tone)+esc(p.change)+'</span>':'')+'</span>'+
-          (p.name?'<span class="tmx-name">'+esc(p.name)+'</span>':'')+
-          '<span class="tmx-spark">'+missChartSlot(p.sym,rid,'')+'</span>'+
+          '<span class="tmx-symrow"><span class="tmx-sym">'+esc(p.sym)+'</span></span>'+
+          (p.change?'<span class="tmx-chg '+tone+'">'+chgArrow(tone)+esc(p.change)+'</span>':'')+
+          // #247 — name + per-cell mini-chart removed: they made the 9 cells uneven and busy. Mascot +
+          // ticker + %chg + YUM/NAH + 🍊 is the tidy, uniform set; the chart is one tap away in the detail.
           '<span class="tmx-botrow"><span class="vsticker '+st.cls+' tmx-stick">'+st.emoji+' '+st.word+'</span>'+(sc!=null?'<span class="tmx-jz">🍊 '+sc+'</span>':'')+'</span>'+
         '</button>';
       }).join('');
