@@ -1018,17 +1018,20 @@
   .tmx-colh span{font-size:9.5px;font-weight:700;color:var(--muted)}
   .tmx-rowh{display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:9.5px;font-weight:800;color:var(--muted);line-height:1.1;text-align:center}
   .tmx-tf{font-size:16px}
-  /* #182 — each cell is a fun mini card: ticker + company name + 🍊 score, coloured by verdict */
-  .tmx-cell{border-radius:12px;min-height:66px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:7px 4px;border:1px solid var(--line);font-family:inherit;line-height:1.05}
-  .tmx-empty{color:var(--faint);background:transparent;font-weight:900;font-size:14.5px}
-  .tmx-pick{cursor:pointer;transition:transform .1s}
-  .tmx-pick:hover{transform:translateY(-1px)}
-  .tmx-sym{font-weight:900;font-size:14.5px;letter-spacing:-.01em}
-  .tmx-name{font-size:8.5px;font-weight:700;color:var(--muted);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  /* #182 — each cell is a mini Villager card: animal mascot + ticker + name + fun YUM/NAH sticker + 🍊 */
+  .tmx-cell{border-radius:14px;min-height:112px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:9px 5px;border:1.5px solid var(--line);background:var(--card,var(--surface));font-family:inherit;line-height:1.05}
+  .tmx-empty{color:var(--faint);background:transparent;gap:3px}
+  .tmx-zzz{font-size:9px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--faint)}
+  .tmx-vcell{cursor:pointer;transition:transform .1s}
+  .tmx-vcell:hover{transform:translateY(-2px)}
+  .tmx-masc{font-size:30px;line-height:1}
+  .tmx-sym{font-weight:900;font-size:15px;letter-spacing:-.01em;margin-top:1px}
+  .tmx-name{font-size:8px;font-weight:700;color:var(--muted);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .tmx-stick{font-size:8.5px !important;padding:1px 7px !important;margin-top:2px}
   .tmx-jz{font-size:9px;font-weight:900;color:#e07b00;background:rgba(255,140,0,.13);border:1px solid rgba(255,140,0,.35);border-radius:6px;padding:1px 5px;margin-top:1px}
-  .tmx-buy{border-color:var(--buy);color:var(--buy);background:rgba(35,194,103,.1)}
-  .tmx-skip{border-color:var(--dont);color:var(--dont);background:rgba(255,77,77,.07)}
-  .tmx-mid{border-color:var(--hold,#e0a92e);color:var(--ink);background:rgba(224,169,46,.1)}
+  .tmx-buy{border-color:var(--buy);color:var(--buy)}
+  .tmx-skip{border-color:var(--dont);color:var(--dont)}
+  .tmx-mid{border-color:var(--hold,#e0a92e);color:var(--ink)}
   .tmx-legend{text-align:center;font-size:10px;color:var(--faint);margin-top:7px;letter-spacing:.02em}
   .vgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;max-width:540px;margin:4px auto 0}
   @media(max-width:420px){.vgrid{grid-template-columns:1fr}}
@@ -4668,11 +4671,15 @@ function tierMatrixHtml(D,rid){
     return '<div class="tmx-rowh"><span class="tmx-tf">'+rw.emoji+'</span><span>'+rw.lbl+'</span></div>'+
       cols.map(function(c){
         var p=matrixPickAt(D,rid,c.k,rw.k);
-        if(!p||!p.sym||p.sym==='NONE') return '<div class="tmx-cell tmx-empty" title="No '+rw.lbl.toLowerCase()+' pick in '+c.lbl+' this run">–</div>';
-        var sc=p.score&&p.score.buy_now;
-        return '<button class="tmx-cell tmx-pick '+tmxTone(p)+'" data-tier="'+c.k+'" data-tf="'+rw.k+'" title="'+esc(p.sym)+(p.verdict?' · '+esc(p.verdict):'')+' — tap for the full read">'+
+        if(!p||!p.sym||p.sym==='NONE') return '<div class="tmx-cell tmx-empty" title="No '+rw.lbl.toLowerCase()+' pick in '+c.lbl+' this run"><span class="tmx-masc">😴</span><span class="tmx-zzz">zzz</span></div>';
+        // #182 — each cell is a mini Villager card: animal mascot + ticker + name + a fun YUM/NAH/HMM
+        // sticker + the 🍊 score. Same cute, on-brand language as the big frog/pig cards.
+        var sc=p.score&&p.score.buy_now, st=villagerSticker(p);
+        return '<button class="tmx-cell tmx-vcell '+tmxTone(p)+'" data-tier="'+c.k+'" data-tf="'+rw.k+'" title="'+esc(p.sym)+(p.verdict?' · '+esc(p.verdict):'')+' — tap for the full read">'+
+          '<span class="tmx-masc">'+villagerMascot(p.sym)+'</span>'+
           '<span class="tmx-sym">'+esc(p.sym)+'</span>'+
           (p.name?'<span class="tmx-name">'+esc(p.name)+'</span>':'')+
+          '<span class="vsticker '+st.cls+' tmx-stick">'+st.emoji+' '+st.word+'</span>'+
           (sc!=null?'<span class="tmx-jz">🍊 '+sc+'</span>':'')+
         '</button>';
       }).join('');
@@ -4709,8 +4716,8 @@ function renderSimple(D){
       '<div class="meter"><div class="track"><div class="needle" id="sneedle"></div></div>'+
       '<div class="lbls"><span>🙈 Hide!</span><span>😌 Chill</span><span>🚀 GO!</span></div></div>'+
       (themeLine?'<div class="vtheme">'+esc(themeLine)+'</div>':'')+'</div>'+
-    tierMatrixHtml(D,rid)+   // #172 — the 3×3 (tier × timeframe), right under the risk line
-    '<div class="vgrid">'+cards+'</div>'+
+    tierMatrixHtml(D,rid)+   // #172/#182 — the 3×3 IS the fun Villager-card grid now (mascots + stickers + 🍊),
+                             // so the separate 3-up frog/pig cards below were pure duplication (user-flagged) — removed.
     '<button class="sfull" id="viewFull2">🔍 Show me the boring grown-up version</button>'+
     '<footer>Not financial advice — just a friendly village guide. · The Stock Soup, served hot, hourly</footer></div>';
   wireSimple(D);
