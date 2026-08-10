@@ -85,9 +85,14 @@
   .toggle:focus-visible{outline:2px solid var(--broth);outline-offset:2px}
   .meter{margin-top:28px}  /* #174 — extra top room so the per-indicator emoji labels above the track don't crowd the row above */
   .meter .track{height:10px;border-radius:999px;background:linear-gradient(90deg,var(--dont),var(--hold),var(--buy));position:relative;opacity:.9}
-  .meter .needle{position:absolute;top:-5px;width:4px;height:20px;border-radius:2px;background:var(--ink);box-shadow:0 0 0 3px var(--surface);left:50%;transition:left .8s cubic-bezier(.2,.8,.2,1)}
-  .meter .needle.vixneedle{background:#9b6bff;width:3px;top:-3px;height:16px;box-shadow:0 0 0 2px var(--surface)}
-  .meter .lbls{display:flex;justify-content:space-between;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);margin-top:6px;font-weight:700}
+  /* #184 — the composite "now" reading is a good-sized round black dot (was a thin vertical line),
+     labelled "Risk", with a gentle pulse so it clearly reads as the live overall reading vs the small
+     per-indicator emoji ticks above the track. */
+  .meter .needle{position:absolute;top:-3px;width:16px;height:16px;border-radius:50%;background:var(--ink);box-shadow:0 0 0 3px var(--surface);left:50%;transform:translateX(-50%);transition:left .8s cubic-bezier(.2,.8,.2,1);z-index:4;animation:riskpulse 2.6s ease-out infinite}
+  .meter .needle::after{content:"Risk";position:absolute;top:calc(100% + 3px);left:50%;transform:translateX(-50%);font-size:9px;font-weight:900;letter-spacing:.03em;color:var(--ink);background:var(--surface);padding:0 4px;border-radius:4px;white-space:nowrap}
+  @keyframes riskpulse{0%{box-shadow:0 0 0 3px var(--surface),0 0 0 3px rgba(120,120,120,.35)}70%{box-shadow:0 0 0 3px var(--surface),0 0 0 11px rgba(120,120,120,0)}100%{box-shadow:0 0 0 3px var(--surface),0 0 0 3px rgba(120,120,120,0)}}
+  @media(prefers-reduced-motion:reduce){.meter .needle{animation:none}}
+  .meter .lbls{display:flex;justify-content:space-between;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);margin-top:20px;font-weight:700}
   .meterleg{display:flex;gap:14px;justify-content:center;margin-top:8px;font-size:10.5px;font-weight:700;color:var(--muted)}
   .meterleg i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:5px;vertical-align:middle}
   .meterleg i.ink{background:var(--ink)} .meterleg i.vix{background:#9b6bff}
@@ -1008,18 +1013,22 @@
   /* #172 — the 3×3 tier × timeframe matrix (Villager view). Cols: Tier3→Tier2→Tier1 (wild→safe). Rows: D/W/M. */
   .tmxwrap{max-width:540px;margin:20px auto 6px}
   .tmx-title{text-align:center;font-size:13px;font-weight:900;letter-spacing:.01em;margin-bottom:9px}
-  .tmx{display:grid;grid-template-columns:44px 1fr 1fr 1fr;gap:6px;align-items:stretch}
+  .tmx{display:grid;grid-template-columns:40px 1fr 1fr 1fr;gap:6px;align-items:stretch}
   .tmx-colh{text-align:center;display:flex;flex-direction:column;gap:1px;padding:2px 0;font-size:11.5px;font-weight:900}
   .tmx-colh span{font-size:9.5px;font-weight:700;color:var(--muted)}
   .tmx-rowh{display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:9.5px;font-weight:800;color:var(--muted);line-height:1.1;text-align:center}
   .tmx-tf{font-size:16px}
-  .tmx-cell{border-radius:11px;min-height:42px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:14.5px;border:1px solid var(--line);font-family:inherit}
-  .tmx-empty{color:var(--faint);background:transparent}
+  /* #182 — each cell is a fun mini card: ticker + company name + 🍊 score, coloured by verdict */
+  .tmx-cell{border-radius:12px;min-height:66px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:7px 4px;border:1px solid var(--line);font-family:inherit;line-height:1.05}
+  .tmx-empty{color:var(--faint);background:transparent;font-weight:900;font-size:14.5px}
   .tmx-pick{cursor:pointer;transition:transform .1s}
   .tmx-pick:hover{transform:translateY(-1px)}
-  .tmx-buy{border-color:var(--buy);color:var(--buy);background:rgba(35,194,103,.12)}
-  .tmx-skip{border-color:var(--dont);color:var(--dont);background:rgba(255,77,77,.09)}
-  .tmx-mid{border-color:var(--hold,#e0a92e);color:var(--ink);background:rgba(224,169,46,.12)}
+  .tmx-sym{font-weight:900;font-size:14.5px;letter-spacing:-.01em}
+  .tmx-name{font-size:8.5px;font-weight:700;color:var(--muted);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .tmx-jz{font-size:9px;font-weight:900;color:#e07b00;background:rgba(255,140,0,.13);border:1px solid rgba(255,140,0,.35);border-radius:6px;padding:1px 5px;margin-top:1px}
+  .tmx-buy{border-color:var(--buy);color:var(--buy);background:rgba(35,194,103,.1)}
+  .tmx-skip{border-color:var(--dont);color:var(--dont);background:rgba(255,77,77,.07)}
+  .tmx-mid{border-color:var(--hold,#e0a92e);color:var(--ink);background:rgba(224,169,46,.1)}
   .tmx-legend{text-align:center;font-size:10px;color:var(--faint);margin-top:7px;letter-spacing:.02em}
   .vgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;max-width:540px;margin:4px auto 0}
   @media(max-width:420px){.vgrid{grid-template-columns:1fr}}
@@ -4660,7 +4669,12 @@ function tierMatrixHtml(D,rid){
       cols.map(function(c){
         var p=matrixPickAt(D,rid,c.k,rw.k);
         if(!p||!p.sym||p.sym==='NONE') return '<div class="tmx-cell tmx-empty" title="No '+rw.lbl.toLowerCase()+' pick in '+c.lbl+' this run">–</div>';
-        return '<button class="tmx-cell tmx-pick '+tmxTone(p)+'" data-tier="'+c.k+'" data-tf="'+rw.k+'" title="'+esc(p.sym)+(p.verdict?' · '+esc(p.verdict):'')+' — tap for the full read">'+esc(p.sym)+'</button>';
+        var sc=p.score&&p.score.buy_now;
+        return '<button class="tmx-cell tmx-pick '+tmxTone(p)+'" data-tier="'+c.k+'" data-tf="'+rw.k+'" title="'+esc(p.sym)+(p.verdict?' · '+esc(p.verdict):'')+' — tap for the full read">'+
+          '<span class="tmx-sym">'+esc(p.sym)+'</span>'+
+          (p.name?'<span class="tmx-name">'+esc(p.name)+'</span>':'')+
+          (sc!=null?'<span class="tmx-jz">🍊 '+sc+'</span>':'')+
+        '</button>';
       }).join('');
   }).join('');
   return '<div class="tmxwrap"><div class="tmx-title">🎲 The 3×3 — every tier, every timeframe</div>'+
