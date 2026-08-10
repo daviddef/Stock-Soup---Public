@@ -2623,6 +2623,12 @@ function render(D,H){
             '<span class="px"><span class="p mono">'+esc(sg.price||'—')+'</span>'+(sg.change?'<br><span class="c mono '+chgTone(sg.change,sg.up)+'">'+esc(sg.change)+'</span>':'')+'</span></div>'+
             (_sgChip?'<div class="sentrow">'+_sgChip+'</div>':'')+
             (sg.note?'<p class="plain">'+esc(sg.note)+'</p>':'')+
+            // #239 (user ask) — the next-best card was missing the mini-chart + range bar every real pick
+            // card shows. The candidate carries `spark` and the full technical set (per #126), so render the
+            // same live intraday chart (missChartSlot — no served-ISO marker since it was never served) and
+            // the range bar. Tapping still opens the full signal breakdown via openMover→openCandidate.
+            '<div class="cardtrend"><div class="mrlbl">recent trend</div>'+missChartSlot(sg.sym,rg.id,rg.cur||'$')+'</div>'+
+            (sg.spark?rangeBar(sg.spark,rg.cur||'$',p.tf):'')+
             '</article></div>';
         }
         return '<div class="pickcol"><article class="card card-none" tabindex="0" role="button" data-region="'+rg.id+'" data-idx="'+idx+'" aria-label="No pick this run for '+esc(tfBW(p.tf).replace(/<[^>]+>/g,''))+'">'+
