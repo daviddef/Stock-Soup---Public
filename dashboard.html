@@ -519,6 +519,14 @@
   .rltier{font-size:9px;font-weight:900;letter-spacing:.04em;padding:2px 6px;border-radius:5px;margin-left:7px;vertical-align:middle}
   .rltier-1{background:rgba(35,194,103,.14);color:var(--buy)}
   .rltier-23{background:rgba(47,127,214,.14);color:#2f7fd6}
+  .rlmanual{font-size:9px;font-weight:900;letter-spacing:.06em;padding:2px 6px;border-radius:5px;margin-left:7px;vertical-align:middle;background:rgba(255,107,26,.16);color:var(--broth)}
+  .runtriglist{display:flex;flex-direction:column;gap:8px;margin-top:6px}
+  .runtrigrow{display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:11px 13px;border:1px solid var(--line);border-radius:12px;background:var(--surface-2);cursor:pointer;transition:border-color .12s,transform .12s}
+  .runtrigrow:hover{border-color:var(--broth);transform:translateY(-1px)} .runtrigrow:disabled{opacity:.5;cursor:default}
+  .runtrigrow .rtic{font-size:22px;flex:0 0 auto;width:30px;text-align:center}
+  .runtrigrow .rtmeta{flex:1;display:flex;flex-direction:column;gap:1px} .runtrigrow .rtmeta b{font-size:14px} .runtrigrow .rtmeta small{font-size:11.5px;color:var(--muted)}
+  .runtrigrow .rtgo{flex:0 0 auto;font-size:11.5px;font-weight:800;color:var(--broth);white-space:nowrap}
+  .runtrigrow.spinning .rtgo{opacity:.5}
   .rltag-scan{color:#2f7fd6}
   .graderow .rsym .rltier{margin-left:0;margin-right:3px}
   .tierscore-wrap{margin-top:12px}
@@ -2788,7 +2796,7 @@ function render(D,H){
           (isAdmin()?'<div class="bmadmin" title="You are signed in as the admin account"><span class="adminbadge">ADMIN</span> signed in as admin</div>':'')+
           '<button class="bmitem" id="signInTop" role="menuitem">👤 Sign in</button>'+
           '<button class="bmitem" id="refreshBtn" role="menuitem">↻ Refresh prices</button>'+
-          '<button class="bmitem" id="refreshFullBtn" role="menuitem">🍳 Refresh full (new picks)</button>'+
+          '<button class="bmitem" id="refreshFullBtn" role="menuitem">🍳 Trigger a run…</button>'+
           '<button class="bmitem" id="shareTabBtn" role="menuitem">🔗 Share this page</button>'+
           '<button class="bmitem" id="viewBtn" role="menuitem">😋 Simple view</button>'+
           '<button class="bmitem" id="themeBtn" role="menuitem">🌗 Switch theme</button>'+
@@ -3726,7 +3734,9 @@ function runLogHtml(){
   // age, so a failed run from last night sat above this morning's runs — genuinely confusing).
   function attemptRowHtml(e){
     if(e.status==='requested'){
-      return '<div class="rlrow rlfail" style="border-left-color:var(--broth);background:linear-gradient(90deg,rgba(255,107,26,.1),transparent 62%)"><div class="rltop"><span class="rltag" style="color:var(--broth)">⏳ Full re-cook · requested</span><span class="rlwhen">'+fmtWhen(new Date(e.requestedAt).getTime())+'</span></div><div class="rlbody"><div class="rlline"><span class="qt">'+esc(e.label||'Queued — runs when a session next picks it up')+'</span></div></div></div>';
+      var manTag=(e.trigger==='manual')?'<span class="rlmanual">MANUAL</span>':'';
+      var reqName=esc(e.label||'Run requested');
+      return '<div class="rlrow rlfail" style="border-left-color:var(--broth);background:linear-gradient(90deg,rgba(255,107,26,.1),transparent 62%)"><div class="rltop"><span class="rltag" style="color:var(--broth)">⏳ '+reqName+' · requested</span>'+manTag+'<span class="rlwhen">'+fmtWhen(new Date(e.requestedAt).getTime())+'</span></div><div class="rlbody"><div class="rlline"><span class="qt">Queued — runs when a session next picks it up, not instantly.</span></div></div></div>';
     }
     var rts=new Date(e.startedAt).getTime(), isMenu=e.kind!=='reprice', kindTxt=(isMenu?'🍳 Menu':'⏱ Re-price');
     // #178 follow-up — a live/failed MENU run is a Type 1 (catalyst) run; badge it while cooking, not just once done.
@@ -5040,7 +5050,7 @@ function wire(D){
   var vb=document.getElementById('viewBtn'); if(vb) vb.onclick=function(){setView('simple');};
   var vt=document.getElementById('viewToggle'); if(vt) vt.onclick=function(){setView('simple');};   // #174 round toggle
   var rb=document.getElementById('refreshBtn'); if(rb){ if(!isAdmin()){ rb.style.display='none'; } else { rb.onclick=function(){refreshPrices(rb);}; } }
-  var rfb=document.getElementById('refreshFullBtn'); if(rfb){ if(!isAdmin()){ rfb.style.display='none'; } else { rfb.onclick=function(){requestFullRun(rfb);}; } }
+  var rfb=document.getElementById('refreshFullBtn'); if(rfb){ if(!isAdmin()){ rfb.style.display='none'; } else { rfb.onclick=function(){var _bm=document.getElementById('burgerMenu');if(_bm)_bm.setAttribute('hidden','');openRunTrigger();}; } }
   var stb=document.getElementById('shareTabBtn'); if(stb) stb.onclick=shareCurrentTab;
   document.querySelectorAll('[data-gsym]').forEach(function(el){
     function go(e){ if(e.target.closest('a'))return; e.stopPropagation(); openGrade(el.dataset.gsym); }
@@ -5449,25 +5459,52 @@ function refreshPrices(btn){
     });
   });
 }
-// #91 — admin-only "Refresh full": requests a fresh full re-cook, distinct from refreshPrices() above
-// which just re-fetches whatever's already published. This can't run synchronously (no persistent 24/7
-// compute) — it queues a "requested" row on the Run Schedule that a live/next-scheduled session picks
-// up. Be honest about that in the toast; never imply it's instant.
-function requestFullRun(btn){
-  if(btn) btn.classList.add('spinning');
-  fetch(API_BASE+'/me/request-run',{method:'POST',headers:apiHdr()})
+// #236 — admin run-triggers. Now that T1 is split per-market and T2/T3 are their own whole-market
+// scans, the admin can request ANY run type, not just the combined full re-cook. Each is a QUEUED
+// request (there's no 24/7 compute) tagged trigger:"manual" so the Run Schedule shows it was
+// hand-kicked. The picker lists every run the pipeline actually knows how to do.
+var RUN_TRIGGER_TYPES=[
+  {rt:'full',   ic:'🍲', name:'Full re-cook',      sub:'Both markets · fresh 6 picks (AU + US)'},
+  {rt:'menu-au',ic:'🇦🇺', name:'Type 1 · Australia', sub:'Catalyst menu — 3 ASX picks only'},
+  {rt:'menu-us',ic:'🌏', name:'Type 1 · United States', sub:'Catalyst menu — 3 global picks only'},
+  {rt:'scan-au',ic:'⚙️', name:'Type 2/3 · Australia', sub:'Whole-market technical scan (ASX)'},
+  {rt:'scan-us',ic:'🌶️', name:'Type 2/3 · United States', sub:'Whole-market technical scan (US)'},
+  {rt:'price',  ic:'⏱️', name:'Price refresh',      sub:'Just re-price the standing menu'}
+];
+function openRunTrigger(){
+  if(!isAdmin()) return;
+  LASTFOCUS=document.activeElement;
+  var m=document.getElementById('modal'); m.className='modal';
+  var rows=RUN_TRIGGER_TYPES.map(function(t){
+    return '<button class="runtrigrow" data-rt="'+t.rt+'"><span class="rtic">'+t.ic+'</span>'+
+      '<span class="rtmeta"><b>'+esc(t.name)+'</b><small>'+esc(t.sub)+'</small></span><span class="rtgo">Request →</span></button>';
+  }).join('');
+  m.innerHTML='<div class="mhead"><button class="mclose" id="mClose" aria-label="Close">✕</button><div class="mtf">🍳 Trigger a run</div>'+
+    '<div class="mtop"><div class="msym" style="font-size:19px">Kitchen controls <span class="adminbadge" style="vertical-align:middle">ADMIN</span></div></div></div>'+
+    '<div class="mbody"><p class="mtake" style="margin-top:0">Pick which run to kick off. Each one is <b>queued</b> on the Run Schedule and marked <b>Manual</b> — it runs when a session next picks it up, not instantly (there\'s no 24/7 compute yet).</p>'+
+    '<div class="runtriglist">'+rows+'</div></div>';
+  document.getElementById('mClose').onclick=closeModal;
+  m.querySelectorAll('.runtrigrow').forEach(function(b){ b.onclick=function(){requestRun(b.dataset.rt,b);}; });
+  var ov=document.getElementById('overlay'); ov.classList.add('open'); ov.setAttribute('aria-hidden','false');
+  document.getElementById('mClose').focus();
+}
+function requestRun(runType,btn){
+  if(btn){ btn.classList.add('spinning'); btn.disabled=true; }
+  var label=(RUN_TRIGGER_TYPES.find(function(t){return t.rt===runType;})||{}).name||'Run';
+  fetch(API_BASE+'/me/request-run',{method:'POST',headers:apiHdr(),body:JSON.stringify({runType:runType})})
     .then(function(r){return r.json().then(function(j){return {ok:r.ok,j:j};});})
     .then(function(res){
-      if(btn) btn.classList.remove('spinning');
+      if(btn){ btn.classList.remove('spinning'); btn.disabled=false; }
       if(res.ok&&res.j.ok){
-        flashToast('🍳 Full re-cook requested — queued on the Run Schedule.<br><span style="opacity:.7;font-weight:600">Runs when a session next picks it up, not instantly — no 24/7 compute yet.</span>');
+        closeModal();
+        flashToast('🍳 <b>'+esc(label)+'</b> requested — queued on the Run Schedule as <b>Manual</b>.<br><span style="opacity:.7;font-weight:600">Runs when a session next picks it up, not instantly — no 24/7 compute yet.</span>');
         refreshPrices();
       } else if(res.j&&res.j.error){
         flashToast('Couldn\'t queue it: '+esc(res.j.error));
       } else {
         flashToast('Couldn\'t reach the server — try again shortly.');
       }
-    }).catch(function(){ if(btn) btn.classList.remove('spinning'); flashToast('Couldn\'t reach the server — try again shortly.'); });
+    }).catch(function(){ if(btn){ btn.classList.remove('spinning'); btn.disabled=false; } flashToast('Couldn\'t reach the server — try again shortly.'); });
 }
 // capture the magic-link session handed back in the redirect hash (#session=…), then sync the list
 (function(){var m=(location.hash||'').match(/session=([^&]+)/);if(m){sessSet(decodeURIComponent(m[1]));try{history.replaceState(null,'',location.pathname+location.search);}catch(e){}}})();
