@@ -92,10 +92,13 @@
   /* #184 — the composite "now" reading is a good-sized round black dot (was a thin vertical line),
      labelled "Risk", with a gentle pulse so it clearly reads as the live overall reading vs the small
      per-indicator emoji ticks above the track. */
-  .meter .needle{position:absolute;top:-7px;width:24px;height:24px;border-radius:50%;background:var(--ink);box-shadow:0 0 0 3px var(--surface);left:50%;transform:translateX(-50%);transition:left .8s cubic-bezier(.2,.8,.2,1);z-index:4;animation:riskpulse 2.4s ease-out infinite}
+  .meter .needle{--rs:15px;position:absolute;top:-7px;width:24px;height:24px;border-radius:50%;background:var(--ink);box-shadow:0 0 0 3px var(--surface);left:50%;transform:translateX(-50%);transition:left .8s cubic-bezier(.2,.8,.2,1);z-index:4;animation:riskpulse 2.4s ease-out infinite}
   .meter .needle::after{content:"Risk";position:absolute;top:calc(100% + 3px);left:50%;transform:translateX(-50%);font-size:9px;font-weight:900;letter-spacing:.03em;color:var(--ink);background:var(--surface);padding:0 4px;border-radius:4px;white-space:nowrap}
-  @keyframes riskpulse{0%{box-shadow:0 0 0 3px var(--surface),0 0 0 3px var(--rcp,rgba(120,120,120,.35))}70%{box-shadow:0 0 0 3px var(--surface),0 0 0 16px rgba(120,120,120,0)}100%{box-shadow:0 0 0 3px var(--surface),0 0 0 3px rgba(120,120,120,0)}}
+  @keyframes riskpulse{0%{box-shadow:0 0 0 3px var(--surface),0 0 0 3px var(--rcp,rgba(120,120,120,.35))}70%{box-shadow:0 0 0 3px var(--surface),0 0 0 var(--rs) rgba(120,120,120,0)}100%{box-shadow:0 0 0 3px var(--surface),0 0 0 3px rgba(120,120,120,0)}}
   @media(prefers-reduced-motion:reduce){.meter .needle{animation:none}}
+  /* #219 — on a narrow phone the 24px dot + big halo read as oversized/jittery; scale both down so the
+     pulse stays a tasteful accent, not the loudest thing on the row. */
+  @media(max-width:560px){ .meter .needle{--rs:9px;width:19px;height:19px;top:-4.5px;box-shadow:0 0 0 2.5px var(--surface)} .meter .needle::after{top:calc(100% + 2px)} }
   .meter .lbls{display:flex;justify-content:space-between;font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-top:20px;font-weight:800}
   .meterleg{display:flex;gap:14px;justify-content:center;margin-top:8px;font-size:10.5px;font-weight:700;color:var(--muted)}
   .meterleg i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:5px;vertical-align:middle}
@@ -717,7 +720,10 @@
   .uprow3.uptracked{border-color:rgba(255,107,26,.4);background:linear-gradient(180deg,rgba(255,107,26,.06),transparent 60%),var(--surface)}
   .up3when{color:var(--muted);font-size:12px;font-weight:700;display:flex;align-items:center;gap:5px}
   .up3ic{font-size:13px}
-  .up3what{font-weight:800;color:var(--ink);font-size:13.5px;line-height:1.3}
+  .up3what{font-weight:800;color:var(--ink);font-size:13.5px;line-height:1.3;display:flex;align-items:center;gap:8px}
+  .up3what>a,.up3what{min-width:0}
+  .up3what>a{flex:1 1 auto}
+  .upwatch{flex:0 0 auto;width:20px;height:20px;font-size:13px;margin-left:auto}
   .up3sowhat{color:var(--faint);font-size:12px;line-height:1.4;margin-top:1px}
   .uppulse{display:inline-block;animation:uppulse 1.8s ease-in-out infinite}
   @keyframes uppulse{0%,100%{opacity:1}50%{opacity:.45}}
@@ -1655,10 +1661,14 @@ function upcomingHtml(D){
     var when=r.days!=null?whenLabel(r.days)+(r.dateStr?' · '+esc(r.dateStr):''):esc(r.dateStr);
     var whatHtml=r.sym?qlink(r.sym,r.region,r.whatLabel):r.what;
     var tappable=!!r.sym;
+    // #217 — the passive "★ we track this" label became the standard actionable "+" watch toggle (per #115),
+    // so tracking can be turned on/off right on the row. It's static page content, so the global
+    // .watchbtn[data-sym] pass in wire() binds it and syncWatchButtons() reflects the ✓/+ state — no local wiring.
+    var wb=r.sym?'<button class="watchbtn iconwatch upwatch" data-sym="'+esc(r.sym)+'" data-region="'+esc(r.region||MKT)+'" aria-pressed="false" title="Add to watchlist" onclick="event.stopPropagation()">+</button>':'';
     return '<div class="uprow3'+(tracked?' uptracked':'')+(tappable?' uptappable':'')+'"'+
       (tappable?' role="button" tabindex="0" data-up-sym="'+esc(r.sym)+'" data-up-region="'+esc(r.region||MKT)+'"':'')+'>'+
       '<span class="up3when"><span class="up3ic">'+r.ic+'</span>'+when+'</span>'+
-      '<span class="up3what">'+whatHtml+(tracked?' <span class="uptag uppulse">★ we track this</span>':'')+'</span>'+
+      '<span class="up3what">'+whatHtml+wb+'</span>'+
       '<span class="up3sowhat">'+r.soWhat+'</span></div>';
   }).join('');
   return '<section id="upcoming"><div class="sec-head"><h2 class="display">📅 What\'s coming up</h2>'+infoBtn('upcoming')+'</div>'+
@@ -4785,7 +4795,14 @@ function hydrateMissCharts(){
       var isLive=lastSec&&(Date.now()/1000-lastSec)<20*60;   // last bar is fresh → really "now"; else say when it's from
       var rightLbl=(isLive?'now':_timeHM(lastSec))+' '+cur+vals[vals.length-1].toFixed(2);
       var mlab=slot.dataset.markLabel||'flagged';   // #212 — pick cards mark "served", misses mark "flagged"
-      var flagLbl=(markIdx!=null)?'<div class="misschart-flag" style="left:'+((markIdx/(vals.length-1))*100).toFixed(0)+'%">'+mlab+' '+_timeHM(times[markIdx])+'</div>':'';
+      // #220 — anchor the label at the marker line but keep it inside the chart: near the left edge it
+      // extends right (transform none), near the right edge it extends left (translateX(-100%)), else centred.
+      // A whole-integer left% also sat a touch off the line — use one decimal so label + line agree.
+      var flagLbl='';
+      if(markIdx!=null){
+        var mpct=(markIdx/(vals.length-1))*100, tx=(mpct<15)?'0':(mpct>85)?'-100%':'-50%';
+        flagLbl='<div class="misschart-flag" style="left:'+mpct.toFixed(1)+'%;transform:translateX('+tx+')">'+mlab+' '+_timeHM(times[markIdx])+'</div>';
+      }
       slot.innerHTML='<div class="misschart-wrap">'+missSparkSVG(vals,markIdx)+flagLbl+'</div>'+
         '<div class="misschart-mm"><span>'+cur+mn.toFixed(2)+'</span><span class="misschart-now">'+rightLbl+'</span><span>'+cur+mx.toFixed(2)+'</span></div>';
     }).catch(function(){ slot.innerHTML=''; });
@@ -4940,7 +4957,8 @@ function wire(D){
   var vixLvlN=((D.risk||{}).vix!=null)?Math.max(0,Math.min(100, 100-(((D.risk||{}).vix-10)/25*100))):null;
   requestAnimationFrame(function(){
     var n=document.getElementById('needle');
-    if(n){ n.style.left=lvl+'%';
+    // #219 — keep the dot a hair inside the track ends so it never clips off the edge on a narrow screen
+    if(n){ n.style.left=Math.max(2.5,Math.min(97.5,lvl))+'%';
       // #risk polish — colour the pulsing dot by where it sits: red (hide the cash) → amber → green (send it)
       var RC=lvl>=67?['#1fb862','rgba(31,184,98,.55)']:lvl>=34?['#f2a33d','rgba(242,163,61,.6)']:['#ff4d4d','rgba(255,77,77,.55)'];
       n.style.background=RC[0]; n.style.setProperty('--rcp',RC[1]);
