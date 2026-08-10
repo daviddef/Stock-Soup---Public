@@ -571,7 +571,9 @@
   .rlrow.rlscan{border-left-color:#2f7fd6;background:linear-gradient(90deg,rgba(47,127,214,.09),transparent 62%)}
   /* #232/#241 — scheduled-but-not-yet-run rows live in ONE bordered dark panel labelled "Future runs", so
      they read as a distinct upcoming block, clearly set apart from the light real-history rows below. */
-  .rlfuture-wrap{background:#241d18;border:1px solid #3a2f26;border-radius:14px;padding:12px 13px 6px;margin-bottom:14px;box-shadow:0 2px 10px rgba(0,0,0,.14)}
+  /* #now — the Future-runs panel spans the FULL width at the top of the run grid, so the executed runs
+     flow in the columns BELOW it (was the 1st grid cell, so executed rows sat beside it — user-caught). */
+  .rlfuture-wrap{grid-column:1/-1;background:#241d18;border:1px solid #3a2f26;border-radius:14px;padding:12px 13px 6px;margin-bottom:14px;box-shadow:0 2px 10px rgba(0,0,0,.14)}
   .rlfuture-h{font-size:10.5px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:#ffb888;margin:0 0 8px}
   .rlfuture-wrap .rlrow.rlfuture{border:0;border-top:1px solid rgba(255,255,255,.07);border-radius:0;padding:9px 2px;background:none;opacity:1}
   .rlfuture-wrap .rlrow.rlfuture:first-of-type{border-top:0}
