@@ -5180,16 +5180,17 @@ function wire(D){
   renderWatchlist();
 
   var lvl=(D.risk&&D.risk.level!=null)?D.risk.level:50;
-  var vixLvlN=((D.risk||{}).vix!=null)?Math.max(0,Math.min(100, 100-(((D.risk||{}).vix-10)/25*100))):null;
-  requestAnimationFrame(function(){
-    var n=document.getElementById('needle');
-    // #219 — keep the dot a hair inside the track ends so it never clips off the edge on a narrow screen
-    if(n){ n.style.left=Math.max(2.5,Math.min(97.5,lvl))+'%';
-      // #risk polish — colour the pulsing dot by where it sits: red (hide the cash) → amber → green (send it)
-      var RC=lvl>=67?['#1fb862','rgba(31,184,98,.55)']:lvl>=34?['#f2a33d','rgba(242,163,61,.6)']:['#ff4d4d','rgba(255,77,77,.55)'];
-      n.style.background=RC[0]; n.style.setProperty('--rcp',RC[1]);
-    }
-  });
+  requestAnimationFrame(function(){ placeNeedle('needle',lvl); });
+}
+// Shared needle placement/colour — used by both the Full-view risk meter and (since #234) the Simple view,
+// which now shows the SAME risk chart instead of its own second dumbed-down gauge.
+function placeNeedle(id,lvl){
+  var n=document.getElementById(id); if(!n) return;
+  // #219 — keep the dot a hair inside the track ends so it never clips off the edge on a narrow screen
+  n.style.left=Math.max(2.5,Math.min(97.5,lvl))+'%';
+  // #risk polish — colour the pulsing dot by where it sits: red (hide the cash) → amber → green (send it)
+  var RC=lvl>=67?['#1fb862','rgba(31,184,98,.55)']:lvl>=34?['#f2a33d','rgba(242,163,61,.6)']:['#ff4d4d','rgba(255,77,77,.55)'];
+  n.style.background=RC[0]; n.style.setProperty('--rcp',RC[1]);
 }
 
 document.getElementById('overlay').addEventListener('click',function(e){if(e.target===this)closeModal();});
@@ -5367,9 +5368,13 @@ function renderSimple(D){
         '</div></div></div>'+
       '<div class="seyebrow schedlink" data-info="schedule" role="button" tabindex="0" title="Major runs are manually triggered — this is the target window, not a guarantee">'+esc(sStamp)+(D.next?' · usually <b>~'+esc(D.next)+'</b>':'')+' <span class="schedi">i</span></div>'+
       '<div class="stoprail">'+mktBarHtml(D)+tierBarHtml()+'</div>'+
-      '<div class="vmood"><div class="vmoodemoji">'+mood.emoji+'</div><div class="vmoodword">'+mood.word+'</div><div class="vmoodline">'+esc(mood.line)+'</div></div>'+
-      '<div class="meter"><div class="track"><div class="needle" id="sneedle"></div></div>'+
-      '<div class="lbls"><span>🙈 Hide!</span><span>😌 Chill</span><span>🚀 GO!</span></div></div>'+
+      // #234 — Simple view used to show TWO risk read-outs (the villager mood gauge + a second dumbed-down
+      // needle). Now it's the villager MASCOT (emoji + word — character, not a chart) sitting above the ONE
+      // real risk meter, identical to Full view: same needle, same 5 factor ticks, same legend, same tap →
+      // tonight's market read. One chart, not two.
+      '<div class="vmood"><div class="vmoodemoji">'+mood.emoji+'</div><div class="vmoodword">'+mood.word+'</div></div>'+
+      (function(){var fm=riskFactorMarks(r); return '<div class="meter tappable" id="riskMeterBtn" role="button" tabindex="0" title="Tap for tonight’s market read" aria-label="Open tonight’s market read"><div class="track"><div class="needle" id="needle"></div>'+fm.marks+'</div>'+
+      '<div class="lbls"><span>🔴 Hide the cash</span><span>⚪ Steady</span><span>🟢 Send it</span></div>'+fm.leg+'</div>';})()+
       (themeLine?'<div class="vtheme">'+esc(themeLine)+'</div>':'')+'</div>'+
     tierMatrixHtml(D,rid)+   // #172/#182 — the 3×3 IS the fun Villager-card grid now (mascots + stickers + 🍊),
                              // so the separate 3-up frog/pig cards below were pure duplication (user-flagged) — removed.
@@ -5424,7 +5429,8 @@ function wireSimple(D){
   syncWatchButtons();
   wireInfo();
   var lvl=(D.risk&&D.risk.level!=null)?D.risk.level:50;
-  requestAnimationFrame(function(){var n=document.getElementById('sneedle');if(n)n.style.left=lvl+'%';});
+  requestAnimationFrame(function(){ placeNeedle('needle',lvl); });   // #234 — same needle as Full view
+  var rmbS=document.getElementById('riskMeterBtn'); if(rmbS){ rmbS.onclick=openMarketRead; rmbS.onkeydown=function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); openMarketRead(); } }; }
 }
 
 function flashToast(msg){
