@@ -384,6 +384,24 @@
   .sec-head h2{font-size:clamp(20px,3.4vw,30px)}
   .sec-head .k{color:var(--broth)}
   .sec-sub{color:var(--muted);font-size:14px;margin-bottom:16px}
+  /* model post-mortem (postmortem.py → latest.postmortem) */
+  .pm-panel{margin-top:18px}
+  .pm-stamp{color:var(--faint);font-size:12px}
+  .pm-stat{font-size:12.5px;font-weight:700;color:var(--broth);background:var(--surface-2);border:1px solid var(--line);border-radius:9px;padding:7px 11px;margin:4px 0 12px;font-variant-numeric:tabular-nums}
+  .pm-block{margin-top:12px}
+  .pm-h{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);font-weight:800;margin-bottom:7px}
+  .pm-row{display:flex;align-items:center;gap:9px;padding:6px 0;border-bottom:1px solid var(--line)}
+  .pm-row .pm-sym{font-size:14px} .pm-mv{font-weight:800;font-variant-numeric:tabular-nums;min-width:58px}
+  .pm-sc{font-size:11px;color:var(--muted);margin-left:auto}
+  .pm-tag{font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;padding:1px 6px;border-radius:5px}
+  .pm-tag.up{background:color-mix(in srgb,var(--buy) 18%,transparent);color:var(--buy)} .pm-tag.down{background:color-mix(in srgb,var(--dont) 16%,transparent);color:var(--dont)}
+  .pm-miss{padding:7px 0;border-bottom:1px solid var(--line)}
+  .pm-mtop{display:flex;align-items:baseline;gap:9px} .pm-mtop b{font-size:14px}
+  .pm-miss .pm-sc{font-size:11px}
+  .pm-why{font-size:12px;color:var(--muted);margin-top:2px;line-height:1.4}
+  .pm-dodges{display:flex;flex-wrap:wrap;gap:7px}
+  .pm-dodge{font-size:12px;background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:4px 9px;font-variant-numeric:tabular-nums}
+  .pm-dodge b{margin-right:3px}
 
   /* 4-tab navigation */
   .tabbar{position:sticky;top:0;z-index:50;display:flex;gap:6px;background:var(--bg);backdrop-filter:saturate(1.3) blur(8px);border-bottom:2px solid var(--line);padding:10px 0 0;margin:6px 0 24px}
@@ -1946,6 +1964,36 @@ function _missRows(mi, tfLabel){
           awayN:away.length, wrongN:wrong.length, dodgedN:dodged.length, missedN:away.length, mktRows:mktRows};
 }
 // #80 — week/month movers (bulk-scan.py's movers_by_horizon()) alongside the original same-day feed.
+// Model post-mortem (postmortem.py → latest.postmortem[market], 11 Aug 2026): each session close, the
+// model grades its WHOLE scored pot vs the real move — our picks, the winners we scored Pass (with the
+// reason, read from the model's own score.detail), and the losers we correctly dodged. Market-filtered.
+function postmortemHtml(D){
+  var pm=(D.postmortem||{})[MKT]; if(!pm) return '';
+  var s=pm.stats||{}, flag=MKT==='au'?'🇦🇺':'🇺🇸';
+  var picks=(pm.picks||[]).map(function(p){
+    var cls=p.move==null?'':(p.move>=0?'up':'down');
+    return '<div class="pm-row"><span class="pm-tf">'+tfB(p.tf||'Day')+'</span><b class="pm-sym">'+esc(p.sym)+'</b>'+
+      '<span class="pm-mv '+cls+'">'+(p.move==null?'—':(p.move>=0?'+':'')+p.move+'%')+'</span>'+
+      '<span class="pm-sc">🍊 '+(p.score==null?'–':p.score)+'</span>'+
+      (p.win?'<span class="pm-tag up">win</span>':(p.move!=null?'<span class="pm-tag down">loss</span>':''))+'</div>';
+  }).join('');
+  var missed=(pm.missedWinners||[]).slice(0,6).map(function(m){
+    return '<div class="pm-miss"><div class="pm-mtop"><b>'+esc(m.sym)+'</b><span class="pm-mv up">+'+m.move+'%</span>'+
+      '<span class="pm-sc">scored '+(m.score==null?'–':m.score)+'</span></div><div class="pm-why">'+esc(m.why||'')+'</div></div>';
+  }).join('');
+  var dodged=(pm.dodgedLosers||[]).slice(0,8).map(function(d){
+    return '<span class="pm-dodge"><b>'+esc(d.sym)+'</b> <span class="down">'+d.move+'%</span>'+(d.correctPass?' ✓':'')+'</span>';
+  }).join('');
+  var head='Index '+(s.indexMove!=null?(s.indexMove>=0?'+':'')+s.indexMove+'%':'—')+
+    ' · '+(s.pickWins||0)+'/'+(s.picksServed||0)+' picks won · '+(s.dodgedCorrect||0)+'/'+(s.losersDodged||0)+' losers dodged';
+  return '<section class="panel pm-panel"><div class="paneltop"><h3>🩺 How the model did · '+flag+' last close</h3></div>'+
+    '<p class="sec-sub" style="margin-top:2px">Every name we <b>scored</b> that session, graded against the real move — our picks, the winners we passed on (<b>and why</b>), and the losers we dodged. <span class="pm-stamp">'+esc(pm.stamp||'')+'</span></p>'+
+    '<div class="pm-stat">'+esc(head)+'</div>'+
+    (picks?'<div class="pm-block"><div class="pm-h">Our picks</div>'+picks+'</div>':'')+
+    (missed?'<div class="pm-block"><div class="pm-h">Winners we scored Pass — and why</div>'+missed+'</div>':'')+
+    (dodged?'<div class="pm-block"><div class="pm-h">Losers we dodged</div><div class="pm-dodges">'+dodged+'</div></div>':'')+
+  '</section>';
+}
 // Each horizon is its own KV block (latest.misses/missesWeek/missesMonth) so a run that only refreshed
 // Day still shows real Week/Month data from whenever those last ran, not silently blanked.
 function missesSection(D){
@@ -2979,6 +3027,7 @@ function render(D,H){
       (ocOn?'<p style="font-size:11.5px;color:var(--muted);margin-top:12px;line-height:1.5">One scorecard for <b>all three model tiers</b> — <span class="rltier rltier-1">T1</span> catalyst picks and <span class="rltier rltier-23">T2</span>/<span class="rltier rltier-23">T3</span> whole-market scans — graded the same honest way. We check every pick after <b>its own timeframe</b> — a day-trade the next day, a week pick after a week, a long hold after a month. <span style="color:var(--buy);font-weight:700">Green = it made money.</span> <b>“beat mkt”</b> means it also did better than the whole market. Tap any row for the full story.</p>'
            :'<p style="font-size:11px;color:var(--faint);margin-top:12px">'+esc(sb.closedNote||'')+'</p>')+
       '<button class="trackcta" id="trackCta">See the full month graded → what we learned, what we\'d change</button></div></section>'+
+    postmortemHtml(D)+
     missesSection(D)+
   '</div>'+
 
