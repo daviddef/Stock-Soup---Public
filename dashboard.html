@@ -85,8 +85,10 @@
   .toggle:focus-visible{outline:2px solid var(--broth);outline-offset:2px}
   /* #174/#238 — the per-indicator emoji labels sit ABOVE the track (top:-22px). padding-top reserves that
      space INSIDE the meter box so an ancestor's overflow:hidden (e.g. .hero) can't shave their tops off
-     (user-caught: flag/VIX/oil emojis clipped in half). margin stays small since padding now does the spacing. */
-  .meter{margin-top:4px;padding-top:24px}
+     (user-caught: flag/VIX/oil emojis clipped in half). margin stays small since padding now does the spacing.
+     #256 — that STILL clipped (an ancestor clips at the chef-prose baseline, above the meter box), so the
+     emoji labels now render BELOW the track instead of above it — open space there, no top-clip possible. */
+  .meter{margin-top:14px}
   .meter.tappable{cursor:pointer;border-radius:12px;padding:4px 8px 6px;margin-left:-8px;margin-right:-8px;transition:background .12s}   /* #197 — tap the whole meter → tonight's read */
   .meter.tappable:hover{background:var(--surface-2)}
   .meter.tappable:focus-visible{outline:2px solid var(--broth);outline-offset:2px}
@@ -102,7 +104,7 @@
   /* #219 — on a narrow phone the 24px dot + big halo read as oversized/jittery; scale both down so the
      pulse stays a tasteful accent, not the loudest thing on the row. */
   @media(max-width:560px){ .meter .needle{--rs:9px;width:19px;height:19px;top:-4.5px;box-shadow:0 0 0 2.5px var(--surface)} .meter .needle::after{top:calc(100% + 2px)} }
-  .meter .lbls{display:flex;justify-content:space-between;font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-top:20px;font-weight:800}
+  .meter .lbls{display:flex;justify-content:space-between;font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-top:40px;font-weight:800}
   .meterleg{display:flex;gap:14px;justify-content:center;margin-top:8px;font-size:10.5px;font-weight:700;color:var(--muted)}
   .meterleg i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:5px;vertical-align:middle}
   .meterleg i.ink{background:var(--ink)} .meterleg i.vix{background:#9b6bff}
@@ -111,7 +113,8 @@
      tell which is which on the line itself (not just in the legend). Plus an emoji+score legend below. */
   .factormark{position:absolute;top:0;bottom:0;width:0;transform:translateX(-50%);pointer-events:none}
   .factormark::after{content:'';position:absolute;top:-3px;bottom:-3px;left:0;width:2px;transform:translateX(-50%);border-radius:1px;background:var(--ink);opacity:.55}
-  .factormark .fmi{position:absolute;top:-22px;left:0;transform:translateX(-50%);font-size:18px;line-height:1;white-space:nowrap}
+  /* #256 — emoji label BELOW the tick (was top:-22px above it), so nothing above the track can clip it. */
+  .factormark .fmi{position:absolute;top:16px;left:0;transform:translateX(-50%);font-size:17px;line-height:1;white-space:nowrap}
   .factorleg{display:flex;flex-wrap:wrap;gap:9px 18px;justify-content:center;margin-top:12px;font-size:13.5px;font-weight:700;color:var(--muted)}
   .factorleg span{white-space:nowrap;display:inline-flex;align-items:center;gap:5px} .factorleg b{color:var(--ink);font-variant-numeric:tabular-nums;font-weight:800}
   .tagword{opacity:.7;font-weight:700}
