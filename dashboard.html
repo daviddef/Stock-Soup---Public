@@ -1197,19 +1197,21 @@
   /* #193 — 3×3 polish: a touch more breathing room + consistent baseline so the 9 cells read as one tidy set */
   .tmx-cell{line-height:1.15}
   .tmx-symrow{min-height:20px}
-  /* #262 — each grid slot now holds BOTH markets stacked (🇦🇺 mini on top, 🇺🇸 mini below) */
+  /* #262/#264 — each grid slot holds BOTH markets stacked (🇦🇺 mini on top, 🇺🇸 mini below); every mini is a
+     FIXED size so all boxes match exactly, regardless of name length / footer wrap / next-best tag. */
   .tmx-slot{display:flex;flex-direction:column;gap:5px;min-width:0}
-  .tmx-slot-empty{align-items:center;justify-content:center;gap:4px;min-height:70px;border:1px dashed var(--line);border-radius:13px;background:transparent;color:var(--faint)}
-  .tmx-mini{position:relative;width:100%;border-radius:12px;min-height:92px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:16px 5px 7px;border:1px solid var(--line);background:var(--card,var(--surface));font-family:inherit;line-height:1.12;min-width:0}
+  .tmx-mini{position:relative;width:100%;height:150px;box-sizing:border-box;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:18px 5px 8px;border:1px solid var(--line);background:var(--card,var(--surface));font-family:inherit;line-height:1.12;min-width:0;overflow:hidden}
   .tmx-mini.tmx-vcell{cursor:pointer;transition:transform .1s}
   .tmx-mini.tmx-vcell:hover{transform:translateY(-2px)}
   .tmx-mini .tmx-masc{font-size:21px}
   .tmx-mini .tmx-sym{font-size:14px}
+  .tmx-mini .tmx-name{max-width:100%}
+  .tmx-mini .tmx-botrow{gap:4px}
   .tmx-mini-flag{position:absolute;top:5px;left:6px;font-size:11px;line-height:1}
-  .tmx-mini-empty{min-height:34px;flex-direction:row;padding:6px;opacity:.55}
-  .tmx-mini-empty .tmx-mini-flag{position:static}
-  .tmx-mini-empty .tmx-mini-zzz{font-size:11px;font-weight:800;color:var(--faint);letter-spacing:.04em}
+  .tmx-mini-empty{opacity:.5;color:var(--faint)}
+  .tmx-mini-empty .tmx-mini-zzz{font-size:10px;font-weight:800;color:var(--faint);letter-spacing:.05em;text-transform:uppercase}
   /* tone tint + sym colour already defined on .tmx-buy/.tmx-skip/.tmx-mid — they apply to .tmx-mini too */
+  .simplemeter{margin:2px 0 14px}   /* #263 — bare risk meter sits at the top of the type-cards panel */
   /* #199 — the Simple-view whole-pot: score-sorted, both markets, one threshold slider */
   /* #199 follow-up (user ask) — break out to the same full width as the 3×3 above, and lay the rows
      3-abreast (2 on tablet, 1 on phone) so the pot doesn't run as one tall narrow column. */
@@ -5634,17 +5636,20 @@ function tmxTone(p){var v=(p&&p.verdict||'').toLowerCase(); if(/get in|buy|stron
 // #262 (user ask) — Simple view: ONE combined grid, not two market sections. Each Type × Timeframe box
 // now holds BOTH markets stacked — 🇦🇺 Australia on top, 🇺🇸 US below — so you see the AU + US pick for
 // each type/timeframe side by side. Called once (no rid); resolves both markets per slot itself.
-function tierMatrixHtml(D){
+function tierMatrixHtml(D, topHtml){
+  topHtml = topHtml||'';
   var mt=D.modelTiers||{};
-  if(!mt.type2&&!mt.type3) return '';   // only when the whole-market tier scans have actually run
-  var cols=[{k:'type3',lbl:'Type 3',sub:'🌶️ wildest'},{k:'type2',lbl:'Type 2',sub:'⚙️ quant'},{k:'type1',lbl:'Type 1',sub:'🛡️ safest'}];
+  if(!mt.type2&&!mt.type3) return topHtml?('<div class="tmxwrap">'+topHtml+'</div>'):'';   // still show the meter if the whole-market scans haven't run
+  var cols=[{k:'type3',lbl:'Type 3'},{k:'type2',lbl:'Type 2'},{k:'type1',lbl:'Type 1'}];
   var rows=[{k:'Day',lbl:'DAY'},{k:'Week',lbl:'WEEK'},{k:'Long',lbl:'MONTH'}];
   cols[0].rc='t3'; cols[1].rc='t2'; cols[2].rc='t1';   // risk accent: T3 spicy/red → T1 safe/green
-  var head=cols.map(function(c){return '<div class="tmx-colh tmx-colh-'+c.rc+'"><b>'+c.lbl+'</b><span>'+c.sub+'</span></div>';}).join('');
-  // one compact mini Villager card per (market, tier, timeframe); an empty market shows a small flagged stub
+  // #263 (user ask) — the "wildest / quant / safest" sub-labels are gone; the coloured underlines carry it.
+  var head=cols.map(function(c){return '<div class="tmx-colh tmx-colh-'+c.rc+'"><b>'+c.lbl+'</b></div>';}).join('');
+  // one FIXED-SIZE mini Villager card per (market, tier, timeframe) — an empty market shows a same-size flagged
+  // stub, so every box is identical in size (#264, user ask). 🇦🇺 on top, 🇺🇸 below.
   function mini(p,region,c,rw){
     var flag=region==='au'?'🇦🇺':'🇺🇸';
-    if(!p||!p.sym||p.sym==='NONE') return '<div class="tmx-mini tmx-mini-empty"><span class="tmx-mini-flag">'+flag+'</span><span class="tmx-mini-zzz">😴 —</span></div>';
+    if(!p||!p.sym||p.sym==='NONE') return '<div class="tmx-mini tmx-mini-empty"><span class="tmx-mini-flag">'+flag+'</span><span class="tmx-masc">😴</span><span class="tmx-mini-zzz">no pick</span></div>';
     var sc=p.score&&p.score.buy_now, st=villagerSticker(p), tone=chgTone(p.change,p.up);
     return '<button class="tmx-mini tmx-vcell '+tmxTone(p)+(p._sugg?' tmx-sugg':'')+'" data-tier="'+c.k+'" data-tf="'+rw.k+'" data-region="'+region+'" title="'+esc(p.sym)+(p._sugg?' · next best (not a served pick)':(p.verdict?' · '+esc(p.verdict):''))+' — tap for the full read">'+
       '<span class="tmx-mini-flag">'+flag+'</span>'+
@@ -5656,18 +5661,19 @@ function tierMatrixHtml(D){
       '<span class="tmx-botrow"><span class="vsticker '+st.cls+' tmx-stick">'+st.emoji+' '+st.word+'</span>'+(sc!=null?'<span class="tmx-jz">🍊 '+sc+'</span>':'')+'</span>'+
     '</button>';
   }
+  // every slot = exactly two same-size minis (au on top, us below), so all boxes are uniform.
   var body=rows.map(function(rw){
     return '<div class="tmx-rowh">'+rw.lbl+'</div>'+
       cols.map(function(c){
         var au=matrixPickAt(D,'au',c.k,rw.k), us=matrixPickAt(D,'us',c.k,rw.k);
-        var auEmpty=(!au||!au.sym||au.sym==='NONE'), usEmpty=(!us||!us.sym||us.sym==='NONE');
-        if(auEmpty&&usEmpty) return '<div class="tmx-slot tmx-slot-empty" title="No '+rw.lbl+' pick in '+c.lbl+' this run"><span class="tmx-masc">😴</span><span class="tmx-zzz">zzz</span></div>';
         return '<div class="tmx-slot">'+mini(au,'au',c,rw)+mini(us,'us',c,rw)+'</div>';
       }).join('');
   }).join('');
-  return '<div class="tmxwrap"><div class="tmx-mkt"><span>🇦🇺</span> Australia <small>+</small> <span>🇺🇸</span> US <small>· both markets, every type × timeframe</small></div>'+
+  // #263 — the risk meter (topHtml) sits at the top of THIS panel, in the same section as the type cards.
+  // #265 — the "🇦🇺 Australia + 🇺🇸 US · both markets…" header verbiage removed (the flags on each mini say it).
+  return '<div class="tmxwrap">'+topHtml+
     '<div class="tmx">'+head+body+'</div>'+
-    '<div class="tmx-legend">🇦🇺 top · 🇺🇸 bottom in each box · 🌶️ wilder → 🛡️ safer · tap any</div></div>';
+    '<div class="tmx-legend">🇦🇺 top · 🇺🇸 bottom in each box · tap any</div></div>';
 }
 // #199 (user ask) — a single, score-sorted, threshold-filterable view of the WHOLE candidate pot across
 // BOTH markets, added to the Simple view below the 3×3. All tiers of names we scored, one slider ("only
@@ -5728,14 +5734,12 @@ function renderSimple(D){
       // #260 (user ask) — the daily theme line ("Gold, Tin PFS… popular kids at school 🌟") sits directly
       // under the GO TIME! header now, above the risk meter.
       (themeLine?'<div class="vtheme">'+esc(themeLine)+'</div>':'')+
-      // #260 — factor legend (VIX/Bitcoin/Gold/Oil/AUD-USD numbers) removed from Simple: it's a dumb-simple
-      // view and that detail is one tap away (tap the meter → tonight's market read). Needle + ticks stay.
-      (function(){var fm=riskFactorMarks(r); return '<div class="meter tappable" id="riskMeterBtn" role="button" tabindex="0" title="Tap for tonight’s market read" aria-label="Open tonight’s market read"><div class="track"><div class="needle" id="needle"></div>'+fm.marks+'</div>'+
-      '<div class="lbls"><span>🔴 Hide the cash</span><span>⚪ Steady</span><span>🟢 Send it</span></div></div>';})()+
       '</div>'+
-    // #262 (user ask) — ONE combined grid: each Type × Timeframe box holds both markets (🇦🇺 top, 🇺🇸 bottom),
-    // so you see the AU + US pick for each type/timeframe together rather than in two separate sections.
-    tierMatrixHtml(D)+
+    // #263 (user ask) — the risk meter moves DOWN into the type-cards panel and goes BARE: no factor icons
+    // (🛢️₿🇦🇺😨) and no 🔴/⚪/🟢 legend — just the gradient + needle, tap for the full read. It's built here and
+    // passed into tierMatrixHtml so it sits at the top of the same panel as the type cards.
+    // #262 — ONE combined grid: each Type × Timeframe box holds both markets (🇦🇺 top, 🇺🇸 bottom).
+    tierMatrixHtml(D, '<div class="meter tappable simplemeter" id="riskMeterBtn" role="button" tabindex="0" title="Tap for tonight’s market read" aria-label="Open tonight’s market read"><div class="track"><div class="needle" id="needle"></div></div></div>')+
     '<button class="sfull" id="viewFull2">🔍 Show me the boring grown-up version</button>'+
     '<footer>Not financial advice — just a friendly village guide. · The Stock Soup, served hot, hourly</footer></div>';
   wireSimple(D);
