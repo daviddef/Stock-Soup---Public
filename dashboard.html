@@ -1541,7 +1541,7 @@ function marketStatus(region){
 }
 // #174 — the 5 risk-appetite indicators as markers on the risk line + an emoji/score legend, from
 // the per-factor sub-scores pulse.py now publishes (r.factors). Degrades to '' when absent (old data).
-var RISK_FACT_IC={vix:'😨',btc:'₿',gold:'🥇',oil:'🛢️',audusd:'🇦🇺'};
+var RISK_FACT_IC={vix:'😨',btc:'₿',gold:'🥇',oil:'🛢️',audusd:'🇦🇺',credit:'🏦'};
 function riskFactorMarks(r){
   var F=(r&&r.factors)||[]; F=F.filter(function(f){return f&&f.score!=null;});
   if(!F.length) return {marks:'',leg:''};
@@ -4472,6 +4472,11 @@ function marketContextRows(r,hotTagsList,hotTagTarget){
     var vixBad=r.vixMood==='fearful'||r.vixMood==='jittery';
     rows.push({icon:'😨',label:'VIX — fear gauge',tone:vixBad?'neg':'pos',
       read:r.vix+' · '+(r.vixMood||''),explain:'How much swing the options market expects in the S&P 500 — a read on the whole market’s nerves, not any one stock.',mchip:'vix'});
+  }
+  if(r.credit!=null){
+    rows.push({icon:'🏦',label:'Credit & the curve',tone:r.credit>=55?'pos':r.credit<=35?'neg':'neu',
+      read:(r.creditLabel||'')+' · '+r.credit+'/100'+(r.creditHyOas!=null?' · HY spread '+r.creditHyOas+'%':''),
+      explain:(r.creditRead||'')+' A LEADING read from the bond market: junk-bond spreads, the 10y-2y yield curve and financial conditions turn BEFORE equities do. Source: FRED (US Federal Reserve data).'});
   }
   rows.push({icon:'₿',label:'Bitcoin 24h',tone:(r.btcChange||'').indexOf('-')<0?'pos':'neg',
     read:(r.btc||'')+' '+(r.btcChange||''),explain:'Crypto often leads risk sentiment by hours — a sharp move here is an early tell before equities react.',mchip:'btc'});
