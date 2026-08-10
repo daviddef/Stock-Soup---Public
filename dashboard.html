@@ -1200,13 +1200,15 @@
   /* #262/#264 — each grid slot holds BOTH markets stacked (🇦🇺 mini on top, 🇺🇸 mini below); every mini is a
      FIXED size so all boxes match exactly, regardless of name length / footer wrap / next-best tag. */
   .tmx-slot{display:flex;flex-direction:column;gap:5px;min-width:0}
-  .tmx-mini{position:relative;width:100%;height:150px;box-sizing:border-box;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:18px 5px 8px;border:1px solid var(--line);background:var(--card,var(--surface));font-family:inherit;line-height:1.12;min-width:0;overflow:hidden}
+  .tmx-mini{position:relative;width:100%;height:104px;box-sizing:border-box;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:15px 5px 7px;border:1px solid var(--line);background:var(--card,var(--surface));font-family:inherit;line-height:1.1;min-width:0;overflow:hidden}
   .tmx-mini.tmx-vcell{cursor:pointer;transition:transform .1s}
   .tmx-mini.tmx-vcell:hover{transform:translateY(-2px)}
-  .tmx-mini .tmx-masc{font-size:21px}
   .tmx-mini .tmx-sym{font-size:14px}
-  .tmx-mini .tmx-name{max-width:100%}
-  .tmx-mini .tmx-botrow{gap:4px}
+  .tmx-mini .tmx-name{max-width:100%;font-size:8.5px}
+  .tmx-mini .tmx-chg{font-size:10.5px}
+  .tmx-mini .tmx-botrow{gap:4px;margin-top:1px}
+  .tmx-mini .tmx-stick{font-size:8px !important;padding:1px 6px !important}
+  .tmx-mini .tmx-jz{font-size:8.5px;padding:1px 5px}
   .tmx-mini-flag{position:absolute;top:5px;left:6px;font-size:11px;line-height:1}
   .tmx-mini-empty{opacity:.5;color:var(--faint)}
   .tmx-mini-empty .tmx-mini-zzz{font-size:10px;font-weight:800;color:var(--faint);letter-spacing:.05em;text-transform:uppercase}
@@ -5649,12 +5651,12 @@ function tierMatrixHtml(D, topHtml){
   // stub, so every box is identical in size (#264, user ask). 🇦🇺 on top, 🇺🇸 below.
   function mini(p,region,c,rw){
     var flag=region==='au'?'🇦🇺':'🇺🇸';
-    if(!p||!p.sym||p.sym==='NONE') return '<div class="tmx-mini tmx-mini-empty"><span class="tmx-mini-flag">'+flag+'</span><span class="tmx-masc">😴</span><span class="tmx-mini-zzz">no pick</span></div>';
+    if(!p||!p.sym||p.sym==='NONE') return '<div class="tmx-mini tmx-mini-empty"><span class="tmx-mini-flag">'+flag+'</span><span class="tmx-mini-zzz">no pick</span></div>';
     var sc=p.score&&p.score.buy_now, st=villagerSticker(p), tone=chgTone(p.change,p.up);
+    // #266 (user ask) — mascot animal emoji removed from every Simple card; smaller, tidier cards.
     return '<button class="tmx-mini tmx-vcell '+tmxTone(p)+(p._sugg?' tmx-sugg':'')+'" data-tier="'+c.k+'" data-tf="'+rw.k+'" data-region="'+region+'" title="'+esc(p.sym)+(p._sugg?' · next best (not a served pick)':(p.verdict?' · '+esc(p.verdict):''))+' — tap for the full read">'+
       '<span class="tmx-mini-flag">'+flag+'</span>'+
       (p._sugg?'<span class="tmx-suggtag">💡 next best</span>':'')+
-      '<span class="tmx-masc">'+villagerMascot(p.sym)+'</span>'+
       '<span class="tmx-symrow"><span class="tmx-sym">'+esc(p.sym)+'</span></span>'+
       (p.name?'<span class="tmx-name">'+esc(p.name)+'</span>':'')+
       (p.change?'<span class="tmx-chg '+tone+'">'+chgArrow(tone)+esc(p.change)+'</span>':'')+
