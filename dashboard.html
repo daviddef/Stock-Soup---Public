@@ -83,7 +83,10 @@
   .chip .dot{width:8px;height:8px;border-radius:50%}
   .toggle{cursor:pointer;font-family:var(--font);color:var(--ink)}
   .toggle:focus-visible{outline:2px solid var(--broth);outline-offset:2px}
-  .meter{margin-top:28px}  /* #174 — extra top room so the per-indicator emoji labels above the track don't crowd the row above */
+  /* #174/#238 — the per-indicator emoji labels sit ABOVE the track (top:-22px). padding-top reserves that
+     space INSIDE the meter box so an ancestor's overflow:hidden (e.g. .hero) can't shave their tops off
+     (user-caught: flag/VIX/oil emojis clipped in half). margin stays small since padding now does the spacing. */
+  .meter{margin-top:4px;padding-top:24px}
   .meter.tappable{cursor:pointer;border-radius:12px;padding:4px 8px 6px;margin-left:-8px;margin-right:-8px;transition:background .12s}   /* #197 — tap the whole meter → tonight's read */
   .meter.tappable:hover{background:var(--surface-2)}
   .meter.tappable:focus-visible{outline:2px solid var(--broth);outline-offset:2px}
@@ -1094,7 +1097,7 @@
   .shero{background:radial-gradient(120% 140% at 100% 0%, rgba(255,107,26,.18), transparent 55%),var(--surface);
     border:1px solid var(--line);border-radius:20px;padding:22px}
   .shero .brand{margin-bottom:14px}
-  .shero .meter{margin-top:14px}
+  .shero .meter{margin-top:2px}   /* #238 — padding-top:24px (from .meter) already reserves the emoji-label room */
   .stoprail{display:flex;justify-content:center;margin:8px 0 2px}
   .shero .seyebrow{font-size:10px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);font-weight:700;margin:12px 0 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .shero .seyebrow b{color:var(--broth)}
