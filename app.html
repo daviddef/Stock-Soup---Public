@@ -2934,7 +2934,13 @@ function lastFilled(slotIdx){
   var H=(LAST&&LAST.H)||{}, menus=H.menus||[], key=MKT==='au'?'au':'us';
   for(var i=0;i<menus.length;i++){
     var arr=menus[i][key]||[];
-    if(arr[slotIdx]&&arr[slotIdx]!=='NONE') return menus[i].stamp+' · '+menus[i].time;
+    if(arr[slotIdx]&&arr[slotIdx]!=='NONE'){
+      // Only append the time if the stamp doesn't already carry one — some menuHistory stamps already
+      // include "HH:MM AEST", so blindly appending `· time` double-printed it ("09:00 · 09:00 AEST").
+      var s=menus[i].stamp||'';
+      if(!/\d{1,2}:\d{2}/.test(s) && menus[i].time) s+=' · '+menus[i].time;
+      return s;
+    }
   }
   return null;
 }
@@ -2973,7 +2979,13 @@ function archiveHtml(H){
   return '<div class="archgrid2">'+cards+'</div>';
 }
 function kitchenHead(D){
-  var n=(typeof PULSES!=='undefined'&&PULSES)?PULSES.length:0;
+  // "Re-prices today" must be TODAY's count, not PULSES.length — PULSES is a capped list (~24), so it
+  // read a constant "24" for days (user caught it). Count only pulses whose AEST date is today.
+  var _today=null; try{_today=new Date().toLocaleDateString('en-CA',{timeZone:'Australia/Sydney'});}catch(e){}
+  var n=(typeof PULSES!=='undefined'&&PULSES?PULSES:[]).filter(function(pu){
+    if(!pu||!pu.iso) return false;
+    try{return new Date(pu.iso).toLocaleDateString('en-CA',{timeZone:'Australia/Sydney'})===_today;}catch(e){return false;}
+  }).length;
   var last=stampNoWeekday(D&&D.stamp);
   var lastShort=lastFilled(0)||lastFilled(1), lastLong=lastFilled(2);
   var stats=[tstat('Last cook',last||'—'),tstat('Next run',D&&D.next?'~'+D.next:'—'),tstat('Re-prices today',n),
@@ -3089,6 +3101,21 @@ function runLogHtml(){
   var rows=[];
   (H.menus||[]).slice(0,8).forEach(function(m){rows.push({t:'maj',ts:majTs(m),m:m});});
   (PULSES||[]).forEach(function(pu){rows.push({t:'min',ts:new Date(pu.iso||0).getTime(),pu:pu});});
+  // run ATTEMPTS + T2/T3 scans from the runLog, as time-sorted rows (not pinned to the top).
+  (RUNLOG||[]).forEach(function(e){
+    if(!e) return;
+    if(/^scan/i.test(e.kind||'')){ if(e.startedAt) rows.push({t:'scan',ts:new Date(e.startedAt).getTime(),e:e}); return; }
+    if(e.status==='done') return;   // a done Type-1 run IS its committed menu (already a 'maj' row)
+    var ts=e.startedAt?new Date(e.startedAt).getTime():(e.requestedAt?new Date(e.requestedAt).getTime():0);
+    if(!ts) return;
+    if(e.status==='cooking'&&(Date.now()-ts)>25*60*1000) return;   // stale cooking marker — hide
+    rows.push({t:'attempt',ts:ts,e:e});
+  });
+  // back-compat: an old bundle with only the single `running` marker (no runLog)
+  if(!(RUNLOG&&RUNLOG.length) && RUNNING&&RUNNING.startedAt&&!/^scan/i.test(RUNNING.kind||'')){
+    var _rts=new Date(RUNNING.startedAt).getTime();
+    if((Date.now()-_rts)<25*60*1000) rows.push({t:'attempt',ts:_rts,e:{startedAt:RUNNING.startedAt,kind:RUNNING.kind,status:'cooking',label:RUNNING.label}});
+  }
   rows.sort(function(a,b){return b.ts-a.ts;});
   function majRowHtml(r){
     var m=r.m;
@@ -3110,6 +3137,18 @@ function runLogHtml(){
       '<span class="rlwhen">'+fmtWhen(r.ts)+'</span>'+dur(r.pu.durMs)+'</div>'+
       '<div class="rlbody"><div class="rlline rlmovers">'+(mv||'<span class="qt">quiet hour — nothing moved much</span>')+'</div></div></div>';
   }
+  // A non-done run ATTEMPT (cooking / failed / cancelled / requested) — rendered INLINE in the same
+  // time-sorted feed as menus/re-prices (fixed 10 Aug: these used to be pinned to the top regardless of
+  // age, so a failed run from last night sat above this morning's runs — genuinely confusing).
+  function attemptRowHtml(e){
+    if(e.status==='requested'){
+      return '<div class="rlrow rlfail" style="border-left-color:var(--broth);background:linear-gradient(90deg,rgba(255,107,26,.1),transparent 62%)"><div class="rltop"><span class="rltag" style="color:var(--broth)">⏳ Full re-cook · requested</span><span class="rlwhen">'+fmtWhen(new Date(e.requestedAt).getTime())+'</span></div><div class="rlbody"><div class="rlline"><span class="qt">'+esc(e.label||'Queued — runs when a session next picks it up')+'</span></div></div></div>';
+    }
+    var rts=new Date(e.startedAt).getTime(), isMenu=e.kind!=='reprice', kindTxt=(isMenu?'🍳 Menu':'⏱ Re-price');
+    if(e.status==='failed') return '<div class="rlrow rlfail"><div class="rltop"><span class="rltag rltag-fail">✕ '+kindTxt+' · failed</span><span class="rlwhen">'+fmtWhen(rts)+'</span></div><div class="rlbody"><div class="rlline"><span class="qt">'+esc(e.note||'this run didn’t finish — the previous menu still stands')+'</span></div></div></div>';
+    if(e.status==='cancelled') return '<div class="rlrow rlcancel"><div class="rltop"><span class="rltag rltag-cancel">⊘ '+kindTxt+' · cancelled</span><span class="rlwhen">'+fmtWhen(rts)+'</span></div><div class="rlbody"><div class="rlline"><span class="qt">'+esc(e.note||'cancelled — superseded by a newer run')+'</span></div></div></div>';
+    return '<div class="rlrow rllive"><div class="rltop"><span class="rltag rltag-live"><span class="rlspin"></span>'+kindTxt+' · cooking now</span><span class="rlwhen">started '+fmtWhen(rts)+'</span></div><div class="rlbody"><div class="rlline"><span class="qt">'+esc(e.label||(isMenu?'six fresh picks land the moment it finishes…':'refreshing prices…'))+'</span></div></div></div>';
+  }
   // #131 (9 Aug 2026, user ask) — a quiet stretch used to print one near-identical "Re-price · same
   // picks · quiet hour" row per pulse (every ~15min), burying the one row that actually matters (the
   // Menu row) under a wall of repeats. Collapse a RUN of consecutive quiet re-prices (no mover cleared
@@ -3124,6 +3163,8 @@ function runLogHtml(){
   while(i<capped.length){
     var r=capped[i];
     if(r.t==='maj'){ rowsHtml.push(majRowHtml(r)); i++; continue; }
+    if(r.t==='scan'){ rowsHtml.push(scanRow(r.e)); i++; continue; }
+    if(r.t==='attempt'){ rowsHtml.push(attemptRowHtml(r.e)); i++; continue; }
     var mv=movers(r.pu);
     if(mv){ rowsHtml.push(minRowHtml(r,mv)); i++; continue; }
     var j=i; while(j<capped.length&&capped[j].t==='min'&&!movers(capped[j].pu)) j++;
@@ -3142,41 +3183,18 @@ function runLogHtml(){
   var restHtml=rowsHtml.slice(12);
   var rest=restHtml.length?('<button class="potmore" id="runMore" aria-expanded="false" style="grid-column:1/-1">➖ '+restHtml.length+' older runs ▾</button>'+
     '<div class="runlog-rest" id="runRest" hidden>'+restHtml.join('')+'</div>'):'';
-  // Every run ATTEMPT that isn't a finished menu — cooking / failed / cancelled — so nothing silently vanishes.
-  // A 'done' run already shows as its committed menu below, so we only surface the others here.
-  // #178 — Type 2/3 whole-market scans (run-tier23-*.sh) log a run-marker with kind "scan-au"/"scan-us".
-  // Unlike a Type 1 menu (whose 'done' row IS its committed menu), a scan has no menu, so its 'done' row
-  // must show here explicitly — rendered as its own T2·T3 row so the user can see which tier just ran.
+  // Type 2/3 whole-market scans (run-tier23-*.sh log a run-marker with kind "scan-au"/"scan-us"). Unlike
+  // a Type 1 menu (whose 'done' row IS its committed menu), a scan has no menu, so it renders as its own
+  // T2·T3 row — time-sorted into the feed above (via the 'scan' row type), not pinned to the top.
   function scanRow(e){
     var rts=new Date(e.startedAt).getTime(), mkt=/us/i.test(e.kind||'')?'US':'AU', dl=e.durMs?durLabel(e.durMs):'';
     var cls=e.status==='failed'?'rlfail':'rlscan';
     var st=e.status==='cooking'?'<span class="rlspin"></span>scanning the whole market…':e.status==='failed'?(e.note||'scan didn’t finish — last good T2/T3 menu stands'):e.status==='cancelled'?'cancelled':('done'+(dl?' · '+dl:''));
     return '<div class="rlrow '+cls+'"><div class="rltop"><span class="rltag rltag-scan">🔬 Whole-market scan</span><span class="rltier rltier-23" title="Type 2 (quant) + Type 3 (per-indicator) — the daily whole-market scans behind the T2/T3 tiers">T2·T3</span><span class="rlwhen">'+fmtWhen(rts)+' · '+mkt+'</span></div><div class="rlbody"><div class="rlline"><span class="qt">'+esc(st)+'</span></div></div></div>';
   }
-  var scans=(RUNLOG||[]).filter(function(e){return e&&e.startedAt&&/^scan/i.test(e.kind||'');}).slice(0,4).map(scanRow).join('');
-  var live=(RUNLOG||[]).filter(function(e){return e&&(e.startedAt||e.requestedAt)&&e.status!=='done'&&!/^scan/i.test(e.kind||'');}).map(function(e){
-    // #91 — a 'requested' row has no startedAt yet (nobody's picked it up), only requestedAt.
-    if(e.status==='requested'){
-      var qts=new Date(e.requestedAt).getTime();
-      return '<div class="rlrow rlfail" style="border-left-color:var(--broth);background:linear-gradient(90deg,rgba(255,107,26,.1),transparent 62%)"><div class="rltop"><span class="rltag" style="color:var(--broth)">⏳ Full re-cook · requested</span><span class="rlwhen">'+fmtWhen(qts)+'</span></div><div class="rlbody"><div class="rlline"><span class="qt">'+esc(e.label||'Queued — runs when a session next picks it up')+'</span></div></div></div>';
-    }
-    var rts=new Date(e.startedAt).getTime(), isMenu=e.kind!=='reprice';
-    if(e.status==='cooking'&&(Date.now()-rts)>25*60*1000) return '';   // a cooking marker this old is stale — hide it
-    var kindTxt=(isMenu?'🍳 Menu':'⏱ Re-price');
-    if(e.status==='failed') return '<div class="rlrow rlfail"><div class="rltop"><span class="rltag rltag-fail">✕ '+kindTxt+' · failed</span><span class="rlwhen">'+fmtWhen(rts)+'</span></div><div class="rlbody"><div class="rlline"><span class="qt">'+esc(e.note||'this run didn’t finish — the previous menu still stands')+'</span></div></div></div>';
-    if(e.status==='cancelled') return '<div class="rlrow rlcancel"><div class="rltop"><span class="rltag rltag-cancel">⊘ '+kindTxt+' · cancelled</span><span class="rlwhen">'+fmtWhen(rts)+'</span></div><div class="rlbody"><div class="rlline"><span class="qt">'+esc(e.note||'cancelled — superseded by a newer run')+'</span></div></div></div>';
-    return '<div class="rlrow rllive"><div class="rltop"><span class="rltag rltag-live"><span class="rlspin"></span>'+kindTxt+' · cooking now</span><span class="rlwhen">started '+fmtWhen(rts)+'</span></div><div class="rlbody"><div class="rlline"><span class="qt">'+esc(e.label||(isMenu?'six fresh picks land the moment it finishes…':'refreshing prices…'))+'</span></div></div></div>';
-  }).join('');
-  // Back-compat: if the bundle has only the older single `running` marker (no runLog yet), still show it.
-  // (Skip scan-kind markers — those already render in the `scans` list above.)
-  if(!live && RUNNING&&RUNNING.startedAt&&!/^scan/i.test(RUNNING.kind||'')){
-    var rts0=new Date(RUNNING.startedAt).getTime();
-    if((Date.now()-rts0)<25*60*1000){ var isMenu0=RUNNING.kind!=='reprice';
-      live='<div class="rlrow rllive"><div class="rltop"><span class="rltag rltag-live"><span class="rlspin"></span>'+(isMenu0?'🍳 Menu · cooking now':'⏱ Re-price · running now')+'</span><span class="rlwhen">started '+fmtWhen(rts0)+'</span></div><div class="rlbody"><div class="rlline"><span class="qt">'+esc(RUNNING.label||'cooking…')+'</span></div></div></div>'; }
-  }
   return '<h4 style="'+hh+'">Every run — newest first</h4>'+
     '<p style="font-size:12px;color:var(--muted);margin:0 0 8px"><b style="color:var(--broth)">Menu</b> = a full re-cook (six new picks, timed ~30&nbsp;min before an open). <b>Re-price</b> = same picks, fresh numbers each hour.</p>'+
-    '<div class="runlog">'+live+scans+(body||(live?'':'<p class="muted">No runs yet.</p>'))+rest+'</div>';
+    '<div class="runlog">'+(body||'<p class="muted">No runs yet.</p>')+rest+'</div>';
 }
 // #134 (user ask) — the Roadmap ("what's shipped, what's still open") used to only live in the
 // separate Kitchen Manual doc; user chose to move it into real KV data (roadmap.py writes
