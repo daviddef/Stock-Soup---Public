@@ -3623,19 +3623,11 @@ function kitchenHead(D){
     lastCookedLines=[{tier:'T1', val:cookVal, cls:cook&&cook.bad?'bd':null},{tier:'T2·3', val:scanVal, cls:scanBad?'bd':null}];
     nextUpLines=[{tier:'T1', val:nextCookFull},{tier:'T2·3', val:nextScan}];
   }
-  // #232 (user ask) — the "Next up" card and every "next" sub-line are GONE from the header; the next
-  // scheduled fire of every run type now lives as tinted future rows at the top of the run log below
-  // (upcomingRunsHtml), so it isn't duplicated. #244 (user ask) — the separate "Day/Week pick" and "Long
-  // pick" cards are ALSO gone: one menu run serves all three timeframes, so both just repeated the exact
-  // last-menu date that "Last cooked" already shows. Left with the two cards that carry UNIQUE glanceable
-  // info the run log below doesn't summarise: when each engine last ran, and today's re-price count.
-  var stats=[
-    // Cook + scan folded together: one card, T1 line(s) + T2·3 line
-    _kmulti('Last cooked', lastCookedLines),
-    _kmulti('Re-prices today',[
-      {sub:'done', val:String(n)+(lastP?' · '+_hm(lastP):'')}
-    ])
-  ];
+  // #232/#244/#245 (user ask, iterative) — the top summary stat cards are now ALL gone. The run log below
+  // (with its future-runs panel, per-row tap-details, durations and market timing) tells the whole story;
+  // the cards just duplicated it. The one datum not otherwise summarised — today's re-price count — is
+  // folded into the run-log intro instead (see runLogHtml). Empty stats = tabHead renders no card grid.
+  var stats=[];
   return tabHead('🚪 Behind the butler door','The engine room','Every run, every source, every score — no black box. <b>Type 1</b> = the catalyst menu, 4×/day, <b>AU + US in the one run</b>. <b>Type 2/3</b> = the daily whole-market scans, <b>each market on its own</b> (AU 03:00, US 14:00 AEST) — the T2·3 line shows whichever is soonest. On the pick cards, <b>next</b> is the next cook: one run decides all three timeframes, so Day/Week and Long share the same next time even though they were each <b>last</b> served on different days.',stats);
 }
 // #158 — 24h gantt-style strip above the Run Schedule list. Real ask, dropped once already (flagged
@@ -3783,11 +3775,23 @@ function upcomingRunsHtml(){
   // 3-hour US scan) — local so upcomingRunsHtml doesn't depend on runLogHtml's inner helpers.
   function _dur(ms){ if(!ms) return ''; var s=ms/1000; if(s<60) return Math.round(s)+'s'; var m=s/60; if(m<90) return Math.round(m)+' min'; return (m/60).toFixed(1).replace(/\.0$/,'')+' hrs'; }
   var _menus=(LAST&&LAST.H&&LAST.H.menus)||[], _rl=(typeof RUNLOG!=='undefined'&&RUNLOG)||[], _pu=(typeof PULSES!=='undefined'&&PULSES)||[];
+  // returns {txt, ms} — ms is the real median (or a fallback midpoint) used to project the finish time.
   function estFor(kind){
-    if(kind==='menu'){ var m=_med(_menus.map(function(x){return x.durMs;})); return m?('~'+_dur(m)):'~2–20 min'; }
-    if(kind==='reprice'){ var r=_med(_pu.map(function(x){return x.durMs;})); return r?('~'+_dur(r)):'under a min'; }
-    if(kind==='scan-au'||kind==='scan-us'){ var sc=_med(_rl.filter(function(e){return e.kind===kind&&e.status==='done';}).map(function(e){return e.durMs;})); return sc?('~'+_dur(sc)):(kind==='scan-au'?'~30–60 min':'~3 hrs'); }
-    return '';
+    if(kind==='menu'){ var m=_med(_menus.map(function(x){return x.durMs;})); return m?{txt:'~'+_dur(m),ms:m}:{txt:'~2–20 min',ms:11*60000}; }
+    if(kind==='reprice'){ var r=_med(_pu.map(function(x){return x.durMs;})); return r?{txt:'~'+_dur(r),ms:r}:{txt:'under a min',ms:40000}; }
+    if(kind==='scan-au'||kind==='scan-us'){ var sc=_med(_rl.filter(function(e){return e.kind===kind&&e.status==='done';}).map(function(e){return e.durMs;})); return sc?{txt:'~'+_dur(sc),ms:sc}:(kind==='scan-au'?{txt:'~30–60 min',ms:45*60000}:{txt:'~3 hrs',ms:180*60000}); }
+    return {txt:'',ms:0};
+  }
+  // #246 (user ask) — next ASX/US open or close strictly after a projected finish time, so a scheduled run
+  // can say "expected to finish ~N min before ASX opens/closes". ASX 10:00–16:00 · US 23:30–06:00 AEST.
+  function _gap(mins){ var h=Math.floor(mins/60),mm=mins%60; return (h?h+'h ':'')+mm+'m'; }
+  function nextMktEvent(ms){
+    var base=new Date(ms), evs=[];
+    for(var dd=0; dd<=2; dd++){ var day=new Date(base); day.setDate(base.getDate()+dd); var wd=day.getDay();
+      if(wd>=1&&wd<=5){ [['ASX opens',10,0],['ASX closes',16,0],['US opens',23,30],['US closes',6,0]].forEach(function(e){
+        var t=new Date(day); t.setHours(e[1],e[2],0,0); evs.push({w:e[0],t:t.getTime()}); }); } }
+    evs=evs.filter(function(e){return e.t>ms;}).sort(function(a,b){return a.t-b.t;});
+    return evs[0]||null;
   }
   var items=[];
   var splitOn=!!(D.nextAu||D.nextUs||D.lastCookAu||D.lastCookUs);
@@ -3813,8 +3817,11 @@ function upcomingRunsHtml(){
   // blend into the real run history below. #243 — each row taps through to "what this run does".
   return '<div class="rlfuture-wrap"><div class="rlfuture-h">🔮 Future runs · scheduled next</div>'+items.map(function(o){
     var badge=o.tier?'<span class="rltier rltier-'+(o.tier==='T1'?'1':'23')+'">'+esc(o.tier)+'</span>':'';
+    var estTxt=o.est&&o.est.txt||'';
+    // #246 — project the finish time and show how long before the next market open/close it lands.
+    var fin=''; if(o.est&&o.est.ms){ var ev=nextMktEvent(o.t.getTime()+o.est.ms); if(ev){ var mins=Math.max(0,Math.round((ev.t-(o.t.getTime()+o.est.ms))/60000)); fin=' · expected to finish <b>'+_gap(mins)+' before '+esc(ev.w)+'</b>'; } }
     return '<div class="rlrow rlfuture rltap" data-runkind="'+o.kind+'" data-runts="'+o.t.getTime()+'" role="button" tabindex="0"><div class="rltop"><span class="rltag rltag-future">'+o.ic+' '+esc(o.lbl)+'</span>'+badge+'<span class="rlwhen">'+hm(o.t)+' · '+untilTxt(o.t)+'</span></div>'+
-      (o.est?'<div class="rlest">⏳ takes '+esc(o.est)+' · <span class="ri-hint">tap for what\'s included</span></div>':'')+'</div>';
+      (estTxt?'<div class="rlest">⏳ takes '+esc(estTxt)+fin+' · <span class="ri-hint">tap for what\'s included</span></div>':'')+'</div>';
   }).join('')+'</div>';
 }
 function runLogHtml(){
@@ -3943,7 +3950,11 @@ function runLogHtml(){
       e.status==='cooking'?'<span class="rlspin"></span>scanning the whole market…':e.status==='failed'?(e.note||'scan didn’t finish — last good T2/T3 menu stands'):e.status==='cancelled'?'cancelled':('done'+(dl?' · '+dl:''));
     return '<div class="rlrow '+cls+' rltap" data-runkind="scan" data-runts="'+rts+'" role="button" tabindex="0"><div class="rltop"><span class="rltag rltag-scan">🔬 Whole-market scan</span><span class="rltier rltier-23" title="Type 2 (quant) + Type 3 (per-indicator) — the daily whole-market scans behind the T2/T3 tiers">T2·T3</span><span class="rlwhen">'+fmtWhen(rts)+' · '+mkt+'</span></div><div class="rlbody"><div class="rlline"><span class="qt">'+esc(st)+'</span></div></div></div>';
   }
-  return '<h4 style="'+hh+'">Every run — newest first</h4>'+
+  // #245 — today's re-price count folded in here (the last remaining Engine-Room stat card was removed).
+  var _tdy=null; try{_tdy=new Date().toLocaleDateString('en-CA',{timeZone:'Australia/Sydney'});}catch(e){}
+  var _pl=(typeof PULSES!=='undefined'&&PULSES)?PULSES:[];
+  var _rpToday=_pl.filter(function(pu){ if(!pu||!pu.iso)return false; try{return new Date(pu.iso).toLocaleDateString('en-CA',{timeZone:'Australia/Sydney'})===_tdy;}catch(e){return false;} }).length;
+  return '<h4 style="'+hh+'">Every run — newest first'+(_rpToday?' <span style="color:var(--muted);font-weight:600;text-transform:none;letter-spacing:0">· '+_rpToday+' re-prices today</span>':'')+'</h4>'+
     '<p style="font-size:12px;color:var(--muted);margin:0 0 8px"><b style="color:var(--broth)">Menu</b> = a full re-cook (six new picks, timed ~30&nbsp;min before an open). <b>Re-price</b> = same picks, fresh numbers each hour. The tinted rows up top are <b>scheduled next</b>, not yet run.</p>'+
     '<div class="runlog">'+upcomingRunsHtml()+(body||'<p class="muted">No runs yet.</p>')+rest+'</div>';
 }
