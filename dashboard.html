@@ -1180,6 +1180,21 @@
   .jbarwrap{background:var(--surface-2);border-radius:5px;height:9px;overflow:hidden;display:block}
   .jbar{display:block;height:100%;background:var(--broth);border-radius:5px}
   .jnum{color:var(--muted);font-variant-numeric:tabular-nums;text-align:right;font-size:10.5px}
+  /* #215 — per-signal grouped juice cards (checklist line + detail + its penalty/nudge, numbered) */
+  .jsiglist{display:flex;flex-direction:column;gap:10px;margin-bottom:6px}
+  .jsig{border:1px solid var(--line);border-left:3px solid var(--muted);border-radius:12px;padding:11px 13px;background:var(--surface)}
+  .jsig.jsig-y{border-left-color:var(--buy)} .jsig.jsig-n{border-left-color:var(--dont)} .jsig.jsig-m{border-left-color:var(--hold)}
+  .jsig-h{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .jsignum{width:20px;height:20px;border-radius:50%;background:var(--ink);color:#fff;font-size:11px;font-weight:900;display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;font-family:var(--mono)}
+  .jsig-ic{font-size:15px} .jsig-h b{font-size:14px}
+  .jsig-read{margin-left:auto;font-size:12px;font-weight:800;color:var(--muted)}
+  .jsig-read.up{color:var(--buy)} .jsig-read.down{color:var(--dont)}
+  .jsig-plain{font-size:13px;font-weight:800;margin:8px 0 2px}
+  .jsig-explain{font-size:12px;color:var(--muted);line-height:1.45;margin-top:5px}
+  .jsig-adjs{display:flex;flex-direction:column;gap:4px;margin-top:9px;padding-top:8px;border-top:1px dashed var(--line)}
+  .jsigadj{font-size:12px;color:var(--muted);line-height:1.4}
+  .jsigadj-k{font-family:var(--mono);font-weight:800;margin-right:5px;color:var(--muted)}
+  .jsigadj.up .jsigadj-k{color:var(--buy)} .jsigadj.down .jsigadj-k{color:var(--dont)}
   /* #185 — penalties + nudges 2-up (were full-width, one per row) */
   .jpengrid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
   .jpengrid p{grid-column:1/-1;margin:0}
@@ -2751,13 +2766,51 @@ function openJuice(id){
   var scoreViz=(facs.length?'<div class="scorebar">'+segs+'</div><div class="scorelegend">'+leg+'</div>':'')+
     (score.verdict?'<div class="rsimeta" style="margin-top:7px"><b>'+esc(score.verdict)+'</b>'+(score.child_sentence?' — '+esc(score.child_sentence):'')+'</div>':'');
   var sr=j.sigRows||[];
-  var sigSection=sr.length?('<details class="jsec" open><summary>🧾 The simple checklist</summary>'+checklistRowsHtml(sr)+'</details>'+
-    '<details class="jsec"><summary>📊 Signal detail — the charts</summary>'+sigRowsHtml(sr)+'</details>'):'';
+  // #215 (user ask) — group the breakdown BY SIGNAL, numbered. For each signal (RSI, Trend, …) show,
+  // together in one card: the plain-English checklist line, the detail chart/explanation, and any
+  // penalty/nudge the model applied to that same signal. Adjustments that don't map to a shown signal
+  // (capital raise, stale catalyst, priced-in…) collect in a final "Other adjustments" card.
+  function _sigKey(label){ var L=(label||'').toLowerCase();
+    if(/rsi/.test(L))return'rsi'; if(/bollinger/.test(L))return'boll'; if(/ema/.test(L))return'ema';
+    if(/trend|adx|macd/.test(L))return'trend'; if(/vs |relative|strength/.test(L))return'rs';
+    if(/supply|demand/.test(L))return'zone'; if(/news|buzz|sentiment/.test(L))return'news';
+    if(/insider/.test(L))return'insider'; if(/short/.test(L))return'short'; if(/vol/.test(L))return'vol';
+    if(/risk tier/.test(L))return'risk'; return'other'; }
+  function _adjKey(k){ var K=(k||'').toLowerCase();
+    if(/rsi/.test(K))return'rsi'; if(/bollinger|bb/.test(K))return'boll'; if(/ema/.test(K))return'ema';
+    if(/trend|adx|macd|extended|sma/.test(K))return'trend'; if(/relativ|_rs|strength/.test(K))return'rs';
+    if(/supply|demand|zone/.test(K))return'zone'; if(/news|sentiment/.test(K))return'news';
+    if(/insider/.test(K))return'insider'; if(/short/.test(K))return'short'; if(/vol/.test(K))return'vol';
+    return'other'; }
+  var _adjs=(d.penalty_detail||[]).map(function(p){return {k:p.k,pts:-Math.abs(p.pts),why:p.why};})
+    .concat((d.nudges||[]).map(function(n){return {k:n.k,pts:n.pts,why:n.why};}));
+  _adjs.forEach(function(a){a._b=_adjKey(a.k);});
+  function _adjHtml(a){ return '<div class="jsigadj '+(a.pts>=0?'up':'down')+'"><span class="jsigadj-k">'+(a.pts>=0?'+':'')+a.pts.toFixed(a.pts%1?2:0)+'pt</span> '+esc(a.why||(a.k||'').replace(/_/g,' '))+'</div>'; }
+  var _n=0;
+  var sigCards=sr.map(function(r){ _n++;
+    var bk=_sigKey(r.label), f=checklistFun(r);
+    var mine=_adjs.filter(function(a){return !a._used&&a._b===bk;}); mine.forEach(function(a){a._used=1;});
+    return '<div class="jsig jsig-'+(r.tone==='pos'?'y':r.tone==='neg'?'n':'m')+'">'+
+      '<div class="jsig-h"><span class="jsignum">'+_n+'</span><span class="jsig-ic">'+r.icon+'</span><b>'+esc(r.label)+'</b>'+
+        '<span class="jsig-read '+(r.tone==='pos'?'up':r.tone==='neg'?'down':'')+'">'+esc(r.read)+'</span></div>'+
+      '<div class="jsig-plain">'+esc(f.mark)+' '+esc(f.line)+'</div>'+
+      (r.diagram||'')+
+      (r.explain?'<div class="jsig-explain">'+esc(r.explain)+'</div>':'')+
+      (mine.length?'<div class="jsig-adjs">'+mine.map(_adjHtml).join('')+'</div>':'')+
+    '</div>';
+  }).join('');
+  var _left=_adjs.filter(function(a){return !a._used;});
+  var otherCard=_left.length?('<div class="jsig jsig-m"><div class="jsig-h"><span class="jsignum">'+(++_n)+'</span><span class="jsig-ic">⚙️</span><b>Other adjustments</b>'+
+      '<span class="jsig-read">not tied to one signal</span></div>'+
+      '<div class="jsig-adjs">'+_left.map(function(a){return _adjHtml({pts:a.pts,why:((a.k||'').replace(/_/g,' '))+' — '+(a.why||'')});}).join('')+'</div></div>'):'';
+  var ticked=sr.filter(function(r){return r.tone==='pos';}).length;
+  var sigSection=sr.length?('<p class="chkscore" style="margin:14px 0 10px">'+ticked+' / '+sr.length+' signals looking good ✅ — here they are, one by one:</p><div class="jsiglist">'+sigCards+otherCard+'</div>'):'';
   var hh='font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:800;margin:4px 0 8px';
-  var deriv='<details class="jsec"><summary>🧮 The full derivation — weights, penalties, nudges</summary>'+
+  // full model-weighting math kept, collapsed, for anyone who wants the raw category composition
+  var deriv='<details class="jsec"><summary>🧮 The full derivation — category weights (advanced)</summary>'+
     '<h4 style="'+hh+'">Category scores (weight × raw signal = points)</h4><div class="jgrid">'+catRows+'</div>'+
-    '<h4 style="'+hh+';margin-top:14px">Penalties</h4><div class="jpengrid">'+penRows+'</div>'+
-    '<h4 style="'+hh+';margin-top:14px">Layered nudges</h4><div class="jpengrid">'+nudgeRows+'</div>'+
+    (sr.length?'':'<h4 style="'+hh+';margin-top:14px">Penalties</h4><div class="jpengrid">'+penRows+'</div>'+
+      '<h4 style="'+hh+';margin-top:14px">Layered nudges</h4><div class="jpengrid">'+nudgeRows+'</div>')+
     '<p style="font-size:11px;color:var(--faint);margin-top:12px">Dominant signal: <b>'+esc(SCORE_FLAB[d.dominant_signal]||d.dominant_signal||'—')+'</b>. The exact derivation the model used — same numbers.</p></details>';
   m.innerHTML='<div class="mhead"><button class="mclose" id="mClose" aria-label="Close">✕</button><div class="mtf">🍊 Real juice — the full breakdown</div>'+
     '<div class="mtop"><div class="msym" style="line-height:1.25">'+jhead+'</div></div></div>'+
