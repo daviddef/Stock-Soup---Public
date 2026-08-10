@@ -2829,9 +2829,9 @@ function render(D,H){
       /* #207 — add-ticker bar moved to the top, above the performance summary cards */
       '<div class="unibar"><input id="uniInput" placeholder="Type a ticker… e.g. BHP or PLTR" maxlength="8" aria-label="Ticker">'+
         '<span class="wlseg" role="group" aria-label="Market"><button id="uniAu" aria-pressed="true">🇦🇺 AU</button><button id="uniUs" aria-pressed="false">🇺🇸 US</button></span>'+
-        '<button class="uni-watch" id="uniWatch">＋ Watchlist</button>'+
-        '<button class="uni-ask" id="uniAsk">🧠 What to do?</button></div>'+
-      '<p class="sec-sub" style="margin-top:9px">Type a ticker, pick its market, then <b>＋ Watchlist</b> to track it (we remember its ideal-buy and flag it when it hits) — or <b>🧠 What to do?</b> for an instant read. You can also tap <b>＋ Watch</b> on any pick. '+infoBtn('watchlist')+'</p>'+
+        '<button class="uni-watch" id="uniWatch" title="Add to watchlist" aria-label="Add to watchlist">＋</button>'+
+        '<button class="uni-ask" id="uniAsk" title="What would you do? — an instant read">🧠 IDEA</button></div>'+
+      '<p class="sec-sub" style="margin-top:9px">Type a ticker, pick its market, then <b>＋</b> to track it (we remember its ideal-buy and flag it when it hits) — or <b>🧠 IDEA</b> for an instant read. You can also tap <b>＋ Watch</b> on any pick. '+infoBtn('watchlist')+'</p>'+
       '<div class="wlsummary" id="wlSummary"></div>'+
       '<div class="wlpills" id="wlPills"></div>'+
       '<div class="wlauth" id="wlAuth"></div></section>'+
@@ -3393,14 +3393,12 @@ function reviewsHead(){
 }
 function updateOwnCount(){ var el=document.getElementById('ownCount'); if(el){ try{ el.textContent=wlGet().filter(function(w){return w.own;}).length; }catch(e){} } }
 function favesHead(){
-  // #227 — market-scope these to match the (now market-filtered, #206) watchlist below + the "Things you
-  // own" summary card. Before this they counted ALL markets (18) while the card showed just AU (17) — the
-  // same number rendered two different ways on one screen. Both now reflect the selected market.
-  var n=0,owned=0; try{var a=wlGet().filter(function(w){return (w.region||'au')===MKT;}); n=a.length; owned=a.filter(function(w){return w.own;}).length;}catch(e){}
-  var stats=['<button class="tabstat wlfbtn'+(WL_FILTER==='all'?' on':'')+'" id="wlfAll" type="button"><span class="tk">Watching</span> <b>'+n+'</b></button>',
-    '<button class="tabstat wlfbtn'+(WL_FILTER==='own'?' on':'')+'" id="wlfOwn" type="button"><span class="tk">You own</span> <b id="ownCount">'+owned+'</b></button>'];
+  // #228 (user ask) — dropped the WATCHING / YOU OWN header stat pills: the counts already show in the
+  // section titles below ("Things you own (17)" / "What you could have owned"), so these were a third,
+  // redundant copy of the same numbers. The all/own split is still conveyed by those two summary cards.
+  var n=0; try{ n=wlGet().filter(function(w){return (w.region||'au')===MKT;}).length; }catch(e){}
   var t=n?('You\'re watching '+n+(n===1?' name':' names')):'Your table is empty — for now';
-  return tabHead('⭐ Your table',t,'Tap <b>＋ Watch</b> on any pick and we\'ll remember its ideal-buy price, then flag it the moment it gets there. Add your own below too. <b>Tap Watching/You own above</b> to filter the list.',n?stats:[]);
+  return tabHead('⭐ Your table',t,'Tap <b>＋ Watch</b> on any pick and we\'ll remember its ideal-buy price, then flag it the moment it gets there. Add your own below too.',[]);
 }
 function lastFilled(slotIdx){
   // Most recent menuHistory entry (current MKT) where the Day/Week (0/1) or Long (2) slot wasn't "NONE".
