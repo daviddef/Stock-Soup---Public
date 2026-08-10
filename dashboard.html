@@ -1149,7 +1149,8 @@
      with the hero/risk-chart above it. */
   .tmxwrap{width:100%;margin:6px 0 4px}
   .tmx-title{text-align:center;font-size:14px;font-weight:900;letter-spacing:.01em;margin-bottom:10px}
-  .tmx{display:grid;grid-template-columns:26px 1fr 1fr 1fr;gap:6px;align-items:stretch}
+  .tmx{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;align-items:stretch}
+  .tmx-rowh{grid-column:1/-1;justify-content:flex-start !important;padding:8px 2px 2px !important;font-size:11px}
   .tmx-colh{text-align:center;display:flex;flex-direction:column;gap:1px;padding:2px 0 5px;font-size:12px;font-weight:900;border-bottom:2px solid var(--line)}
   .tmx-colh span{font-size:9.5px;font-weight:700;color:var(--muted)}
   .tmx-colh-t3{border-bottom-color:var(--dont)} .tmx-colh-t2{border-bottom-color:var(--hold,#e0a92e)} .tmx-colh-t1{border-bottom-color:var(--buy)}
@@ -1539,6 +1540,7 @@ function tierBarHtml(){
 function bindTierPills(){
   document.querySelectorAll('.tkf[data-tier]').forEach(function(b){ b.onclick=function(){
     if(b.dataset.tier===TIER) return; TIER=b.dataset.tier;
+    try{pushViewState();}catch(e){}
     var sc=window.pageYOffset; applyView(); window.scrollTo(0,sc);
   };});
   var tib=document.getElementById('tierInfoBtn'); if(tib) tib.onclick=openTierInfo;
@@ -2448,7 +2450,17 @@ document.body.addEventListener('click',function(e){
   doShare(b.dataset.shareHash, b.dataset.shareLabel||'this');
 });
 function applyDeepLink(){
-  var h=(location.hash||'').replace(/^#\/?/,''); if(!h) return;
+  var raw=(location.hash||'').replace(/^#\/?/,''); if(!raw) return;
+  // #253 — strip a trailing ?m=..&t=.. filter query and apply MKT/TIER BEFORE the tab renders, so a shared
+  // link lands on the same market + model type, not just the same tab.
+  var qi=raw.indexOf('?'), h=qi>=0?raw.slice(0,qi):raw, _filtered=false;
+  if(qi>=0){ raw.slice(qi+1).split('&').forEach(function(kv){ var p=kv.split('='); var k=p[0], v=decodeURIComponent(p[1]||'');
+    if(k==='m'&&(v==='us'||v==='au')&&v!==MKT){ MKT=v; _filtered=true; }
+    if(k==='t'&&/^type[123]$/.test(v)&&typeof TIER!=='undefined'&&v!==TIER){ TIER=v; _filtered=true; }
+  }); }
+  // the content was already rendered with the defaults — re-render so the restored market/type actually apply.
+  if(_filtered){ try{ applyView(); }catch(e){} }
+  if(!h) return;
   var parts=h.split('/').map(decodeURIComponent);
   var TABNAMES={menu:1,reviews:1,faves:1,kitchen:1};
   if(parts[0]==='sym' && parts.length>=3){
@@ -2599,7 +2611,7 @@ function isBargain(c){
 }
 // Global market switch — the whole full view follows. Used by the header flag toggle and any
 // "see your other-market names" affordance (#206). Preserves scroll position across the re-render.
-function setMkt(m){ if(!m||m===MKT)return; MKT=m; var sc=window.pageYOffset; render(LAST.D,LAST.H); window.scrollTo(0,sc); }
+function setMkt(m){ if(!m||m===MKT)return; MKT=m; try{pushViewState();}catch(e){} var sc=window.pageYOffset; render(LAST.D,LAST.H); window.scrollTo(0,sc); }
 function render(D,H){
   LAST={D:D,H:H};
   var r=D.risk||{};
@@ -4638,6 +4650,8 @@ function syncFromBackend(cb){
       var have={}; server.forEach(function(w){have[w.sym+'|'+w.region]=1;});
       var missing=wlGet().filter(function(w){return !have[w.sym+'|'+w.region];});
       if(missing.length){ apiPush('POST','/me/import',{items:missing.map(function(w){return {sym:w.sym,region:w.region,entry:wlNum(w.entry)||null};})}); server=server.concat(missing); }
+      // #254 — strip any synced NONE/blank before storing (and delete it server-side) so sign-in can't re-add it.
+      server=server.filter(function(w){ if(w.sym&&String(w.sym).toUpperCase()!=='NONE') return true; try{apiPush('DELETE','/me/watchlist/'+(w.region||'au')+'/'+w.sym);}catch(e){} return false; });
       wlSet(server);
     }
     cb&&cb();
@@ -4645,7 +4659,19 @@ function syncFromBackend(cb){
 }
 // ---- Smart watchlist (localStorage source-of-truth; write-through to backend when signed in) ----
 var WLKEY='soup_watchlist';
-function wlGet(){try{return JSON.parse(localStorage.getItem(WLKEY)||'[]');}catch(e){return[];}}
+// #254 — a placeholder "NONE" ticker keeps sneaking into the watchlist (tapping +Watch on a "no pick"
+// card in an older build; it survived the #130 local cleanup because it was also synced to the account).
+// Defensively drop any NONE/blank sym at READ time so it can never render, whatever's in storage/D1; if we
+// find and strip one, self-heal the store + push the removal so it's gone cross-device too.
+function wlClean(a){
+  if(!Array.isArray(a)) return [];
+  var bad=a.filter(function(w){return !w||!w.sym||String(w.sym).toUpperCase()==='NONE';});
+  var good=a.filter(function(w){return w&&w.sym&&String(w.sym).toUpperCase()!=='NONE';});
+  if(bad.length){ try{ localStorage.setItem(WLKEY,JSON.stringify(good)); }catch(e){}
+    bad.forEach(function(w){ if(w&&w.sym) try{ apiPush('DELETE','/me/watchlist/'+(w.region||'au')+'/'+w.sym); }catch(e){} }); }
+  return good;
+}
+function wlGet(){try{return wlClean(JSON.parse(localStorage.getItem(WLKEY)||'[]'));}catch(e){return[];}}
 function wlSet(a){try{localStorage.setItem(WLKEY,JSON.stringify(a));}catch(e){}}
 function wlHas(sym,region){return wlGet().some(function(w){return w.sym===sym&&w.region===region;});}
 function wlAddItem(it){var a=wlGet();if(!a.some(function(w){return w.sym===it.sym&&w.region===it.region;})){it.addedAt=it.addedAt||Date.now();a.push(it);wlSet(a);apiPush('POST','/me/watchlist',{sym:it.sym,region:it.region,entry:(wlNum(it.entry)||it.entry||null)});}}
@@ -5428,14 +5454,28 @@ var VIEW = null, SREGION = 'au', PULSES = null, TRACK = null, MKT = 'au', OUTCOM
 var SIMPLE_POT_THR = 50;   // #199 — the Simple-view whole-pot score threshold (persists across re-renders)
 var FULL_POT_THR = 0;      // #231 — the Full-view Full Pot score threshold (default 0 = show all, unlike Simple's 50)
 var TABLABEL={menu:"Tonight's Menu",reviews:'Dinner Reviews',faves:'Favourite Course',kitchen:'Inside the Kitchen'};
+// #253 (user ask) — the shareable URL now also remembers the AU/US market + the T1/2/3 model type, so a
+// copied link (or a reload) lands on the same filters, not just the same tab. Defaults (au · type1) are
+// omitted to keep links clean; their absence restores the defaults on load.
+function pushViewState(){
+  var q=[];
+  if(MKT && MKT!=='au') q.push('m='+MKT);
+  if(typeof TIER!=='undefined' && TIER && TIER!=='type1') q.push('t='+TIER);
+  var hash='#/'+(TAB||'menu')+(q.length?'?'+q.join('&'):'');
+  try{ history.replaceState(null,'',location.pathname+location.search+hash); }catch(e){}
+}
 function switchTab(t){
   TAB = t; try{ localStorage.setItem('soup_tab', t); }catch(e){}
   document.querySelectorAll('.tabbtn').forEach(function(b){ b.classList.toggle('active', b.dataset.tab===t); });
   document.querySelectorAll('.tabview').forEach(function(v){ v.classList.toggle('active', v.id==='tab-'+t); });
-  try{ history.replaceState(null,'',location.pathname+location.search+'#/'+t); }catch(e){}
+  pushViewState();
   window.scrollTo(0,0);
 }
-function shareCurrentTab(){ doShare('/'+(TAB||'menu'), TABLABEL[TAB]||'this page'); }
+function shareCurrentTab(){
+  // #253 — a shared link carries the current market + model type too, so the recipient sees what you see.
+  var q=[]; if(MKT&&MKT!=='au') q.push('m='+MKT); if(typeof TIER!=='undefined'&&TIER&&TIER!=='type1') q.push('t='+TIER);
+  doShare('/'+(TAB||'menu')+(q.length?'?'+q.join('&'):''), TABLABEL[TAB]||'this page');
+}
 function goRunSchedule(){ switchTab('kitchen'); setTimeout(function(){ var s=document.getElementById('runsched'); if(s) s.scrollIntoView({behavior:'smooth',block:'start'}); },80); }
 function setView(v){ VIEW = v; try{ localStorage.setItem('soup_view', v); }catch(e){} applyView(); }
 function applyView(){ if(!LAST) return; window.scrollTo(0,0); if(VIEW==='simple') renderSimple(LAST.D); else render(LAST.D, LAST.H); }
@@ -5536,10 +5576,12 @@ function tierMatrixHtml(D,rid){
   var cols=[{k:'type3',lbl:'Type 3',sub:'🌶️ wildest'},{k:'type2',lbl:'Type 2',sub:'⚙️ quant'},{k:'type1',lbl:'Type 1',sub:'🛡️ safest'}];
   var rows=[{k:'Day',lbl:'DAY'},{k:'Week',lbl:'WEEK'},{k:'Long',lbl:'MONTH'}];
   cols[0].rc='t3'; cols[1].rc='t2'; cols[2].rc='t1';   // risk accent: T3 spicy/red → T1 safe/green
-  var head='<div class="tmx-corner"></div>'+cols.map(function(c){return '<div class="tmx-colh tmx-colh-'+c.rc+'"><b>'+c.lbl+'</b><span>'+c.sub+'</span></div>';}).join('');
+  // #255 — 3-column grid (no left row-label gutter) so the cards span the FULL width and align edge-to-edge
+  // with the pot list below; DAY/WEEK/MONTH become full-width band headers before each triplet.
+  var head=cols.map(function(c){return '<div class="tmx-colh tmx-colh-'+c.rc+'"><b>'+c.lbl+'</b><span>'+c.sub+'</span></div>';}).join('');
   // #172 refine — a risk strip under the headers echoing the risk slider above (red = wilder on the
   // left/Tier 3 → green = safer on the right/Tier 1), so the tier columns visibly map to the risk scale.
-  var riskbar='<div class="tmx-corner"></div><div class="tmx-riskbar" style="grid-column:2/-1"><span class="tmx-rl">🌶️ riskier</span><span class="tmx-rl">safer 🛡️</span></div>';
+  var riskbar='<div class="tmx-riskbar" style="grid-column:1/-1"><span class="tmx-rl">🌶️ riskier</span><span class="tmx-rl">safer 🛡️</span></div>';
   var body=rows.map(function(rw){
     return '<div class="tmx-rowh">'+rw.lbl+'</div>'+
       cols.map(function(c){
@@ -5644,7 +5686,7 @@ function wireSimple(D){
   var rbS=document.getElementById('refreshBtnS'); if(rbS){ if(!isAdmin()) rbS.style.display='none'; else rbS.onclick=function(){refreshPrices(rbS);}; }
   var dbS=document.getElementById('docsBtnS'); if(dbS){ if(isAdmin()){ dbS.style.display=''; dbS.onclick=openDocs; } }
   var hbS=document.getElementById('healthBtnS'); if(hbS){ if(isAdmin()){ hbS.style.display=''; hbS.onclick=openDataHealth; } }
-  document.querySelectorAll('.stoprail .mkf[data-region]').forEach(function(b){b.onclick=function(){ if(b.dataset.region===MKT)return; MKT=b.dataset.region; renderSimple(D); };});
+  document.querySelectorAll('.stoprail .mkf[data-region]').forEach(function(b){b.onclick=function(){ if(b.dataset.region===MKT)return; MKT=b.dataset.region; try{pushViewState();}catch(e){} renderSimple(D); };});
   // #199 — whole-pot score-threshold slider: show/hide rows client-side (no re-render), persist the level
   var spotThr=document.getElementById('spotThr');
   if(spotThr){
