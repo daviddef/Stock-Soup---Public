@@ -1129,16 +1129,22 @@
      Journey rows' display:flex for every jrow on the page, scattering the NEW/DROP pick rows into a
      3-column grid they were never built for (badge/symbol/pill landing in the wrong cells). Renamed to
      .jbrow ("juice breakdown row") — scoped to this one modal, no longer touches Journey at all. */
-  .jbrow{display:grid;grid-template-columns:70px 1fr 130px;gap:8px;align-items:center;font-size:11.5px}
+  /* #185 — category row: number stacked above a full-width bar (was a fixed 130px col the text overflowed) */
+  .jbrow2{display:flex;flex-direction:column;gap:4px}
+  .jbtop{display:flex;justify-content:space-between;align-items:baseline;gap:10px;font-size:11.5px}
   .jlabel{font-weight:800;color:var(--ink);text-transform:capitalize}
-  .jbarwrap{background:var(--surface-2);border-radius:5px;height:9px;overflow:hidden}
+  .jbarwrap{background:var(--surface-2);border-radius:5px;height:9px;overflow:hidden;display:block}
   .jbar{display:block;height:100%;background:var(--broth);border-radius:5px}
-  .jnum{color:var(--muted);font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
-  .jpen{background:var(--surface-2);border-radius:8px;padding:7px 10px;margin-bottom:6px}
-  .jpen .jlabel{font-size:12px}
-  .jpen .jnum{float:right;font-size:12px;font-weight:800}
+  .jnum{color:var(--muted);font-variant-numeric:tabular-nums;text-align:right;font-size:10.5px}
+  /* #185 — penalties + nudges 2-up (were full-width, one per row) */
+  .jpengrid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+  .jpengrid p{grid-column:1/-1;margin:0}
+  @media(max-width:440px){.jpengrid{grid-template-columns:1fr}}
+  .jpen{background:var(--surface-2);border-radius:8px;padding:7px 10px;display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 8px}
+  .jpen .jlabel{font-size:12px;flex:1;min-width:0}
+  .jpen .jnum{font-size:12px;font-weight:800;text-align:right}
   .jpen .jnum.down{color:var(--dont)} .jpen .jnum.up{color:var(--buy)}
-  .jwhy{clear:both;font-size:11px;color:var(--faint);margin-top:2px}
+  .jwhy{flex-basis:100%;font-size:11px;color:var(--faint);margin-top:2px}
   .mtake{font-size:15px;line-height:1.6;text-wrap:pretty}
   .mtake .lead{color:var(--broth);font-weight:800}
   .mcat{list-style:none;display:flex;flex-direction:column;gap:8px}
@@ -2271,7 +2277,7 @@ function render(D,H){
         '<span class="px"><span class="p mono">'+esc(p.price)+'</span><br><span class="c mono '+chgTone(p.change,p.up)+'">'+esc(p.change)+'</span></span></div>'+
         /* miniTraj removed — inconsistent (only carried-over picks had it) + confusing 'since 23:33'; the range bar shows the trend */
         '<div class="buyat'+(p.nEntry?' ba-'+buyState(p):'')+'">'+(p.nEntry?'<span class="bl">🎯 Ideal buy</span> ~'+esc(rg.cur||'$')+p.nEntry+buyAction(p):'<span class="bl">Track this pick</span>')+'</div>'+
-        '<p class="plain">'+esc(p.plain)+'</p>'+riskTolWarn(p)+(function(){var jc=juiceChip(p.score),sp=signalPillHtml(p,rg.id),vc=valChip(p);return (jc||sp||vc)?'<div class="sentrow">'+jc+sp+vc+'</div>':'';})()+'<div class="lvls">'+(p.levels||'')+'</div>'+
+        '<p class="plain">'+esc(p.plain)+'</p>'+riskTolWarn(p)+(function(){var jc=juiceChip(p.score,p.sym,p.name),sp=signalPillHtml(p,rg.id),vc=valChip(p);return (jc||sp||vc)?'<div class="sentrow">'+jc+sp+vc+'</div>':'';})()+'<div class="lvls">'+(p.levels||'')+'</div>'+
         (p.spark?rangeBar(p.spark,rg.cur||'$',p.tf,p.nEntry):'')+'</article>'+
         ((p.runnerUp && /wait|late|hold|skip|avoid|pass|don.t|steer/i.test(p.verdict||''))?ruCard(p.runnerUp,rg.id,idx):'')+'</div>';
     }).join('');
@@ -2364,7 +2370,7 @@ function render(D,H){
     var spk=(c.spark&&c.spark.length>2)?sparkSVG(c.spark.slice(-30)):'';
     var chg=c.change?'<span class="pmc-chg '+(c.up?'up':'down')+'">'+(c.up?'▲':'▼')+' '+esc(c.change)+'</span>':'';
     var shortChip=(c.short!=null&&c.short>=4)?'<span class="pmc-short">🩳 '+c.short+'%</span>':'';
-    var jc=juiceChip(c.score);   // #173 — 🍊 score chip on the candidate face too (tap → full breakdown)
+    var jc=juiceChip(c.score,c.sym,c.name);   // #173 — 🍊 score chip on the candidate face too (tap → full breakdown)
     return '<div class="potcard h-'+esc(c.heat)+'" data-ci="'+i+'" role="button" tabindex="0" aria-label="Details for '+esc(c.sym)+'">'+
       '<div class="pmc-top">'+(c.heat==='cold'?'<span class="ph no">⛔</span>':'<span class="ph"></span>')+'<b class="pmc-sym">'+esc(c.sym)+'</b>'+shortChip+'<span class="pmc-flag">'+(c.region==='au'?'AU':'US')+'</span></div>'+
       (c.name?'<div class="pmc-name">'+esc(c.name)+'</div>':'')+
@@ -2549,12 +2555,12 @@ var SCORE_FLAB={pead:"Earnings",rev:"Analysts",hi:"Trend/High",news:"Catalyst",v
 // only inside scoreBarHtml, which renders in the tap-through detail modal — never on the card FACE. This
 // is the compact face chip: 🍊 + the score, tapping opens the exact same full openJuice() breakdown.
 // Reuses the JUICE_CACHE + the document-level .juicebtn delegated listener, so no extra wiring.
-function juiceChip(score){
+function juiceChip(score,sym,name){
   if(!score||score.buy_now==null||!score.detail) return '';
-  var jid=++JUICE_SEQ; JUICE_CACHE[jid]={detail:score.detail,buy_now:score.buy_now,band:score.band};
+  var jid=++JUICE_SEQ; JUICE_CACHE[jid]={detail:score.detail,buy_now:score.buy_now,band:score.band,sym:sym,name:name};
   return '<button class="juicebtn" data-juice-id="'+jid+'" title="Tap for the full score breakdown — '+esc(score.band||'')+'">🍊 '+score.buy_now+'</button>';
 }
-function scoreBarHtml(score){
+function scoreBarHtml(score,sym,name){
   if(!score) return '';
   if(score.pending){
     return '<div class="viz"><h4>🧮 Buy-Now model score</h4>'+
@@ -2570,7 +2576,7 @@ function scoreBarHtml(score){
   // chip is just 🍊 + the number, the detail is one tap behind it.
   var juiceBtn='';
   if(score.detail){
-    var jid=++JUICE_SEQ; JUICE_CACHE[jid]={detail:score.detail,buy_now:score.buy_now,band:score.band};
+    var jid=++JUICE_SEQ; JUICE_CACHE[jid]={detail:score.detail,buy_now:score.buy_now,band:score.band,sym:sym,name:name};
     juiceBtn=' <button class="juicebtn" data-juice-id="'+jid+'" title="Tap for the full score breakdown">🍊 '+score.buy_now+'</button>';
   }
   return '<div class="viz"><h4>🧮 Buy-Now model score · <span class="scorenum">'+score.buy_now+'/100 · '+esc(score.band)+'</span>'+juiceBtn+'</h4>'+
@@ -2585,10 +2591,12 @@ function openJuice(id){
   var j=JUICE_CACHE[id]; if(!j)return;
   var d=j.detail||{};
   LASTFOCUS=document.activeElement;
+  // #185 (10 Aug 2026, user: labels fell off screen) — stack the number ABOVE the bar so nothing overflows
+  // the modal horizontally, instead of a fixed 130px column the "w X% · raw Y% → Zpt" text couldn't fit.
   function bar(label,w,s,c){
-    return '<div class="jbrow"><span class="jlabel">'+esc(SCORE_FLAB[label]||label)+'</span>'+
-      '<span class="jbarwrap"><span class="jbar" style="width:'+Math.max(2,c)+'%"></span></span>'+
-      '<span class="jnum">'+(w!=null?'w '+w+'% · ':'')+'raw '+(s!=null?(s*100).toFixed(0)+'%':'—')+' → '+c.toFixed(1)+'pt</span></div>';
+    var num=(w!=null?'w '+w+'% · ':'')+'raw '+(s!=null?(s*100).toFixed(0)+'%':'—')+' → '+c.toFixed(1)+'pt';
+    return '<div class="jbrow2"><div class="jbtop"><span class="jlabel">'+esc(SCORE_FLAB[label]||label)+'</span><span class="jnum">'+num+'</span></div>'+
+      '<span class="jbarwrap"><span class="jbar" style="width:'+Math.max(2,c)+'%"></span></span></div>';
   }
   var weights=d.weights||{}, subs=d.subscores||{}, contrib=d.contrib||{};
   var catRows=Object.keys(contrib).sort(function(a,b){return contrib[b]-contrib[a];}).map(function(k){
@@ -2604,14 +2612,17 @@ function openJuice(id){
   if(d.gated) flags.push('⚠️ capped — no real catalyst (pead/rev/news all thin)');
   if(d.hard_excluded) flags.push('⛔ hard-excluded — too extended above its 20-day average');
   var m=document.getElementById('modal'); m.className='modal';
+  // #185 — header now names the ticker + company (was just the bare score), so you know WHAT you're looking at.
+  var jhead=(j.sym?'<b style="font-size:21px">'+esc(j.sym)+'</b>'+(j.name?' <span style="font-size:14px;color:var(--muted);font-weight:700">'+esc(j.name)+'</span>':'')+'<br>':'')+
+    '<span style="font-size:16px;font-weight:800">'+j.buy_now+'/100 · '+esc(j.band)+'</span>';
   m.innerHTML='<div class="mhead"><button class="mclose" id="mClose" aria-label="Close">✕</button><div class="mtf">🍊 Real juice — the full score breakdown</div>'+
-    '<div class="mtop"><div class="msym" style="font-size:20px">'+j.buy_now+'/100 · '+esc(j.band)+'</div></div></div>'+
+    '<div class="mtop"><div class="msym" style="line-height:1.25">'+jhead+'</div></div></div>'+
     '<div class="mbody">'+
       (flags.length?'<p class="mtake" style="color:var(--dont)">'+flags.join(' · ')+'</p>':'')+
       '<h4 style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:800;margin:4px 0 8px">Category scores (weight × raw signal = points)</h4>'+
       '<div class="jgrid">'+catRows+'</div>'+
-      '<h4 style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:800;margin:16px 0 8px">Penalties</h4>'+penRows+
-      '<h4 style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:800;margin:16px 0 8px">Layered nudges</h4>'+nudgeRows+
+      '<h4 style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:800;margin:16px 0 8px">Penalties</h4><div class="jpengrid">'+penRows+'</div>'+
+      '<h4 style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:800;margin:16px 0 8px">Layered nudges</h4><div class="jpengrid">'+nudgeRows+'</div>'+
       '<p style="font-size:11px;color:var(--faint);margin-top:14px">Dominant signal: <b>'+esc(SCORE_FLAB[d.dominant_signal]||d.dominant_signal||'—')+'</b>. This is the exact derivation the model used — same numbers, no rounding beyond display.</p>'+
     '</div>';
   var ov=document.getElementById('overlay'); ov.classList.add('open'); ov.setAttribute('aria-hidden','false');
@@ -2625,7 +2636,7 @@ function openModal(p,region,cur){
   var rsi=p.rsi!=null?p.rsi:50;
   var rsiWord=rsi>=70?"🔥 hot — wait for it to cool":rsi<=35?"🧊 cheap — bargain zone":"😌 comfortable — not stretched";
   var cats=(p.catalysts||[]).map(function(c){return '<li>'+esc(c)+'</li>';}).join('');
-  var scoreHtml=scoreBarHtml(p.score);
+  var scoreHtml=scoreBarHtml(p.score,p.sym,p.name);
   var sparkHtml = p.spark ? '<div class="viz"><h4>Recent trend · last ~2 months</h4>'+sparkSVG(p.spark)+
     '<div class="spmm"><span>'+esc(cur)+Math.min.apply(null,p.spark).toFixed(1)+'</span><span>'+esc(cur)+Math.max.apply(null,p.spark).toFixed(1)+'</span></div>'+
     '<div class="rsimeta">'+(p.spark[p.spark.length-1]>=p.spark[0]?'📈 Up over the stretch':'📉 Down over the stretch')+'</div></div>' : '';
@@ -3446,7 +3457,7 @@ function openCandidate(idx){
       (spk?'<div class="viz"><h4>Recent trend · last ~6 weeks</h4>'+spk+'</div>':'')+
       '<div class="mnews">🔎 <span class="lead">How we picked it up:</span> '+esc(c.note||'a signal in tonight\'s scan')+'<div class="mfound">'+(c.foundVia?esc(c.foundVia):'Caught by our wide-net scan — live news, market movers and analyst actions — then priced &amp; scored into the pot.')+'</div></div>'+
       (signalRows(c,c.region).length?'<h4 style="margin-top:16px">🧮 All the signals, in one place</h4>'+signalDetailHtml(c,c.region):'')+
-      scoreBarHtml(c.score)+
+      scoreBarHtml(c.score,c.sym,c.name)+
       announcementsHtml(c.announcements)+
       newsLineHtml(c.news, c.news_url, c.news_date)+
       (c.short!=null?'<div class="mshort">🩳 <span class="lead">Short interest:</span> <b>'+c.short+'%</b> of shares sold short'+(c.short>=8?' — <b>elevated</b> (squeeze fuel / bearish crowd)':c.short>=4?' — moderate':' — light')+'</div>':'')+
@@ -4084,7 +4095,7 @@ function openWatchInsight(sym,region){
     '<div class="mbody">'+
       (spk?'<div class="viz"><h4>Recent trend</h4>'+spk+'</div>':'')+
       (entry!=null?'<div class="viz"><h4>Your buy trigger</h4><p style="margin:0;font-size:14px">🎯 Ideal buy <b>'+cur+entry+'</b>'+(it.target!=null?' · target <b>'+cur+it.target+'</b>':'')+'</p><div class="rsimeta">'+status+'</div>'+sigHtml+'</div>':sigHtml)+
-      (scoreObj?scoreBarHtml(scoreObj):(it.score?'<p class="mtake"><span class="lead">Buy-Now score:</span> '+esc(it.score)+(it.verdict?' — '+esc(it.verdict):'')+'</p>':(it.verdict?'<p class="mtake"><span class="lead">Verdict:</span> '+esc(it.verdict)+'</p>':'')))+
+      (scoreObj?scoreBarHtml(scoreObj,it.sym,it.name):(it.score?'<p class="mtake"><span class="lead">Buy-Now score:</span> '+esc(it.score)+(it.verdict?' — '+esc(it.verdict):'')+'</p>':(it.verdict?'<p class="mtake"><span class="lead">Verdict:</span> '+esc(it.verdict)+'</p>':'')))+
       (!scoreObj&&it.trend?'<div class="mshort">📊 <span class="lead">Technical read:</span> '+esc(it.trend)+'</div>':'')+
       (it.note?'<p class="mtake"><span class="lead">Why it\'s of interest:</span> '+esc(it.note)+'</p>':'')+
       (it.kind==='none'?'<div class="mrisk" style="background:var(--surface-2);border-color:var(--line)">Not in this run\'s scan yet — we track the price and will assess it fully when it next surfaces.</div>':'')+
