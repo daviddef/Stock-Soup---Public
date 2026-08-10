@@ -1185,6 +1185,15 @@
   .jwhy85-h{font-size:13px;font-weight:900;color:var(--ink);margin-bottom:6px}
   .jwhy85 p{font-size:12.5px;color:var(--muted);line-height:1.5;margin:0 0 6px} .jwhy85 p:last-child{margin-bottom:0}
   .jwhy85 b{color:var(--ink)} .jwhy85 .down{color:var(--dont)}
+  /* #215 follow-up — per-factor explainer cards (what Trend/High, Catalyst, Volume each mean) */
+  .jfac-head{font-size:12px;font-weight:900;letter-spacing:.03em;text-transform:uppercase;color:var(--muted);margin:16px 0 8px}
+  .jfaclist{display:flex;flex-direction:column;gap:8px;margin-bottom:6px}
+  .jfac{border:1px solid var(--line);border-radius:11px;padding:10px 12px;background:var(--surface)}
+  .jfac-h{display:flex;align-items:center;gap:8px}
+  .jfac-dot{width:11px;height:11px;border-radius:3px;flex:0 0 auto}
+  .jfac-h b{font-size:13.5px} .jfac-pts{margin-left:auto;font-family:var(--mono);font-weight:800;font-size:12px;color:var(--muted)}
+  .jfac-what{font-size:12.5px;font-weight:800;color:var(--ink);margin-top:7px}
+  .jfac-makeup{font-size:12px;color:var(--muted);line-height:1.5;margin-top:4px} .jfac-makeup b{color:var(--ink)}
   /* #215 — per-signal grouped juice cards (checklist line + detail + its penalty/nudge, numbered) */
   .jsiglist{display:flex;flex-direction:column;gap:10px;margin-bottom:6px}
   .jsig{border:1px solid var(--line);border-left:3px solid var(--muted);border-radius:12px;padding:11px 13px;background:var(--surface)}
@@ -2720,6 +2729,16 @@ function announcementsHtml(items){
   return '<div class="viz"><h4>📢 Key announcements</h4>'+rows+'</div>';
 }
 var SCORE_FLAB={pead:"Earnings",rev:"Analysts",hi:"Trend/High",news:"Catalyst",vol:"Volume",ins:"Insider"};
+// #215 follow-up (user: "what exactly is Trend/High, Catalyst vs a signal, and Volume — summarise each
+// below like we do the signals"). Plain-English "what it is + what makes it up" for each score factor.
+var FACTOR_EXPLAIN={
+  hi:{ic:'📈',what:'Is it trending up and trading near its recent highs?',makeup:'Built from where the price sits versus its 52-week high, plus whether it’s above its 20 / 50 / 200-day moving averages. Near the highs and above its averages = strong; well off the highs or below its averages = weak. Usually the model’s single biggest ingredient — momentum plus proximity to the highs.'},
+  news:{ic:'📣',what:'A real-world EVENT that gives a fresh reason to move — this is the catalyst.',makeup:'A contract win, earnings beat, analyst upgrade or a price-sensitive announcement, weighted by how fresh it is and whether the price has already jumped on it. <b>Catalyst vs signal:</b> a catalyst is something that HAPPENED (news, a deal) — a reason to move; a signal is a technical read of the chart (RSI, trend, volatility) — the stock’s current state. A strong, fresh catalyst is what lets a name score high even when the short-term signals are mixed.'},
+  pead:{ic:'🎯',what:'Earnings-beat drift — stocks tend to keep drifting up for weeks after a strong result.',makeup:'How much the last result beat expectations and how recently it reported. A big, recent beat scores high; no recent earnings, or a miss, scores low. US names only — there’s no ASX earnings-surprise feed on our plan.'},
+  rev:{ic:'✍️',what:'Analyst revisions — are the professionals upgrading or downgrading their calls?',makeup:'The net direction and size of recent analyst rating and price-target changes. More upgrades than downgrades scores high. US names only.'},
+  vol:{ic:'📊',what:'How much trading activity there is versus a normal day — the conviction behind a move.',makeup:'Today’s volume ÷ its 20-day average. Well above 1× means real interest and money backing the move (more trustworthy); near or below 1× means it’s quiet and the move is thin. Volume doesn’t pick a direction — it tells you how much weight to put on everything else.'},
+  ins:{ic:'🧑‍💼',what:'Insider activity — are the company’s own directors buying or selling their stock?',makeup:'Recent director buys (a confidence signal) versus sells over the last ~90 days. Clustered buying scores high; heavy selling drags it down.'}
+};
 // Shared by openModal (the 6 picks) and openCandidate (Full Pot) — same real model, same bar, everywhere it applies.
 // #173 follow-up (10 Aug 2026, user: "Im not seeing real juice icon on our cards?"). The 🍊 chip was
 // only inside scoreBarHtml, which renders in the tap-through detail modal — never on the card FACE. This
@@ -2807,6 +2826,14 @@ function openJuice(id){
       ' = <b>'+score.buy_now+'</b>. '+(_dom?'Most of it is <b>'+esc(SCORE_FLAB[_dom.k]||_dom.k)+'</b>':'')+
       (score.child_sentence?' — '+esc(score.child_sentence):'')+'.</p>'+
     '<p>The <b>'+((j.sigRows||[]).length)+' technical checks</b> below are <b>secondary</b>: they cover short-term timing (is it overbought, stalling, stretched?) and only nudge the total by a few points. That’s why a stock can score high on a genuine catalyst even while several of those checks are amber or red. It’s a forward read on the <i>setup</i> — not a call on today’s move.</p></div>'):'';
+  // #215 follow-up — one explainer card per score factor (Trend/High, Catalyst, Volume…), the same
+  // "what it is + what makes it up" idiom as the technical-signal cards, so each bar segment is legible.
+  var factorCards=facs.map(function(fc){ var fe=FACTOR_EXPLAIN[fc.k]||{ic:'•',what:'',makeup:''};
+    return '<div class="jfac"><div class="jfac-h"><span class="jfac-dot s-'+fc.k+'"></span><b>'+esc(SCORE_FLAB[fc.k]||fc.k)+'</b><span class="jfac-pts">'+fc.pts+' pts</span></div>'+
+      (fe.what?'<div class="jfac-what">'+fe.ic+' '+esc(fe.what)+'</div>':'')+
+      (fe.makeup?'<div class="jfac-makeup">'+fe.makeup+'</div>':'')+'</div>';
+  }).join('');
+  var factorSection=facs.length?('<div class="jfac-head">🧩 What makes up the score</div><div class="jfaclist">'+factorCards+'</div>'):'';
   var sr=j.sigRows||[];
   // #215 (user ask) — group the breakdown BY SIGNAL, numbered. For each signal (RSI, Trend, …) show,
   // together in one card: the plain-English checklist line, the detail chart/explanation, and any
@@ -2858,7 +2885,7 @@ function openJuice(id){
     '<div class="mtop"><div class="msym" style="line-height:1.25">'+jhead+'</div></div></div>'+
     '<div class="mbody">'+
       (flags.length?'<p class="mtake" style="color:var(--dont)">'+flags.join(' · ')+'</p>':'')+
-      scoreViz+whyBlock+sigSection+deriv+
+      scoreViz+whyBlock+factorSection+sigSection+deriv+
     '</div>';
   var ov=document.getElementById('overlay'); ov.classList.add('open'); ov.setAttribute('aria-hidden','false');
   document.getElementById('mClose').onclick=closeModal; document.getElementById('mClose').focus();
