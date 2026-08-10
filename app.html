@@ -824,6 +824,11 @@
   .dvps{font-size:9.5px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .dvnet{font-weight:800}
   .dvscore{font-size:10px;font-weight:900;color:#e07b00;background:rgba(255,140,0,.13);border:1px solid rgba(255,140,0,.35);border-radius:6px;padding:1px 5px;margin-left:auto}
+  /* #188 follow-up — colour by funnel stage: served (a real pick) → shortlisted (scored) → scanned-only */
+  .dvpill.dv-served{border-color:var(--buy);background:rgba(35,194,103,.14)}
+  .dvpill.dv-short{border-color:rgba(255,140,0,.4);background:rgba(255,140,0,.07)}
+  .dvpill.dv-scan{opacity:.72}
+  .fnn-served{color:var(--buy)} .fnn-short{color:var(--broth)} .fnn-scan{color:var(--muted)}
   .trailjump{color:var(--broth);font-weight:800;text-decoration:none;white-space:nowrap}
   .trailjump:hover{text-decoration:underline}
   .badcount{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:22px;padding:0 6px;border-radius:999px;background:var(--dont);color:#fff;font-size:12px;font-weight:900;vertical-align:middle;margin-left:2px}
@@ -1454,6 +1459,9 @@ function discoveryFunnel(D){
   // being shown here. Open by default too — this is the whole point of "how we got here", not a
   // detail worth hiding behind a click.
   var candBySym={}; (D.candidates||[]).forEach(function(c){candBySym[c.sym+'|'+c.region]=c;});
+  // #188 follow-up (user ask) — colour each pill by the funnel stage it reached: served (a real pick),
+  // shortlisted (scored candidate), or scanned-only (named but didn't make the shortlist).
+  var servedSyms={}; (D.regions||[]).forEach(function(rg){(rg.picks||[]).forEach(function(p){if(p.sym&&p.sym!=='NONE')servedSyms[p.sym+'|'+rg.id]=1;});});
   // #138 (user ask): show each ticker with its real score AND name, sorted highest-score-first —
   // was previously shown in whatever order discovery.tickers[] happened to be authored in, with
   // just the bare symbol. Unscored entries (no matching candidate) sort last, not first.
@@ -1468,12 +1476,13 @@ function discoveryFunnel(D){
     var jc=(c&&c.score&&c.score.buy_now!=null&&c.score.detail)?juiceChip(c.score,c.sym,c.name,signalRows(c,c.region||'us')):(sc>=0?'<span class="dvscore">🍊 '+sc+'</span>':'');
     var nm=(c&&c.name)?esc(c.name):(t.signal?esc(t.signal):'');
     var net=t.source?'<span class="dvnet" title="Found via the '+esc(t.source)+' net">'+(NETICON[t.source]||'')+' '+esc(t.source)+'</span>':'';
-    return '<div class="dvpill">'+
+    var stage=servedSyms[t.sym+'|'+t.region]?'dv-served':(c?'dv-short':'dv-scan');
+    return '<div class="dvpill '+stage+'">'+
       '<div class="dvpt"><b>'+esc(t.sym)+'</b>'+(t.region?'<span class="dvflag">'+(t.region==='au'?'AU':'US')+'</span>':'')+(jc||'')+'</div>'+
       ((nm||net)?'<div class="dvps">'+nm+((nm&&net)?' · ':'')+net+'</div>':'')+
     '</div>';
   }).join('');
-  return '<div class="funnel"><div class="fnrow"><span class="fnn">'+scanned+'</span> scanned <span class="fnar">→</span> <span class="fnn">'+shortlisted+'</span> shortlisted <span class="fnar">→</span> <span class="fnn">'+served+'</span> served</div>'+
+  return '<div class="funnel"><div class="fnrow"><span class="fnn fnn-scan">'+scanned+'</span> scanned <span class="fnar">→</span> <span class="fnn fnn-short">'+shortlisted+'</span> shortlisted <span class="fnar">→</span> <span class="fnn fnn-served">'+served+'</span> served</div>'+
     (list?'<details class="dvdet" open><summary>see the '+listedN+' we can name from this run</summary><div class="dvlist">'+list+'</div></details>':'')+'</div>';
 }
 // "The Misses" (#63): the day's real top movers, checked against what we actually scanned/served —
@@ -2413,6 +2422,10 @@ function render(D,H){
     _keepIdx=_loseIdx.filter(function(i){return _cands[i].heat==='mid';});
     _loseIdx=_loseIdx.filter(function(i){return _cands[i].heat==='cold';});
   }
+  // #205 (user asked twice) — sort each bucket by real score DESCENDING. Before this the pot was in
+  // discovery order within its heat bucket, so an 85 could sit below a 56 — confusing for a "ranked" list.
+  var _byScore=function(a,b){var sa=(_cands[a].score&&_cands[a].score.buy_now)||0,sb=(_cands[b].score&&_cands[b].score.buy_now)||0;return sb-sa;};
+  _keepIdx.sort(_byScore); _loseIdx.sort(_byScore);
   var _potN=_keepIdx.length+_loseIdx.length;
   var _bargainIdx=[]; _cands.forEach(function(c,i){ if((c.region||'us')===MKT&&isBargain(c)) _bargainIdx.push(i); });
   var bargainCards=_bargainIdx.map(function(i){return potCard(_cands[i],i);}).join('');
