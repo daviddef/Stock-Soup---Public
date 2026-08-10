@@ -1104,7 +1104,7 @@
   .tmx-symrow{display:flex;align-items:baseline;gap:6px;flex-wrap:wrap;justify-content:center}
   .tmx-sym{font-weight:900;font-size:15px;letter-spacing:-.01em}
   .tmx-chg{font-size:11px;font-weight:900}
-  .tmx-name{font-size:8.5px;font-weight:700;color:var(--muted);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .tmx-name{font-size:9px;font-weight:700;color:var(--muted);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.25}
   .tmx-spark{width:100%;margin:3px 0 1px}
   .tmx-spark .misschart{min-height:26px} .tmx-spark .misschart-mm{display:none} .tmx-spark .misschart-flag{display:none} .tmx-spark .misschart-load{font-size:9px;color:var(--faint)}
   .tmx-botrow{display:flex;align-items:center;gap:5px;flex-wrap:wrap;justify-content:center;margin-top:auto}
@@ -1114,6 +1114,23 @@
   .tmx-skip{border-color:var(--dont)} .tmx-skip .tmx-sym{color:var(--dont)}
   .tmx-mid{border-color:var(--hold,#e0a92e)}
   .tmx-legend{text-align:center;font-size:10px;color:var(--faint);margin-top:8px;letter-spacing:.02em}
+  /* #193 — 3×3 polish: a touch more breathing room + consistent baseline so the 9 cells read as one tidy set */
+  .tmx-cell{line-height:1.15}
+  .tmx-symrow{min-height:20px}
+  /* #199 — the Simple-view whole-pot: score-sorted, both markets, one threshold slider */
+  .spotwrap{max-width:540px;margin:20px auto 4px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px 14px 8px}
+  .spot-h{text-align:center;font-size:13.5px;font-weight:800;color:var(--ink);margin-bottom:8px} .spot-h b{color:var(--broth)}
+  .spot-ctl{display:flex;align-items:center;justify-content:center;gap:8px;font-size:12px;color:var(--muted);font-weight:700;margin-bottom:10px}
+  .spot-ctl b{color:var(--ink);min-width:34px;text-align:center} .spot-ctl input[type=range]{flex:1;max-width:220px;accent-color:var(--broth)}
+  .spot-list{display:flex;flex-direction:column;gap:5px}
+  .spot-row{display:flex;align-items:center;gap:8px;padding:7px 9px;border:1px solid var(--line);border-radius:10px;background:var(--surface-2);cursor:pointer;transition:border-color .12s}
+  .spot-row:hover{border-color:var(--broth)}
+  .spot-flag{flex:0 0 auto;font-size:13px}
+  .spot-sym{flex:0 0 auto;font-weight:900;font-size:13.5px;min-width:44px}
+  .spot-name{flex:1 1 auto;min-width:0;font-size:11.5px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .spot-px{flex:0 0 auto;font-size:12px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--ink)}
+  .spot-chip{flex:0 0 auto}
+  .spot-none{text-align:center;font-size:12px;color:var(--faint);padding:10px 0}
   .vgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;max-width:540px;margin:4px auto 0}
   @media(max-width:420px){.vgrid{grid-template-columns:1fr}}
   .vcard{position:relative;background:var(--surface);border:2px solid var(--line);border-radius:22px;
@@ -3102,7 +3119,7 @@ document.addEventListener('click',function(e){
 // → analyst fallback). Delegated + bubble-phase so a tap on the 🍊 chip (its own capturing listener above,
 // which stopPropagation's) still opens juice instead; the closest('.juicebtn') guard is belt-and-braces.
 document.addEventListener('click',function(e){
-  var c=e.target.closest('.card-sugg'); if(!c)return;
+  var c=e.target.closest('.card-sugg,.spot-row'); if(!c)return;   // #199 spot-rows reuse the same open path
   if(e.target.closest('.juicebtn')||e.target.closest('a'))return;
   e.preventDefault(); openMover(c.dataset.suggSym, c.dataset.suggRegion);
 });
@@ -5063,6 +5080,7 @@ document.getElementById('overlay').addEventListener('click',function(e){if(e.tar
 
 /* ---- View mode: simple (mobile default) vs full, with toggle ---- */
 var VIEW = null, SREGION = 'au', PULSES = null, TRACK = null, MKT = 'au', OUTCOMES = null, TAB = null, RUNNING = null, RUNLOG = [], WL_FILTER = 'all';
+var SIMPLE_POT_THR = 50;   // #199 — the Simple-view whole-pot score threshold (persists across re-renders)
 var TABLABEL={menu:"Tonight's Menu",reviews:'Dinner Reviews',faves:'Favourite Course',kitchen:'Inside the Kitchen'};
 function switchTab(t){
   TAB = t; try{ localStorage.setItem('soup_tab', t); }catch(e){}
@@ -5181,6 +5199,28 @@ function tierMatrixHtml(D,rid){
     '<div class="tmx">'+head+riskbar+body+'</div>'+
     '<div class="tmx-legend">🌶️ wilder, whole-market  ·  🛡️ safer, catalyst-backed → tap any square</div></div>';
 }
+// #199 (user ask) — a single, score-sorted, threshold-filterable view of the WHOLE candidate pot across
+// BOTH markets, added to the Simple view below the 3×3. All tiers of names we scored, one slider ("only
+// show 50+"), no market toggle needed here — it's the combined summary. The 3×3 above stays (it's the
+// tier×timeframe hero); this is the "just show me everything good, ranked" companion.
+function simpleFullPotHtml(D){
+  var cands=(D.candidates||[]).filter(function(c){return c && c.sym && c.sym!=='NONE' && c.score && c.score.buy_now!=null;})
+    .slice().sort(function(a,b){return (b.score.buy_now||0)-(a.score.buy_now||0);});
+  if(!cands.length) return '';
+  var rows=cands.map(function(c){
+    var chip=juiceChip(c.score,c.sym,c.name,signalRows(c,c.region||'au'));
+    return '<div class="spot-row" data-spot-score="'+(c.score.buy_now||0)+'" data-sugg-sym="'+esc(c.sym)+'" data-sugg-region="'+esc(c.region||'au')+'" role="button" tabindex="0" aria-label="'+esc(c.sym)+' details">'+
+      '<span class="spot-flag">'+((c.region||'au')==='au'?'🇦🇺':'🌏')+'</span>'+
+      '<span class="spot-sym">'+esc(c.sym)+'</span>'+
+      '<span class="spot-name">'+esc(c.name||'')+'</span>'+
+      '<span class="spot-px">'+esc(c.price||'')+'</span>'+
+      '<span class="spot-chip">'+chip+'</span></div>';
+  }).join('');
+  return '<div class="spotwrap"><div class="spot-h">🍲 The whole pot — <b>'+cands.length+'</b> names we scored, ranked</div>'+
+    '<div class="spot-ctl">Only show <b id="spotThrLbl">'+SIMPLE_POT_THR+'+</b> <input type="range" id="spotThr" min="0" max="90" step="5" value="'+SIMPLE_POT_THR+'" aria-label="Minimum score to show"></div>'+
+    '<div class="spot-list" id="spotList">'+rows+'</div>'+
+    '<div class="spot-none" id="spotNone" hidden>Nothing scoring that high right now — drag the slider down.</div></div>';
+}
 function renderSimple(D){
   var r = D.risk||{};
   var sStamp = stampNoWeekday(D.stamp);
@@ -5211,6 +5251,7 @@ function renderSimple(D){
       (themeLine?'<div class="vtheme">'+esc(themeLine)+'</div>':'')+'</div>'+
     tierMatrixHtml(D,rid)+   // #172/#182 — the 3×3 IS the fun Villager-card grid now (mascots + stickers + 🍊),
                              // so the separate 3-up frog/pig cards below were pure duplication (user-flagged) — removed.
+    simpleFullPotHtml(D)+    // #199 — the whole scored pot, both markets, one score slider
     '<button class="sfull" id="viewFull2">🔍 Show me the boring grown-up version</button>'+
     '<footer>Not financial advice — just a friendly village guide. · The Stock Soup, served hot, hourly</footer></div>';
   wireSimple(D);
@@ -5231,6 +5272,18 @@ function wireSimple(D){
   var dbS=document.getElementById('docsBtnS'); if(dbS){ if(isAdmin()){ dbS.style.display=''; dbS.onclick=openDocs; } }
   var hbS=document.getElementById('healthBtnS'); if(hbS){ if(isAdmin()){ hbS.style.display=''; hbS.onclick=openDataHealth; } }
   document.querySelectorAll('.stoprail .mkf[data-region]').forEach(function(b){b.onclick=function(){ if(b.dataset.region===MKT)return; MKT=b.dataset.region; renderSimple(D); };});
+  // #199 — whole-pot score-threshold slider: show/hide rows client-side (no re-render), persist the level
+  var spotThr=document.getElementById('spotThr');
+  if(spotThr){
+    var applySpot=function(){
+      var t=+spotThr.value; SIMPLE_POT_THR=t;
+      var lbl=document.getElementById('spotThrLbl'); if(lbl) lbl.textContent=t+'+';
+      var shown=0;
+      document.querySelectorAll('#spotList .spot-row').forEach(function(r){ var ok=(+r.dataset.spotScore)>=t; r.style.display=ok?'':'none'; if(ok)shown++; });
+      var none=document.getElementById('spotNone'); if(none) none.hidden=shown>0;
+    };
+    spotThr.addEventListener('input', applySpot); applySpot();
+  }
   bindTierPills();   // #152 tier pills in the simple-view header too
   function regionOf(id){return (D.regions||[]).filter(function(x){return x.id===id;})[0];}
   // #172 — 3×3 matrix cells open the real pick modal for that tier × timeframe
