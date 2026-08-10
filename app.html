@@ -340,6 +340,31 @@
   .docsclose{width:34px;height:34px;border-radius:9px;border:1px solid var(--line);background:var(--surface-2);color:var(--ink);font-size:15px;cursor:pointer}
   .docsbody{flex:1;overflow:hidden}
   .docsframe{width:100%;height:100%;border:0;background:var(--ground)}
+  /* #246/#247 — inline user-facing docs (User Guide + Advisor brief) rendered directly in the docs shell */
+  .docpage{height:100%;overflow-y:auto;-webkit-overflow-scrolling:touch}
+  .docpage .dpwrap{max-width:760px;margin:0 auto;padding:26px 20px 90px}
+  .docpage .dplede{font-size:16px;color:var(--muted);line-height:1.6;margin:0 0 8px}
+  .docpage .dptoc{display:flex;flex-wrap:wrap;gap:7px;margin:16px 0 8px}
+  .docpage .dptoc a{font-size:12px;font-weight:700;color:var(--broth);background:var(--surface-2);border:1px solid var(--line);border-radius:999px;padding:4px 11px;text-decoration:none}
+  .docpage .dptoc a:hover{border-color:var(--broth)}
+  .docpage section{margin-top:26px;scroll-margin-top:14px}
+  .docpage h2{font-size:19px;font-weight:900;margin:0 0 4px;letter-spacing:-.01em}
+  .docpage h2 .dpn{color:var(--broth);margin-right:8px}
+  .docpage p{font-size:14.5px;line-height:1.6;color:var(--ink);margin:8px 0}
+  .docpage .sub{color:var(--muted)}
+  .docpage ul{margin:8px 0;padding-left:2px;list-style:none}
+  .docpage li{font-size:14px;line-height:1.55;color:var(--ink);margin:7px 0;padding-left:22px;position:relative}
+  .docpage li::before{content:"–";position:absolute;left:4px;color:var(--broth);font-weight:800}
+  .docpage li b{color:var(--ink)}
+  .docpage .dpcard{background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--broth);border-radius:12px;padding:13px 15px;margin:10px 0}
+  .docpage .dpcard.g{border-left-color:var(--buy)} .docpage .dpcard.r{border-left-color:var(--dont)}
+  .docpage .dptier{display:grid;grid-template-columns:1fr;gap:10px;margin:12px 0}
+  @media(min-width:620px){.docpage .dptier{grid-template-columns:repeat(3,1fr)}}
+  .docpage .dpt{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 13px}
+  .docpage .dpt h3{margin:0 0 4px;font-size:14px} .docpage .dpt p{font-size:12.5px;margin:2px 0;color:var(--muted)}
+  .docpage .dpt.t1{border-top:3px solid var(--buy)} .docpage .dpt.t2{border-top:3px solid var(--hold,#e0a92e)} .docpage .dpt.t3{border-top:3px solid var(--dont)}
+  .docpage .dpfoot{margin-top:34px;padding-top:16px;border-top:1px solid var(--line);font-size:12.5px;color:var(--faint);line-height:1.6}
+  .docpage code{background:var(--surface-2);border-radius:5px;padding:1px 6px;font-size:12.5px}
   .docsload{padding:44px 20px;text-align:center;color:var(--muted)}
   .anload{padding:34px 6px;text-align:center;color:var(--muted);font-size:14px}
   .anchips{display:flex;flex-wrap:wrap;gap:7px;margin:2px 0 10px}
@@ -2556,6 +2581,8 @@ function applyDeepLink(){
     setTimeout(function(){ try{ openDocs(parts[1]||null); }catch(e){} },30);
     return;
   }
+  if(parts[0]==='guide'){ setTimeout(function(){ try{ openUserGuide(); }catch(e){} },30); return; }
+  if(parts[0]==='method'){ setTimeout(function(){ try{ openExpertBrief(); }catch(e){} },30); return; }
   if(TABNAMES[parts[0]]) switchTab(parts[0]);
 }
 function openSym(sym,region){
@@ -2951,7 +2978,9 @@ function render(D,H){
           '<button class="bmitem" id="shareTabBtn" role="menuitem">🔗 Share this page</button>'+
           '<button class="bmitem" id="viewBtn" role="menuitem">😋 Simple view</button>'+
           '<button class="bmitem" id="themeBtn" role="menuitem">🌗 Switch theme</button>'+
-          '<button class="bmitem" id="docsBtn" role="menuitem" style="display:none">📖 Documentation</button>'+
+          '<button class="bmitem" id="guideBtn" role="menuitem">📖 User guide</button>'+
+          '<button class="bmitem" id="methodBtn" role="menuitem">🎓 For your advisor</button>'+
+          '<button class="bmitem" id="docsBtn" role="menuitem" style="display:none">📖 Kitchen Manual</button>'+
           '<button class="bmitem" id="healthBtn" role="menuitem" style="display:none">💓 Data-source health</button>'+
         '</div></div>'+
     '</div></div>'+
@@ -4732,6 +4761,105 @@ function renderAnalyst(a){
   }
 }
 // Admin methodology docs — fetched privately from the Worker (admin-gated), shown in an isolated iframe.
+// #246/#247 — two user-facing docs rendered inline in the docs shell (reuses .docsov/.docsbar/.docsbody).
+// openDocPage renders authored HTML directly (no fetch/iframe like the admin Kitchen Manual) + wires
+// close/Escape + a shareable #/guide or #/method hash.
+function openDocPage(hash, titleHtml, bodyHtml){
+  var ov=document.getElementById('docsOverlay');
+  if(!ov){ ov=document.createElement('div'); ov.id='docsOverlay'; ov.className='docsov'; document.body.appendChild(ov); }
+  ov.innerHTML='<div class="docsbar"><span class="docstitle">'+titleHtml+'</span><span style="display:flex;align-items:center;gap:8px">'+mShareBtn(hash,'The Stock Soup')+'<button class="docsclose" id="docsClose" aria-label="Close">✕</button></span></div><div class="docsbody"><div class="docpage"><div class="dpwrap">'+bodyHtml+'</div></div></div>';
+  ov.style.display='flex';
+  try{ history.replaceState(null,'',location.pathname+location.search+'#'+hash); }catch(e){}
+  var closeDocs=function(){ ov.style.display='none'; try{ history.replaceState(null,'',location.pathname+location.search+'#/'+(TAB||'menu')); }catch(e){} };
+  document.getElementById('docsClose').onclick=closeDocs;
+  document.addEventListener('keydown',function esc(e){ if(e.key==='Escape'){ closeDocs(); document.removeEventListener('keydown',esc); } });
+}
+function toc(items){ return '<div class="dptoc">'+items.map(function(i){return '<a href="#'+i[0]+'">'+i[1]+'</a>';}).join('')+'</div>'; }
+
+// ---- The User Guide (plain English, no sources/methods) ----
+function openUserGuide(){
+  var b=''+
+   '<p class="dplede">A friendly walkthrough of what The Stock Soup does and how to read it — no jargon, no black box. It’s a nightly <b>menu of stock ideas</b> for the Australian and US markets, each one scored out of 100 and graded openly afterwards.</p>'+
+   toc([['g-funnel','How we narrow it down'],['g-types','The 3 Types'],['g-time','Day / Week / Month'],['g-score','The 🍊 score'],['g-signals','The signals'],['g-risk','The risk meter'],['g-honest','Keeping honest'],['g-use','Using it']])+
+   '<section id="g-funnel"><h2><span class="dpn">1</span>How we narrow it down</h2>'+
+     '<p>There are thousands of listed companies. Every run we cast several <b>nets</b> to catch anything interesting — fresh news and catalysts, a full sweep of the whole market for chart setups, the earnings calendar, and brand-new listings. Everything those nets catch is then <b>scored by the same model</b>, and only the best few make tonight’s menu.</p>'+
+     '<p class="sub">The key thing: <b>nothing is hand-picked.</b> A model ranks every candidate on the same evidence, so a pick earns its place — it isn’t someone’s hunch.</p></section>'+
+   '<section id="g-types"><h2><span class="dpn">2</span>The three “Types”</h2>'+
+     '<p>Every idea belongs to one of three types — think of them as <b>risk profiles</b>, safest to wildest:</p>'+
+     '<div class="dptier">'+
+       '<div class="dpt t1"><h3>🛡️ Type 1 · Catalyst</h3><p>Backed by a real reason <b>today</b> — news, a deal, a result. The most grounded picks.</p></div>'+
+       '<div class="dpt t2"><h3>⚙️ Type 2 · Quant</h3><p>Chart & technical setups the news misses — a full-market scan for quiet momentum.</p></div>'+
+       '<div class="dpt t3"><h3>🌶️ Type 3 · Widest</h3><p>The boldest, per-indicator leaderboard picks. Highest risk, highest spice.</p></div>'+
+     '</div>'+
+     '<p class="sub">You choose which type you’re looking at with the T1 / T2 / T3 toggle. Same scoring model behind all three — just different ways of finding candidates.</p></section>'+
+   '<section id="g-time"><h2><span class="dpn">3</span>Day, Week &amp; Month</h2>'+
+     '<ul><li><b>⚡ Day</b> — act around <b>today</b>; only offered when there’s a fresh trigger the price hasn’t already run on.</li>'+
+     '<li><b>📅 Week</b> — the sweet spot: a setup that should play out over about a week.</li>'+
+     '<li><b>📈 Month</b> — a slower, quality-led hold measured in weeks, not days.</li></ul></section>'+
+   '<section id="g-score"><h2><span class="dpn">4</span>The 🍊 score</h2>'+
+     '<p>Every idea carries a <b>0–100 score</b> — the model’s honest read of how attractive it looks right now:</p>'+
+     '<ul><li><b>Strong Buy-Now</b> — the strongest reads</li><li><b>Buy</b> — solid, worth a look</li><li><b>Watch</b> — interesting but not quite there</li><li><b>Pass</b> — the model isn’t convinced</li></ul>'+
+     '<p>Tap the 🍊 chip on any card to see <b>every ingredient</b> behind the number — the price picture, each signal, and any penalties or bonuses. Nothing hidden.</p></section>'+
+   '<section id="g-signals"><h2><span class="dpn">5</span>The signals we read</h2>'+
+     '<ul>'+
+     '<li><b>Trend</b> — is it climbing and trading near its recent highs, or drifting below its averages?</li>'+
+     '<li><b>How hot (RSI)</b> — is it overbought and stretched, or cheap and coiled?</li>'+
+     '<li><b>Volume</b> — is real money behind the move, or is it thin and unconvincing?</li>'+
+     '<li><b>Catalyst</b> — a real <i>event</i> (a result, a deal, an upgrade) vs just chart momentum.</li>'+
+     '<li><b>Analyst view</b> — are the professionals upgrading or downgrading (US names).</li>'+
+     '<li><b>Volatility</b> — how much it swings day to day, which is really about position sizing.</li>'+
+     '<li><b>Relative strength</b> — is it actually <i>beating the market</i>, not just up in a rising tide?</li>'+
+     '</ul></section>'+
+   '<section id="g-risk"><h2><span class="dpn">6</span>The risk meter</h2>'+
+     '<p>The gradient bar at the top is the <b>market’s weather</b> — how much appetite for risk is in the air (🔴 hide the cash → 🟢 send it). It blends several market-wide gauges, including the bond market’s leading read. It’s the same backdrop for both markets — tap it any time for the plain-English take.</p></section>'+
+   '<section id="g-honest"><h2><span class="dpn">7</span>How we keep ourselves honest</h2>'+
+     '<div class="dpcard g"><b>The scorecard</b> — every past call is graded against the market over its own timeframe. Green means it made money; “beat mkt” means it also did better than the whole market.</div>'+
+     '<div class="dpcard"><b>The post-mortem</b> — after each session we grade the <i>whole</i> shortlist, not just what we served, and show which winners we passed on (and why) and which losers we dodged.</div>'+
+     '<div class="dpcard"><b>The misses</b> — the day’s big movers we didn’t catch, so the wins aren’t the only thing you see.</div></section>'+
+   '<section id="g-use"><h2><span class="dpn">8</span>Using it day to day</h2>'+
+     '<ul><li><b>Watchlist</b> — tap ＋ on any card to track it; set your ideal buy price and get a nudge when it’s reached.</li>'+
+     '<li><b>“What would you do?”</b> — a plain read on any ticker, even one that isn’t in tonight’s menu.</li>'+
+     '<li><b>Simple vs Full view</b> — the 📋 toggle swaps between the dumbed-down one-pager and the full detail.</li>'+
+     '<li><b>Run Schedule</b> — see when the kitchen last cooked and what’s coming up next.</li></ul></section>'+
+   '<div class="dpfoot">This is an information tool, not financial advice, and not a recommendation to buy or sell anything. Scores are one model’s read of public price data — always do your own research. 🍲</div>';
+  openDocPage('/guide','📖 The User Guide',b);
+}
+
+// ---- The Advisor / expert methodology brief (technical; describe sources by category, not vendor) ----
+function openExpertBrief(){
+  var b=''+
+   '<p class="dplede">A short methodology brief for someone who reads markets for a living. The Stock Soup is a systematic, evidence-weighted screen-and-score engine across ASX + US equities, with an open accountability loop. Sources are described by category, not vendor.</p>'+
+   toc([['m-model','The scoring model'],['m-guard','Guardrails'],['m-nudge','Layered nudges'],['m-tiers','The three tiers'],['m-disc','Discovery'],['m-time','Timeframe routing'],['m-risk','Risk framework'],['m-acct','Accountability & learning'],['m-cad','Cadence & limits']])+
+   '<section id="m-model"><h2><span class="dpn">1</span>The scoring model</h2>'+
+     '<p>A <b>0–100 evidence-weighted score</b> across weighted factors: trend / proximity-to-52-week-high, catalyst &amp; news-sentiment, post-earnings-announcement drift (PEAD), analyst-revision breadth, volume expansion, and insider activity. Category weights <b>renormalise</b> when a factor has no data for a market (e.g. ASX carries no analyst-rating or earnings-surprise feed, so those categories are dropped and the remainder re-weighted rather than structurally capping the score). Bands: <b>Strong Buy-Now / Buy / Watch / Pass</b>.</p></section>'+
+   '<section id="m-guard"><h2><span class="dpn">2</span>Guardrails</h2>'+
+     '<ul><li><b>Hard-exclude of extended momentum</b> — a name trading too far above its 20-day mean is capped (tighter still for the monthly slot, whose hold eats the full mean-reversion).</li>'+
+     '<li><b>Penalties</b> — LATE / already-priced-in entries, overbought RSI, elevated or fast-rising short interest, and capital raises.</li>'+
+     '<li><b>Volume/ADX-aware softening</b> — a breakout confirmed by heavy volume and a rising trend isn’t punished as hard as an exhausted, low-conviction run.</li></ul></section>'+
+   '<section id="m-nudge"><h2><span class="dpn">3</span>Layered nudges</h2>'+
+     '<p>On top of the weighted factors, bounded adjustments for: MACD+ADX trend quality, Bollinger %B band pierces, relative strength vs the name’s own index, EMA20/50 confirmation, directional news-sentiment, a leading <b>credit/macro-regime</b> read, and a <b>pre-position bonus</b> for a known, dated upcoming catalyst.</p></section>'+
+   '<section id="m-tiers"><h2><span class="dpn">4</span>The three tiers</h2>'+
+     '<div class="dptier">'+
+       '<div class="dpt t1"><h3>Type 1 — Catalyst</h3><p>Event/news-driven discovery, then scored. The production picks.</p></div>'+
+       '<div class="dpt t2"><h3>Type 2 — Quant</h3><p>Whole-market technical screen behind a liquidity floor.</p></div>'+
+       '<div class="dpt t3"><h3>Type 3 — Per-indicator</h3><p>Cross-sectional leaderboards by single indicators.</p></div>'+
+     '</div><p class="sub">The same scoring model grades all three — the tiers differ only in how candidates are surfaced.</p></section>'+
+   '<section id="m-disc"><h2><span class="dpn">5</span>Discovery</h2>'+
+     '<p>Each run scans a <b>union of nets</b> — a live news &amp; macro sweep (including geopolitics and rate decisions), a whole-market technical scan, the earnings calendar, and new listings — then dedupes and <b>scores every name</b>, not just what a single net surfaced. The exact scanned union is recorded so “N scanned → M shortlisted” is always inspectable.</p></section>'+
+   '<section id="m-time"><h2><span class="dpn">6</span>Timeframe routing</h2>'+
+     '<p><b>Day</b> requires a strict, fresh, not-yet-priced catalyst; <b>Week</b> is the default; the <b>monthly</b> slot is quality-tilted with tighter extension guards. This reflects a backtest in which the week horizon was the only positive-expectancy one and an unguarded monthly cohort was the weakest — so the routing is empirical, not stylistic.</p></section>'+
+   '<section id="m-risk"><h2><span class="dpn">7</span>Risk framework</h2>'+
+     '<p>A multi-factor <b>0–100 risk-appetite composite</b> — implied volatility, credit spreads + the yield curve + financial conditions (the leading bond-market read), crypto, gold, oil and FX — feeds the market read and tempers conviction. The credit/curve dimension is genuinely <i>leading</i>: the plumbing turns before equities.</p></section>'+
+   '<section id="m-acct"><h2><span class="dpn">8</span>Accountability &amp; learning</h2>'+
+     '<p>Every <b>served pick and the entire scored pot</b> are graded against the relevant index over each pick’s own horizon. A <b>per-session post-mortem</b> attributes each miss/dodge to the model’s own factor detail (e.g. “hard-excluded as extended” vs “no pre-scan signal — catalyst fired intraday”). Outcomes feed a weight-tuning loop, and every candidate’s feature vector + realised return is logged as the training set for a forthcoming learn-to-rank model that will <b>blend with, not replace,</b> the rules.</p></section>'+
+   '<section id="m-cad"><h2><span class="dpn">9</span>Cadence &amp; honest limitations</h2>'+
+     '<ul><li>EOD-based signals; ~10-minute re-pricing through each market’s session; daily whole-market scans; catalyst runs timed near each session.</li>'+
+     '<li><b>EOD-only</b> — no true intraday VWAP yet (an intraday relative-volume/VWAP pilot is on the roadmap).</li>'+
+     '<li>ASX fundamental / analyst / earnings-surprise coverage is thinner than US and is being widened.</li>'+
+     '<li>Binary events (e.g. clinical read-outs) are irreducibly unpredictable and are deliberately not chased.</li></ul></section>'+
+   '<div class="dpfoot">Data is sourced across categories — a live read of news, market movers and analyst actions; regulatory filings; exchange short-interest; and central-bank macro series — deliberately described by category rather than by vendor. This is a personal, systematic research tool. Not financial advice, not a solicitation, no performance guarantee. 🍲</div>';
+  openDocPage('/method','🎓 Methodology brief',b);
+}
 function openDocs(section){
   // openDocs is wired as a bare `el.onclick=openDocs` in a couple of places (not a wrapped call),
   // so the browser's click event would land here as `section` — guard so only a real string counts.
@@ -5492,6 +5620,8 @@ function wire(D){
     bm.querySelectorAll('.bmitem,.bmupd').forEach(function(it){ it.addEventListener('click',closeBM); });
   }
   var db=document.getElementById('docsBtn'); if(db){ if(isAdmin()){ db.style.display=''; db.onclick=openDocs; } else { db.style.display='none'; } }
+  var gb=document.getElementById('guideBtn'); if(gb) gb.onclick=openUserGuide;
+  var mb=document.getElementById('methodBtn'); if(mb) mb.onclick=openExpertBrief;
   var hb=document.getElementById('healthBtn'); if(hb){ if(isAdmin()){ hb.style.display=''; hb.onclick=openDataHealth; } else { hb.style.display='none'; } }
   // Unified Favourites bar: one ticker input + market toggle → either ＋Watchlist or 🧠 What to do?
   (function(){ var inp=document.getElementById('uniInput'), au=document.getElementById('uniAu'), us=document.getElementById('uniUs'),
@@ -5811,7 +5941,9 @@ function renderSimple(D){
           '<button class="bmitem" id="refreshBtnS" role="menuitem">↻ Refresh prices</button>'+
           '<button class="bmitem" id="viewFull" role="menuitem">📋 Full view</button>'+
           '<button class="bmitem" id="themeBtn2" role="menuitem">🌗 Switch theme</button>'+
-          '<button class="bmitem" id="docsBtnS" role="menuitem" style="display:none">📖 Documentation</button>'+
+          '<button class="bmitem" id="guideBtnS" role="menuitem">📖 User guide</button>'+
+          '<button class="bmitem" id="methodBtnS" role="menuitem">🎓 For your advisor</button>'+
+          '<button class="bmitem" id="docsBtnS" role="menuitem" style="display:none">📖 Kitchen Manual</button>'+
           '<button class="bmitem" id="healthBtnS" role="menuitem" style="display:none">💓 Data-source health</button>'+
         '</div></div></div>'+
       // #261 (user ask) — Simple is the dumb-simple view: drop the date/next-run line, the AU/US market
@@ -5850,6 +5982,8 @@ function wireSimple(D){
   var sitS=document.getElementById('signInTopS'); if(sitS){ sitS.textContent=signedIn()?'👤 Account':'👤 Sign in'; sitS.onclick=openAccount; }
   var rbS=document.getElementById('refreshBtnS'); if(rbS){ if(!isAdmin()) rbS.style.display='none'; else rbS.onclick=function(){refreshPrices(rbS);}; }
   var dbS=document.getElementById('docsBtnS'); if(dbS){ if(isAdmin()){ dbS.style.display=''; dbS.onclick=openDocs; } }
+  var gbS=document.getElementById('guideBtnS'); if(gbS) gbS.onclick=openUserGuide;
+  var mbS=document.getElementById('methodBtnS'); if(mbS) mbS.onclick=openExpertBrief;
   var hbS=document.getElementById('healthBtnS'); if(hbS){ if(isAdmin()){ hbS.style.display=''; hbS.onclick=openDataHealth; } }
   document.querySelectorAll('.stoprail .mkf[data-region]').forEach(function(b){b.onclick=function(){ if(b.dataset.region===MKT)return; MKT=b.dataset.region; try{pushViewState();}catch(e){} renderSimple(D); };});
   // #199 — whole-pot score-threshold slider: show/hide rows client-side (no re-render), persist the level
