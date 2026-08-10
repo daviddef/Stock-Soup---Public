@@ -237,9 +237,9 @@
   .axt-wait{background:var(--surface-2);color:var(--muted)}
   .axhead2{margin-top:18px}
   .axv-buy{color:var(--buy)} .axv-sell{color:var(--dont)} .axv-warn{color:var(--hold)} .axv-hold{color:var(--muted)}
-  .axhold.ax-sell,.axpivot.ax-sell{border-color:rgba(255,77,77,.38);border-left-color:var(--dont);background:linear-gradient(180deg,rgba(255,77,77,.09),transparent 72%),var(--surface)}
-  .axpivot{cursor:pointer;transition:border-color .12s,transform .05s} .axpivot:active{transform:scale(.995)}
-  .axhold.ax-warn,.axcoming.ax-warn{border-color:rgba(255,197,61,.4);border-left-color:var(--hold);background:linear-gradient(180deg,rgba(255,197,61,.09),transparent 72%),var(--surface)}
+  .axhold.ax-sell,.axpivot.ax-sell,.axread.ax-sell{border-color:rgba(255,77,77,.38);border-left-color:var(--dont);background:linear-gradient(180deg,rgba(255,77,77,.09),transparent 72%),var(--surface)}
+  .axpivot,.axtier,.axread{cursor:pointer;transition:border-color .12s,transform .05s} .axpivot:active,.axtier:active,.axread:active{transform:scale(.995)}
+  .axhold.ax-warn,.axcoming.ax-warn,.axtier.ax-warn,.axread.ax-warn{border-color:rgba(255,197,61,.4);border-left-color:var(--hold);background:linear-gradient(180deg,rgba(255,197,61,.09),transparent 72%),var(--surface)}
   .axhold.ax-hold{border-color:var(--line);border-left-color:var(--muted);background:var(--surface)}
   .axcoming{cursor:pointer;transition:border-color .12s,transform .05s} .axcoming:active{transform:scale(.995)}
   .axchip{display:inline-flex;align-items:center;margin-left:2px}   /* #181 — 🍊 score chip on every action card */
@@ -1180,6 +1180,11 @@
   .jbarwrap{background:var(--surface-2);border-radius:5px;height:9px;overflow:hidden;display:block}
   .jbar{display:block;height:100%;background:var(--broth);border-radius:5px}
   .jnum{color:var(--muted);font-variant-numeric:tabular-nums;text-align:right;font-size:10.5px}
+  /* #215 follow-up — "why NN?" explainer connecting the headline score to the weighted factors */
+  .jwhy85{background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin:14px 0 4px}
+  .jwhy85-h{font-size:13px;font-weight:900;color:var(--ink);margin-bottom:6px}
+  .jwhy85 p{font-size:12.5px;color:var(--muted);line-height:1.5;margin:0 0 6px} .jwhy85 p:last-child{margin-bottom:0}
+  .jwhy85 b{color:var(--ink)} .jwhy85 .down{color:var(--dont)}
   /* #215 — per-signal grouped juice cards (checklist line + detail + its penalty/nudge, numbered) */
   .jsiglist{display:flex;flex-direction:column;gap:10px;margin-bottom:6px}
   .jsig{border:1px solid var(--line);border-left:3px solid var(--muted);border-radius:12px;padding:11px 13px;background:var(--surface)}
@@ -2324,10 +2329,34 @@ function actionsHtml(D){
       '<div class="axtop"><span class="axverb axv-warn">'+u.ic+' COMING UP</span><span class="axsym">'+esc(u.sym)+'</span>'+chip+'<span class="axpx mono">'+_when(u.days)+'</span></div>'+
       '<div class="axwhy">'+esc(u.what)+' — '+esc(u.why)+'</div></div>';
   }).join('');
+  // #181 — "Tonight's picks" (the tier buys): the actual Day/Week/Long recommendations for this market,
+  // as standard cards. Excludes any already shown at-price in "Ready right now" (no dupes) and NONE slots.
+  var _readySet={}; ready.forEach(function(it){_readySet[it.p.sym]=1;});
+  var tierBuys=[];
+  (D.regions||[]).forEach(function(rg){ if(rg.id!==MKT) return;
+    (rg.picks||[]).forEach(function(p,idx){ if(p.sym==='NONE'||_readySet[p.sym]) return; tierBuys.push({p:p,rg:rg,idx:idx}); }); });
+  var tierCards=tierBuys.map(function(it){ var p=it.p, chip=(p.score?'<span class="axchip">'+juiceChip(p.score,p.sym,p.name,signalRows(p,it.rg.id))+'</span>':'');
+    var wait=/wait|late|hold|skip|avoid|pass|don.t|steer/i.test(p.verdict||'');
+    return '<div class="axcard axtier ax-'+(wait?'warn':'buy')+'" data-region="'+esc(it.rg.id)+'" data-idx="'+it.idx+'" role="button" tabindex="0" aria-label="'+esc(p.sym)+'">'+
+      '<div class="axtop"><span class="axverb '+(wait?'axv-warn':'axv-buy')+'">'+(wait?'⏳':'🟢')+' '+esc((p.verdict||'GET IN').toUpperCase())+'</span>'+tfBW(p.tf)+'<span class="axsym">'+esc(p.sym)+'</span>'+chip+(p.price?'<span class="axpx mono">'+esc(p.price)+'</span>':'')+'</div>'+
+      '<div class="axwhy">'+esc(p.plain||(p.catalysts&&p.catalysts[0])||p.news||'')+'</div></div>';
+  }).join('');
+  // #181 — "Worth reading": the consolidated top-news items (macro items appear in both markets), each
+  // tone-coloured; tap opens the ticker read, and the headline links out to the source when we have it.
+  var news=(D.topNews||[]).filter(function(n){return !n.sym||(n.region||MKT)===MKT;}).slice(0,4);
+  var readCards=news.map(function(n){ var sym=n.sym, chip=(sym?_axChip(sym,n.region||MKT):'');
+    var vcls=n.tone==='bullish'?'buy':n.tone==='bearish'?'sell':'warn';
+    var head=n.url?'<a href="'+esc(n.url)+'" target="_blank" rel="noopener">'+esc(n.headline||'')+'</a>':esc(n.headline||'');
+    return '<div class="axcard axread ax-'+vcls+'"'+(sym?' data-up-sym="'+esc(sym)+'" data-up-region="'+esc(n.region||MKT)+'"':'')+' role="button" tabindex="0" aria-label="Read: '+esc(n.headline||'')+'">'+
+      '<div class="axtop"><span class="axverb axv-'+vcls+'">📰 READ</span>'+(sym?'<span class="axsym">'+esc(sym)+'</span>':'<span class="axsym" style="font-size:13px;color:var(--muted)">Macro</span>')+chip+'</div>'+
+      '<div class="axwhy">'+head+(n.why?' — '+esc(n.why):'')+'</div></div>';
+  }).join('');
   var out='';
   if(buyCards) out+='<div class="axhead">🎯 Ready right now <span class="axheadsub">— sensible, signalling, and at the price we’ve waited for</span></div><div class="axgrid">'+buyCards+'</div>';
+  if(tierCards) out+='<div class="axhead axhead2">🍽️ Tonight’s picks — the tier buys</div><div class="axgrid">'+tierCards+'</div>';
   if(holdCards) out+='<div class="axhead axhead2">📦 Your holdings — needs a decision</div><div class="axgrid">'+holdCards+'</div>';
   if(pivotCards) out+='<div class="axhead axhead2">🔄 Cooling off — themes turning</div><div class="axgrid">'+pivotCards+'</div>';
+  if(readCards) out+='<div class="axhead axhead2">📰 Worth reading — tonight’s news</div><div class="axgrid">'+readCards+'</div>';
   if(comingCards) out+='<div class="axhead axhead2">🔜 Coming up — on names you track</div><div class="axgrid">'+comingCards+'</div>';
   if(!holdCards) if(ownCount) out+='<div class="axhead axhead2">📦 Your holdings</div><div class="axnone axnone2">All '+ownCount+' of your holdings are sitting tight — <b>nothing to do right now</b>. They live in <b>Favourites</b>; we’ll flag one here the moment it hits a target, cools off, or drops hard.</div>';
   if(!out) out='<div class="axhead">🎯 Ready right now</div><div class="axnone">No green lights this second — nothing’s dropped to its buy price yet. That’s fine; patience is the edge. Tap <b>📦 I own it</b> on anything you hold and we’ll surface it here when there’s a real move to make. 🍲</div>';
@@ -2765,6 +2794,19 @@ function openJuice(id){
   if(score.heat&&score.heat>1) leg+='<span class="pen">− overheated '+Math.round(score.heat)+'</span>';
   var scoreViz=(facs.length?'<div class="scorebar">'+segs+'</div><div class="scorelegend">'+leg+'</div>':'')+
     (score.verdict?'<div class="rsimeta" style="margin-top:7px"><b>'+esc(score.verdict)+'</b>'+(score.child_sentence?' — '+esc(score.child_sentence):'')+'</div>':'');
+  // #215 follow-up (user: "how does it score 85 when only 2/8 signals look good?") — make the composition
+  // explicit. The score is the WEIGHTED FACTOR bar above (catalyst + trend/high + volume); the 8 technical
+  // checks below are secondary timing signals that only nudge it. This closes the gap between "2/8 green"
+  // and a high headline number.
+  var _facsSorted=facs.slice().sort(function(a,b){return b.pts-a.pts;});
+  var _dom=_facsSorted[0];
+  var whyBlock=facs.length?('<div class="jwhy85"><div class="jwhy85-h">🧮 Why '+score.buy_now+'/100 — not '+(j.sigRows?j.sigRows.filter(function(r){return r.tone==="pos";}).length:0)+'/'+((j.sigRows||[]).length)+'?</div>'+
+    '<p>The number is set by the <b>big weighted factors</b> in the bar above — '+
+      _facsSorted.map(function(f){return '<b>'+esc(SCORE_FLAB[f.k]||f.k)+' '+f.pts+'</b>';}).join(' + ')+
+      (score.heat&&score.heat>1?' <span class="down">− overheated '+Math.round(score.heat)+'</span>':'')+
+      ' = <b>'+score.buy_now+'</b>. '+(_dom?'Most of it is <b>'+esc(SCORE_FLAB[_dom.k]||_dom.k)+'</b>':'')+
+      (score.child_sentence?' — '+esc(score.child_sentence):'')+'.</p>'+
+    '<p>The <b>'+((j.sigRows||[]).length)+' technical checks</b> below are <b>secondary</b>: they cover short-term timing (is it overbought, stalling, stretched?) and only nudge the total by a few points. That’s why a stock can score high on a genuine catalyst even while several of those checks are amber or red. It’s a forward read on the <i>setup</i> — not a call on today’s move.</p></div>'):'';
   var sr=j.sigRows||[];
   // #215 (user ask) — group the breakdown BY SIGNAL, numbered. For each signal (RSI, Trend, …) show,
   // together in one card: the plain-English checklist line, the detail chart/explanation, and any
@@ -2804,7 +2846,7 @@ function openJuice(id){
       '<span class="jsig-read">not tied to one signal</span></div>'+
       '<div class="jsig-adjs">'+_left.map(function(a){return _adjHtml({pts:a.pts,why:((a.k||'').replace(/_/g,' '))+' — '+(a.why||'')});}).join('')+'</div></div>'):'';
   var ticked=sr.filter(function(r){return r.tone==='pos';}).length;
-  var sigSection=sr.length?('<p class="chkscore" style="margin:14px 0 10px">'+ticked+' / '+sr.length+' signals looking good ✅ — here they are, one by one:</p><div class="jsiglist">'+sigCards+otherCard+'</div>'):'';
+  var sigSection=sr.length?('<p class="chkscore" style="margin:16px 0 10px">The '+sr.length+' technical fine-tuning checks — <b>'+ticked+' outright green</b>, the rest neutral or cooling. These nudge the score; they don’t set it:</p><div class="jsiglist">'+sigCards+otherCard+'</div>'):'';
   var hh='font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:800;margin:4px 0 8px';
   // full model-weighting math kept, collapsed, for anyone who wants the raw category composition
   var deriv='<details class="jsec"><summary>🧮 The full derivation — category weights (advanced)</summary>'+
@@ -2816,7 +2858,7 @@ function openJuice(id){
     '<div class="mtop"><div class="msym" style="line-height:1.25">'+jhead+'</div></div></div>'+
     '<div class="mbody">'+
       (flags.length?'<p class="mtake" style="color:var(--dont)">'+flags.join(' · ')+'</p>':'')+
-      scoreViz+sigSection+deriv+
+      scoreViz+whyBlock+sigSection+deriv+
     '</div>';
   var ov=document.getElementById('overlay'); ov.classList.add('open'); ov.setAttribute('aria-hidden','false');
   document.getElementById('mClose').onclick=closeModal; document.getElementById('mClose').focus();
@@ -4741,7 +4783,7 @@ function wire(D){
     c.addEventListener('click',function(e){if(e.target.closest('a'))return;go();});
     c.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();go();}});
   });
-  document.querySelectorAll('.axcoming[data-up-sym]').forEach(function(c){   // #181 — Coming-up card → the ticker's analyst read
+  document.querySelectorAll('.axcoming[data-up-sym], .axread[data-up-sym]').forEach(function(c){   // #181 — Coming-up / Read card → the ticker's analyst read (headline <a> still opens the source)
     function go(){ openAnalyst(c.dataset.upSym, c.dataset.upRegion); }
     c.addEventListener('click',function(e){if(e.target.closest('a'))return;go();});
     c.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();go();}});
