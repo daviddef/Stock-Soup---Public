@@ -476,6 +476,12 @@
   .rltop{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:4px}
   .rltag{font-size:9.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;display:inline-flex;align-items:center;gap:6px}
   .rltag-maj{color:var(--broth)} .rltag-min{color:var(--faint)}
+  /* #178 — tier badge on run rows (T1 = catalyst pipeline · T2/T3 = whole-market daily scans) */
+  .rltier{font-size:9px;font-weight:900;letter-spacing:.04em;padding:2px 6px;border-radius:5px;margin-left:7px;vertical-align:middle}
+  .rltier-1{background:rgba(35,194,103,.14);color:var(--buy)}
+  .rltier-23{background:rgba(47,127,214,.14);color:#2f7fd6}
+  .rltag-scan{color:#2f7fd6}
+  .rlrow.rlscan{border-left-color:#2f7fd6;background:linear-gradient(90deg,rgba(47,127,214,.09),transparent 62%)}
   .rlrow.rllive{border-left-color:var(--buy);background:linear-gradient(90deg,rgba(35,194,103,.12),transparent 62%)}
   .rltag-live{color:var(--buy)}
   .rlrow.rlfail{border-left-color:var(--dont);background:linear-gradient(90deg,rgba(255,77,77,.1),transparent 62%)}
@@ -512,6 +518,10 @@
   .gantttick{position:absolute;top:2px;width:2px;height:10px;background:var(--faint);border-radius:1px}
   .ganttanchor{position:absolute;top:0;bottom:0;width:0;border-left:1.5px dashed var(--broth);opacity:.55}
   .ganttanchorlbl{position:absolute;top:-15px;left:2px;font-size:8.5px;font-weight:800;color:var(--broth);white-space:nowrap;opacity:.8}
+  .ganttanchor-next{opacity:.95;border-left-style:solid}   /* #179 — an UPCOMING scheduled run stands out from the faded past ones */
+  .ganttanchor-next .ganttanchorlbl{opacity:1}
+  .ganttnow{position:absolute;top:-2px;bottom:-2px;width:0;border-left:2px solid var(--ink);z-index:2}
+  .gl i.glnext{width:2px;height:10px;border-radius:0;background:var(--broth)}
   .ganttgrid{position:absolute;top:0;bottom:0;width:0;border-left:1px solid var(--line)}
   .ganttgridlbl{display:none}
   .ganttfoot{position:relative;height:14px;margin-top:2px;min-width:640px}
@@ -2980,7 +2990,10 @@ function kitchenHead(D){
 var MAJOR_ANCHORS=[[9,3],[12,4],[16,6],[22,47]];
 function runGanttHtml(){
   var H=(LAST&&LAST.H)||{};
-  var now=new Date(), winStart=new Date(now.getTime()-24*3600*1000);
+  // #179 — window is now the last 20h + the next 4h (still 24h wide), so UPCOMING scheduled runs
+  // actually render (the old window ended at `now`, so the whole point of a schedule — what's next —
+  // was never drawn). A "now" marker separates what's happened from what's still to come.
+  var now=new Date(), winStart=new Date(now.getTime()-20*3600*1000), winEnd=new Date(now.getTime()+4*3600*1000);
   function pctOf(ts){ return Math.max(0,Math.min(100,(ts-winStart.getTime())/(24*3600*1000)*100)); }
   function majTs(m){
     if(m.iso) return new Date(m.iso).getTime();
@@ -3011,11 +3024,11 @@ function runGanttHtml(){
   }).filter(Boolean);
   // scheduled anchor reference lines, today + yesterday (so the trailing part of a rolling 24h window still shows them)
   var anchors=[];
-  [0,-1].forEach(function(dayOff){
+  [1,0,-1].forEach(function(dayOff){   // include tomorrow so an early-morning view still shows the next anchor
     MAJOR_ANCHORS.forEach(function(hm){
       var d=new Date(now); d.setDate(d.getDate()+dayOff); d.setHours(hm[0],hm[1],0,0);
       var ts=d.getTime();
-      if(ts>=winStart.getTime()&&ts<=now.getTime()) anchors.push({x:pctOf(ts), label:(hm[0]<10?'0':'')+hm[0]+':'+(hm[1]<10?'0':'')+hm[1]});
+      if(ts>=winStart.getTime()&&ts<=winEnd.getTime()) anchors.push({x:pctOf(ts), upcoming:ts>now.getTime(), label:(hm[0]<10?'0':'')+hm[0]+':'+(hm[1]<10?'0':'')+hm[1]});
     });
   });
   var statusColor={done:'var(--buy)',live:'var(--broth)',fail:'var(--dont)',cancel:'var(--faint)'};
@@ -3026,8 +3039,10 @@ function runGanttHtml(){
     return '<div class="gantttick" style="left:'+t.x.toFixed(2)+'%" title="'+esc(t.label)+'"></div>';
   }).join('');
   var anchorHtml=anchors.map(function(a){
-    return '<div class="ganttanchor" style="left:'+a.x.toFixed(2)+'%"><span class="ganttanchorlbl">'+a.label+'</span></div>';
+    return '<div class="ganttanchor'+(a.upcoming?' ganttanchor-next':'')+'" style="left:'+a.x.toFixed(2)+'%"><span class="ganttanchorlbl">'+a.label+(a.upcoming?' ↑':'')+'</span></div>';
   }).join('');
+  var nowPct=pctOf(now.getTime());   // #179 — the "now" divider between what's run and what's scheduled
+  var nowHtml='<div class="ganttnow" style="left:'+nowPct.toFixed(2)+'%" title="now"></div>';
   // hour gridlines every 3h across the rolling window, labelled in real AEST clock time
   var gridLineHtml=[], gridLblHtml=[]; for(var i=0;i<=8;i++){
     var gts=new Date(winStart.getTime()+i*3*3600*1000); var pct=i*12.5;
@@ -3041,10 +3056,11 @@ function runGanttHtml(){
       '<span class="gl"><i style="background:var(--broth)"></i>cooking</span>'+
       '<span class="gl"><i style="background:var(--dont)"></i>failed</span>'+
       '<span class="gl"><i style="background:var(--faint)"></i>cancelled</span>'+
-      '<span class="gl"><i class="glanchor"></i>scheduled</span></span></div>'+
-    '<div class="ganttlane ganttlane-maj">'+gridHtml+anchorHtml+menuBarsHtml+'</div>'+
+      '<span class="gl"><i class="glanchor"></i>scheduled</span>'+
+      '<span class="gl"><i class="glnext"></i>upcoming ↑</span></span></div>'+
+    '<div class="ganttlane ganttlane-maj">'+gridHtml+anchorHtml+nowHtml+menuBarsHtml+'</div>'+
     '<div class="gantthead" style="margin-top:6px"><span>Re-prices</span></div>'+
-    '<div class="ganttlane ganttlane-min">'+gridHtml+tickHtml+'</div>'+
+    '<div class="ganttlane ganttlane-min">'+gridHtml+nowHtml+tickHtml+'</div>'+
     '<div class="ganttfoot">'+gridLblHtml.join('')+'</div>'+
   '</div>';
 }
@@ -3085,6 +3101,7 @@ function runLogHtml(){
       '<div class="rlstepsbody">'+steps.map(function(s){return '<div class="rlstep"><span>'+esc(s.label)+'</span><span class="mono">'+esc(durLabel(s.durMs))+'</span></div>';}).join('')+
       '</div></details>'):'';
     return '<div class="rlrow rlmaj"><div class="rltop"><span class="rltag rltag-maj">🍳 Menu · '+(samePicks?'confirmed, no change':'new picks')+'</span>'+
+      '<span class="rltier rltier-1" title="Type 1 — the catalyst-driven pipeline (news/earnings/analyst nets). Type 2/3 are the separate daily whole-market scans, shown on their own schedule.">T1</span>'+
       '<span class="rlwhen">'+fmtWhen(r.ts)+'</span>'+dur(m.durMs)+'</div>'+
       '<div class="rlbody">'+pkline(m.au,'🇦🇺','Australia')+pkline(m.us,'🇺🇸','United States')+stepsHtml+'</div></div>';
   }
@@ -3127,7 +3144,17 @@ function runLogHtml(){
     '<div class="runlog-rest" id="runRest" hidden>'+restHtml.join('')+'</div>'):'';
   // Every run ATTEMPT that isn't a finished menu — cooking / failed / cancelled — so nothing silently vanishes.
   // A 'done' run already shows as its committed menu below, so we only surface the others here.
-  var live=(RUNLOG||[]).filter(function(e){return e&&(e.startedAt||e.requestedAt)&&e.status!=='done';}).map(function(e){
+  // #178 — Type 2/3 whole-market scans (run-tier23-*.sh) log a run-marker with kind "scan-au"/"scan-us".
+  // Unlike a Type 1 menu (whose 'done' row IS its committed menu), a scan has no menu, so its 'done' row
+  // must show here explicitly — rendered as its own T2·T3 row so the user can see which tier just ran.
+  function scanRow(e){
+    var rts=new Date(e.startedAt).getTime(), mkt=/us/i.test(e.kind||'')?'US':'AU', dl=e.durMs?durLabel(e.durMs):'';
+    var cls=e.status==='failed'?'rlfail':'rlscan';
+    var st=e.status==='cooking'?'<span class="rlspin"></span>scanning the whole market…':e.status==='failed'?(e.note||'scan didn’t finish — last good T2/T3 menu stands'):e.status==='cancelled'?'cancelled':('done'+(dl?' · '+dl:''));
+    return '<div class="rlrow '+cls+'"><div class="rltop"><span class="rltag rltag-scan">🔬 Whole-market scan</span><span class="rltier rltier-23" title="Type 2 (quant) + Type 3 (per-indicator) — the daily whole-market scans behind the T2/T3 tiers">T2·T3</span><span class="rlwhen">'+fmtWhen(rts)+' · '+mkt+'</span></div><div class="rlbody"><div class="rlline"><span class="qt">'+esc(st)+'</span></div></div></div>';
+  }
+  var scans=(RUNLOG||[]).filter(function(e){return e&&e.startedAt&&/^scan/i.test(e.kind||'');}).slice(0,4).map(scanRow).join('');
+  var live=(RUNLOG||[]).filter(function(e){return e&&(e.startedAt||e.requestedAt)&&e.status!=='done'&&!/^scan/i.test(e.kind||'');}).map(function(e){
     // #91 — a 'requested' row has no startedAt yet (nobody's picked it up), only requestedAt.
     if(e.status==='requested'){
       var qts=new Date(e.requestedAt).getTime();
@@ -3141,14 +3168,15 @@ function runLogHtml(){
     return '<div class="rlrow rllive"><div class="rltop"><span class="rltag rltag-live"><span class="rlspin"></span>'+kindTxt+' · cooking now</span><span class="rlwhen">started '+fmtWhen(rts)+'</span></div><div class="rlbody"><div class="rlline"><span class="qt">'+esc(e.label||(isMenu?'six fresh picks land the moment it finishes…':'refreshing prices…'))+'</span></div></div></div>';
   }).join('');
   // Back-compat: if the bundle has only the older single `running` marker (no runLog yet), still show it.
-  if(!live && RUNNING&&RUNNING.startedAt){
+  // (Skip scan-kind markers — those already render in the `scans` list above.)
+  if(!live && RUNNING&&RUNNING.startedAt&&!/^scan/i.test(RUNNING.kind||'')){
     var rts0=new Date(RUNNING.startedAt).getTime();
     if((Date.now()-rts0)<25*60*1000){ var isMenu0=RUNNING.kind!=='reprice';
       live='<div class="rlrow rllive"><div class="rltop"><span class="rltag rltag-live"><span class="rlspin"></span>'+(isMenu0?'🍳 Menu · cooking now':'⏱ Re-price · running now')+'</span><span class="rlwhen">started '+fmtWhen(rts0)+'</span></div><div class="rlbody"><div class="rlline"><span class="qt">'+esc(RUNNING.label||'cooking…')+'</span></div></div></div>'; }
   }
   return '<h4 style="'+hh+'">Every run — newest first</h4>'+
     '<p style="font-size:12px;color:var(--muted);margin:0 0 8px"><b style="color:var(--broth)">Menu</b> = a full re-cook (six new picks, timed ~30&nbsp;min before an open). <b>Re-price</b> = same picks, fresh numbers each hour.</p>'+
-    '<div class="runlog">'+live+(body||(live?'':'<p class="muted">No runs yet.</p>'))+rest+'</div>';
+    '<div class="runlog">'+live+scans+(body||(live?'':'<p class="muted">No runs yet.</p>'))+rest+'</div>';
 }
 // #134 (user ask) — the Roadmap ("what's shipped, what's still open") used to only live in the
 // separate Kitchen Manual doc; user chose to move it into real KV data (roadmap.py writes
