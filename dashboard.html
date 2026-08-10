@@ -1118,7 +1118,9 @@
   .tmx-cell{border-radius:14px;min-height:158px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:2px;padding:10px 7px;border:1.5px solid var(--line);background:var(--card,var(--surface));font-family:inherit;line-height:1.05}
   .tmx-empty{color:var(--faint);background:transparent;justify-content:center;gap:4px}
   .tmx-zzz{font-size:9px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--faint)}
-  .tmx-vcell{cursor:pointer;transition:transform .1s}
+  .tmx-vcell{cursor:pointer;transition:transform .1s;position:relative}
+  .tmx-sugg{opacity:.82;border-style:dashed}
+  .tmx-suggtag{position:absolute;top:5px;left:0;right:0;text-align:center;font-size:8.5px;font-weight:800;letter-spacing:.04em;color:var(--broth)}
   .tmx-vcell:hover{transform:translateY(-2px)}
   .tmx-masc{font-size:30px;line-height:1}
   .tmx-symrow{display:flex;align-items:baseline;gap:6px;flex-wrap:wrap;justify-content:center}
@@ -3784,8 +3786,14 @@ function runLogHtml(){
   // T2·T3 row — time-sorted into the feed above (via the 'scan' row type), not pinned to the top.
   function scanRow(e){
     var rts=new Date(e.startedAt).getTime(), mkt=/us/i.test(e.kind||'')?'US':'AU', dl=e.durMs?durLabel(e.durMs):'';
-    var cls=e.status==='failed'?'rlfail':'rlscan';
-    var st=e.status==='cooking'?'<span class="rlspin"></span>scanning the whole market…':e.status==='failed'?(e.note||'scan didn’t finish — last good T2/T3 menu stands'):e.status==='cancelled'?'cancelled':('done'+(dl?' · '+dl:''));
+    // A whole-market scan legitimately runs for hours (US ~3h), but if a "cooking" marker is older than its
+    // 5h budget it's stalled/orphaned (e.g. its `done` write was clobbered by the KV race, #113) — show it
+    // as stalled rather than a forever-spinning "scanning…", a display safety net alongside the pipeline's
+    // run-marker expire_stale sweep (10 Aug 2026 incident: a dead scan showed "scanning…" for 6 hours).
+    var staleCook=e.status==='cooking'&&(Date.now()-rts)>300*60*1000;
+    var cls=(e.status==='failed'||staleCook)?'rlfail':'rlscan';
+    var st=staleCook?'stalled — no completion signal after 5h+ (the last good T2/T3 menu stands)':
+      e.status==='cooking'?'<span class="rlspin"></span>scanning the whole market…':e.status==='failed'?(e.note||'scan didn’t finish — last good T2/T3 menu stands'):e.status==='cancelled'?'cancelled':('done'+(dl?' · '+dl:''));
     return '<div class="rlrow '+cls+'"><div class="rltop"><span class="rltag rltag-scan">🔬 Whole-market scan</span><span class="rltier rltier-23" title="Type 2 (quant) + Type 3 (per-indicator) — the daily whole-market scans behind the T2/T3 tiers">T2·T3</span><span class="rlwhen">'+fmtWhen(rts)+' · '+mkt+'</span></div><div class="rlbody"><div class="rlline"><span class="qt">'+esc(st)+'</span></div></div></div>';
   }
   return '<h4 style="'+hh+'">Every run — newest first</h4>'+
@@ -5281,10 +5289,26 @@ function villagerThemeLine(D){
 // a column for each — a 3x3 fun view." Columns = Tier 3 (wildest/whole-market) → Tier 2 → Tier 1 (safest/
 // catalyst), left→right per the ask. Rows = Day/Week/Month. Each cell = that tier×timeframe's real pick for
 // the current market. Data: modelTiers.type3/type2[rid] (each carries tf Day/Week/Long) + Tier 1 = rg.picks.
+// #233 — the Simple 3×3's Type-1 column must match the Full view's Day/Week/Long slots exactly, including
+// the #210 "next best" backfill: when no served name cleared a tf slot, the Full view fills it with the
+// strongest UNSERVED candidate (score ≥40) rather than showing nothing. The 3×3 used to show "zzz" in the
+// same slot — so Full mode showed (e.g.) LLY for Day while Simple showed nothing. This builds the identical
+// deterministic slot→pick map (real pick, else backfilled suggestion flagged _sugg) so both render and the
+// tap handler agree.
+function type1SlotMap(D,rid){
+  var rg=(D.regions||[]).filter(function(x){return x.id===rid;})[0]; var picks=(rg&&rg.picks)||[];
+  var tfs=['Day','Week','Long'], map={}, served={};
+  picks.forEach(function(x){ if(x&&x.sym&&x.sym!=='NONE') served[x.sym]=1; });
+  tfs.forEach(function(tf){ var p=picks.filter(function(x){return x&&(x.tf||'').indexOf(tf)>=0;})[0]; map[tf]=(p&&p.sym&&p.sym!=='NONE')?p:null; });
+  var pool=(D.candidates||[]).filter(function(c){ return (c.region||rid)===rid && c.sym && c.sym!=='NONE' && !served[c.sym] && c.score && (c.score.buy_now||0)>=40; })
+    .sort(function(a,b){ return (b.score.buy_now||0)-(a.score.buy_now||0); });
+  var pi=0;
+  tfs.forEach(function(tf){ if(!map[tf]){ var sg=pool[pi++]; if(sg){ var o={}; for(var k in sg) o[k]=sg[k]; o.tf=tf; o._sugg=true; map[tf]=o; } } });
+  return map;
+}
 function matrixPickAt(D,rid,tierKey,tfk){
-  var arr;
-  if(tierKey==='type1'){ var rg=(D.regions||[]).filter(function(x){return x.id===rid;})[0]; arr=rg?rg.picks:[]; }
-  else arr=((D.modelTiers||{})[tierKey]||{})[rid]||[];
+  if(tierKey==='type1'){ return type1SlotMap(D,rid)[tfk]||null; }
+  var arr=((D.modelTiers||{})[tierKey]||{})[rid]||[];
   return (arr||[]).filter(function(p){return p&&(p.tf||'').indexOf(tfk)>=0;})[0]||null;
 }
 function tmxTone(p){var v=(p&&p.verdict||'').toLowerCase(); if(/get in|buy|strong|accumulate|grab/.test(v))return 'tmx-buy'; if(/skip|wait|avoid|pass|hold|steer|late|don/.test(v))return 'tmx-skip'; return 'tmx-mid';}
@@ -5306,7 +5330,10 @@ function tierMatrixHtml(D,rid){
         // #182 — each cell is a mini Villager card: animal mascot + ticker + name + a fun YUM/NAH/HMM
         // sticker + the 🍊 score. Same cute, on-brand language as the big frog/pig cards.
         var sc=p.score&&p.score.buy_now, st=villagerSticker(p), tone=chgTone(p.change,p.up);
-        return '<button class="tmx-cell tmx-vcell '+tmxTone(p)+'" data-tier="'+c.k+'" data-tf="'+rw.k+'" title="'+esc(p.sym)+(p.verdict?' · '+esc(p.verdict):'')+' — tap for the full read">'+
+        // #233 — a backfilled "next best" (no served pick cleared this slot) is flagged + muted, exactly
+        // like the Full view's 💡 next-best card, so the 3×3 never shows an empty "zzz" where Full shows a name.
+        return '<button class="tmx-cell tmx-vcell '+tmxTone(p)+(p._sugg?' tmx-sugg':'')+'" data-tier="'+c.k+'" data-tf="'+rw.k+'" title="'+esc(p.sym)+(p._sugg?' · next best (not a served pick)':(p.verdict?' · '+esc(p.verdict):''))+' — tap for the full read">'+
+          (p._sugg?'<span class="tmx-suggtag">💡 next best</span>':'')+
           '<span class="tmx-masc">'+villagerMascot(p.sym)+'</span>'+
           '<span class="tmx-symrow"><span class="tmx-sym">'+esc(p.sym)+'</span>'+(p.change?'<span class="tmx-chg '+tone+'">'+chgArrow(tone)+esc(p.change)+'</span>':'')+'</span>'+
           (p.name?'<span class="tmx-name">'+esc(p.name)+'</span>':'')+
@@ -5415,7 +5442,10 @@ function wireSimple(D){
   function regionOf(id){return (D.regions||[]).filter(function(x){return x.id===id;})[0];}
   // #172 — 3×3 matrix cells open the real pick modal for that tier × timeframe
   document.querySelectorAll('.tmx-vcell[data-tier]').forEach(function(el){
-    el.onclick=function(){ var rg=regionOf(MKT); var p=matrixPickAt(D,MKT,el.dataset.tier,el.dataset.tf); if(p) openModal(p,MKT,(rg&&rg.cur)||'$'); };
+    el.onclick=function(){ var rg=regionOf(MKT); var p=matrixPickAt(D,MKT,el.dataset.tier,el.dataset.tf); if(!p) return;
+      // #233 — a backfilled next-best cell isn't a served pick, so open the generic per-ticker read
+      // (openMover: pick/candidate → analyst fallback), matching the Full view's suggestion-card tap.
+      if(p._sugg) openMover(p.sym,MKT); else openModal(p,MKT,(rg&&rg.cur)||'$'); };
   });
   hydrateMissCharts();   // #172 — lazy-load each 3×3 cell's mini intraday chart (works for any ticker, incl T2/T3 with no spark)
   document.querySelectorAll('.vcard').forEach(function(c){
