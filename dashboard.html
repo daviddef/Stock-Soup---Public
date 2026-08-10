@@ -4045,7 +4045,7 @@ function runLogHtml(){
   // a Type 1 menu (whose 'done' row IS its committed menu), a scan has no menu, so it renders as its own
   // T2·T3 row — time-sorted into the feed above (via the 'scan' row type), not pinned to the top.
   function scanRow(e){
-    var rts=new Date(e.startedAt).getTime(), mkt=/us/i.test(e.kind||'')?'US':'AU', dl=e.durMs?durLabel(e.durMs):'';
+    var rts=new Date(e.startedAt).getTime(), isUs=/us/i.test(e.kind||''), mkt=isUs?'US':'AU', mktFlag=isUs?'🇺🇸':'🇦🇺', dl=e.durMs?durLabel(e.durMs):'';
     // A whole-market scan legitimately runs for hours (US ~3h), but if a "cooking" marker is older than its
     // 5h budget it's stalled/orphaned (e.g. its `done` write was clobbered by the KV race, #113) — show it
     // as stalled rather than a forever-spinning "scanning…", a display safety net alongside the pipeline's
@@ -4054,7 +4054,7 @@ function runLogHtml(){
     var cls=(e.status==='failed'||staleCook)?'rlfail':'rlscan';
     var st=staleCook?'stalled — no completion signal after 5h+ (the last good T2/T3 menu stands)':
       e.status==='cooking'?'<span class="rlspin"></span>scanning the whole market…':e.status==='failed'?(e.note||'scan didn’t finish — last good T2/T3 menu stands'):e.status==='cancelled'?'cancelled':('done'+(dl?' · '+dl:''));
-    return '<div class="rlrow '+cls+' rltap" data-runkind="scan" data-runts="'+rts+'" role="button" tabindex="0"><div class="rltop"><span class="rltag rltag-scan">🔬 Whole-market scan</span><span class="rltier rltier-23" title="Type 2 (quant) + Type 3 (per-indicator) — the daily whole-market scans behind the T2/T3 tiers">T2·T3</span><span class="rlwhen">'+fmtWhen(rts)+' · '+mkt+'</span></div><div class="rlbody"><div class="rlline"><span class="qt">'+esc(st)+'</span></div></div></div>';
+    return '<div class="rlrow '+cls+' rltap" data-runkind="scan" data-runts="'+rts+'" role="button" tabindex="0"><div class="rltop"><span class="rltag rltag-scan">🔬 Whole-market scan · '+mktFlag+' '+mkt+'</span><span class="rltier rltier-23" title="Type 2 (quant) + Type 3 (per-indicator) — the daily whole-market scans behind the T2/T3 tiers">T2·T3</span><span class="rlwhen">'+fmtWhen(rts)+'</span></div><div class="rlbody"><div class="rlline"><span class="qt">'+esc(st)+'</span></div></div></div>';
   }
   // #245 — today's re-price count folded in here (the last remaining Engine-Room stat card was removed).
   var _tdy=null; try{_tdy=new Date().toLocaleDateString('en-CA',{timeZone:'Australia/Sydney'});}catch(e){}
