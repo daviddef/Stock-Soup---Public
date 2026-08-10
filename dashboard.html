@@ -1999,6 +1999,16 @@ function signalRows(p,region,opts){
     rows.push({icon:'🧑‍💼',label:'Insider activity',tone:itone,read:iread,
       explain:'What the company\'s own officers and directors are doing with their own money — real open-market buys/sells only, not routine transfers or grants. Several insiders buying together in a short window is a stronger tell than any one of them acting alone.'});
   }
+  // #short — short interest was a real scoring input (penalty + short-trend nudge) that never had its
+  // own card in the juice — user asked to surface it. Elevated short = a sizeable bearish crowd (also
+  // squeeze fuel). p.short is % of float short (ASX/FINRA); p.shortDaysToCover adds the US days-to-cover.
+  var _si=(p&&p.short!=null)?p.short:null;
+  if(_si!=null){
+    var stone=_si>=10?'neg':_si>=5?'mix':'pos';
+    var sread=_si+'% of float short'+((p.shortDaysToCover!=null)?' · '+p.shortDaysToCover+'d to cover':'');
+    rows.push({icon:'🩳',label:'Short interest',tone:stone,read:sread,
+      explain:'How much of the tradeable stock is currently sold short — borrowed and sold by traders betting it falls. Elevated short interest (>10%) means a sizeable crowd is bearish; it can also become squeeze fuel if the price rises and they scramble to buy back. Source: exchange short-interest data (FINRA days-to-cover for US names).'});
+  }
   // #154 (10 Aug 2026) — real per-stock risk tier (features.py's _risk_tier): ATR%/price-level/RSI-
   // extremity/hard-exclude, NOT market cap (no data source for that on this plan — disclosed here,
   // not silently implied). tone is deliberately 'mix' even for Low/Medium — risk isn't good-or-bad the
@@ -2090,6 +2100,7 @@ function checklistFun(row){
   if(/^Supply\/demand/.test(L)) return T==='pos'?{mark:'✅',line:'Standing on solid ground 🧱'}:T==='neg'?{mark:'❌',line:'Bonking its head on the ceiling 🧱'}:{mark:'➖',line:'Just passing through 🚶'};
   if(/^News buzz/.test(L)) return T==='pos'?{mark:'✅',line:'People are saying nice things 😃'}:T==='neg'?{mark:'❌',line:'People aren’t loving it 😬'}:{mark:'➖',line:'Nobody’s really talking 🤐'};
   if(/^Insider activity/.test(L)) return T==='pos'?{mark:'✅',line:'The bosses are buying their own stock 💰'}:T==='neg'?{mark:'❌',line:'The bosses are cashing out 🚪'}:{mark:'➖',line:'Mixed signals from the top brass 🤷'};
+  if(/^Short interest/.test(L)) return T==='neg'?{mark:'❌',line:'A big crowd is betting against it 🐻'}:T==='pos'?{mark:'✅',line:'Barely anyone shorting it 👍'}:{mark:'➖',line:'A normal amount of doubters 🤔'};
   return {mark:T==='pos'?'✅':T==='neg'?'❌':'➖',line:row.read||''};
 }
 function checklistRowsHtml(rows){
