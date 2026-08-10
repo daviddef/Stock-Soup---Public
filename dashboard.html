@@ -728,6 +728,8 @@
   .annhead{flex:1;font-size:13px;color:var(--ink);text-decoration:none}
   a.annhead:hover{text-decoration:underline;color:var(--broth)}
   .anndate{font-size:10.5px;color:var(--faint);font-weight:700;white-space:nowrap}
+  .annchip{flex:0 0 auto}   /* #news-ticker — 🍊 score chip beside a news headline that names a ticker */
+  .annspark{margin:7px 0 2px} .annspark .spark{height:28px;width:100%;display:block}
   .annwhy{font-size:12px;color:var(--muted);margin-top:3px;line-height:1.4}
   .anndr{font-size:10.5px;font-weight:800;color:var(--hold);margin-top:4px;cursor:help}
   .tag{font-size:11px;font-weight:900;padding:4px 9px;border-radius:7px;text-transform:uppercase;letter-spacing:.03em;white-space:nowrap}
@@ -1680,12 +1682,21 @@ function topNewsHtml(D){
   items = items.slice().sort(function(a,b){ return String(b.date||'').localeCompare(String(a.date||'')); });
   // #118 — date + source tie-back, same visual language announcementsHtml() already uses (.anndate,
   // linked headline via a.link/n.url) so a reader can tell how fresh an item is and go read it.
+  // #news-ticker (user ask) — when a news item names a ticker, carry that ticker's real model score
+  // chip (🍊, opens the full breakdown) and a mini chart, so a headline links straight to our own read.
+  function _find(sym,region){ var f=null;
+    (D.regions||[]).forEach(function(rg){ if(rg.id!==region)return; (rg.picks||[]).forEach(function(p){ if(p.sym===sym)f=p; }); });
+    if(!f)(D.candidates||[]).forEach(function(c){ if(c.sym===sym&&(c.region||'us')===region)f=c; });
+    return f; }
   var rows=items.slice(0,12).map(function(n){
     var t=TONE[n.tone]||TONE.neutral;
     var label=(n.sym?esc(n.sym)+' — ':'')+esc(n.headline);
     var head=n.url?'<a class="annhead" href="'+esc(n.url)+'" target="_blank" rel="noopener">'+label+' ↗</a>':'<b class="annhead">'+label+'</b>';
-    return '<div class="annrow '+t.cls+'"><div class="anntop"><span class="annic">'+t.ic+'</span>'+head+(n.date?'<span class="anndate">'+esc(String(n.date).slice(0,10))+'</span>':'')+'</div>'+
-      '<div class="annwhy">'+esc(n.why||'')+'</div></div>';
+    var o=n.sym?_find(n.sym,n.region||MKT):null;
+    var chip=(o&&o.score)?'<span class="annchip">'+juiceChip(o.score,o.sym,o.name,signalRows(o,n.region||MKT))+'</span>':'';
+    var spk=(o&&o.spark&&o.spark.length>2)?'<div class="annspark">'+sparkSVG(o.spark.slice(-30))+'</div>':'';
+    return '<div class="annrow '+t.cls+'"><div class="anntop"><span class="annic">'+t.ic+'</span>'+head+chip+(n.date?'<span class="anndate">'+esc(String(n.date).slice(0,10))+'</span>':'')+'</div>'+
+      spk+'<div class="annwhy">'+esc(n.why||'')+'</div></div>';
   }).join('');
   return '<section id="topnews"><div class="sec-head"><h2 class="display">📰 Tonight\'s news, consolidated</h2>'+infoBtn('topnews')+'</div>'+
     '<p class="sec-sub">Everything real we read tonight across every source — newest first. Not just what made a pick card.</p><div class="nt3grid">'+rows+'</div></section>';
@@ -2305,10 +2316,16 @@ function actionsHtml(D){
   // + watch icon too"). One helper returns the spark + the standard + watch button for any ticker;
   // the spark is looked up from the same scored pick/candidate the 🍊 chip already uses.
   function _axExtras(sym,region){
-    var o=_axFind(sym,region);
-    var spk=(o&&o.spark&&o.spark.length>2)?'<div class="axspark">'+sparkSVG(o.spark.slice(-30))+'</div>':'';
+    var o=_axFind(sym,region), cur=region==='au'?'A$':'$';
+    // price — looked up from the scored pick/candidate (READ/coming cards had none before)
+    var price=(o&&o.price)?'<span class="axpx mono">'+esc(cleanPrice(o.price))+(o.change?' <span class="'+(o.up?'up':'down')+'">'+(o.up?'▲':'▼')+esc(o.change)+'</span>':'')+'</span>':'';
+    // chart — the LIVE intraday chart (fetches per-ticker, so it works for holdings not in tonight's
+    // pool, e.g. NTU/IEL) and carries the "served" marker for names that are a pick this run (#212).
+    var isPick=false; (D.regions||[]).forEach(function(rg){ if(rg.id!==region)return; (rg.picks||[]).forEach(function(p){ if(p.sym===sym&&p.sym!=='NONE')isPick=true; }); });
+    var iso=isPick?pickServedISO(sym,region):null;
+    var chart='<div class="axspark">'+servedChartSlot(sym,region,cur,iso)+'</div>';
     var wb='<button class="watchbtn iconwatch axwatch" data-sym="'+esc(sym)+'" data-region="'+esc(region)+'"'+((o&&o.name)?' data-name="'+esc(o.name)+'"':'')+' aria-pressed="false" title="Add to watchlist">+</button>';
-    return {spk:spk, wb:wb};
+    return {price:price, chart:chart, wb:wb};
   }
   // #181 (user: "don't group — too much real estate; the verb pill already names the type; sort by
   // importance, 3 in a row"). ONE flat grid, every card ranked and sorted most-actionable first:
@@ -2323,7 +2340,7 @@ function actionsHtml(D){
   ready.slice(0,3).forEach(function(it){ _readySet[it.p.sym]=1;
     var p=it.p, cur=it.rg.cur||'$', why=(p.catalysts&&p.catalysts[0])||p.news||'', chip=(p.score?'<span class="axchip">'+juiceChip(p.score,p.sym,p.name,signalRows(p,it.rg.id))+'</span>':''), ex=_axExtras(p.sym,it.rg.id);
     items.push({r:2, h:'<div class="axcard" data-region="'+esc(it.rg.id)+'" data-idx="'+it.idx+'" role="button" tabindex="0" aria-label="Buy '+esc(p.sym)+'">'+
-      '<div class="axtop"><span class="axverb axv-buy">🟢 BUY TARGET</span>'+tfBW(p.tf)+'<span class="axsym">'+esc(p.sym)+'</span>'+chip+'<span class="axpx mono">'+esc(p.price)+'</span>'+ex.wb+'</div>'+ex.spk+
+      '<div class="axtop"><span class="axverb axv-buy">🟢 BUY TARGET</span>'+tfBW(p.tf)+'<span class="axsym">'+esc(p.sym)+'</span>'+chip+'<span class="axpx mono">'+esc(p.price)+'</span>'+ex.wb+'</div>'+ex.chart+
       '<div class="axprice">✓ At your price — ideal buy ~'+esc(cur)+esc(p.nEntry)+'</div>'+
       (why?'<div class="axwhy">'+esc(why)+'</div>':'')+
       (timingLine(p)?'<div class="axfoot">'+timingLine(p)+'</div>':'')+'</div>'});
@@ -2336,7 +2353,7 @@ function actionsHtml(D){
   acts.slice(0,8).forEach(function(x){
     var w=x.w, a=x.a, pi=pm[w.sym+'|'+w.region]||{}, ic=a.cls==='sell'?'🎯':'⚠️', chip=_axChip(w.sym,w.region), ex=_axExtras(w.sym,w.region);
     items.push({r:a.cls==='sell'?1:3, h:'<div class="axcard axhold ax-'+a.cls+'" data-sym="'+esc(w.sym)+'" data-region="'+esc(w.region)+'" role="button" tabindex="0" aria-label="'+esc(a.verb)+' '+esc(w.sym)+'">'+
-      '<div class="axtop"><span class="axverb axv-'+a.cls+'">'+ic+' '+esc(a.verb)+'</span><span class="axsym">'+esc(w.sym)+'</span>'+chip+(pi.price!=null?'<span class="axpx mono">'+esc(pi.cur||'$')+pi.price+(pi.change?' <span class="'+(pi.up?'up':'down')+'">'+(pi.up?'▲':'▼')+esc(pi.change)+'</span>':'')+'</span>':'')+ex.wb+'</div>'+ex.spk+
+      '<div class="axtop"><span class="axverb axv-'+a.cls+'">'+ic+' '+esc(a.verb)+'</span><span class="axsym">'+esc(w.sym)+'</span>'+chip+(pi.price!=null?'<span class="axpx mono">'+esc(pi.cur||'$')+pi.price+(pi.change?' <span class="'+(pi.up?'up':'down')+'">'+(pi.up?'▲':'▼')+esc(pi.change)+'</span>':'')+'</span>':'')+ex.wb+'</div>'+ex.chart+
       '<div class="axwhy">'+esc(a.why)+'</div></div>'});
   });
   // Tonight's picks (the tier buys) — GET IN, or ⏳ for a wait-verdict pick (ranked lower)
@@ -2345,7 +2362,7 @@ function actionsHtml(D){
       var chip=(p.score?'<span class="axchip">'+juiceChip(p.score,p.sym,p.name,signalRows(p,rg.id))+'</span>':''), ex=_axExtras(p.sym,rg.id);
       var wait=/wait|late|hold|skip|avoid|pass|don.t|steer/i.test(p.verdict||'');
       items.push({r:wait?6:4, h:'<div class="axcard axtier ax-'+(wait?'warn':'buy')+'" data-region="'+esc(rg.id)+'" data-idx="'+idx+'" role="button" tabindex="0" aria-label="'+esc(p.sym)+'">'+
-        '<div class="axtop"><span class="axverb '+(wait?'axv-warn':'axv-buy')+'">'+(wait?'⏳':'🟢')+' '+esc((p.verdict||'GET IN').toUpperCase())+'</span>'+tfBW(p.tf)+'<span class="axsym">'+esc(p.sym)+'</span>'+chip+(p.price?'<span class="axpx mono">'+esc(p.price)+'</span>':'')+ex.wb+'</div>'+ex.spk+
+        '<div class="axtop"><span class="axverb '+(wait?'axv-warn':'axv-buy')+'">'+(wait?'⏳':'🟢')+' '+esc((p.verdict||'GET IN').toUpperCase())+'</span>'+tfBW(p.tf)+'<span class="axsym">'+esc(p.sym)+'</span>'+chip+(p.price?'<span class="axpx mono">'+esc(p.price)+'</span>':'')+ex.wb+'</div>'+ex.chart+
         '<div class="axwhy">'+esc(p.plain||(p.catalysts&&p.catalysts[0])||p.news||'')+'</div></div>'});
     }); });
   // Cooling off — theme/sector pivots (trim signal)
@@ -2364,7 +2381,7 @@ function actionsHtml(D){
   ((( D.upcomingDividends||{}).items)||[]).forEach(function(d){ if((d.region||'au')===MKT&&_trk(d.sym)&&d.days_until!=null) upc.push({sym:d.sym,region:d.region||MKT,days:d.days_until,ic:'💰',what:d.sym+' goes ex-dividend',why:'Own it the day before to get the payout; buy on/after and you miss this round.'}); });
   upc.sort(function(a,b){return a.days-b.days;}); upc.slice(0,3).forEach(function(u){ var chip=_axChip(u.sym,u.region), ex=_axExtras(u.sym,u.region);
     items.push({r:7, h:'<div class="axcard axcoming ax-warn" data-up-sym="'+esc(u.sym)+'" data-up-region="'+esc(u.region)+'" role="button" tabindex="0" aria-label="Coming up: '+esc(u.sym)+'">'+
-      '<div class="axtop"><span class="axverb axv-warn">'+u.ic+' COMING UP</span><span class="axsym">'+esc(u.sym)+'</span>'+chip+'<span class="axpx mono">'+_when(u.days)+'</span>'+ex.wb+'</div>'+ex.spk+
+      '<div class="axtop"><span class="axverb axv-warn">'+u.ic+' COMING UP</span><span class="axsym">'+esc(u.sym)+'</span>'+chip+'<span class="axpx mono">'+_when(u.days)+'</span>'+ex.wb+'</div>'+ex.chart+
       '<div class="axwhy">'+esc(u.what)+' — '+esc(u.why)+'</div></div>'});
   });
   // Worth reading — top news (informational, last). When it names a ticker, carry that ticker's
@@ -2373,7 +2390,7 @@ function actionsHtml(D){
     var vcls=n.tone==='bullish'?'buy':n.tone==='bearish'?'sell':'warn';
     var head=n.url?'<a href="'+esc(n.url)+'" target="_blank" rel="noopener">'+esc(n.headline||'')+'</a>':esc(n.headline||'');
     items.push({r:8, h:'<div class="axcard axread ax-'+vcls+'"'+(sym?' data-up-sym="'+esc(sym)+'" data-up-region="'+esc(n.region||MKT)+'"':'')+' role="button" tabindex="0" aria-label="Read: '+esc(n.headline||'')+'">'+
-      '<div class="axtop"><span class="axverb axv-'+vcls+'">📰 READ</span>'+(sym?'<span class="axsym">'+esc(sym)+'</span>':'<span class="axsym" style="font-size:13px;color:var(--muted)">Macro</span>')+chip+ex.wb+'</div>'+ex.spk+
+      '<div class="axtop"><span class="axverb axv-'+vcls+'">📰 READ</span>'+(sym?'<span class="axsym">'+esc(sym)+'</span>':'<span class="axsym" style="font-size:13px;color:var(--muted)">Macro</span>')+chip+ex.price+ex.wb+'</div>'+ex.chart+
       '<div class="axwhy">'+head+(n.why?' — '+esc(n.why):'')+'</div></div>'});
   });
   items.sort(function(a,b){return a.r-b.r;});
