@@ -1094,8 +1094,11 @@
   .wc-added{font-size:10.5px;color:var(--faint);margin-top:2px}
   .wc-tag{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:auto;padding-top:8px;border-top:1px dashed var(--line);font-size:11px}
   .wc-tag.none{color:var(--faint);font-style:italic;font-weight:600}
-  .wic{background:var(--surface-2);border:1px solid var(--line);border-radius:999px;padding:3px 9px;font-weight:800;white-space:nowrap}
-  .wic.sc{border-color:rgba(255,122,26,.4);color:var(--broth)}
+  .wic{background:var(--surface-2);border:1px solid var(--line);border-radius:999px;padding:3px 9px;font-weight:800;white-space:nowrap;max-width:100%}
+  /* #258 — the score pill ("🧮 84/100 · Strong Buy-Now") is the one long pill here; nowrap made it
+     overflow the card's right edge on a narrow watchlist card (user-caught, CPU). Let it wrap internally
+     while the short verdict pill stays nowrap. */
+  .wic.sc{border-color:rgba(255,122,26,.4);color:var(--broth);white-space:normal;overflow-wrap:anywhere}
   .wic.vd{text-transform:uppercase;font-size:9.5px;letter-spacing:.03em}
   .wic.vd.buy{color:var(--buy);border-color:rgba(35,194,103,.4)} .wic.vd.hold{color:var(--hold)} .wic.vd.dont{color:var(--dont)}
   .wic.tr{color:var(--muted);font-weight:600;white-space:normal;flex:1 1 100%;background:none;border:0;padding:3px 0}
@@ -1150,7 +1153,9 @@
   /* #172/#247 — the 3×3 type × timeframe matrix (Villager view). Cols: Type3→Type2→Type1 (wild→safe). Rows:
      DAY/WEEK/MONTH. Now shares the .simple column width (no more 96vw breakout) so it aligns edge-to-edge
      with the hero/risk-chart above it. */
-  .tmxwrap{width:100%;margin:6px 0 4px}
+  /* #257 — wrap the 3×3 in the SAME bordered panel as the pot below it (bg + border + padding), so the two
+     read as matching, equal-width cards with their contents inset the same — the alignment the user wanted. */
+  .tmxwrap{width:100%;margin:6px 0 4px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px 16px 12px}
   .tmx-title{text-align:center;font-size:14px;font-weight:900;letter-spacing:.01em;margin-bottom:10px}
   .tmx{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;align-items:stretch}
   .tmx-rowh{grid-column:1/-1;justify-content:flex-start !important;padding:8px 2px 2px !important;font-size:11px}
@@ -3058,6 +3063,42 @@ function scoreBarHtml(score,sym,name){
     (score.verdict?'<div class="rsimeta" style="margin-top:6px"><b>'+esc(score.verdict)+'</b>'+(score.child_sentence?' — '+esc(score.child_sentence):'')+'</div>':'')+
   '</div>';
 }
+// #259 (user ask) — the 🍊 juice overlay opens off a compact chip that only carries score+sym+sigRows,
+// so it never showed the price context (range bars, stop→target ladder, RSI) that the full pick modal
+// does. Rather than thread the live object through every juiceChip() call site, look it up by sym from
+// the live bundle here — picks first (they carry stop/target), then Full-Pot candidates, then scored
+// watchlist intel. Returns the SAME price-viz blocks openModal() renders, so the juice overlay now leads
+// with "where it's trading" before the scoring math.
+function juicePriceViz(sym){
+  var D=(LAST&&LAST.D)||{}, o=null, region=null, cur='$';
+  (D.regions||[]).forEach(function(rg){(rg.picks||[]).forEach(function(p){ if(!o&&p.sym===sym&&p.sym!=='NONE'){o=p;region=rg.id;cur=rg.cur||(rg.id==='au'?'A$':'$');} });});
+  if(!o){ var c=(D.candidates||[]).filter(function(x){return x.sym===sym;})[0]; if(c){o=c;region=c.region;cur=(c.region==='au'?'A$':'$');} }
+  if(!o){ var wi=(D.watchlistIntel||{})[sym]; if(wi&&!wi.error){o=wi;region=wi.region;cur=wi.cur||(wi.region==='au'?'A$':'$');} }
+  if(!o) return '';
+  var out='';
+  // price-range low→high bars (week/month/year) — picks and candidates both carry o.ranges now (#126)
+  out+=rangeBarsHtml(o,cur);
+  // stop → target ladder — only picks carry a real stop/target/entry, so this is pick-only
+  var nStop=o.nStop, nTarget=o.nTarget, nNow=(o.nNow!=null?o.nNow:o.price), nEntry=o.nEntry;
+  if(nStop!=null&&nTarget!=null&&nNow!=null){
+    var span=(nTarget-nStop)||1, nowPct=clamp((nNow-nStop)/span*100);
+    var entPct=(nEntry!=null)?clamp((nEntry-nStop)/span*100):null;
+    out+='<div class="viz"><h4>Where the price sits · stop → target</h4>'+
+      '<div class="ladder"><span class="cap now" style="left:'+nowPct+'%">Now '+esc(o.price!=null?o.price:money(cur,nNow))+'</span>'+
+        (entPct!=null?'<span class="mk ent" style="left:'+entPct+'%"></span><span class="cap" style="left:'+entPct+'%">Buy</span>':'')+
+        '<span class="mk now" style="left:'+nowPct+'%"></span></div>'+
+      '<div class="lends"><span class="r">Stop '+money(cur,nStop)+'</span><span class="g">Target '+money(cur,nTarget)+'</span></div></div>';
+  }
+  // RSI bar — both carry o.rsi
+  if(o.rsi!=null){
+    var rsi=o.rsi, rsiWord=rsi>=70?"🔥 hot — wait for it to cool":rsi<=35?"🧊 cheap — bargain zone":"😌 comfortable — not stretched";
+    out+='<div class="viz"><h4>How hot is it right now? · RSI</h4>'+
+      '<div class="rsibar"><span class="rcap" style="left:'+clamp(rsi)+'%">RSI '+esc(rsi)+'</span><span class="rn" style="left:'+clamp(rsi)+'%"></span></div>'+
+      '<div class="lends"><span class="g">Cheap</span><span class="r">Overheated</span></div>'+
+      '<div class="rsimeta">'+rsiWord+'</div></div>';
+  }
+  return out?('<div class="jpxviz">'+out+'</div>'):'';
+}
 // #105 — admin-only "real juice": the full raw-logic derivation behind a score, not just the
 // top-2-factor summary bar. Every category's weight%/subscore/points, every penalty with its real
 // trigger value, every layered nudge (sentiment/trend/Bollinger/RS/short-trend/EMA) with its reason.
@@ -3177,7 +3218,7 @@ function openJuice(id){
     '<div class="mtop"><div class="msym" style="line-height:1.25">'+jhead+'</div></div></div>'+
     '<div class="mbody">'+
       (flags.length?'<p class="mtake" style="color:var(--dont)">'+flags.join(' · ')+'</p>':'')+
-      scoreViz+whyBlock+factorSection+sigSection+deriv+
+      scoreViz+(j.sym?juicePriceViz(j.sym):'')+whyBlock+factorSection+sigSection+deriv+
     '</div>';
   var ov=document.getElementById('overlay'); ov.classList.add('open'); ov.setAttribute('aria-hidden','false');
   document.getElementById('mClose').onclick=closeModal; document.getElementById('mClose').focus();
