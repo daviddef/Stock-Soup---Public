@@ -1215,6 +1215,7 @@
   .tmx-mini-empty .tmx-mini-zzz{font-size:10px;font-weight:800;color:var(--faint);letter-spacing:.05em;text-transform:uppercase}
   /* tone tint + sym colour already defined on .tmx-buy/.tmx-skip/.tmx-mid — they apply to .tmx-mini too */
   .simplemeter{margin:2px 0 14px}   /* #263 — bare risk meter sits at the top of the type-cards panel */
+  .simplemeter .needle::after{content:none}   /* #269 (user ask) — drop the "Risk" needle label in Simple */
   /* #199 — the Simple-view whole-pot: score-sorted, both markets, one threshold slider */
   /* #199 follow-up (user ask) — break out to the same full width as the 3×3 above, and lay the rows
      3-abreast (2 on tablet, 1 on phone) so the pot doesn't run as one tall narrow column. */
