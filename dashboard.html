@@ -523,6 +523,7 @@
   .graderow .rsym .rltier{margin-left:0;margin-right:3px}
   .tierscore-wrap{margin-top:12px}
   .tierscore-h{font-size:11px;font-weight:800;letter-spacing:.03em;text-transform:uppercase;color:var(--muted);margin:0 2px 6px}
+  .tierscore-note{font-size:11.5px;color:var(--muted);line-height:1.5;margin:8px 2px 0} .tierscore-note b{color:var(--ink)}
   .rlrow.rlscan{border-left-color:#2f7fd6;background:linear-gradient(90deg,rgba(47,127,214,.09),transparent 62%)}
   .rlrow.rllive{border-left-color:var(--buy);background:linear-gradient(90deg,rgba(35,194,103,.12),transparent 62%)}
   .rltag-live{color:var(--buy)}
@@ -899,6 +900,7 @@
   .misstab:hover{border-color:var(--broth)}
   .misstab.on{background:var(--broth);border-color:var(--broth);color:#fff}
   .missrow{display:flex;flex-wrap:wrap;align-content:flex-start;align-items:center;gap:8px;padding:10px 14px;background:var(--surface);font-size:13px;border:1px solid var(--line);border-radius:10px}
+  .misschip{flex:0 0 auto} .misschip .juicebtn{font-size:10.5px;padding:1px 6px}
   .missrow.m-missed{border-left:3px solid var(--dont)}
   .missrow.m-scanned{border-left:3px solid var(--hold)}
   .missrow.m-served{border-left:3px solid var(--buy)}
@@ -1818,10 +1820,17 @@ function _missRow(r, mi, tfLabel){
   var STAT={served:{ic:'✅',lbl:'Served',cls:'m-served'},scanned:{ic:'👀',lbl:'Scanned, not served',cls:'m-scanned'},missed:{ic:'❌',lbl:'Missed',cls:'m-missed'}};
   var s=STAT[r.status]||STAT.missed, up=r.pct>=0;
   var sig=signalPillHtml(r,r.region);   // gracefully empty until Misses rows carry signal data
+  // #235 — a "wrong way" miss IS a scored candidate ("scanned, not served"), so show its 🍊 score chip.
+  // The miss row itself carries no score, so look up the live pick/candidate by sym.
+  var _sc=null; try{ var _D=(LAST&&LAST.D)||{};
+    (_D.regions||[]).forEach(function(rg){(rg.picks||[]).forEach(function(p){if(p.sym===r.sym&&p.sym!=='NONE')_sc=p;});});
+    if(!_sc)(_D.candidates||[]).forEach(function(c){if(c.sym===r.sym&&(c.region||'us')===r.region)_sc=c;});
+  }catch(e){}
+  var chip=(_sc&&_sc.score&&_sc.score.buy_now!=null)?'<span class="misschip">'+juiceChip(_sc.score,_sc.sym,_sc.name,signalRows(_sc,r.region))+'</span>':'';
   return '<div class="missrow '+s.cls+'"><span class="missic">'+s.ic+'</span>'+tfB(tfLabel)+
     '<a class="misssym" href="'+yf(r.sym,r.region)+'" target="_blank" rel="noopener">'+esc(r.sym)+'<span class="wflag" style="margin-left:5px">'+(r.region==='au'?'AU':'US')+'</span></a>'+
     (r.name?'<span class="missnm">'+esc(r.name)+'</span>':'')+
-    '<span class="misspct '+(up?'up':'down')+'">'+(up?'▲':'▼')+' '+Math.abs(r.pct)+'%</span>'+
+    '<span class="misspct '+(up?'up':'down')+'">'+(up?'▲':'▼')+' '+Math.abs(r.pct)+'%</span>'+chip+
     '<span class="missstat">'+s.lbl+'</span>'+(sig?'<div style="width:100%;margin-top:2px">'+sig+'</div>':'')+'<span class="missnote">'+esc(r.note)+'</span>'+
     missChartSlot(r.sym,r.region,r.region==='au'?'A$':'$',mi.stamp)+'</div>';
 }
@@ -1831,6 +1840,9 @@ function _missRow(r, mi, tfLabel){
 //                   call the direction — we saw it, but didn't capitalise.
 function _missRows(mi, tfLabel){
   var mktRows=(mi&&mi.rows||[]).filter(function(r){return (r.region||'us')===MKT;});
+  // #235 — dedupe by sym (the source occasionally lists the same mover twice, e.g. BET/CAR/WBC showing as
+  // duplicate cards). Keep the first occurrence.
+  var _seen={}; mktRows=mktRows.filter(function(r){ if(_seen[r.sym])return false; _seen[r.sym]=1; return true; });
   // #225 — a big mover never in our net only "got away" if it went UP (missed upside). A big FALLER we
   // never touched isn't a miss — it's a dodge (good we weren't in it). Split the two so a −25% loser
   // stops being counted/labelled as a missed opportunity.
@@ -2695,7 +2707,22 @@ function render(D,H){
   // #218 — per-tier scorecard: which model tier's calls actually worked. Only shows tiers that have graded
   // calls, so it silently degrades to just T1 until the forward-looking T2/T3 history matures.
   var _tierMeta={T1:{lab:'T1 · Catalyst',sub:'news-driven picks'},T2:{lab:'T2 · Scan',sub:'top quant scores'},T3:{lab:'T3 · Scan',sub:'per-signal leaders'}};
-  var ocTierScore=(ocOn&&OUTCOMES.byTier)?(function(){var ts=['T1','T2','T3'].filter(function(t){return (OUTCOMES.byTier[t]||{}).n;});if(ts.length<2)return '';return '<div class="tierscore-wrap"><div class="tierscore-h">By model tier</div><div class="tfscore tierscore">'+ts.map(function(t){var a=OUTCOMES.byTier[t]||{};var wr=a.n?Math.round((a.winRate||0)*100):null;var cls=wr==null?'':(wr>=60?'good':wr>=40?'mid':'bad');var m=_tierMeta[t];return '<div class="tfs '+cls+'"><div class="tft">'+esc(m.lab)+'</div><div class="tfv">'+(wr==null?'—':wr+'%')+'</div><div class="tfn">'+(a.n?'right '+(a.wins||0)+' of '+a.n:'—')+'</div></div>';}).join('')+'</div></div>';})():'';
+  // #218 follow-up (user: "why don't Type 2 & 3 work?") — they DO: T2/T3 picks are tracked in tierHistory
+  // and graded by grade-picks.py, but a pick can't be scored until its holding window closes (Day → next
+  // session, Week → ~5d, Long → ~20d). New scans therefore show ⏳ maturing, not nothing. Show the block
+  // whenever ANY type has graded OR pending picks — so it's visible that Type 2/3 are being tracked.
+  var ocTierScore=(ocOn&&OUTCOMES.byTier)?(function(){
+    var ts=['T1','T2','T3'].filter(function(t){var a=OUTCOMES.byTier[t]||{};return (a.n||0)>0||(a.pending||0)>0;});
+    if(!ts.length) return '';
+    var anyPend=ts.some(function(t){return (OUTCOMES.byTier[t]||{}).pending;});
+    return '<div class="tierscore-wrap"><div class="tierscore-h">By model type</div><div class="tfscore tierscore">'+ts.map(function(t){
+      var a=OUTCOMES.byTier[t]||{};var wr=a.n?Math.round((a.winRate||0)*100):null;
+      var cls=wr==null?(a.pending?'':''):(wr>=60?'good':wr>=40?'mid':'bad');var m=_tierMeta[t];
+      var val=a.n?wr+'%':(a.pending?'⏳':'—');
+      var foot=a.n?('right '+(a.wins||0)+' of '+a.n):(a.pending?a.pending+' maturing':'—');
+      return '<div class="tfs '+cls+'"><div class="tft">'+esc(m.lab)+'</div><div class="tfv">'+val+'</div><div class="tfn">'+foot+'</div></div>';
+    }).join('')+'</div>'+(anyPend?'<p class="tierscore-note">⏳ Type 2 & 3 are the daily whole-market scans — their picks grade only once the holding window closes (a Day pick after the next session, a Week after ~5 days, a Long after ~20). New scans show as <b>maturing</b> until then, then a real win-rate appears here.</p>':'')+'</div>';
+  })():'';
   function lines(arr,key,src,off){off=off||0;return (arr||[]).map(function(x,i){
     var lead=x.leader?'<span class="thlead" title="Real model score behind this theme">→ <b>'+esc(x.leader.sym)+'</b> '+x.leader.buy_now+'/100 '+esc(x.leader.band)+'</span>':'';
     // robust label: geo/sectors carry `name`, commodities carry `title` — fall back so neither shows
@@ -5253,7 +5280,7 @@ function tmxTone(p){var v=(p&&p.verdict||'').toLowerCase(); if(/get in|buy|stron
 function tierMatrixHtml(D,rid){
   var mt=D.modelTiers||{};
   if(!mt.type2&&!mt.type3) return '';   // only when the whole-market tier scans have actually run
-  var cols=[{k:'type3',lbl:'Tier 3',sub:'🌶️ wildest'},{k:'type2',lbl:'Tier 2',sub:'⚙️ quant'},{k:'type1',lbl:'Tier 1',sub:'🛡️ safest'}];
+  var cols=[{k:'type3',lbl:'Type 3',sub:'🌶️ wildest'},{k:'type2',lbl:'Type 2',sub:'⚙️ quant'},{k:'type1',lbl:'Type 1',sub:'🛡️ safest'}];
   var rows=[{k:'Day',lbl:'DAY'},{k:'Week',lbl:'WEEK'},{k:'Long',lbl:'MONTH'}];
   cols[0].rc='t3'; cols[1].rc='t2'; cols[2].rc='t1';   // risk accent: T3 spicy/red → T1 safe/green
   var head='<div class="tmx-corner"></div>'+cols.map(function(c){return '<div class="tmx-colh tmx-colh-'+c.rc+'"><b>'+c.lbl+'</b><span>'+c.sub+'</span></div>';}).join('');
@@ -5277,7 +5304,7 @@ function tierMatrixHtml(D,rid){
         '</button>';
       }).join('');
   }).join('');
-  return '<div class="tmxwrap"><div class="tmx-title">🎲 The 3×3 — every tier, every timeframe</div>'+
+  return '<div class="tmxwrap"><div class="tmx-title">🎲 The 3×3 — every type, every timeframe</div>'+
     '<div class="tmx">'+head+riskbar+body+'</div>'+
     '<div class="tmx-legend">🌶️ wilder, whole-market  ·  🛡️ safer, catalyst-backed → tap any square</div></div>';
 }
