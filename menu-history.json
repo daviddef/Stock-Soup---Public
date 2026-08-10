@@ -1,0 +1,26 @@
+{
+ "names": {
+  "SKY": "Sky Metals",
+  "CPU": "Computershare",
+  "CQR": "Charter Hall Retail REIT",
+  "NONE": "No Day pick this run",
+  "SPB": "Spectrum Brands",
+  "LMT": "Lockheed Martin"
+ },
+ "menus": [
+  {
+   "stamp": "Mon 10 Aug",
+   "time": "17:14",
+   "au": [
+    "SKY",
+    "CPU",
+    "CQR"
+   ],
+   "us": [
+    "NONE",
+    "SPB",
+    "LMT"
+   ]
+  }
+ ]
+}
