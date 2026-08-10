@@ -230,9 +230,13 @@
   .axhead{font-size:12px;font-weight:900;letter-spacing:.03em;color:var(--ink);margin:0 0 10px;text-transform:uppercase}
   .axheadsub{color:var(--muted);font-weight:700;text-transform:none;letter-spacing:0}
   .axnone{background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:14px 15px;color:var(--muted);font-size:13.5px;line-height:1.5}
-  .axgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;align-items:start}
-  @media(max-width:760px){.axgrid{grid-template-columns:1fr}}
-  .axcard{background:linear-gradient(180deg,rgba(35,194,103,.11),transparent 72%),var(--surface);border:1px solid rgba(35,194,103,.34);border-left:3px solid var(--buy);border-radius:13px;padding:13px 15px;cursor:pointer;transition:border-color .12s,transform .05s}
+  /* #181-fix (sizing consistency) — a grid with align-items:start leaves a tall gap under any short card
+     (a chart-less COOLING OFF next to a chart+link READ). CSS-columns MASONRY packs cards tightly with no
+     row-alignment gaps; importance still flows top→bottom down each column. break-inside:avoid keeps a card
+     whole; margin-bottom (not gap) does the vertical spacing that columns need. */
+  .axgrid{column-count:3;column-gap:10px}
+  @media(max-width:760px){.axgrid{column-count:1}}
+  .axcard{background:linear-gradient(180deg,rgba(35,194,103,.11),transparent 72%),var(--surface);border:1px solid rgba(35,194,103,.34);border-left:3px solid var(--buy);border-radius:13px;padding:13px 15px;cursor:pointer;transition:border-color .12s,transform .05s;break-inside:avoid;-webkit-column-break-inside:avoid;margin-bottom:10px;display:inline-block;width:100%;box-sizing:border-box}
   .axcard:hover{border-color:var(--buy)} .axcard:active{transform:scale(.995)}
   .axtop{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
   .axverb{font-size:12px;font-weight:900;letter-spacing:.04em;color:var(--buy)}
@@ -536,6 +540,10 @@
   .tierinfo{width:22px;height:22px;border-radius:50%;border:1px solid var(--line);background:var(--surface);color:var(--muted);font-size:11px;font-weight:800;font-style:italic;cursor:pointer;display:inline-flex;align-items:center;justify-content:center}
   .tiersub{font-size:12px;color:var(--muted);margin:2px 0 10px;font-style:italic}
   .risktolwarn{background:rgba(255,197,61,.14);border:1px solid rgba(255,197,61,.4);color:var(--hold);border-radius:8px;padding:6px 10px;font-size:12px;font-weight:800;margin:0 0 8px}
+  /* #224 — compact risk chip (sits in the sentrow next to the 🍊 score), taps to the risk detail modal */
+  .risktolchip{background:rgba(255,197,61,.16);border:1px solid rgba(255,197,61,.45);color:var(--hold);border-radius:999px;padding:3px 10px;font-size:11.5px;font-weight:900;cursor:pointer;font-family:var(--font);white-space:nowrap;letter-spacing:.01em}
+  .risktolchip:hover{filter:brightness(1.04)}
+  .riskwhy{margin:6px 0 0;padding-left:18px;font-size:13px;color:var(--ink);line-height:1.5} .riskwhy li{margin:3px 0}
   /* #148 — sector rotation panel */
   .srowgrp{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:8px}
   .srowgrp>b{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);display:block;margin-bottom:4px}
@@ -879,7 +887,7 @@
   .badcount{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:22px;padding:0 6px;border-radius:999px;background:var(--dont);color:#fff;font-size:12px;font-weight:900;vertical-align:middle;margin-left:2px}
   .missgroup{margin-top:14px}
   .missgrp-h{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:900;letter-spacing:-.01em}
-  .missgrp-away{color:var(--dont)} .missgrp-wrong{color:var(--hold)}
+  .missgrp-away{color:var(--dont)} .missgrp-wrong{color:var(--hold)} .missgrp-dodged{color:var(--buy)}
   .missgrp-n{font-size:11px;font-weight:800;font-family:var(--mono);background:var(--surface-2);color:var(--muted);border-radius:999px;padding:1px 8px}
   .missgrp-sub{font-size:12px;color:var(--muted);margin:2px 0 8px}
   .missgrid{display:grid;grid-template-columns:1fr;gap:8px}
@@ -1800,11 +1808,16 @@ function _missRow(r, mi, tfLabel){
 //                   call the direction — we saw it, but didn't capitalise.
 function _missRows(mi, tfLabel){
   var mktRows=(mi&&mi.rows||[]).filter(function(r){return (r.region||'us')===MKT;});
-  var away=mktRows.filter(function(r){return r.status==='missed';});
+  // #225 — a big mover never in our net only "got away" if it went UP (missed upside). A big FALLER we
+  // never touched isn't a miss — it's a dodge (good we weren't in it). Split the two so a −25% loser
+  // stops being counted/labelled as a missed opportunity.
+  var _pct=function(r){return (r.pct!=null?r.pct:(r.change!=null?r.change:0));};
+  var away=mktRows.filter(function(r){return r.status==='missed' && _pct(r)>=0;});
+  var dodged=mktRows.filter(function(r){return r.status==='missed' && _pct(r)<0;});
   var wrong=mktRows.filter(function(r){return r.status==='served'||r.status==='scanned';});
   var render=function(r){return _missRow(r, mi, tfLabel);};
-  return {awayRows:away.map(render).join(''), wrongRows:wrong.map(render).join(''),
-          awayN:away.length, wrongN:wrong.length, missedN:away.length, mktRows:mktRows};
+  return {awayRows:away.map(render).join(''), wrongRows:wrong.map(render).join(''), dodgedRows:dodged.map(render).join(''),
+          awayN:away.length, wrongN:wrong.length, dodgedN:dodged.length, missedN:away.length, mktRows:mktRows};
 }
 // #80 — week/month movers (bulk-scan.py's movers_by_horizon()) alongside the original same-day feed.
 // Each horizon is its own KV block (latest.misses/missesWeek/missesMonth) so a run that only refreshed
@@ -1830,10 +1843,15 @@ function missesSection(D){
   var wrongGroup=computed.wrongN?'<div class="missgroup"><div class="missgrp-h missgrp-wrong">🔄 The ones we got the wrong way <span class="missgrp-n">'+computed.wrongN+'</span></div>'+
       '<p class="missgrp-sub">We <b>saw these</b> (scanned or served) but didn\'t capitalise — in the net, not acted on.</p>'+
       '<div class="missgrid">'+computed.wrongRows+'</div></div>':'';
+  // #225 — big FALLERS we never touched are dodges, not misses — framed positively so a −25% loser
+  // isn't counted as a missed opportunity.
+  var dodgedGroup=computed.dodgedN?'<div class="missgroup"><div class="missgrp-h missgrp-dodged">🛡️ The ones we dodged <span class="missgrp-n">'+computed.dodgedN+'</span></div>'+
+      '<p class="missgrp-sub">Big <b>fallers</b> that were never in our net — no harm done; glad we weren\'t in these.</p>'+
+      '<div class="missgrid">'+computed.dodgedRows+'</div></div>':'';
   return '<section id="misses"><div class="sec-head"><h2 class="display">😬 The Misses <span class="badcount">'+computed.missedN+'</span></h2>'+infoBtn('misses')+'</div>'+
     hmHtml+tabs+
-    '<p class="sec-sub">'+(MKT==='au'?'🇦🇺 Australia\'s':'🌏 International')+' biggest real movers over the last '+esc(MISS_HORIZON.toLowerCase())+', checked as of <b>'+esc(active.data.stamp||'tonight')+'</b> — against what the net actually scanned. <b>'+computed.missedN+' of '+computed.mktRows.length+'</b> weren\'t in our net at all.</p>'+
-    awayGroup+wrongGroup+'</section>';
+    '<p class="sec-sub">'+(MKT==='au'?'🇦🇺 Australia\'s':'🌏 International')+' biggest real movers over the last '+esc(MISS_HORIZON.toLowerCase())+', checked as of <b>'+esc(active.data.stamp||'tonight')+'</b> — against what the net actually scanned. <b>'+computed.missedN+'</b> real gainers weren\'t in our net'+(computed.dodgedN?' (and '+computed.dodgedN+' faller'+(computed.dodgedN===1?'':'s')+' we\'re glad we dodged)':'')+'.</p>'+
+    awayGroup+wrongGroup+dodgedGroup+'</section>';
 }
 function buyState(p){ if(p.nEntry==null||p.nNow==null) return ''; var g=(p.nNow/p.nEntry-1)*100; return g<=1.5?'in':(g<=4?'close':'wait'); }
 // A move under ±0.05% is essentially flat — colour it neutral, not green/red (avoids a misleading "+0.0%" in green).
@@ -2108,11 +2126,31 @@ var SIG_CACHE={}, SIG_SEQ=0;
 // #154 (10 Aug 2026) — real per-stock risk tier vs the user's own tolerance setting. Informational
 // only: every pick still shows in full, this just adds a visible line when a pick is riskier than
 // what the user told us they're comfortable with — the user decides, the app doesn't hide anything.
+// #224 (user ask) — the full-width "⚠️ Speculative risk — above your tolerance" banner ate a whole row.
+// Now a compact ⚠️ chip (sits inline in the sentrow next to the 🍊 score) that taps through to a modal
+// spelling out the tier, the score, your tolerance, and the REAL triggers (ATR/RSI/extension — rt.why).
+var RISK_CACHE={}, RISK_SEQ=0;
 function riskTolWarn(p){
   var rt=p&&p.riskTier; if(!rt||rt.score==null) return '';
   var tol=curRiskTol(), max=RISK_TOL_MAX[tol]!=null?RISK_TOL_MAX[tol]:45;
   if(rt.score<=max) return '';
-  return '<div class="risktolwarn">⚠️ '+esc(rt.tier)+' risk — above your '+esc(tol)+' tolerance setting</div>';
+  var id=++RISK_SEQ; RISK_CACHE[id]={tier:rt.tier, score:rt.score, tol:tol, max:max, why:rt.why||[], sym:p.sym, name:p.name};
+  return '<button class="risktolchip" data-riskinfo="'+id+'" title="Riskier than your '+esc(tol)+' setting — tap for why" aria-label="Risk detail for '+esc(p.sym)+'">⚠️ '+esc(rt.tier)+'</button>';
+}
+function openRiskInfo(id){
+  var r=RISK_CACHE[id]; if(!r) return;
+  LASTFOCUS=document.activeElement;
+  var whyHtml=(r.why&&r.why.length)?'<ul class="riskwhy">'+r.why.map(function(w){return '<li>'+esc(w)+'</li>';}).join('')+'</ul>':'<p class="gexp">Flagged on its overall volatility/extension profile.</p>';
+  var m=document.getElementById('modal'); m.className='modal';
+  m.innerHTML='<div class="mhead hold"><button class="mclose" id="mClose" aria-label="Close">✕</button>'+
+    '<div class="mtf">⚠️ Risk vs your setting</div>'+
+    '<div class="mtop"><div class="msym">'+esc(r.sym||'')+'</div></div>'+
+    '<span class="mverd v-hold">'+esc(r.tier)+' · '+r.score+'/100 risk</span></div>'+
+    '<div class="mbody"><p class="mtake">This one scores <b>'+r.score+'/100</b> on our risk gauge — <b>above</b> your <b>'+esc(r.tol)+'</b> tolerance (which tops out around '+r.max+'). Nothing is hidden or filtered out; you decide.</p>'+
+    '<div class="gexp"><p><b>Why it\'s flagged:</b></p>'+whyHtml+
+    '<p style="margin-top:10px;font-size:12.5px;color:var(--muted)">Risk here is a near-term volatility read — daily swing (ATR), how stretched it is vs its averages, RSI extremes, and whether the model has already called it late. Change your tolerance any time in <b>👤 Account</b>.</p></div></div>';
+  var ov=document.getElementById('overlay'); ov.classList.add('open'); ov.setAttribute('aria-hidden','false');
+  document.getElementById('mClose').focus();
 }
 // #148 (10 Aug 2026, research thread #2) — real sector rotation: which sectors are gaining/losing
 // strength against the broad market (SPY), not a single stock's own relative strength (R2, already
@@ -2546,7 +2584,7 @@ function render(D,H){
         '<span class="px"><span class="p mono">'+esc(p.price)+'</span><br><span class="c mono '+chgTone(p.change,p.up)+'">'+esc(p.change)+'</span></span></div>'+
         /* miniTraj removed — inconsistent (only carried-over picks had it) + confusing 'since 23:33'; the range bar shows the trend */
         '<div class="buyat'+(p.nEntry?' ba-'+buyState(p):'')+'">'+(p.nEntry?'<span class="bl">🎯 Ideal buy</span> ~'+esc(rg.cur||'$')+p.nEntry+buyAction(p):'<span class="bl">Track this pick</span>')+'</div>'+
-        '<p class="plain">'+esc(p.plain)+'</p>'+riskTolWarn(p)+(function(){var jc=juiceChip(p.score,p.sym,p.name,signalRows(p,rg.id)),vc=valChip(p);return (jc||vc)?'<div class="sentrow">'+jc+vc+'</div>':'';})()+'<div class="lvls">'+(p.levels||'')+'</div>'+
+        '<p class="plain">'+esc(p.plain)+'</p>'+(function(){var jc=juiceChip(p.score,p.sym,p.name,signalRows(p,rg.id)),vc=valChip(p),rc=riskTolWarn(p);return (jc||vc||rc)?'<div class="sentrow">'+jc+vc+rc+'</div>':'';})()+'<div class="lvls">'+(p.levels||'')+'</div>'+
         /* #214/#212 — the mini-chart is back on the pick card, now as a live intraday view with a
            vertical marker at the moment the confirming run SERVED this pick (the earliest you could
            have acted). The longer 2-month daily trend still lives in the detail modal. */
@@ -2593,7 +2631,10 @@ function render(D,H){
       return '<span class="jtally" title="How this run\'s picks scored — tap a tick for the story">'+pt.join('')+'</span>';
     }
     var arr=(MKT==='us'?m.us:m.au), region=MKT, label=(MKT==='us'?'🌏 Intl':'🇦🇺 AU');
-    return '<div class="jcol'+(isNow?' now':'')+'"><div class="jhead"><span class="when">'+esc(m.stamp)+'<small>'+esc(m.time)+' AEST</small></span><span class="jhright">'+tally(arr)+(isNow?'<span class="now-b">NOW</span>':'')+'</span></div>'+grp(label,arr,region)+'</div>';
+    // #226 — every Journey run is a Type 1 (catalyst menu) run; badge it so it's consistent with the
+    // tier-labelled Run Schedule. A split-run entry (#222) also carries its market on the badge.
+    var tierBadge='<span class="rltier rltier-1" title="Type 1 — the catalyst menu run">T1'+(m.market?(m.market==='au'?' 🇦🇺':' 🌏'):'')+'</span>';
+    return '<div class="jcol'+(isNow?' now':'')+'"><div class="jhead"><span class="when">'+esc(m.stamp)+'<small>'+esc(m.time)+' AEST</small></span><span class="jhright">'+tierBadge+tally(arr)+(isNow?'<span class="now-b">NOW</span>':'')+'</span></div>'+grp(label,arr,region)+'</div>';
   }
   var journeyCols=ms.slice(0,8).map(function(m,i){return jcol(m,ms[i+1],i===0);}).join('');   // last 8 runs, 3 visible across
   var note="This is the first menu on record — the journey starts here.";
@@ -2634,7 +2675,10 @@ function render(D,H){
   var ocTierScore=(ocOn&&OUTCOMES.byTier)?(function(){var ts=['T1','T2','T3'].filter(function(t){return (OUTCOMES.byTier[t]||{}).n;});if(ts.length<2)return '';return '<div class="tierscore-wrap"><div class="tierscore-h">By model tier</div><div class="tfscore tierscore">'+ts.map(function(t){var a=OUTCOMES.byTier[t]||{};var wr=a.n?Math.round((a.winRate||0)*100):null;var cls=wr==null?'':(wr>=60?'good':wr>=40?'mid':'bad');var m=_tierMeta[t];return '<div class="tfs '+cls+'"><div class="tft">'+esc(m.lab)+'</div><div class="tfv">'+(wr==null?'—':wr+'%')+'</div><div class="tfn">'+(a.n?'right '+(a.wins||0)+' of '+a.n:'—')+'</div></div>';}).join('')+'</div></div>';})():'';
   function lines(arr,key,src,off){off=off||0;return (arr||[]).map(function(x,i){
     var lead=x.leader?'<span class="thlead" title="Real model score behind this theme">→ <b>'+esc(x.leader.sym)+'</b> '+x.leader.buy_now+'/100 '+esc(x.leader.band)+'</span>':'';
-    return '<div class="line clickline" data-theme="'+esc(src)+'" data-ti="'+(off+i)+'" role="button" tabindex="0"><span class="em">'+esc(x.em)+'</span><div class="txt">'+esc(x[key])+'<small>'+x.note+'</small>'+lead+'</div><span class="tag '+esc(x.tclass)+'">'+esc(x.tag)+'</span></div>';
+    // robust label: geo/sectors carry `name`, commodities carry `title` — fall back so neither shows
+    // "undefined". note was concatenated raw (unescaped + unguarded → literal "undefined" when absent).
+    var _label=x[key]||x.title||x.name||x.label||'';
+    return '<div class="line clickline" data-theme="'+esc(src)+'" data-ti="'+(off+i)+'" role="button" tabindex="0"><span class="em">'+esc(x.em||'')+'</span><div class="txt">'+esc(_label)+(x.note?'<small>'+esc(x.note)+'</small>':'')+lead+'</div><span class="tag '+esc(x.tclass)+'">'+esc(x.tag)+'</span></div>';
   }).join('');}
   var story = (PULSES&&PULSES.length) ?
     ('<div class="panel"><h3>Tonight\'s hourly runs</h3><p class="panelsub"><b>Minor runs</b> — same menu, re-priced every hour ('+PULSES.length+' this session). The <b>major</b> menu changes are in The Journey. Newest first.</p>'+
@@ -3120,9 +3164,16 @@ document.addEventListener('click',function(e){
 // which stopPropagation's) still opens juice instead; the closest('.juicebtn') guard is belt-and-braces.
 document.addEventListener('click',function(e){
   var c=e.target.closest('.card-sugg,.spot-row'); if(!c)return;   // #199 spot-rows reuse the same open path
-  if(e.target.closest('.juicebtn')||e.target.closest('a'))return;
+  if(e.target.closest('.juicebtn')||e.target.closest('.risktolchip')||e.target.closest('a'))return;
   e.preventDefault(); openMover(c.dataset.suggSym, c.dataset.suggRegion);
 });
+// #224 — the compact risk chip opens the risk-vs-tolerance detail modal (capturing + stopPropagation so a
+// chip inside a tappable card opens the risk modal, not the card).
+document.addEventListener('click',function(e){
+  var b=e.target.closest('.risktolchip'); if(!b)return;
+  e.preventDefault(); e.stopPropagation();
+  openRiskInfo(+b.dataset.riskinfo);
+},true);
 function fmtDate(iso){var p=String(iso||'').split('-');if(p.length!==3)return iso||'';var mo=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];return (+p[2])+' '+(mo[(+p[1])-1]||'')+' '+p[0];}
 // Plain-English "what happened" for one graded call — the honesty of that exact pick on that run.
 function openGrade(key){
@@ -3342,7 +3393,10 @@ function reviewsHead(){
 }
 function updateOwnCount(){ var el=document.getElementById('ownCount'); if(el){ try{ el.textContent=wlGet().filter(function(w){return w.own;}).length; }catch(e){} } }
 function favesHead(){
-  var n=0,owned=0; try{var a=wlGet(); n=a.length; owned=a.filter(function(w){return w.own;}).length;}catch(e){}
+  // #227 — market-scope these to match the (now market-filtered, #206) watchlist below + the "Things you
+  // own" summary card. Before this they counted ALL markets (18) while the card showed just AU (17) — the
+  // same number rendered two different ways on one screen. Both now reflect the selected market.
+  var n=0,owned=0; try{var a=wlGet().filter(function(w){return (w.region||'au')===MKT;}); n=a.length; owned=a.filter(function(w){return w.own;}).length;}catch(e){}
   var stats=['<button class="tabstat wlfbtn'+(WL_FILTER==='all'?' on':'')+'" id="wlfAll" type="button"><span class="tk">Watching</span> <b>'+n+'</b></button>',
     '<button class="tabstat wlfbtn'+(WL_FILTER==='own'?' on':'')+'" id="wlfOwn" type="button"><span class="tk">You own</span> <b id="ownCount">'+owned+'</b></button>'];
   var t=n?('You\'re watching '+n+(n===1?' name':' names')):'Your table is empty — for now';
@@ -3443,16 +3497,23 @@ function kitchenHead(D){
   // Next re-price ≈ last + ~10 min while a market's awake; if that's already past (overnight lull), just
   // say "~10 min" rather than a stale clock time.
   var nextRep='~10 min'; if(lastP){ var _nr=new Date(new Date(lastP).getTime()+10*60000); if(_nr>_now) nextRep=_hm(_nr.toISOString()); }
+  // #222 — when T1 is split into independent AU + US runs, the bundle carries nextAu/nextUs +
+  // lastCookAu/lastCookUs. Show a T1 line PER MARKET (🇦🇺 / 🌏) then; otherwise the single combined T1 line.
+  var splitOn=!!(D&&(D.nextAu||D.nextUs||D.lastCookAu||D.lastCookUs));
+  var lastCookedLines, nextUpLines;
+  if(splitOn){
+    var _auCook=(D.lastCookAu)?_hm(D.lastCookAu):'none yet', _usCook=(D.lastCookUs)?_hm(D.lastCookUs):'none yet';
+    var _auNext=(D.nextAu)?D.nextAu.replace(' AEST','')+' · '+_until(D.nextAu):'—', _usNext=(D.nextUs)?D.nextUs.replace(' AEST','')+' · '+_until(D.nextUs):'—';
+    lastCookedLines=[{tier:'T1', val:'🇦🇺 '+_auCook},{tier:'T1', val:'🌏 '+_usCook},{tier:'T2·3', val:scanVal, cls:scanBad?'bd':null}];
+    nextUpLines=[{tier:'T1', val:'🇦🇺 '+_auNext},{tier:'T1', val:'🌏 '+_usNext},{tier:'T2·3', val:nextScan}];
+  }else{
+    lastCookedLines=[{tier:'T1', val:cookVal, cls:cook&&cook.bad?'bd':null},{tier:'T2·3', val:scanVal, cls:scanBad?'bd':null}];
+    nextUpLines=[{tier:'T1', val:nextCookFull},{tier:'T2·3', val:nextScan}];
+  }
   var stats=[
-    // Cook + scan folded together: one card, T1 line + T2·3 line
-    _kmulti('Last cooked',[
-      {tier:'T1', val:cookVal, cls:cook&&cook.bad?'bd':null},
-      {tier:'T2·3', val:scanVal, cls:scanBad?'bd':null}
-    ]),
-    _kmulti('Next up',[
-      {tier:'T1', val:nextCookFull},
-      {tier:'T2·3', val:nextScan}
-    ]),
+    // Cook + scan folded together: one card, T1 line(s) + T2·3 line
+    _kmulti('Last cooked', lastCookedLines),
+    _kmulti('Next up', nextUpLines),
     _kmulti('Re-prices today',[
       {sub:'done', val:String(n)+(lastP?' · '+_hm(lastP):'')},
       {sub:'next', val:nextRep}
