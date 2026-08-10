@@ -738,6 +738,13 @@
   .potlegend span{display:inline-flex;align-items:center;gap:5px}
   .potlegend i{width:9px;height:9px;border-radius:50%;display:inline-block}
   .pot{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
+  /* #211 — Full Pot band groups (Sizzling/Tasty/Maybe/Pass), and the Top-20 leaderboard's rank badges */
+  .potband{margin-top:16px}
+  .potband-h{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:900;letter-spacing:-.01em;margin-bottom:9px}
+  .potband-h.band-hot{color:var(--broth)} .potband-h.band-good{color:var(--buy)} .potband-h.band-mid{color:var(--hold)} .potband-h.band-cold{color:var(--dont)}
+  .potband-n{font-size:11px;font-weight:800;font-family:var(--mono);background:var(--surface-2);color:var(--muted);border-radius:999px;padding:1px 8px}
+  .pmc-rank{font-size:11px;font-weight:900;font-family:var(--mono);color:#fff;background:var(--ink);border-radius:6px;padding:1px 5px;min-width:20px;text-align:center;flex:0 0 auto}
+  .potcard.ranked .ph{display:none}
   /* #143 — a distinct highlight treatment so a real bargain reads as an event, not just another section */
   .bargainsec{border:1px solid rgba(255,107,26,.35);background:linear-gradient(180deg,rgba(255,107,26,.07),transparent 140px);border-radius:18px;padding:16px 16px 4px;margin:22px 0}
   .bargainsec .sec-head h2{font-size:clamp(19px,2.6vw,23px)}
@@ -2457,13 +2464,14 @@ function render(D,H){
         return '<div class="plrow"><span class="pltime">'+esc(pu.stamp)+'</span><span class="plmv">'+body+'</span></div>';
       }).join('')+'</div></div>')
     : '<div class="panel"><h3>Tonight\'s hourly runs</h3><p class="panelsub">Hourly pulses will appear here as they run.</p></div>';
-  function potCard(c,i){
+  function potCard(c,i,rank){
     var spk=(c.spark&&c.spark.length>2)?sparkSVG(c.spark.slice(-30)):'';
     var chg=c.change?'<span class="pmc-chg '+(c.up?'up':'down')+'">'+(c.up?'▲':'▼')+' '+esc(c.change)+'</span>':'';
     var shortChip=(c.short!=null&&c.short>=4)?'<span class="pmc-short">🩳 '+c.short+'%</span>':'';
     var jc=juiceChip(c.score,c.sym,c.name,signalRows(c,c.region||'us'));   // #173/#186 — 🍊 chip → the one consolidated breakdown
-    return '<div class="potcard h-'+esc(c.heat)+'" data-ci="'+i+'" role="button" tabindex="0" aria-label="Details for '+esc(c.sym)+'">'+
-      '<div class="pmc-top">'+(c.heat==='cold'?'<span class="ph no">⛔</span>':'<span class="ph"></span>')+'<b class="pmc-sym">'+esc(c.sym)+'</b>'+shortChip+'<span class="pmc-flag">'+(c.region==='au'?'AU':'US')+'</span>'+
+    var rankBadge=rank?'<span class="pmc-rank">'+rank+'</span>':'';   // #211 — Stock Pot Top 20 is a numbered leaderboard
+    return '<div class="potcard h-'+esc(c.heat)+(rank?' ranked':'')+'" data-ci="'+i+'" role="button" tabindex="0" aria-label="Details for '+esc(c.sym)+'">'+
+      '<div class="pmc-top">'+rankBadge+(c.heat==='cold'?'<span class="ph no">⛔</span>':'<span class="ph"></span>')+'<b class="pmc-sym">'+esc(c.sym)+'</b>'+shortChip+'<span class="pmc-flag">'+(c.region==='au'?'AU':'US')+'</span>'+
         '<button class="watchbtn iconwatch pmc-watch" data-sym="'+esc(c.sym)+'" data-region="'+esc(c.region||'us')+'"'+(c.name?' data-name="'+esc(c.name)+'"':'')+' aria-pressed="false" title="Add to watchlist">+</button></div>'+
       (c.name?'<div class="pmc-name">'+esc(c.name)+'</div>':'')+
       '<div class="pmc-px">'+(c.price?'<span class="pmc-price">'+esc(cleanPrice(c.price))+'</span>':'')+chg+'</div>'+
@@ -2471,28 +2479,25 @@ function render(D,H){
       '<div class="pmc-note">'+esc(c.note||c.news)+'</div>'+(jc?'<div class="pmc-juice">'+jc+'</div>':'')+'</div>';   // WHY it's rated this way beats a random news headline (was c.news||c.note)
   }
   var _cands=(D.candidates||[]);
-  var _keepIdx=[],_loseIdx=[];
-  _cands.forEach(function(c,i){ if((c.region||'us')!==MKT) return;   // respect the global AU/US view
-    if(c.heat==='mid'||c.heat==='cold')_loseIdx.push(i); else _keepIdx.push(i); });
-  if(!_keepIdx.length){   // no sizzling/tasty this market (e.g. ASX scores run low) → surface the 'maybes' so the pot isn't empty
-    _keepIdx=_loseIdx.filter(function(i){return _cands[i].heat==='mid';});
-    _loseIdx=_loseIdx.filter(function(i){return _cands[i].heat==='cold';});
-  }
-  // #205 (user asked twice) — sort each bucket by real score DESCENDING. Before this the pot was in
-  // discovery order within its heat bucket, so an 85 could sit below a 56 — confusing for a "ranked" list.
   var _byScore=function(a,b){var sa=(_cands[a].score&&_cands[a].score.buy_now)||0,sb=(_cands[b].score&&_cands[b].score.buy_now)||0;return sb-sa;};
-  _keepIdx.sort(_byScore); _loseIdx.sort(_byScore);
-  var _potN=_keepIdx.length+_loseIdx.length;
+  // #211 — The Full Pot is now the COMPLETE shortlist grouped by heat band (Sizzling/Tasty/Maybe/Pass),
+  // a categorized directory — genuinely different from the flat, numbered Stock Pot Top-20 leaderboard
+  // below (they used to render the identical top-20 cards). Cards are score-sorted within each band.
+  var _band={hot:[],good:[],mid:[],cold:[]};
+  _cands.forEach(function(c,i){ if((c.region||'us')!==MKT) return; (_band[c.heat]||_band.cold).push(i); });
+  Object.keys(_band).forEach(function(k){ _band[k].sort(_byScore); });
+  var _potN=_band.hot.length+_band.good.length+_band.mid.length+_band.cold.length;
   var _bargainIdx=[]; _cands.forEach(function(c,i){ if((c.region||'us')===MKT&&isBargain(c)) _bargainIdx.push(i); });
   var bargainCards=_bargainIdx.map(function(i){return potCard(_cands[i],i);}).join('');
-  // #141 → #196 (10 Aug 2026, user reversed the call): the Top 20 was a deliberate CROSS-market
-  // leaderboard (ignored the AU/US toggle). User wants it market-scoped like the rest of the page —
-  // now filtered to the selected market (MKT), re-rendered on the market toggle.
+  // #141 → #196: market-scoped Top-20 leaderboard (flat, ranked, numbered — the distinct sibling of the
+  // band-grouped Full Pot per #211).
   var _top20Idx=_cands.map(function(c,i){return {i:i,sc:(c.score&&c.score.buy_now!=null)?c.score.buy_now:-1,rg:(c.region||'us')};})
     .filter(function(o){return o.sc>=0&&o.rg===MKT;}).sort(function(a,b){return b.sc-a.sc;}).slice(0,20).map(function(o){return o.i;});
-  var top20Cards=_top20Idx.map(function(i){return potCard(_cands[i],i);}).join('');
-  var pot=_keepIdx.map(function(i){return potCard(_cands[i],i);}).join('');
-  var potLose=_loseIdx.map(function(i){return potCard(_cands[i],i);}).join('');
+  var top20Cards=_top20Idx.map(function(i,ri){return potCard(_cands[i],i,ri+1);}).join('');
+  var _BANDS=[{k:'hot',ic:'🔥',lbl:'Sizzling'},{k:'good',ic:'✅',lbl:'Tasty'},{k:'mid',ic:'➖',lbl:'Maybe'}];
+  var potBands=_BANDS.map(function(b){ var idxs=_band[b.k]; if(!idxs.length) return '';
+    return '<div class="potband"><div class="potband-h band-'+b.k+'">'+b.ic+' '+b.lbl+' <span class="potband-n">'+idxs.length+'</span></div><div class="pot">'+idxs.map(function(i){return potCard(_cands[i],i);}).join('')+'</div></div>'; }).join('');
+  var coldCards=_band.cold.map(function(i){return potCard(_cands[i],i);}).join('');
   var trail=(D.trail||[]).map(function(t){var jump=(t.jump?' <a class="trailjump" href="#'+esc(t.jump)+'">'+esc(t.jumpLabel||'see the list →')+'</a>':'');return '<div class="step"><span class="n">'+esc(t.n)+'</span><div class="st-txt">'+t.text+jump+'<small>'+esc(t.note)+'</small></div></div>';}).join('');
 
   document.getElementById('app').innerHTML=
@@ -2561,15 +2566,13 @@ function render(D,H){
       '<p class="sec-sub">Genuinely cheap right now — oversold, not in freefall, and nothing actively wrong that we can see. <b>Tap any for the full read.</b></p>'+
       '<div class="pot">'+bargainCards+'</div></section>':'')+
     '<section id="fullpot"><div class="sec-head"><h2 class="display"><span class="k">05</span> The full pot</h2>'+infoBtn('fullpot')+'</div>'+
-      '<p class="sec-sub">Every '+(MKT==='au'?'🇦🇺 Australian':'🌏 international')+' candidate the scan shortlisted tonight — <b>'+_potN+' names</b>, priced and scored. These are the ones we chose from. Colour = how appetising it looks. <b>Tap any for the full read.</b></p>'+
-      '<div class="potlegend"><span><i style="background:var(--broth)"></i>🔥 sizzling</span><span><i style="background:var(--buy)"></i>✅ tasty</span><span><i style="background:var(--hold)"></i>➖ maybe</span><span><span class="legno">⛔</span> send it back</span></div>'+
-      (!_keepIdx.length&&potLose?'<p class="potempty">Nothing scored above <b>Watch</b> in '+(MKT==='au'?'🇦🇺 Australia':'🌏 international')+' tonight — by design we only show sizzling/tasty picks up top. Tap below to see the full '+_loseIdx.length+' we actually considered, ranked, none cleared the bar. <b>👇 Tap to see them</b></p>':'')+
-      (pot?'<div class="pot">'+pot+'</div>':'')+
-      (potLose?'<button class="potmore'+(!_keepIdx.length?' potmore-lead':'')+'" id="potMore" aria-expanded="false">➖ '+_loseIdx.length+' more — maybes &amp; passes ▾</button>'+
-        '<div class="pot potlose" id="potLose" hidden>'+potLose+'</div>':'')+
+      '<p class="sec-sub">Every '+(MKT==='au'?'🇦🇺 Australian':'🌏 international')+' candidate the scan shortlisted tonight — <b>'+_potN+' names</b>, sorted into buckets by how appetising the model found each one. This is the full menu we chose from. <b>Tap any for the full read.</b></p>'+
+      (potBands||'<p class="potempty">Nothing scored above <b>Pass</b> in '+(MKT==='au'?'🇦🇺 Australia':'🌏 international')+' tonight — every name is in the passes below.</p>')+
+      (coldCards?'<button class="potmore'+(potBands?'':' potmore-lead')+'" id="potMore" data-n="'+_band.cold.length+'" aria-expanded="false">➖ '+_band.cold.length+' didn’t make the cut — passes ▾</button>'+
+        '<div class="potband" id="potLose" hidden><div class="potband-h band-cold">⛔ Send it back <span class="potband-n">'+_band.cold.length+'</span></div><div class="pot potlose">'+coldCards+'</div></div>':'')+
       '</section>'+
     (top20Cards?'<section id="top20"><div class="sec-head"><h2 class="display">🏆 Stock Pot Top 20</h2></div>'+
-      '<p class="sec-sub">The best-scored '+(MKT==='au'?'ASX':'US')+' names tonight, ranked purely by the model. <b>Tap any for the full read.</b></p>'+
+      '<p class="sec-sub">The same names, cut differently: a straight <b>1–20 leaderboard</b> of the best-scored '+(MKT==='au'?'ASX':'US')+' names tonight, ranked purely by the model — ignoring the buckets above. <b>Tap any for the full read.</b></p>'+
       '<div class="pot">'+top20Cards+'</div></section>':'')+
     upcomingHtml(D)+
     topMoversHtml(D)+
@@ -4602,7 +4605,7 @@ function wire(D){
   var sit=document.getElementById('signInTop');
   if(sit){ sit.textContent=signedIn()?'👤 Account':'👤 Sign in'; sit.onclick=openAccount; }
   var pm=document.getElementById('potMore'), pl=document.getElementById('potLose');
-  if(pm&&pl){ pm.onclick=function(){ var open=pl.hasAttribute('hidden'); if(open)pl.removeAttribute('hidden'); else pl.setAttribute('hidden',''); pm.setAttribute('aria-expanded',open?'true':'false'); pm.innerHTML=(open?'▴ Hide the maybes &amp; passes':'➖ '+pl.children.length+' more — maybes &amp; passes ▾'); }; }
+  if(pm&&pl){ var _pn=pm.dataset.n||''; pm.onclick=function(){ var open=pl.hasAttribute('hidden'); if(open)pl.removeAttribute('hidden'); else pl.setAttribute('hidden',''); pm.setAttribute('aria-expanded',open?'true':'false'); pm.innerHTML=(open?'▴ Hide the passes':'➖ '+_pn+' didn’t make the cut — passes ▾'); }; }
   var rm=document.getElementById('runMore'), rr=document.getElementById('runRest');
   if(rm&&rr){ var rrN=rr.children.length; rm.onclick=function(){ var open=rr.hasAttribute('hidden'); if(open)rr.removeAttribute('hidden'); else rr.setAttribute('hidden',''); rm.setAttribute('aria-expanded',open?'true':'false'); rm.innerHTML=(open?'▴ Hide older runs':'➖ '+rrN+' older runs ▾'); }; }
   var kh=document.getElementById('kitchenHealthBtn'); if(kh) kh.onclick=openDataHealth;
