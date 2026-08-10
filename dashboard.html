@@ -462,7 +462,7 @@
   .runlog-rest[hidden]{display:none}
   .roadmapbox{margin-top:20px;padding-top:16px;border-top:1px solid var(--line)}
   .rmhead{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--broth);font-weight:800;margin-bottom:10px}
-  .rmupdated{color:var(--faint);font-weight:600;letter-spacing:0;text-transform:none;font-size:10.5px;margin-left:4px}
+  .rmupdated{color:var(--faint);font-weight:600;letter-spacing:0;text-transform:none;font-size:11px;align-self:center;margin-left:2px}
   .rmcols{display:grid;grid-template-columns:1fr;gap:16px}
   @media(min-width:640px){.rmcols{grid-template-columns:1fr 1fr}}
   .rmcolh{font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
@@ -3274,7 +3274,9 @@ function roadmapHtml(D){
   }
   var pendingHtml=col(rm.pending,12);
   var shippedHtml=col(rm.shipped,10);
-  return '<div class="roadmapbox"><div class="rmhead">🗺️ Roadmap'+(rm.updatedAt?' <span class="rmupdated">updated '+timeAgo(rm.updatedAt)+'</span>':'')+'</div>'+
+  // #208 — brand the Roadmap header like The Archive (big display h2 + subtitle), not a small caps label.
+  return '<div class="roadmapbox"><div class="sec-head" style="margin:4px 0 2px"><h2 class="display">🗺️ Roadmap</h2>'+(rm.updatedAt?'<span class="rmupdated">updated '+timeAgo(rm.updatedAt)+'</span>':'')+'</div>'+
+    '<p class="sec-sub" style="margin:0 0 14px">What\'s shipped, and what\'s still on the stove — the honest running list.</p>'+
     '<div class="rmcols">'+
       (pendingHtml?'<div><div class="rmcolh">🚧 Still open</div>'+pendingHtml+'</div>':'')+
       (shippedHtml?'<div><div class="rmcolh">✅ Recently shipped</div>'+shippedHtml+'</div>':'')+
