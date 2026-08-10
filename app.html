@@ -933,6 +933,8 @@
   .wlpill a:hover{color:var(--broth)}
   .wlpill .rm{background:var(--surface-2);border:1px solid var(--line);color:var(--muted);border-radius:50%;width:20px;height:20px;cursor:pointer;font-size:11px;line-height:1;padding:0}
   .wlempty{color:var(--faint);font-size:13px}
+  .wlswitch{display:inline-block;margin-left:6px;background:var(--surface-2);border:1px solid var(--line);color:var(--broth);font-weight:800;font-size:12px;padding:3px 9px;border-radius:999px;cursor:pointer;font-family:var(--font)}
+  .wlswitch:hover{border-color:var(--broth)}
   .wlreg{display:inline-block;background:var(--buy);color:#04240f;font-weight:900;text-decoration:none;padding:12px 22px;border-radius:11px;font-size:14px;border:0;cursor:pointer;font-family:var(--font)}
   .wlreg:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
   .wlstatus{font-size:13px;font-weight:700;margin-top:10px;min-height:18px}
@@ -2434,6 +2436,9 @@ function isBargain(c){
   if(c.news_sentiment!=null&&c.news_sentiment<-0.1) return false;
   return true;
 }
+// Global market switch — the whole full view follows. Used by the header flag toggle and any
+// "see your other-market names" affordance (#206). Preserves scroll position across the re-render.
+function setMkt(m){ if(!m||m===MKT)return; MKT=m; var sc=window.pageYOffset; render(LAST.D,LAST.H); window.scrollTo(0,sc); }
 function render(D,H){
   LAST={D:D,H:H};
   var r=D.risk||{};
@@ -2740,18 +2745,20 @@ function render(D,H){
   // ===== 👨‍🍳 INSIDE THE KITCHEN =====
   '<div class="tabview" id="tab-kitchen">'+
     kitchenHead(D)+
-    '<section id="runsched"><div class="sec-head"><h2 class="display">⏱️ Run schedule</h2>'+infoBtn('schedule')+'</div>'+runGanttHtml()+runLogHtml()+roadmapHtml(D)+'</section>'+
+    // #209 (user ask) — section order: Run schedule → How we got here → The Archive → Data-source health
+    // → Roadmap. The Roadmap moved OUT of the Run-schedule section down to the very bottom, and
+    // "How we got here" now sits above "The Archive".
+    '<section id="runsched"><div class="sec-head"><h2 class="display">⏱️ Run schedule</h2>'+infoBtn('schedule')+'</div>'+runGanttHtml()+runLogHtml()+'</section>'+
+    '<section><div class="sec-head"><h2 class="display">📋 How we got here</h2></div>'+
+      '<p class="sec-sub">The recipe, in plain sight. No black box.</p>'+discoveryFunnel(D)+'<div class="panel trail">'+trail+'</div></section>'+
     '<section><div class="sec-head"><h2 class="display">🗄️ The Archive</h2>'+infoBtn('archive')+'</div>'+
       '<p class="sec-sub">Every menu we\'ve served — the real picks, verdicts and reasoning from that night, not a frozen price.</p>'+
       archiveHtml(H)+
     '</section>'+
-    '<section><div class="sec-head"><h2 class="display">📋 How we got here</h2></div>'+
-      '<p class="sec-sub">The recipe, in plain sight. No black box.</p>'+discoveryFunnel(D)+'<div class="panel trail">'+trail+'</div></section>'+
-    // #131 (9 Aug 2026, user ask) — moved to the bottom, below the Archive/How-we-got-here sections
-    // that matter to every user; this one's admin-only anyway.
     (isAdmin()?'<section id="adminhealth"><div class="sec-head"><h2 class="display">💓 Data-source health <span class="adminbadge">ADMIN</span></h2></div>'+
       '<p class="sec-sub">What is actually feeding tonight\'s picks, and any known gaps — maintained by hand, not a live ping. Only visible to you.</p>'+
       '<button class="trackcta" id="kitchenHealthBtn">💓 Open data-source health →</button></section>':'')+
+    (function(){var r=roadmapHtml(D);return r?'<section id="roadmapsec">'+r+'</section>':'';})()+
   '</div>'+
 
   '<footer>Auto-generated for information only. <b>Not financial advice</b> — do your own research.<br>The Stock Soup · '+esc(stampNoWeekday(D.stamp))+(D.next?' · next ~'+esc(D.next)+' (manual trigger)':' · served hourly')+'</footer>';
@@ -4331,6 +4338,10 @@ function renderWatchlist(){
     return {w:w,price:price,cur:cur,up:info?info.up:null,change:info?info.change:null,entry:entry,gap:gap,intel:it,
       name:(info&&info.name)||w.name||null, spark:(info&&info.spark)||null};
   });
+  // #206 — the watchlist now honours the AU/US toggle like the rest of the page. Count how many sit in the
+  // OTHER market so an empty AU (say) view can point the user to their US names instead of looking broken.
+  var otherMkt=rows.filter(function(r){return (r.w.region||'au')!==MKT;}).length;
+  rows=rows.filter(function(r){return (r.w.region||'au')===MKT;});
   renderWlSummary(rows);
   var triggered=rows.filter(function(r){return r.gap!=null&&r.gap<=0.5;});
   if(WL_FILTER==='own') rows=rows.filter(function(r){return r.w.own;});
@@ -4339,7 +4350,9 @@ function renderWatchlist(){
   if(banner){var t=triggered.map(function(r){return esc(r.w.sym);}).join(', ');
     banner.innerHTML=triggered.length?('🎯 '+triggered.length+' watched '+(triggered.length===1?'stock is':'stocks are')+' at or below your buy price: <b>'+t+'</b> — go look.'):'';
     banner.style.display=triggered.length?'':'none';}
-  if(!rows.length){el.innerHTML=(WL_FILTER==='own')?'<span class="wlempty">You haven\'t flagged anything as owned yet — tap 📦 on a card to mark it.</span>':'<span class="wlempty">No tickers yet — add one above, or tap <b>＋ Watch</b> on any pick.</span>';return;}
+  if(!rows.length){
+    var other=otherMkt?' <button class="wlswitch" type="button" onclick="setMkt(\''+(MKT==='au'?'us':'au')+'\')">See your '+otherMkt+' '+(MKT==='au'?'🌏 International':'🇦🇺 ASX')+' '+(otherMkt===1?'name':'names')+' →</button>':'';
+    el.innerHTML=(WL_FILTER==='own')?'<span class="wlempty">You haven\'t flagged anything as owned yet in '+(MKT==='au'?'ASX':'International')+' — tap 📦 on a card to mark it.'+other+'</span>':'<span class="wlempty">No '+(MKT==='au'?'🇦🇺 ASX':'🌏 International')+' tickers yet — add one above, or tap <b>＋ Watch</b> on any pick.'+other+'</span>';return;}
   var HEAT={hot:'🔥',good:'✅',mid:'➖',cold:'⛔'};
   function card(r){
     var w=r.w, it=r.intel;
@@ -4879,13 +4892,7 @@ function wire(D){
   var mkh=document.getElementById('mktHeadlineBtn'); if(mkh) mkh.onclick=openMarketRead;
   var rmb=document.getElementById('riskMeterBtn'); if(rmb){ rmb.onclick=openMarketRead; rmb.onkeydown=function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); openMarketRead(); } }; }   // #197 — tap the risk meter → tonight's read
   var tabs=document.querySelectorAll('.mkf[data-region], .tab[data-region]');
-  tabs.forEach(function(t){t.addEventListener('click',function(){
-    if(t.dataset.region===MKT)return;
-    MKT=t.dataset.region;                 // global market → the whole full view follows
-    var sc=window.pageYOffset;
-    render(LAST.D,LAST.H);
-    window.scrollTo(0,sc);
-  });});
+  tabs.forEach(function(t){t.addEventListener('click',function(){ setMkt(t.dataset.region); });});
   bindTierPills();   // #152 tier pills now live in the header (tierBarHtml), same as the market filter
   function regionOf(id){var a=(D.regions||[]).filter(function(x){return x.id===id;});return a[0];}
   function openFromEl(el){var rg=regionOf(el.dataset.region);if(!rg)return;var p=tierPicks(rg)[+el.dataset.idx];if(p)openModal(p,rg.id,rg.cur||'$');}
