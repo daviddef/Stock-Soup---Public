@@ -1157,6 +1157,10 @@
      read as matching, equal-width cards with their contents inset the same — the alignment the user wanted. */
   .tmxwrap{width:100%;margin:6px 0 4px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px 16px 12px}
   .tmx-title{text-align:center;font-size:14px;font-weight:900;letter-spacing:.01em;margin-bottom:10px}
+  /* #260 — the verbose "The 3×3 — every type, every timeframe" banner is gone; each grid now carries just a
+     light market label so the stacked AU + US grids stay distinguishable. */
+  .tmx-mkt{font-size:13px;font-weight:800;color:var(--ink);letter-spacing:.01em;margin:2px 2px 9px;display:flex;align-items:center;gap:6px}
+  .tmx-mkt small{font-weight:700;color:var(--muted);font-size:11px}
   .tmx{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;align-items:stretch}
   .tmx-rowh{grid-column:1/-1;justify-content:flex-start !important;padding:8px 2px 2px !important;font-size:11px}
   .tmx-colh{text-align:center;display:flex;flex-direction:column;gap:1px;padding:2px 0 5px;font-size:12px;font-weight:900;border-bottom:2px solid var(--line)}
@@ -5623,9 +5627,9 @@ function tierMatrixHtml(D,rid){
   // #255 — 3-column grid (no left row-label gutter) so the cards span the FULL width and align edge-to-edge
   // with the pot list below; DAY/WEEK/MONTH become full-width band headers before each triplet.
   var head=cols.map(function(c){return '<div class="tmx-colh tmx-colh-'+c.rc+'"><b>'+c.lbl+'</b><span>'+c.sub+'</span></div>';}).join('');
-  // #172 refine — a risk strip under the headers echoing the risk slider above (red = wilder on the
-  // left/Tier 3 → green = safer on the right/Tier 1), so the tier columns visibly map to the risk scale.
-  var riskbar='<div class="tmx-riskbar" style="grid-column:1/-1"><span class="tmx-rl">🌶️ riskier</span><span class="tmx-rl">safer 🛡️</span></div>';
+  // #260 — the "🌶️ riskier … safer 🛡️" strip inside the grid was a SECOND risk chart duplicating the hero
+  // risk meter above (user-flagged); removed. The column headers' own red→amber→green underlines + the
+  // legend below already carry the risk-axis meaning.
   var body=rows.map(function(rw){
     return '<div class="tmx-rowh">'+rw.lbl+'</div>'+
       cols.map(function(c){
@@ -5636,19 +5640,20 @@ function tierMatrixHtml(D,rid){
         var sc=p.score&&p.score.buy_now, st=villagerSticker(p), tone=chgTone(p.change,p.up);
         // #233 — a backfilled "next best" (no served pick cleared this slot) is flagged + muted, exactly
         // like the Full view's 💡 next-best card, so the 3×3 never shows an empty "zzz" where Full shows a name.
-        return '<button class="tmx-cell tmx-vcell '+tmxTone(p)+(p._sugg?' tmx-sugg':'')+'" data-tier="'+c.k+'" data-tf="'+rw.k+'" title="'+esc(p.sym)+(p._sugg?' · next best (not a served pick)':(p.verdict?' · '+esc(p.verdict):''))+' — tap for the full read">'+
+        return '<button class="tmx-cell tmx-vcell '+tmxTone(p)+(p._sugg?' tmx-sugg':'')+'" data-tier="'+c.k+'" data-tf="'+rw.k+'" data-region="'+esc(rid)+'" title="'+esc(p.sym)+(p._sugg?' · next best (not a served pick)':(p.verdict?' · '+esc(p.verdict):''))+' — tap for the full read">'+
           (p._sugg?'<span class="tmx-suggtag">💡 next best</span>':'')+
           '<span class="tmx-masc">'+villagerMascot(p.sym)+'</span>'+
           '<span class="tmx-symrow"><span class="tmx-sym">'+esc(p.sym)+'</span></span>'+
+          // #260 (user ask) — company name back on the cell (was dropped in #247); kept to 2 lines, muted.
+          (p.name?'<span class="tmx-name">'+esc(p.name)+'</span>':'')+
           (p.change?'<span class="tmx-chg '+tone+'">'+chgArrow(tone)+esc(p.change)+'</span>':'')+
-          // #247 — name + per-cell mini-chart removed: they made the 9 cells uneven and busy. Mascot +
-          // ticker + %chg + YUM/NAH + 🍊 is the tidy, uniform set; the chart is one tap away in the detail.
           '<span class="tmx-botrow"><span class="vsticker '+st.cls+' tmx-stick">'+st.emoji+' '+st.word+'</span>'+(sc!=null?'<span class="tmx-jz">🍊 '+sc+'</span>':'')+'</span>'+
         '</button>';
       }).join('');
   }).join('');
-  return '<div class="tmxwrap"><div class="tmx-title">🎲 The 3×3 — every type, every timeframe</div>'+
-    '<div class="tmx">'+head+riskbar+body+'</div>'+
+  var mkt=rid==='au'?'<span>🇦🇺</span> Australia <small>· every type × timeframe</small>':'<span>🌏</span> International <small>· every type × timeframe</small>';
+  return '<div class="tmxwrap"><div class="tmx-mkt">'+mkt+'</div>'+
+    '<div class="tmx">'+head+body+'</div>'+
     '<div class="tmx-legend">🌶️ wilder, whole-market  ·  🛡️ safer, catalyst-backed → tap any square</div></div>';
 }
 // #199 (user ask) — a single, score-sorted, threshold-filterable view of the WHOLE candidate pot across
@@ -5685,7 +5690,7 @@ function renderSimple(D){
   var cards=(region?tierPicks(region):[]).map(function(p,idx){ return villagerCard(p,rid,idx); }).join('');   // #152 — honour the selected tier in Simple view too
   var themeLine=villagerThemeLine(D);
   document.getElementById('app').innerHTML =
-    '<div class="simple villager"><div class="shero"><div class="brandrow"><div class="brand"><span class="hpot"><span class="hsteam"><i></i><i></i><i></i></span><span class="hpotbowl">🍲</span></span> The&nbsp;Stock&nbsp;Soup&nbsp;Village</div>'+
+    '<div class="simple villager"><div class="shero"><div class="brandrow"><div class="brand"><span class="hpot"><span class="hsteam"><i></i><i></i><i></i></span><span class="hpotbowl">🍲</span></span> The&nbsp;Stock&nbsp;Soup</div>'+
       '<button class="viewtoggle" id="viewToggleS" title="Switch to Full view" aria-label="Switch to Full view">📋</button>'+
       '<div class="burgerwrap"><button class="burger" id="burgerBtnS" aria-label="Menu" aria-haspopup="true" aria-expanded="false" aria-controls="burgerMenuS">☰</button>'+
         '<div class="burgermenu" id="burgerMenuS" role="menu" hidden>'+
@@ -5705,12 +5710,17 @@ function renderSimple(D){
       // real risk meter, identical to Full view: same needle, same 5 factor ticks, same legend, same tap →
       // tonight's market read. One chart, not two.
       '<div class="vmood"><div class="vmoodemoji">'+mood.emoji+'</div><div class="vmoodword">'+mood.word+'</div></div>'+
+      // #260 (user ask) — the daily theme line ("Gold, Tin PFS… popular kids at school 🌟") sits directly
+      // under the GO TIME! header now, above the risk meter.
+      (themeLine?'<div class="vtheme">'+esc(themeLine)+'</div>':'')+
+      // #260 — factor legend (VIX/Bitcoin/Gold/Oil/AUD-USD numbers) removed from Simple: it's a dumb-simple
+      // view and that detail is one tap away (tap the meter → tonight's market read). Needle + ticks stay.
       (function(){var fm=riskFactorMarks(r); return '<div class="meter tappable" id="riskMeterBtn" role="button" tabindex="0" title="Tap for tonight’s market read" aria-label="Open tonight’s market read"><div class="track"><div class="needle" id="needle"></div>'+fm.marks+'</div>'+
-      '<div class="lbls"><span>🔴 Hide the cash</span><span>⚪ Steady</span><span>🟢 Send it</span></div>'+fm.leg+'</div>';})()+
-      (themeLine?'<div class="vtheme">'+esc(themeLine)+'</div>':'')+'</div>'+
-    tierMatrixHtml(D,rid)+   // #172/#182 — the 3×3 IS the fun Villager-card grid now (mascots + stickers + 🍊),
-                             // so the separate 3-up frog/pig cards below were pure duplication (user-flagged) — removed.
-    simpleFullPotHtml(D)+    // #199 — the whole scored pot, both markets, one score slider
+      '<div class="lbls"><span>🔴 Hide the cash</span><span>⚪ Steady</span><span>🟢 Send it</span></div></div>';})()+
+      '</div>'+
+    // #260 (user ask) — show BOTH markets together in the dummy view (no flag toggle needed): one 3×3 per
+    // market, stacked, each with a light flag label. The whole-pot list is removed from Simple entirely.
+    (D.regions||[]).map(function(rg){return tierMatrixHtml(D,rg.id);}).join('')+
     '<button class="sfull" id="viewFull2">🔍 Show me the boring grown-up version</button>'+
     '<footer>Not financial advice — just a friendly village guide. · The Stock Soup, served hot, hourly</footer></div>';
   wireSimple(D);
@@ -5747,10 +5757,11 @@ function wireSimple(D){
   function regionOf(id){return (D.regions||[]).filter(function(x){return x.id===id;})[0];}
   // #172 — 3×3 matrix cells open the real pick modal for that tier × timeframe
   document.querySelectorAll('.tmx-vcell[data-tier]').forEach(function(el){
-    el.onclick=function(){ var rg=regionOf(MKT); var p=matrixPickAt(D,MKT,el.dataset.tier,el.dataset.tf); if(!p) return;
+    el.onclick=function(){ var reg=el.dataset.region||MKT; var rg=regionOf(reg); var p=matrixPickAt(D,reg,el.dataset.tier,el.dataset.tf); if(!p) return;
       // #233 — a backfilled next-best cell isn't a served pick, so open the generic per-ticker read
       // (openMover: pick/candidate → analyst fallback), matching the Full view's suggestion-card tap.
-      if(p._sugg) openMover(p.sym,MKT); else openModal(p,MKT,(rg&&rg.cur)||'$'); };
+      // #260 — both markets now render, so the tap resolves against the cell's OWN region, not global MKT.
+      if(p._sugg) openMover(p.sym,reg); else openModal(p,reg,(rg&&rg.cur)||'$'); };
   });
   hydrateMissCharts();   // #172 — lazy-load each 3×3 cell's mini intraday chart (works for any ticker, incl T2/T3 with no spark)
   document.querySelectorAll('.vcard').forEach(function(c){
