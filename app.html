@@ -3302,17 +3302,44 @@ function archiveHtml(H){
 function kitchenHead(D){
   // "Re-prices today" must be TODAY's count, not PULSES.length — PULSES is a capped list (~24), so it
   // read a constant "24" for days (user caught it). Count only pulses whose AEST date is today.
+  // #219 (user ask) — tier-aware run timing: for BOTH Type 1 (the catalyst menu) and Type 2/3 (the daily
+  // whole-market scan) show the last run's real time + duration, red if it failed, plus the next run and
+  // a live countdown. Every card is badged with which tier it belongs to.
+  function _hm(iso){try{return new Date(iso).toLocaleTimeString('en-AU',{timeZone:'Australia/Sydney',hour:'2-digit',minute:'2-digit',hour12:false});}catch(e){return '';}}
+  function _dm(ms){return ms?Math.round(ms/60000)+'m':'';}
+  function _until(s){var m=(s||'').match(/(\d{1,2}):(\d{2})/);if(!m)return '';var now=new Date();var t=new Date(now);t.setHours(+m[1],+m[2],0,0);if(t<=now)t.setDate(t.getDate()+1);var mins=Math.round((t-now)/60000);var h=Math.floor(mins/60),mm=mins%60;return 'in '+(h?h+'h ':'')+mm+'m';}
+  function _kstat(label,value,tier,cls){var badge=tier?' <span class="rltier rltier-'+(tier==='T1'?'1':'23')+'">'+esc(tier)+'</span>':'';return '<span class="tabstat"><span class="tk">'+esc(label)+badge+'</span> <b'+(cls?' class="'+cls+'"':'')+'>'+esc(value)+'</b></span>';}
   var _today=null; try{_today=new Date().toLocaleDateString('en-CA',{timeZone:'Australia/Sydney'});}catch(e){}
-  var n=(typeof PULSES!=='undefined'&&PULSES?PULSES:[]).filter(function(pu){
-    if(!pu||!pu.iso) return false;
-    try{return new Date(pu.iso).toLocaleDateString('en-CA',{timeZone:'Australia/Sydney'})===_today;}catch(e){return false;}
-  }).length;
-  var last=stampNoWeekday(D&&D.stamp);
+  var P=(typeof PULSES!=='undefined'&&PULSES)?PULSES:[];
+  var n=P.filter(function(pu){ if(!pu||!pu.iso) return false; try{return new Date(pu.iso).toLocaleDateString('en-CA',{timeZone:'Australia/Sydney'})===_today;}catch(e){return false;} }).length;
+  var lastP=P.length?P[P.length-1].iso:null;
+  var rl=(typeof RUNLOG!=='undefined'&&RUNLOG)?RUNLOG:[];
+  var mh=(LAST&&LAST.H&&LAST.H.menus)||[];
+  // Last cook (T1): the most recent menu run — a committed menu (menuHistory), unless a NEWER attempt
+  // failed/cancelled (runLog), in which case show that in red so a bad last run is obvious.
+  var cook=mh[0]?{t:mh[0].iso,dur:mh[0].durMs,bad:false}:null;
+  var lastAtt=rl.filter(function(e){return e&&e.kind==='menu';})[0];
+  if(lastAtt&&(lastAtt.status==='failed'||lastAtt.status==='cancelled')){ var at=lastAtt.finishedAt||lastAtt.startedAt; if(!cook||new Date(at)>new Date(cook.t)) cook={t:at,dur:lastAtt.durMs,bad:true,st:lastAtt.status}; }
+  var cookVal=cook?(_hm(cook.t)+(cook.dur?' · '+_dm(cook.dur):'')+(cook.bad?' · '+cook.st:'')):(D&&D.stamp?stampNoWeekday(D.stamp):'—');
+  // Last scan (T2/3): the most recent whole-market scan from runLog
+  var lastScan=rl.filter(function(e){return e&&(e.kind==='scan-au'||e.kind==='scan-us');})[0];
+  var scanVal='none yet', scanBad=false;
+  if(lastScan){ var mkt=lastScan.kind==='scan-au'?'AU':'US';
+    if(lastScan.status==='cooking') scanVal=mkt+' · running…';
+    else { scanVal=mkt+' '+_hm(lastScan.finishedAt||lastScan.startedAt)+(lastScan.durMs?' · '+_dm(lastScan.durMs):''); if(lastScan.status==='failed'){scanVal+=' · failed';scanBad=true;} } }
+  var _now=new Date(), _sc=null; [[3,0,'AU'],[14,0,'US']].forEach(function(o){var t=new Date(_now);t.setHours(o[0],o[1],0,0);if(t<=_now)t.setDate(t.getDate()+1);if(!_sc||t<_sc.t)_sc={t:t,mkt:o[2]};});
+  var nextScan=_sc?(_sc.mkt+' '+('0'+_sc.t.getHours()).slice(-2)+':'+('0'+_sc.t.getMinutes()).slice(-2)):'—';
   var lastShort=lastFilled(0)||lastFilled(1), lastLong=lastFilled(2);
-  var stats=[tstat('Last cook',last||'—'),tstat('Next run',D&&D.next?'~'+D.next:'—'),tstat('Re-prices today',n),
-    tstat('Last Day/Week pick',lastShort?stampNoWeekday(lastShort):'none yet'),
-    tstat('Last Long pick',lastLong?stampNoWeekday(lastLong):'none yet')];
-  return tabHead('👨‍🍳 Behind the pass','The engine room','Every run, every source, every score — no black box. This is where the soup actually gets made.',stats);
+  var stats=[
+    _kstat('Last cook', cookVal, 'T1', cook&&cook.bad?'bd':null),
+    _kstat('Next cook', (D&&D.next?D.next.replace(' AEST','')+' · '+_until(D.next):'—'), 'T1'),
+    _kstat('Last scan', scanVal, 'T2·3', scanBad?'bd':null),
+    _kstat('Next scan', nextScan, 'T2·3'),
+    _kstat('Re-prices today', n+(lastP?' · last '+_hm(lastP):'')),
+    _kstat('Last Day/Week pick', lastShort?stampNoWeekday(lastShort):'none yet', 'T1'),
+    _kstat('Last Long pick', lastLong?stampNoWeekday(lastLong):'none yet', 'T1')
+  ];
+  return tabHead('👨‍🍳 Behind the pass','The engine room','Every run, every source, every score — no black box. <b>Type 1</b> = the catalyst menu (4×/day). <b>Type 2/3</b> = the daily whole-market scans. <b>Day/Week</b> vs <b>Long</b> = when we last served a real pick in that timeframe (some runs have none).',stats);
 }
 // #158 — 24h gantt-style strip above the Run Schedule list. Real ask, dropped once already (flagged
 // 9 Aug 2026, never built). Rolling 24h window ending now: menu runs on one lane (width = real
