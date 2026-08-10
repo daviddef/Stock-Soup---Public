@@ -1150,6 +1150,13 @@
   .jpen .jnum{font-size:12px;font-weight:800;text-align:right}
   .jpen .jnum.down{color:var(--dont)} .jpen .jnum.up{color:var(--buy)}
   .jwhy{flex-basis:100%;font-size:11px;color:var(--faint);margin-top:2px}
+  /* #186 — collapsible sections inside the one consolidated 🍊 breakdown */
+  .jsec{border-top:1px solid var(--line);margin-top:12px}
+  .jsec>summary{cursor:pointer;font-size:12.5px;font-weight:900;color:var(--ink);padding:10px 0 6px;list-style:none;display:flex;justify-content:space-between;align-items:center}
+  .jsec>summary::-webkit-details-marker{display:none}
+  .jsec>summary::marker{content:''}
+  .jsec>summary::after{content:'▾';color:var(--faint);font-size:11px}
+  .jsec[open]>summary::after{content:'▴'}
   .mtake{font-size:15px;line-height:1.6;text-wrap:pretty}
   .mtake .lead{color:var(--broth);font-weight:800}
   .mcat{list-style:none;display:flex;flex-direction:column;gap:8px}
@@ -2282,7 +2289,7 @@ function render(D,H){
         '<span class="px"><span class="p mono">'+esc(p.price)+'</span><br><span class="c mono '+chgTone(p.change,p.up)+'">'+esc(p.change)+'</span></span></div>'+
         /* miniTraj removed — inconsistent (only carried-over picks had it) + confusing 'since 23:33'; the range bar shows the trend */
         '<div class="buyat'+(p.nEntry?' ba-'+buyState(p):'')+'">'+(p.nEntry?'<span class="bl">🎯 Ideal buy</span> ~'+esc(rg.cur||'$')+p.nEntry+buyAction(p):'<span class="bl">Track this pick</span>')+'</div>'+
-        '<p class="plain">'+esc(p.plain)+'</p>'+riskTolWarn(p)+(function(){var jc=juiceChip(p.score,p.sym,p.name),sp=signalPillHtml(p,rg.id),vc=valChip(p);return (jc||sp||vc)?'<div class="sentrow">'+jc+sp+vc+'</div>':'';})()+'<div class="lvls">'+(p.levels||'')+'</div>'+
+        '<p class="plain">'+esc(p.plain)+'</p>'+riskTolWarn(p)+(function(){var jc=juiceChip(p.score,p.sym,p.name,signalRows(p,rg.id)),vc=valChip(p);return (jc||vc)?'<div class="sentrow">'+jc+vc+'</div>':'';})()+'<div class="lvls">'+(p.levels||'')+'</div>'+
         (p.spark?rangeBar(p.spark,rg.cur||'$',p.tf,p.nEntry):'')+'</article>'+
         ((p.runnerUp && /wait|late|hold|skip|avoid|pass|don.t|steer/i.test(p.verdict||''))?ruCard(p.runnerUp,rg.id,idx):'')+'</div>';
     }).join('');
@@ -2375,7 +2382,7 @@ function render(D,H){
     var spk=(c.spark&&c.spark.length>2)?sparkSVG(c.spark.slice(-30)):'';
     var chg=c.change?'<span class="pmc-chg '+(c.up?'up':'down')+'">'+(c.up?'▲':'▼')+' '+esc(c.change)+'</span>':'';
     var shortChip=(c.short!=null&&c.short>=4)?'<span class="pmc-short">🩳 '+c.short+'%</span>':'';
-    var jc=juiceChip(c.score,c.sym,c.name);   // #173 — 🍊 score chip on the candidate face too (tap → full breakdown)
+    var jc=juiceChip(c.score,c.sym,c.name,signalRows(c,c.region||'us'));   // #173/#186 — 🍊 chip → the one consolidated breakdown
     return '<div class="potcard h-'+esc(c.heat)+'" data-ci="'+i+'" role="button" tabindex="0" aria-label="Details for '+esc(c.sym)+'">'+
       '<div class="pmc-top">'+(c.heat==='cold'?'<span class="ph no">⛔</span>':'<span class="ph"></span>')+'<b class="pmc-sym">'+esc(c.sym)+'</b>'+shortChip+'<span class="pmc-flag">'+(c.region==='au'?'AU':'US')+'</span></div>'+
       (c.name?'<div class="pmc-name">'+esc(c.name)+'</div>':'')+
@@ -2560,10 +2567,12 @@ var SCORE_FLAB={pead:"Earnings",rev:"Analysts",hi:"Trend/High",news:"Catalyst",v
 // only inside scoreBarHtml, which renders in the tap-through detail modal — never on the card FACE. This
 // is the compact face chip: 🍊 + the score, tapping opens the exact same full openJuice() breakdown.
 // Reuses the JUICE_CACHE + the document-level .juicebtn delegated listener, so no extra wiring.
-function juiceChip(score,sym,name){
+// #186 — the 🍊 chip is now the SINGLE entry to a consolidated breakdown (score bar + simple checklist +
+// signal charts + raw derivation), replacing the old 3 separate chips (🍊 juice / 🧮 signals / 🧾 checklist).
+function juiceChip(score,sym,name,sigRows){
   if(!score||score.buy_now==null||!score.detail) return '';
-  var jid=++JUICE_SEQ; JUICE_CACHE[jid]={detail:score.detail,buy_now:score.buy_now,band:score.band,sym:sym,name:name};
-  return '<button class="juicebtn" data-juice-id="'+jid+'" title="Tap for the full score breakdown — '+esc(score.band||'')+'">🍊 '+score.buy_now+'</button>';
+  var jid=++JUICE_SEQ; JUICE_CACHE[jid]={score:score,sym:sym,name:name,sigRows:sigRows||[]};
+  return '<button class="juicebtn" data-juice-id="'+jid+'" title="Tap for the full breakdown — '+esc(score.band||'')+'">🍊 '+score.buy_now+'</button>';
 }
 function scoreBarHtml(score,sym,name){
   if(!score) return '';
@@ -2581,8 +2590,8 @@ function scoreBarHtml(score,sym,name){
   // chip is just 🍊 + the number, the detail is one tap behind it.
   var juiceBtn='';
   if(score.detail){
-    var jid=++JUICE_SEQ; JUICE_CACHE[jid]={detail:score.detail,buy_now:score.buy_now,band:score.band,sym:sym,name:name};
-    juiceBtn=' <button class="juicebtn" data-juice-id="'+jid+'" title="Tap for the full score breakdown">🍊 '+score.buy_now+'</button>';
+    var jid=++JUICE_SEQ; JUICE_CACHE[jid]={score:score,sym:sym,name:name,sigRows:[]};
+    juiceBtn=' <button class="juicebtn" data-juice-id="'+jid+'" title="Tap for the full breakdown">🍊 '+score.buy_now+'</button>';
   }
   return '<div class="viz"><h4>🧮 Buy-Now model score · <span class="scorenum">'+score.buy_now+'/100 · '+esc(score.band)+'</span>'+juiceBtn+'</h4>'+
     '<div class="scorebar">'+segs+'</div><div class="scorelegend">'+leg+'</div>'+
@@ -2594,7 +2603,7 @@ function scoreBarHtml(score,sym,name){
 // trigger value, every layered nudge (sentiment/trend/Bollinger/RS/short-trend/EMA) with its reason.
 function openJuice(id){
   var j=JUICE_CACHE[id]; if(!j)return;
-  var d=j.detail||{};
+  var score=j.score||{}, d=score.detail||{};
   LASTFOCUS=document.activeElement;
   // #185 (10 Aug 2026, user: labels fell off screen) — stack the number ABOVE the bar so nothing overflows
   // the modal horizontally, instead of a fixed 130px column the "w X% · raw Y% → Zpt" text couldn't fit.
@@ -2617,18 +2626,30 @@ function openJuice(id){
   if(d.gated) flags.push('⚠️ capped — no real catalyst (pead/rev/news all thin)');
   if(d.hard_excluded) flags.push('⛔ hard-excluded — too extended above its 20-day average');
   var m=document.getElementById('modal'); m.className='modal';
-  // #185 — header now names the ticker + company (was just the bare score), so you know WHAT you're looking at.
+  // #185/#186 — header names the ticker + company; then the ONE consolidated breakdown: score bar +
+  // verdict up top, the simple checklist, the signal charts, and the raw derivation (collapsed).
   var jhead=(j.sym?'<b style="font-size:21px">'+esc(j.sym)+'</b>'+(j.name?' <span style="font-size:14px;color:var(--muted);font-weight:700">'+esc(j.name)+'</span>':'')+'<br>':'')+
-    '<span style="font-size:16px;font-weight:800">'+j.buy_now+'/100 · '+esc(j.band)+'</span>';
-  m.innerHTML='<div class="mhead"><button class="mclose" id="mClose" aria-label="Close">✕</button><div class="mtf">🍊 Real juice — the full score breakdown</div>'+
+    '<span style="font-size:16px;font-weight:800">'+score.buy_now+'/100 · '+esc(score.band)+'</span>';
+  var facs=score.factors||[];
+  var segs=facs.map(function(fc){return '<span class="scoreseg s-'+fc.k+'" style="width:'+fc.pts+'%"></span>';}).join('');
+  var leg=facs.map(function(fc){return '<span><i class="s-'+fc.k+'"></i>'+esc(SCORE_FLAB[fc.k]||fc.k)+' '+fc.pts+'</span>';}).join('');
+  if(score.heat&&score.heat>1) leg+='<span class="pen">− overheated '+Math.round(score.heat)+'</span>';
+  var scoreViz=(facs.length?'<div class="scorebar">'+segs+'</div><div class="scorelegend">'+leg+'</div>':'')+
+    (score.verdict?'<div class="rsimeta" style="margin-top:7px"><b>'+esc(score.verdict)+'</b>'+(score.child_sentence?' — '+esc(score.child_sentence):'')+'</div>':'');
+  var sr=j.sigRows||[];
+  var sigSection=sr.length?('<details class="jsec" open><summary>🧾 The simple checklist</summary>'+checklistRowsHtml(sr)+'</details>'+
+    '<details class="jsec"><summary>📊 Signal detail — the charts</summary>'+sigRowsHtml(sr)+'</details>'):'';
+  var hh='font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:800;margin:4px 0 8px';
+  var deriv='<details class="jsec"><summary>🧮 The full derivation — weights, penalties, nudges</summary>'+
+    '<h4 style="'+hh+'">Category scores (weight × raw signal = points)</h4><div class="jgrid">'+catRows+'</div>'+
+    '<h4 style="'+hh+';margin-top:14px">Penalties</h4><div class="jpengrid">'+penRows+'</div>'+
+    '<h4 style="'+hh+';margin-top:14px">Layered nudges</h4><div class="jpengrid">'+nudgeRows+'</div>'+
+    '<p style="font-size:11px;color:var(--faint);margin-top:12px">Dominant signal: <b>'+esc(SCORE_FLAB[d.dominant_signal]||d.dominant_signal||'—')+'</b>. The exact derivation the model used — same numbers.</p></details>';
+  m.innerHTML='<div class="mhead"><button class="mclose" id="mClose" aria-label="Close">✕</button><div class="mtf">🍊 Real juice — the full breakdown</div>'+
     '<div class="mtop"><div class="msym" style="line-height:1.25">'+jhead+'</div></div></div>'+
     '<div class="mbody">'+
       (flags.length?'<p class="mtake" style="color:var(--dont)">'+flags.join(' · ')+'</p>':'')+
-      '<h4 style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:800;margin:4px 0 8px">Category scores (weight × raw signal = points)</h4>'+
-      '<div class="jgrid">'+catRows+'</div>'+
-      '<h4 style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:800;margin:16px 0 8px">Penalties</h4><div class="jpengrid">'+penRows+'</div>'+
-      '<h4 style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:800;margin:16px 0 8px">Layered nudges</h4><div class="jpengrid">'+nudgeRows+'</div>'+
-      '<p style="font-size:11px;color:var(--faint);margin-top:14px">Dominant signal: <b>'+esc(SCORE_FLAB[d.dominant_signal]||d.dominant_signal||'—')+'</b>. This is the exact derivation the model used — same numbers, no rounding beyond display.</p>'+
+      scoreViz+sigSection+deriv+
     '</div>';
   var ov=document.getElementById('overlay'); ov.classList.add('open'); ov.setAttribute('aria-hidden','false');
   document.getElementById('mClose').onclick=closeModal; document.getElementById('mClose').focus();
