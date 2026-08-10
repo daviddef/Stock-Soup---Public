@@ -548,6 +548,7 @@
   .rlfuture-wrap .rlrow.rlfuture:first-of-type{border-top:0}
   .rltag-future{color:#ffcaa0;font-weight:800}
   .rlfuture .rlwhen{color:#fff;font-weight:800}
+  .rlest{font-size:11.5px;color:#c9b7a8;font-weight:600;margin-top:3px}
   .rlfuture-wrap .rltier-1{background:rgba(35,194,103,.22);color:#7ee2a6}
   .rlfuture-wrap .rltier-23{background:rgba(90,160,240,.22);color:#9cc4f5}
   .rlrow.rllive{border-left-color:var(--buy);background:linear-gradient(90deg,rgba(35,194,103,.12),transparent 62%)}
@@ -3711,23 +3712,38 @@ function upcomingRunsHtml(){
   function fromStr(s){var m=(s||'').match(/(\d{1,2}):(\d{2})/);return m?at(+m[1],+m[2]):null;}
   function untilTxt(t){var mins=Math.round((t-now)/60000),h=Math.floor(mins/60),mm=mins%60;return 'in '+(h?h+'h ':'')+mm+'m';}
   function hm(t){return ('0'+t.getHours()).slice(-2)+':'+('0'+t.getMinutes()).slice(-2);}
+  // #242 (user ask) — show each run's EXPECTED duration. Prefer the real median from recent history of that
+  // exact run kind (so it self-tunes and is honest); fall back to the documented observed ranges (CLAUDE.md
+  // schedule table) when there's no history yet. Menu ~2–20 min · re-price seconds · AU scan ~30–60 min ·
+  // US scan ~3 hrs (its ~14,400-name universe → real ~580 liquid names scored at live-API latency).
+  function _med(arr){ arr=arr.filter(function(d){return d>0;}).sort(function(a,b){return a-b;}); return arr.length?arr[Math.floor(arr.length/2)]:0; }
+  // hours-aware duration (durLabel is scoped inside runLogHtml + only does s/m, which reads "220m" for a
+  // 3-hour US scan) — local so upcomingRunsHtml doesn't depend on runLogHtml's inner helpers.
+  function _dur(ms){ if(!ms) return ''; var s=ms/1000; if(s<60) return Math.round(s)+'s'; var m=s/60; if(m<90) return Math.round(m)+' min'; return (m/60).toFixed(1).replace(/\.0$/,'')+' hrs'; }
+  var _menus=(LAST&&LAST.H&&LAST.H.menus)||[], _rl=(typeof RUNLOG!=='undefined'&&RUNLOG)||[], _pu=(typeof PULSES!=='undefined'&&PULSES)||[];
+  function estFor(kind){
+    if(kind==='menu'){ var m=_med(_menus.map(function(x){return x.durMs;})); return m?('~'+_dur(m)):'~2–20 min'; }
+    if(kind==='reprice'){ var r=_med(_pu.map(function(x){return x.durMs;})); return r?('~'+_dur(r)):'under a min'; }
+    if(kind==='scan-au'||kind==='scan-us'){ var sc=_med(_rl.filter(function(e){return e.kind===kind&&e.status==='done';}).map(function(e){return e.durMs;})); return sc?('~'+_dur(sc)):(kind==='scan-au'?'~30–60 min':'~3 hrs'); }
+    return '';
+  }
   var items=[];
   var splitOn=!!(D.nextAu||D.nextUs||D.lastCookAu||D.lastCookUs);
   if(splitOn){
     var au=fromStr(D.nextAu), us=fromStr(D.nextUs);
-    if(au) items.push({t:au,ic:'🍳',tier:'T1',lbl:'Menu · 🇦🇺 Australia'});
-    if(us) items.push({t:us,ic:'🍳',tier:'T1',lbl:'Menu · 🌏 United States'});
+    if(au) items.push({t:au,ic:'🍳',tier:'T1',lbl:'Menu · 🇦🇺 Australia',est:estFor('menu')});
+    if(us) items.push({t:us,ic:'🍳',tier:'T1',lbl:'Menu · 🌏 United States',est:estFor('menu')});
   } else {
-    var nx=fromStr(D.next); if(nx) items.push({t:nx,ic:'🍳',tier:'T1',lbl:'Menu · AU + US'});
+    var nx=fromStr(D.next); if(nx) items.push({t:nx,ic:'🍳',tier:'T1',lbl:'Menu · AU + US',est:estFor('menu')});
   }
   // Whole-market scans — fixed daily anchors (AU 03:00, US 14:00 AEST ≈ local for the AU user)
-  items.push({t:at(3,0),ic:'🔬',tier:'T2·3',lbl:'Whole-market scan · 🇦🇺 Australia'});
-  items.push({t:at(14,0),ic:'🔬',tier:'T2·3',lbl:'Whole-market scan · 🌏 United States'});
+  items.push({t:at(3,0),ic:'🔬',tier:'T2·3',lbl:'Whole-market scan · 🇦🇺 Australia',est:estFor('scan-au')});
+  items.push({t:at(14,0),ic:'🔬',tier:'T2·3',lbl:'Whole-market scan · 🌏 United States',est:estFor('scan-us')});
   // Next re-price ≈ last pulse + 10 min, else ~now+10
-  var P=(typeof PULSES!=='undefined'&&PULSES)||[]; var lastP=P.length?P[P.length-1].iso:null;
+  var lastP=_pu.length?_pu[_pu.length-1].iso:null;
   var rep=lastP?new Date(new Date(lastP).getTime()+10*60000):new Date(now.getTime()+10*60000);
   if(rep<=now) rep=new Date(now.getTime()+10*60000);
-  items.push({t:rep,ic:'⏱',tier:null,lbl:'Re-price · same picks'});
+  items.push({t:rep,ic:'⏱',tier:null,lbl:'Re-price · same picks',est:estFor('reprice')});
   items.sort(function(a,b){return a.t-b.t;});
   if(!items.length) return '';
   // #241 (user ask) — group the scheduled-next rows inside one bordered, dark-background panel with a clear
@@ -3735,7 +3751,8 @@ function upcomingRunsHtml(){
   // blend into the real run history below.
   return '<div class="rlfuture-wrap"><div class="rlfuture-h">🔮 Future runs · scheduled next</div>'+items.map(function(o){
     var badge=o.tier?'<span class="rltier rltier-'+(o.tier==='T1'?'1':'23')+'">'+esc(o.tier)+'</span>':'';
-    return '<div class="rlrow rlfuture"><div class="rltop"><span class="rltag rltag-future">'+o.ic+' '+esc(o.lbl)+'</span>'+badge+'<span class="rlwhen">'+hm(o.t)+' · '+untilTxt(o.t)+'</span></div></div>';
+    return '<div class="rlrow rlfuture"><div class="rltop"><span class="rltag rltag-future">'+o.ic+' '+esc(o.lbl)+'</span>'+badge+'<span class="rlwhen">'+hm(o.t)+' · '+untilTxt(o.t)+'</span></div>'+
+      (o.est?'<div class="rlest">⏳ takes '+esc(o.est)+'</div>':'')+'</div>';
   }).join('')+'</div>';
 }
 function runLogHtml(){
