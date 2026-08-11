@@ -3114,7 +3114,7 @@ function render(D,H){
         var nm=names[String(sym).replace(/\*$/,'')]||'';
         var rowcls='jrow'+(olderSet&&!isNew?' keep':'');
         var badge=(olderSet&&isNew)?'<span class="jb jb-new">NEW</span>':'';
-        return '<div class="'+rowcls+'"><span class="jtf">'+TFS[idx]+'</span><span class="jinfo">'+qlink(sym,region)+(nm?'<span class="jname">'+esc(nm)+'</span>':'')+'</span>'+gradeBadge(sym)+badge+'</div>';
+        return '<div class="'+rowcls+'"><span class="jtf">'+(TFS[idx]||'')+'</span><span class="jinfo">'+qlink(sym,region)+(nm?'<span class="jname">'+esc(nm)+'</span>':'')+'</span>'+gradeBadge(sym)+badge+'</div>';   // #290 — guard TFS[idx]: a run with >3 rows made it undefined → literal "undefined" text
       });
       if(olderSet){
         olderSet.filter(function(s){return (arr||[]).indexOf(s)<0;}).forEach(function(sym){
