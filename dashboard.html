@@ -2351,6 +2351,16 @@ function signalRows(p,region,opts){
       explain:'Is this a good business at a fair price? Blends how CHEAP it is (value '+(fd.value_score!=null?fd.value_score:'–')+'/100), how PROFITABLE & healthy (quality '+(fd.quality_score!=null?fd.quality_score:'–')+'/100), and GROWTH ('+(fd.growth_score!=null?fd.growth_score:'–')+'/100). '+((fd.why&&fd.why.length)?'Real numbers: '+esc(fd.why.join(' · '))+'.':'')+deep+' Source: company financials via Yahoo.',
       diagram:fundBarsHtml(fd)});
   }
+  // ASX-analyst unlock (11 Aug 2026) — analyst price target + buy/hold/sell consensus. The big win is ASX:
+  // this was previously BLANK for every Australian name (our US analyst feed doesn't cover the ASX). tone by
+  // upside-to-target; only shows with real coverage (≥3 analysts).
+  var an=fd&&fd.analyst;
+  if(an&&an.target!=null&&(an.n||0)>=3){
+    var _cur=(region==='au'?'A$':'$'), _up=an.upside_pct, atone=_up>=8?'pos':(_up<=-8?'neg':'mix');
+    rows.push({icon:'🎯',label:'Analyst target',tone:atone,
+      read:_cur+an.target+' · '+(_up>=0?'+':'')+_up+'% vs price · '+esc(an.rating||'')+' ('+an.n+')',
+      explain:'The average 12-month price target from '+an.n+' professional analysts covering this stock: '+_cur+an.target+' (range '+_cur+(an.low!=null?an.low:'?')+'–'+_cur+(an.high!=null?an.high:'?')+'), which is '+(_up>=0?'+':'')+_up+'% '+(_up>=0?'above':'below')+' the current price. Consensus rating: '+esc(an.rating||'n/a')+'. A REAL analyst signal — for ASX names it was previously blank (our other analyst feed is US-only); it now comes from Yahoo Finance.'});
+  }
   // #256 (11 Aug 2026) — "Smart Money": which legendary investors hold this name (13F filings, SEC EDGAR).
   // A different signal from insider activity below (that's the company's OWN officers; this is famous outside
   // money — Buffett/Dalio/…). Quarterly + 45-day lag, so it's "held as of last quarter-end" (said plainly).
