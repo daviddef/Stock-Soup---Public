@@ -3084,7 +3084,9 @@ function render(D,H){
     // #226 — every Journey run is a Type 1 (catalyst menu) run; badge it so it's consistent with the
     // tier-labelled Run Schedule. A split-run entry (#222) also carries its market on the badge.
     var tierBadge='<span class="rltier rltier-1" title="Type 1 — the catalyst menu run">T1'+(m.market?(m.market==='au'?' 🇦🇺':' 🇺🇸'):'')+'</span>';
-    return '<div class="jcol'+(isNow?' now':'')+'"><div class="jhead"><span class="when">'+esc(m.stamp)+'<small>'+esc(m.time)+' AEST</small></span><span class="jhright">'+tierBadge+tally(arr)+(isNow?'<span class="now-b">NOW</span>':'')+'</span></div>'+grp(label,arr,region)+'</div>';
+    // some menuHistory entries already carry "AEST" in m.time (source drift) — strip it before we append, else "16:40 AEST AEST".
+    var jtime=String(m.time||'').replace(/\s*AEST\s*$/i,'').trim();
+    return '<div class="jcol'+(isNow?' now':'')+'"><div class="jhead"><span class="when">'+esc(m.stamp)+'<small>'+esc(jtime)+' AEST</small></span><span class="jhright">'+tierBadge+tally(arr)+(isNow?'<span class="now-b">NOW</span>':'')+'</span></div>'+grp(label,arr,region)+'</div>';
   }
   var journeyCols=ms.slice(0,8).map(function(m,i){return jcol(m,ms[i+1],i===0);}).join('');   // last 8 runs, 3 visible across
   var note="This is the first menu on record — the journey starts here.";
@@ -4134,7 +4136,8 @@ function archiveHtml(H){
     return out||'<div class="archnone">No picks this run.</div>';
   }
   function card(m){
-    return '<div class="archcard2"><div class="archwhen">'+esc(m.stamp)+' · '+esc(m.time)+' AEST</div>'+
+    var atime=String(m.time||'').replace(/\s*AEST\s*$/i,'').trim();  // strip a pre-baked "AEST" so we don't double it
+    return '<div class="archcard2"><div class="archwhen">'+esc(m.stamp)+' · '+esc(atime)+' AEST</div>'+
       '<div class="archcols"><div><div class="archcolh">🇦🇺 AU</div>'+side(m.auSnap)+'</div>'+
       '<div><div class="archcolh">🇺🇸 US</div>'+side(m.usSnap)+'</div></div></div>';
   }
