@@ -1398,6 +1398,22 @@
   .ovbanner .ovtxt b{font-size:16px;font-weight:900}
   .ovbanner.ov-buy .ovtxt b{color:var(--buy)} .ovbanner.ov-avoid .ovtxt b{color:var(--dont)}
   .ovbanner .ovtxt span{font-size:11.5px;color:var(--muted);line-height:1.4}
+  /* 🍒 chip — the all-signals conviction number, sits beside the 🍊 on cards. Cherry-red vs the 🍊's orange. */
+  .cherrybtn{position:relative;overflow:visible;background:rgba(214,40,60,.14);color:#d6283c;border:1px solid rgba(214,40,60,.42);border-radius:7px;font-size:10.5px;font-weight:800;padding:3px 8px;cursor:pointer;vertical-align:middle;font-variant-numeric:tabular-nums;transition:background .15s,transform .18s cubic-bezier(.34,1.6,.64,1)}
+  .cherrybtn.ov-buy{color:#1f9d54;background:rgba(35,194,103,.15);border-color:rgba(35,194,103,.42)}
+  .cherrybtn.ov-avoid{color:#d1503a;background:rgba(209,80,58,.15);border-color:rgba(209,80,58,.42)}
+  .cherrybtn:hover{transform:translateY(-1px) scale(1.05)} .cherrybtn:active{transform:scale(.94)}
+  .cherrybtn::after{content:"🌿";position:absolute;top:-7px;right:4px;font-size:10px;line-height:1;transform:scale(0) rotate(35deg);transform-origin:bottom center;opacity:0;pointer-events:none;transition:transform .4s cubic-bezier(.34,1.7,.5,1),opacity .25s}
+  .cherrybtn:hover::after,.cherrybtn:focus-visible::after,.cherrybtn:active::after{transform:scale(1) rotate(10deg);opacity:1}
+  .cherrybtn.pop{animation:juicePop .5s cubic-bezier(.34,1.6,.5,1)}
+  @media (prefers-reduced-motion:reduce){.cherrybtn,.cherrybtn::after,.cherrybtn.pop{transition:none!important;animation:none!important}}
+  /* 🍒 ingredient-list vote rows (openOverall modal) — one line per signal, for/against/neutral */
+  .cvrow{display:grid;grid-template-columns:20px 1fr auto;gap:8px;align-items:baseline;padding:5px 0;border-bottom:1px solid var(--line)}
+  .cvrow:last-child{border-bottom:0}
+  .cvrow .cvi{font-size:13px;text-align:center}
+  .cvrow .cvl{font-size:12.5px;font-weight:700;color:var(--ink)}
+  .cvrow .cvv{font-size:11.5px;color:var(--muted);text-align:right}
+  .cvrow.cv-pos .cvl{color:var(--buy,#1f9d54)} .cvrow.cv-neg .cvl{color:var(--dont,#d1503a)}
   /* #261 — the Recipe / nutrition-label score card (leads the 🍊 juice modal) */
   .rcard{background:var(--surface);border:2px solid var(--ink);border-radius:12px;padding:14px 16px;margin:2px 0 14px}
   .rc-kick{font-size:11px;font-weight:900;letter-spacing:.14em;color:var(--muted)}
@@ -2989,7 +3005,7 @@ function render(D,H){
           /* #orange-top (user ask) — the 🍊 score chip now leads the header, next to the + watch button,
              instead of only appearing lower by the score bar. Same chip/behaviour: tap → the full breakdown
              (juice modal) when we have the detail, else a plain 🍊 score badge. */
-          ((p.score&&p.score.buy_now!=null)?juiceChip(p.score,p.sym,p.name,signalRows(p,rg.id)):'')+
+          ((p.score&&p.score.buy_now!=null)?juiceChip(p.score,p.sym,p.name,signalRows(p,rg.id))+cherryChip(p.score,p.sym,p.name,signalRows(p,rg.id)):'')+
           '<button class="watchbtn iconwatch" data-sym="'+esc(p.sym)+'" data-region="'+esc(rg.id)+'" data-name="'+esc(p.name)+'"'+(p.nEntry!=null?' data-entry="'+p.nEntry+'"':'')+' aria-pressed="false" title="Add to watchlist">+</button><span class="verdict '+esc(p.vclass)+'">'+esc(p.verdict)+'</span></span></div>'+
         replNote+
         '<div class="tick"><span class="symwrap"><span class="sym">'+qlink(p.sym,rg.id)+'</span><span class="co">'+qlink(p.sym,rg.id,p.name)+' ↗</span></span>'+
@@ -3121,7 +3137,8 @@ function render(D,H){
     var spk=(c.spark&&c.spark.length>2)?sparkSVG(c.spark.slice(-30)):'';
     var chg=c.change?'<span class="pmc-chg '+(c.up?'up':'down')+'">'+(c.up?'▲':'▼')+' '+esc(c.change)+'</span>':'';
     var shortChip=(c.short!=null&&c.short>=4)?'<span class="pmc-short">🩳 '+c.short+'%</span>':'';
-    var jc=juiceChip(c.score,c.sym,c.name,signalRows(c,c.region||'us'));   // #173/#186 — 🍊 chip → the one consolidated breakdown
+    var _crows=signalRows(c,c.region||'us');
+    var jc=juiceChip(c.score,c.sym,c.name,_crows)+cherryChip(c.score,c.sym,c.name,_crows);   // #173/#186 🍊 + #266 🍒
     var rankBadge=rank?'<span class="pmc-rank">'+rank+'</span>':'';   // #211 — Stock Pot Top 20 is a numbered leaderboard
     return '<div class="potcard h-'+esc(c.heat)+(rank?' ranked':'')+'" data-ci="'+i+'" data-score="'+((c.score&&c.score.buy_now!=null)?c.score.buy_now:0)+'" role="button" tabindex="0" aria-label="Details for '+esc(c.sym)+'">'+
       '<div class="pmc-top">'+rankBadge+(c.heat==='cold'?'<span class="ph no">⛔</span>':'<span class="ph"></span>')+'<b class="pmc-sym">'+esc(c.sym)+'</b>'+shortChip+'<span class="pmc-flag">'+(c.region==='au'?'AU':'US')+'</span>'+
@@ -3434,6 +3451,38 @@ function overallBannerHtml(ov){
   return '<div class="ovbanner '+ov.vcls+'"><div class="ovnum">🍒 '+ov.score+'<small>/100</small></div>'+
     '<div class="ovtxt"><b>'+esc(ov.verdict)+'</b><span>Overall conviction — the buy-now score ('+ov.buy+') blended with how all '+ov.total+' signals line up ('+ov.pos+' for · '+ov.neg+' against)</span></div></div>';
 }
+// 🍒 chip + its OWN tappable "ingredient list" (separate from the 🍊 recipe, per user ask). The chip goes on
+// cards; tapping opens openOverall — a plain checklist of how the conviction is built: the buy-now backbone
+// + every signal's for/against vote.
+var CHERRY_CACHE={}, CHERRY_SEQ=0;
+function cherryChip(score,sym,name,rows){
+  var ov=overallScore(score&&score.buy_now, rows); if(!ov) return '';
+  var cid=++CHERRY_SEQ; CHERRY_CACHE[cid]={ov:ov,sym:sym,name:name,rows:rows||[]};
+  return '<button class="cherrybtn '+ov.vcls+'" data-cherry-id="'+cid+'" title="Overall conviction — tap for the full read">🍒 '+ov.score+'</button>';
+}
+function cherryCardHtml(ov,rows){
+  if(!ov) return '';
+  function vote(r){var t=r.tone==='pos'?['✅','for']:r.tone==='neg'?['⚠️','against']:['•','neutral'];
+    return '<div class="cvrow cv-'+r.tone+'"><span class="cvi">'+t[0]+'</span><span class="cvl">'+(r.icon?r.icon+' ':'')+esc(r.label)+'</span><span class="cvv">'+esc(r.read||'')+'</span></div>';}
+  var sig=(rows||[]).map(vote).join('')||'<p class="muted" style="font-size:12px;margin:4px 0">No signals available for this name yet.</p>';
+  return '<div class="rcard"><div class="rc-kick">🍒 OVERALL CONVICTION</div>'+
+    '<div class="rc-serves">scores <b>'+ov.score+'</b>/100 · '+esc(ov.verdict)+'</div>'+
+    '<div class="rc-sect">The backbone · 60%</div>'+
+    '<div class="cvrow cv-pos"><span class="cvi">🍊</span><span class="cvl">Buy-now score (timing engine)</span><span class="cvv">'+ov.buy+'/100</span></div>'+
+    '<div class="rc-sect">The signal vote · 40% — '+ov.pos+' for, '+ov.neg+' against</div>'+sig+
+    '<div class="rc-total"><span>OVERALL</span><b>'+ov.score+' / 100</b></div>'+
+    '<p class="rc-foot">One number for "all things considered": the buy-now timing score blended with how <b>every</b> signal lines up — including the context reads (RSI, levels, VWAP…) that don\'t move the buy-now score on their own. Green = for, amber = against.</p></div>';
+}
+function openOverall(id){
+  var c=CHERRY_CACHE[id]; if(!c)return;
+  LASTFOCUS=document.activeElement;
+  var m=document.getElementById('modal'); m.className='modal';
+  m.innerHTML='<div class="mhead"><button class="mclose" id="mClose" aria-label="Close">✕</button><div class="mtf">🍒 Overall conviction — the whole picture</div>'+
+    '<div class="mtop"><div class="msym" style="line-height:1.25">'+(c.sym?'<b style="font-size:21px">'+esc(c.sym)+'</b>'+(c.name?' <span style="font-size:14px;color:var(--muted);font-weight:700">'+esc(c.name)+'</span>':''):'')+'</div></div></div>'+
+    '<div class="mbody">'+overallBannerHtml(c.ov)+cherryCardHtml(c.ov,c.rows)+'</div>';
+  var ov=document.getElementById('overlay'); ov.classList.add('open'); ov.setAttribute('aria-hidden','false');
+  document.getElementById('mClose').onclick=closeModal; document.getElementById('mClose').focus();
+}
 function recipeCardHtml(score){
   if(!score||score.buy_now==null||!score.detail) return '';
   var d=score.detail||{}, items=[], contrib=d.contrib||{};
@@ -3692,6 +3741,11 @@ document.addEventListener('keydown',function(e){
 // (#173 face chip), so stopPropagation in the bubble phase would be too late. Capturing + stopPropagation
 // intercepts the click cleanly for every card type at once, no per-card guard needed.
 document.addEventListener('click',function(e){
+  var cb=e.target.closest('.cherrybtn');
+  if(cb){ e.preventDefault(); e.stopPropagation();
+    cb.classList.remove('pop'); void cb.offsetWidth; cb.classList.add('pop');
+    setTimeout(function(){cb.classList.remove('pop');},520);
+    openOverall(+cb.dataset.cherryId); return; }
   var b=e.target.closest('.juicebtn'); if(!b)return;
   e.preventDefault(); e.stopPropagation();
   b.classList.remove('pop'); void b.offsetWidth; b.classList.add('pop');   /* a bit of fun — ripe bounce on tap */
@@ -4896,7 +4950,7 @@ function openPulseLog(){
 function wireThemes(){ document.querySelectorAll('.clickline[data-theme]').forEach(function(l){ l.onclick=function(){ openTheme(l.dataset.theme,+l.dataset.ti); }; l.onkeydown=function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); openTheme(l.dataset.theme,+l.dataset.ti); } }; });
   document.querySelectorAll('[data-mchip]').forEach(function(c){ c.onclick=function(){ openMarketChip(c.dataset.mchip); }; c.onkeydown=function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); openMarketChip(c.dataset.mchip); } }; });
   document.querySelectorAll('[data-theme-src]').forEach(function(c){ var go=function(){ openTheme(c.dataset.themeSrc,+c.dataset.themeIdx); }; c.onclick=go; c.onkeydown=function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); go(); } }; });
-  document.querySelectorAll('.potcard[data-ci]').forEach(function(p){ p.onclick=function(e){ if(e.target.closest('a'))return; if(e.target.closest('.watchbtn'))return; if(e.target.closest('.juicebtn'))return; openCandidate(+p.dataset.ci); }; p.onkeydown=function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); openCandidate(+p.dataset.ci); } }; }); }
+  document.querySelectorAll('.potcard[data-ci]').forEach(function(p){ p.onclick=function(e){ if(e.target.closest('a'))return; if(e.target.closest('.watchbtn'))return; if(e.target.closest('.juicebtn'))return; if(e.target.closest('.cherrybtn'))return; openCandidate(+p.dataset.ci); }; p.onkeydown=function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); openCandidate(+p.dataset.ci); } }; }); }
 function wireInfo(){ document.querySelectorAll('[data-info]').forEach(function(b){
   b.onclick=function(e){ e.preventDefault(); openInfo(b.dataset.info); };
   b.onkeydown=function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); openInfo(b.dataset.info); } };
