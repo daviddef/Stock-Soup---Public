@@ -1176,6 +1176,9 @@
   .ps-row:last-child{border-bottom:0} .ps-row span:first-child{color:var(--muted);font-weight:700}
   .ps-row b{font-variant-numeric:tabular-nums} .ps-row.hi{background:var(--surface-2)} .ps-row.hi b{color:var(--broth)}
   .ps-pct{color:var(--dont);font-weight:700} .ps-cost{color:var(--muted);font-size:11.5px;font-weight:600}
+  /* #285 concentration warning */
+  .concwarn{display:flex;gap:10px;align-items:flex-start;background:color-mix(in srgb,var(--hold) 12%,transparent);border:1px solid color-mix(in srgb,var(--hold) 45%,transparent);border-radius:12px;padding:11px 13px;margin:0 0 12px;font-size:13px;line-height:1.5}
+  .concwarn .cw-ic{font-size:16px;line-height:1.3} .concwarn .cw-tx b{color:var(--ink)}
   .wc-tag{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:auto;padding-top:8px;border-top:1px dashed var(--line);font-size:11px}
   .wc-tag.none{color:var(--faint);font-style:italic;font-weight:600}
   .wic{background:var(--surface-2);border:1px solid var(--line);border-radius:999px;padding:3px 9px;font-weight:800;white-space:nowrap;max-width:100%}
@@ -3295,7 +3298,7 @@ function render(D,H){
       '<div class="lbls"><span>🔴 Hide the cash</span><span>⚪ Steady</span><span>🟢 Send it</span></div>'+
       fm.leg+'</div>';})()+
       '<div class="sec-head" style="margin:26px 0 3px"><h2 class="display"><span class="k">01</span> Serving today in '+(MKT==='us'?'the U.S.':'Australia')+'</h2>'+infoBtn('menu')+'</div>'+
-      '<p class="sec-sub" style="margin:0 0 10px">Three time horizons — '+tfB('Day')+' a quick feed · '+tfB('Week')+' a few days · '+tfB('Long')+' slow-cooked. Tap a card for the full serve; tap a name for Yahoo.</p>'+tierToggleHtml+menus+
+      '<p class="sec-sub" style="margin:0 0 10px">Three time horizons — '+tfB('Day')+' a quick feed · '+tfB('Week')+' a few days · '+tfB('Long')+' slow-cooked. Tap a card for the full serve; tap a name for Yahoo.</p>'+concentrationHtml(D)+tierToggleHtml+menus+
     '</div>'+
     '<section><div class="sec-head"><h2 class="display"><span class="k">02</span> Take your seat, time for Action</h2>'+infoBtn('actions')+'</div>'+
       '<p class="sec-sub" style="margin-top:4px">It’s time to eat — enough of the mood, here’s what’s worth <b>acting on</b> right now.</p>'+
@@ -3559,6 +3562,35 @@ function recipeLit(score,k){
 // how strong is this?" read, because a complicated signal set is hard to hold in your head. It ADDS to the
 // 🍊 (doesn't replace it): 🍊 = when to buy · 🍒 = overall strength.
 var OV_FULL_COVERAGE=6;   // signals needed for the vote to carry full weight (below this it's shrunk toward neutral)
+// #285 (12 Aug 2026) — portfolio concentration warning ("are all my bets the same bet?"). Computes the
+// pairwise correlation of tonight's picks' recent price paths (their sparklines — no new data) and warns when
+// two picks have been moving in near-lockstep: that's effectively ONE bet, not two, so a single wrong call
+// takes both down. The most useful risk lesson for a retail investor, and self-contained.
+function _pearson(a,b){
+  if(!a||!b) return null;
+  var n=Math.min(a.length,b.length); if(n<8) return null;
+  a=a.slice(-n); b=b.slice(-n);
+  var ma=0,mb=0,i; for(i=0;i<n;i++){ma+=a[i];mb+=b[i];} ma/=n; mb/=n;
+  var num=0,da=0,db=0; for(i=0;i<n;i++){var x=a[i]-ma,y=b[i]-mb; num+=x*y; da+=x*x; db+=y*y;}
+  if(da<=0||db<=0) return null;
+  return num/Math.sqrt(da*db);
+}
+function concentrationHtml(D){
+  try{
+    var rg=((D&&D.regions)||[]).filter(function(x){return x.id===MKT;})[0]||{};
+    var picks=(rg.picks||[]).filter(function(p){return p&&p.sym&&p.sym!=='NONE'&&p.spark&&p.spark.length>=8;});
+    if(picks.length<2) return '';
+    var pairs=[],i,j;
+    for(i=0;i<picks.length;i++) for(j=i+1;j<picks.length;j++){
+      var r=_pearson(picks[i].spark,picks[j].spark);
+      if(r!=null&&r>=0.85) pairs.push({a:picks[i].sym,b:picks[j].sym,r:r});
+    }
+    if(!pairs.length) return '';
+    var worst=pairs.slice().sort(function(x,y){return y.r-x.r;})[0];
+    var names=pairs.map(function(p){return '<b>'+esc(p.a)+' & '+esc(p.b)+'</b>';}).join(', ');
+    return '<div class="concwarn"><span class="cw-ic">⚠️</span><div class="cw-tx"><b>Concentration check.</b> '+names+' have been moving almost in lockstep lately (~'+Math.round(worst.r*100)+'% correlated). That makes them effectively <b>one bet, not '+(pairs.length>1?'several':'two')+'</b> — if the theme turns, they fall together. Spreading across less-correlated names lowers that risk.</div></div>';
+  }catch(e){ return ''; }
+}
 function overallScore(buyNow, rows){
   if(buyNow==null) return null;
   var scored=(rows||[]).filter(function(r){return r.tone==='pos'||r.tone==='neg';});
