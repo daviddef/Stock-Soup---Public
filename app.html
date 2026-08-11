@@ -118,8 +118,8 @@
   @media(max-width:560px){ .meter .needle{--rs:9px;width:19px;height:19px;top:-4.5px;box-shadow:0 0 0 2.5px var(--surface)} .meter .needle::after{top:calc(100% + 2px)}
     /* #276 — on a phone the below-track emoji ticks + the Risk label were crowding/clipping: shrink the
        emojis, and give the meter box explicit bottom room so nothing is shaved off. */
-    .meter .lbls{margin-top:15px;font-size:10px} .meter.tappable{padding-bottom:8px} .factorleg{font-size:12px;gap:7px 12px} }
-  .meter .lbls{display:flex;justify-content:space-between;font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-top:16px;font-weight:800}
+    .factormark .fmi{font-size:13px;top:18px} .meter .lbls{margin-top:38px;font-size:10px} .meter.tappable{padding-bottom:8px} .factorleg{font-size:12px;gap:7px 12px} }
+  .meter .lbls{display:flex;justify-content:space-between;font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-top:42px;font-weight:800}
   .meterleg{display:flex;gap:14px;justify-content:center;margin-top:8px;font-size:10.5px;font-weight:700;color:var(--muted)}
   .meterleg i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:5px;vertical-align:middle}
   .meterleg i.ink{background:var(--ink)} .meterleg i.vix{background:#9b6bff}
@@ -132,7 +132,8 @@
      #276) against a container edge that isn't a plain CSS overflow. Given the legend below already shows every
      factor's emoji + label + score cleanly, drop the on-bar emoji and keep just the position TICK — no more
      whack-a-mole. The tick shows WHERE each factor sits; the legend says WHAT it is. */
-  .factormark .fmi{display:none}
+  .meter, .meter .track, .factormark{overflow:visible}   /* belt-and-suspenders: nothing in the chain may clip the on-bar emoji */
+  .factormark .fmi{position:absolute;top:20px;left:0;transform:translateX(-50%);font-size:15px;line-height:1;white-space:nowrap}
   .factorleg{display:flex;flex-wrap:wrap;gap:9px 18px;justify-content:center;margin-top:12px;font-size:13.5px;font-weight:700;color:var(--muted)}
   .factorleg span{white-space:nowrap;display:inline-flex;align-items:center;gap:5px} .factorleg b{color:var(--ink);font-variant-numeric:tabular-nums;font-weight:800}
   .tagword{opacity:.7;font-weight:700}
