@@ -2939,7 +2939,12 @@ function render(D,H){
       var newPill=isNew?' <span class="cnew">NEW</span>':(prevSet?' <span class="ckept">✓ kept</span>':'');
       var replNote=repl?'<div class="crepl">↳ replaced <b>'+esc(repl)+'</b> from the last menu</div>':'';
       return '<div class="pickcol"><article class="card" tabindex="0" role="button" data-region="'+rg.id+'" data-idx="'+idx+'" aria-label="Details for '+esc(p.sym)+'">'+
-        '<div class="tf"><span class="name">'+tfBW(p.tf)+newPill+'</span><span class="tf-r"><button class="watchbtn iconwatch" data-sym="'+esc(p.sym)+'" data-region="'+esc(rg.id)+'" data-name="'+esc(p.name)+'"'+(p.nEntry!=null?' data-entry="'+p.nEntry+'"':'')+' aria-pressed="false" title="Add to watchlist">+</button><span class="verdict '+esc(p.vclass)+'">'+esc(p.verdict)+'</span></span></div>'+
+        '<div class="tf"><span class="name">'+tfBW(p.tf)+newPill+'</span><span class="tf-r">'+
+          /* #orange-top (user ask) — the 🍊 score chip now leads the header, next to the + watch button,
+             instead of only appearing lower by the score bar. Same chip/behaviour: tap → the full breakdown
+             (juice modal) when we have the detail, else a plain 🍊 score badge. */
+          ((p.score&&p.score.buy_now!=null)?(p.score.detail?juiceChip(p.score,p.sym,p.name,signalRows(p,rg.id)):'<span class="dvscore">🍊 '+p.score.buy_now+'</span>'):'')+
+          '<button class="watchbtn iconwatch" data-sym="'+esc(p.sym)+'" data-region="'+esc(rg.id)+'" data-name="'+esc(p.name)+'"'+(p.nEntry!=null?' data-entry="'+p.nEntry+'"':'')+' aria-pressed="false" title="Add to watchlist">+</button><span class="verdict '+esc(p.vclass)+'">'+esc(p.verdict)+'</span></span></div>'+
         replNote+
         '<div class="tick"><span class="symwrap"><span class="sym">'+qlink(p.sym,rg.id)+'</span><span class="co">'+qlink(p.sym,rg.id,p.name)+' ↗</span></span>'+
         '<span class="px"><span class="p mono">'+esc(p.price)+'</span><br><span class="c mono '+chgTone(p.change,p.up)+'">'+esc(p.change)+'</span></span></div>'+
