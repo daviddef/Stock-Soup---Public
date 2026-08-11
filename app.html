@@ -1168,6 +1168,14 @@
   .wt-in .wst{color:var(--buy)} .wt-close .wst{color:var(--hold)} .wt-wait .wst{color:var(--muted)}
   .wc-lv{font-size:11.5px;font-weight:800;color:var(--muted);font-variant-numeric:tabular-nums}
   .wc-added{font-size:10.5px;color:var(--faint);margin-top:2px}
+  .wc-cgt{font-size:10.5px;color:var(--muted);font-weight:700;margin-top:3px;cursor:help}  /* #282 AU CGT hint */
+  .wc-cgt b{color:var(--ink)} .wc-cgt.cgt-ok{color:var(--buy)} .wc-cgt.cgt-ok b{color:var(--buy)}
+  /* #281 position sizing */
+  .possize{margin:10px 0 6px;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+  .ps-row{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:7px 11px;font-size:13px;border-bottom:1px solid var(--line)}
+  .ps-row:last-child{border-bottom:0} .ps-row span:first-child{color:var(--muted);font-weight:700}
+  .ps-row b{font-variant-numeric:tabular-nums} .ps-row.hi{background:var(--surface-2)} .ps-row.hi b{color:var(--broth)}
+  .ps-pct{color:var(--dont);font-weight:700} .ps-cost{color:var(--muted);font-size:11.5px;font-weight:600}
   .wc-tag{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:auto;padding-top:8px;border-top:1px dashed var(--line);font-size:11px}
   .wc-tag.none{color:var(--faint);font-style:italic;font-weight:600}
   .wic{background:var(--surface-2);border:1px solid var(--line);border-radius:999px;padding:3px 9px;font-weight:800;white-space:nowrap;max-width:100%}
@@ -3465,6 +3473,24 @@ function scoreBarHtml(score,sym,name){
 // the live bundle here — picks first (they carry stop/target), then Full-Pot candidates, then scored
 // watchlist intel. Returns the SAME price-viz blocks openModal() renders, so the juice overlay now leads
 // with "where it's trading" before the scoring math.
+// #281 (12 Aug 2026) — position sizing. Turns the pick's real stop into the question a retail investor
+// actually has after "should I buy?": "how many shares without blowing up?" Account-agnostic — expressed per
+// a fixed risk budget so it works whatever your account size. Uses the model's own ideal-buy + stop as the
+// risk-per-share. General framework, not advice (consistent with the not-a-licensed-advisor stance).
+function posSizeHtml(p,cur){
+  var entry=(p.nEntry!=null?p.nEntry:p.nNow), stop=p.nStop;
+  if(entry==null||stop==null||!(entry>stop)) return '';
+  var rps=entry-stop, stopPct=rps/entry*100;
+  var perUnit=Math.max(1,Math.floor(500/rps));   // shares if you're willing to lose $500 on a stop-out
+  var cost=perUnit*entry;
+  return '<h4 style="margin-top:20px">📐 How many to buy? · position sizing</h4>'+
+    '<div class="possize">'+
+      '<div class="ps-row"><span>Stop-loss</span><b>'+money(cur,stop)+' <span class="ps-pct">(−'+stopPct.toFixed(1)+'%)</span></b></div>'+
+      '<div class="ps-row"><span>Risk per share</span><b>'+money(cur,rps)+'</b></div>'+
+      '<div class="ps-row hi"><span>Risk '+cur+'500 → buy</span><span><b>~'+perUnit+' shares</b> <span class="ps-cost">(≈'+money(cur,cost)+' position)</span></span></div>'+
+    '</div>'+
+    '<div class="rsimeta">Size it so a stop-out only costs what you can afford to lose. Common rule: risk no more than <b>1–2% of your account</b> on one trade (a '+cur+'10k account → '+cur+'100–200 of risk). A general framework, not advice.</div>';
+}
 function juicePriceViz(sym){
   var D=(LAST&&LAST.D)||{}, o=null, region=null, cur='$';
   (D.regions||[]).forEach(function(rg){(rg.picks||[]).forEach(function(p){ if(!o&&p.sym===sym&&p.sym!=='NONE'){o=p;region=rg.id;cur=rg.cur||(rg.id==='au'?'A$':'$');} });});
@@ -3783,6 +3809,7 @@ function openModal(p,region,cur){
           '<span class="mk ent" style="left:'+entPct+'%"></span><span class="cap" style="left:'+entPct+'%">Buy</span>'+
           '<span class="mk now" style="left:'+nowPct+'%"></span></div>'+
         '<div class="lends"><span class="r">Stop '+money(cur,p.nStop)+'</span><span class="g">Target '+money(cur,p.nTarget)+'</span></div>'+
+        posSizeHtml(p,cur)+
         '<h4 style="margin-top:20px">How hot is it right now? · RSI</h4>'+
         '<div class="rsibar"><span class="rcap" style="left:'+clamp(rsi)+'%">RSI '+esc(rsi)+'</span><span class="rn" style="left:'+clamp(rsi)+'%"></span></div>'+
         '<div class="lends"><span class="g">Cheap</span><span class="r">Overheated</span></div>'+
@@ -5536,6 +5563,15 @@ function renderWatchlist(){
     var spk = (r.spark&&r.spark.length>2)?'<div class="pmc-spark">'+sparkSVG(r.spark.slice(-30))+'</div>':'';
     var buyLine = (r.entry!=null||it.target!=null)?'<div class="wc-lv">'+(r.entry!=null?'🎯 buy '+r.cur+r.entry:'')+(it.target!=null?(r.entry!=null?' · ':'')+'target '+r.cur+it.target:'')+(lbl?'  <span class="wst">'+lbl+'</span>':'')+'</div>':(lbl?'<div class="wc-lv"><span class="wst">'+lbl+'</span></div>':'');
     var addedLine = w.addedAt?'<div class="wc-added">added '+esc(new Date(w.addedAt).toLocaleDateString('en-AU',{day:'numeric',month:'short'}))+'</div>':'';
+    // #282 (12 Aug 2026) — AU CGT holding-period hint. AU gives a 50% capital-gains-tax discount on assets
+    // held >12 months. Only for OWNED ASX holdings. Counts from when it was added here (a proxy for the buy
+    // date — we don't capture a real purchase date), stated plainly in the tooltip; general info, not tax advice.
+    if(w.own && w.region==='au' && w.addedAt){
+      var _dh=Math.floor((Date.now()-w.addedAt)/86400000), _toCgt=365-_dh;
+      addedLine += (_toCgt>0
+        ? '<div class="wc-cgt" title="Australia gives a 50% CGT discount on assets held over 12 months. Counted from when you added this here — use your real purchase date for anything that matters. General info, not tax advice.">🏷️ held '+_dh+'d · <b>'+_toCgt+'d</b> to the 50% CGT discount</div>'
+        : '<div class="wc-cgt cgt-ok" title="Held over 12 months (counted from when you added it here) — eligible for the 50% AU CGT discount. General info, not tax advice.">🏷️ held '+_dh+'d · <b>50% CGT discount</b> zone (>12mo)</div>');
+    }
     var tag='';
     if(it.kind==='pick'){
       tag='<div class="wc-tag">'+(it.score?'<span class="wic sc">🧮 '+esc(it.score)+'</span>':'')+'<span class="wic vd '+esc(it.vclass)+'">'+esc(it.verdict)+'</span></div>';
