@@ -642,6 +642,8 @@
   .srowgrp{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:8px}
   .srowgrp>b{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);display:block;margin-bottom:4px}
   .srow{display:flex;justify-content:space-between;align-items:center;padding:4px 0;font-size:13px}
+  .srowtap{width:100%;background:none;border:none;font:inherit;color:inherit;cursor:pointer;text-align:left}
+  .srowtap:hover .sname{color:var(--broth,#FF8C00)} .srowchev{opacity:.5;margin-left:3px;font-weight:900}
   .sname{color:var(--ink)} .setf{color:var(--faint);font-size:11px;font-weight:700}
   .sval{font-weight:800;font-variant-numeric:tabular-nums}
   /* #249 — rotation nested inside the Sectors buy/skip column */
@@ -2483,19 +2485,25 @@ function openRiskInfo(id){
 // won't show a number it can't stand behind). 1×/day data (see CLAUDE.md's schedule section) — real,
 // not live-updated every pulse, disclosed via the "as of" timestamp.
 function sectorRotationHtml(D){
-  var sr=D.sectorRotation; if(MKT!=='us'||!sr||!sr.rows||!sr.rows.length) return '';
+  // #259 — market-aware: US uses the 11 SPDRs vs SPY; AU uses the (thinner) ASX sector ETFs vs the ASX 200.
+  var sr=(MKT==='us')?D.sectorRotation:D.sectorRotationAu;
+  if(!sr||!sr.rows||!sr.rows.length) return '';
+  var _bench=(MKT==='us')?'SPY':'the ASX 200', _mkt=(MKT==='us')?'US':'ASX';
   var rows=sr.rows.filter(function(r){return r.rs20d!=null;});
   var top=rows.slice(0,3), bottom=rows.slice(-3).reverse();
   function row(r){
     var pos=r.rs20d>=0;
-    return '<div class="srow"><span class="sname">'+esc(r.sector)+' <span class="setf">'+esc(r.etf)+'</span></span>'+
-      '<span class="sval '+(pos?'up':'down')+'">'+(pos?'+':'')+r.rs20d+'pt</span></div>';
+    // #259 — tappable: opens the sector ETF's per-ticker read (openMover → real card if it's a pick/
+    // candidate, else the generic "What would you do?" analyst read). Same idiom as Top Movers / theme cards.
+    return '<button type="button" class="srow srowtap" data-sym="'+esc(r.etf)+'" data-region="'+MKT+'" aria-label="'+esc(r.sector)+' '+esc(r.etf)+', open read">'+
+      '<span class="sname">'+esc(r.sector)+' <span class="setf">'+esc(r.etf)+'</span></span>'+
+      '<span class="sval '+(pos?'up':'down')+'">'+(pos?'+':'')+r.rs20d+'pt <span class="srowchev">›</span></span></button>';
   }
   var upd=sr.updatedAt?new Date(sr.updatedAt):null;
   // #249 — now a nested sub-block INSIDE the "Sectors — buy vs skip" column (they're both about sectors),
   // with an in-brand heading instead of the off-brand "SECTOR ROTATION — US, VS SPY, 20-DAY".
   return '<div class="srotwrap"><div class="eyebrow eyebrow-sub">🔥 Where the money’s actually flowing</div>'+
-    '<p class="sec-sub" style="margin:2px 0 8px;font-size:12.5px">Which US kitchens are heating up vs cooling — <b>real</b> 20-day strength against the market, not a guess.'+(upd?' Refreshed daily · '+esc(upd.toLocaleDateString())+'.':'')+'</p>'+
+    '<p class="sec-sub" style="margin:2px 0 8px;font-size:12.5px">Which '+_mkt+' kitchens are heating up vs cooling — <b>real</b> 20-day strength against '+_bench+', not a guess. Tap a sector for its read.'+(upd?' Refreshed daily · '+esc(upd.toLocaleDateString())+'.':'')+'</p>'+
     '<div class="srowgrp"><b>🔥 Heating up</b>'+top.map(row).join('')+'</div>'+
     '<div class="srowgrp"><b>❄️ Cooling off</b>'+bottom.map(row).join('')+'</div></div>';
 }
@@ -5828,6 +5836,10 @@ function wire(D){
     function go(){ openMover(c.dataset.sym,c.dataset.region); }
     c.addEventListener('click',function(e){if(e.target.closest('a,button'))return;go();});
     c.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();go();}});
+  });
+  // #259 — sector-rotation rows are tappable (they're a <button>, so click + keyboard work natively).
+  document.querySelectorAll('.srowtap[data-sym]').forEach(function(c){
+    c.addEventListener('click',function(){ openMover(c.dataset.sym,c.dataset.region||'us'); });
   });
   // #137 — "What's Coming Up" rows with a real ticker now open the real per-ticker analyst read on
   // tap; the a,button guard lets the row's own Yahoo-quote link (qlink) still work independently.
