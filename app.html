@@ -1922,7 +1922,7 @@ function upcomingHtml(D){
     var when=r.days!=null?whenLabel(r.days)+(r.dateStr?' · '+esc(r.dateStr):''):esc(r.dateStr);
     var whatHtml=r.sym?qlink(r.sym,r.region,r.whatLabel):r.what;
     var _o=r.sym?_upFind(r.sym,r.region):null;
-    var chip=(_o&&_o.score&&_o.score.buy_now!=null)?'<span class="upchip">'+juiceChip(_o.score,_o.sym,_o.name,signalRows(_o,r.region||MKT))+'</span>':'';
+    var chip=(_o&&_o.score&&_o.score.buy_now!=null)?'<span class="upchip">'+dualChip(_o.score,_o.sym,_o.name,signalRows(_o,r.region||MKT))+'</span>':'';
     var tappable=!!r.sym;
     // #217 — the passive "★ we track this" label became the standard actionable "+" watch toggle (per #115),
     // so tracking can be turned on/off right on the row. It's static page content, so the global
@@ -1964,18 +1964,25 @@ function topNewsHtml(D){
     (D.regions||[]).forEach(function(rg){ if(rg.id!==region)return; (rg.picks||[]).forEach(function(p){ if(p.sym===sym)f=p; }); });
     if(!f)(D.candidates||[]).forEach(function(c){ if(c.sym===sym&&(c.region||'us')===region)f=c; });
     return f; }
-  var rows=items.slice(0,12).map(function(n){
+  function _row(n){
     var t=TONE[n.tone]||TONE.neutral;
     var label=(n.sym?esc(n.sym)+' — ':'')+esc(n.headline);
     var head=n.url?'<a class="annhead" href="'+esc(n.url)+'" target="_blank" rel="noopener">'+label+' ↗</a>':'<b class="annhead">'+label+'</b>';
     var o=n.sym?_find(n.sym,n.region||MKT):null;
-    var chip=(o&&o.score)?'<span class="annchip">'+juiceChip(o.score,o.sym,o.name,signalRows(o,n.region||MKT))+'</span>':'';
+    var chip=(o&&o.score)?'<span class="annchip">'+dualChip(o.score,o.sym,o.name,signalRows(o,n.region||MKT))+'</span>':'';
     var spk=(o&&o.spark&&o.spark.length>2)?'<div class="annspark">'+sparkSVG(o.spark.slice(-30))+'</div>':'';
     return '<div class="annrow '+t.cls+'"><div class="anntop"><span class="annic">'+t.ic+'</span>'+head+chip+(n.date?'<span class="anndate">'+esc(String(n.date).slice(0,10))+'</span>':'')+'</div>'+
       spk+'<div class="annwhy">'+esc(n.why||'')+'</div></div>';
-  }).join('');
+  }
+  // #269 (user ask) — show the 3 freshest, tuck the rest behind a default-collapsed expander.
+  var top3=items.slice(0,3), rest=items.slice(3,12);
+  var out='<div class="nt3grid">'+top3.map(_row).join('')+'</div>';
+  if(rest.length){
+    out+='<details class="newsmore"><summary>Show '+rest.length+' more headline'+(rest.length===1?'':'s')+' →</summary>'+
+      '<div class="nt3grid" style="margin-top:10px">'+rest.map(_row).join('')+'</div></details>';
+  }
   return '<section id="topnews"><div class="sec-head"><h2 class="display">📰 Tonight\'s news, consolidated</h2>'+infoBtn('topnews')+'</div>'+
-    '<p class="sec-sub">Everything real we read tonight across every source — newest first. Not just what made a pick card.</p><div class="nt3grid">'+rows+'</div></section>';
+    '<p class="sec-sub">Everything real we read tonight across every source — newest first. Not just what made a pick card.</p>'+out+'</section>';
 }
 function topMoversHtml(D){
   var tm=(D.topMovers||{})[MKT]; if(!tm) return '';
@@ -1989,7 +1996,7 @@ function topMoversHtml(D){
     return found; };
   function card(m){
     var o=_mvFind(m.sym);
-    var chip=(o&&o.score&&o.score.buy_now!=null)?'<span class="mvchip">'+juiceChip(o.score,o.sym,o.name,signalRows(o,MKT))+'</span>':'';
+    var chip=(o&&o.score&&o.score.buy_now!=null)?'<span class="mvchip">'+dualChip(o.score,o.sym,o.name,signalRows(o,MKT))+'</span>':'';
     return '<div class="movercard" data-sym="'+esc(m.sym)+'" data-region="'+esc(MKT)+'" role="button" tabindex="0" aria-label="'+esc(m.sym)+' details">'+
       '<div class="movertop"><span class="upsym">'+esc(m.sym)+'</span><span class="'+(m.change_pct>=0?'up':'down')+'" style="font-weight:800;font-size:12.5px">'+(m.change_pct>=0?'▲':'▼')+' '+Math.abs(m.change_pct)+'%</span>'+chip+
       '<button class="watchbtn iconwatch" data-sym="'+esc(m.sym)+'" data-region="'+esc(MKT)+'" style="width:19px;height:19px;font-size:13px;margin-left:6px" aria-pressed="false" title="Add to watchlist">+</button></div>'+
@@ -2033,7 +2040,7 @@ function _missRow(r, mi, tfLabel){
     (_D.regions||[]).forEach(function(rg){(rg.picks||[]).forEach(function(p){if(p.sym===r.sym&&p.sym!=='NONE')_sc=p;});});
     if(!_sc)(_D.candidates||[]).forEach(function(c){if(c.sym===r.sym&&(c.region||'us')===r.region)_sc=c;});
   }catch(e){}
-  var chip=(_sc&&_sc.score&&_sc.score.buy_now!=null)?'<span class="misschip">'+juiceChip(_sc.score,_sc.sym,_sc.name,signalRows(_sc,r.region))+'</span>':'';
+  var chip=(_sc&&_sc.score&&_sc.score.buy_now!=null)?'<span class="misschip">'+dualChip(_sc.score,_sc.sym,_sc.name,signalRows(_sc,r.region))+'</span>':'';
   return '<div class="missrow '+s.cls+'"><span class="missic">'+s.ic+'</span>'+tfB(tfLabel)+
     '<a class="misssym" href="'+yf(r.sym,r.region)+'" target="_blank" rel="noopener">'+esc(r.sym)+'<span class="wflag" style="margin-left:5px">'+(r.region==='au'?'AU':'US')+'</span></a>'+
     (r.name?'<span class="missnm">'+esc(r.name)+'</span>':'')+
@@ -2811,7 +2818,7 @@ function actionsHtml(D){
     if(!f||!f.score)(D.defaultWatchlist||[]).forEach(function(w){ if(w.sym===sym&&(w.region||'us')===region&&w.score)f=w; });
     if(!f||!f.score){ var wi=(D.watchlistIntel||{})[sym+'|'+region]||(D.watchlistIntel||{})[sym]; if(wi&&wi.score)f={sym:sym,name:(wi.name||sym),score:wi.score}; }
     return f; }
-  function _axChip(sym,region){ var o=_axFind(sym,region); return (o&&o.score)?'<span class="axchip">'+juiceChip(o.score,o.sym,o.name,signalRows(o,region))+'</span>':''; }
+  function _axChip(sym,region){ var o=_axFind(sym,region); return (o&&o.score)?'<span class="axchip">'+dualChip(o.score,o.sym,o.name,signalRows(o,region))+'</span>':''; }
   function _when(d){ return d===0?'Today':d===1?'Tomorrow':'In '+d+'d'; }
   // #181 follow-up (user: "unify with Full Pot — action cards should carry the mini chart, price and the
   // + watch icon too"). One helper returns the spark + the standard + watch button for any ticker;
@@ -2839,7 +2846,7 @@ function actionsHtml(D){
   ready.sort(function(a,b){return (a.p.nNow/a.p.nEntry)-(b.p.nNow/b.p.nEntry);});
   var _readySet={};
   ready.slice(0,3).forEach(function(it){ _readySet[it.p.sym]=1;
-    var p=it.p, cur=it.rg.cur||'$', why=(p.catalysts&&p.catalysts[0])||p.news||'', chip=(p.score?'<span class="axchip">'+juiceChip(p.score,p.sym,p.name,signalRows(p,it.rg.id))+'</span>':''), ex=_axExtras(p.sym,it.rg.id);
+    var p=it.p, cur=it.rg.cur||'$', why=(p.catalysts&&p.catalysts[0])||p.news||'', chip=(p.score?'<span class="axchip">'+dualChip(p.score,p.sym,p.name,signalRows(p,it.rg.id))+'</span>':''), ex=_axExtras(p.sym,it.rg.id);
     items.push({r:2, h:'<div class="axcard" data-region="'+esc(it.rg.id)+'" data-idx="'+it.idx+'" role="button" tabindex="0" aria-label="Buy '+esc(p.sym)+'">'+
       '<div class="axtop"><span class="axverb axv-buy">🟢 BUY TARGET</span>'+tfBW(p.tf)+'<span class="axsym">'+esc(p.sym)+'</span>'+chip+'<span class="axpx mono">'+esc(p.price)+'</span>'+ex.wb+'</div>'+ex.chart+
       '<div class="axprice">✓ At your price — ideal buy ~'+esc(cur)+esc(p.nEntry)+'</div>'+
@@ -2860,7 +2867,7 @@ function actionsHtml(D){
   // Tonight's picks (the tier buys) — GET IN, or ⏳ for a wait-verdict pick (ranked lower)
   (D.regions||[]).forEach(function(rg){ if(rg.id!==MKT) return;
     (rg.picks||[]).forEach(function(p,idx){ if(p.sym==='NONE'||_readySet[p.sym]) return;
-      var chip=(p.score?'<span class="axchip">'+juiceChip(p.score,p.sym,p.name,signalRows(p,rg.id))+'</span>':''), ex=_axExtras(p.sym,rg.id);
+      var chip=(p.score?'<span class="axchip">'+dualChip(p.score,p.sym,p.name,signalRows(p,rg.id))+'</span>':''), ex=_axExtras(p.sym,rg.id);
       var wait=/wait|late|hold|skip|avoid|pass|don.t|steer/i.test(p.verdict||'');
       items.push({r:wait?6:4, h:'<div class="axcard axtier ax-'+(wait?'warn':'buy')+'" data-region="'+esc(rg.id)+'" data-idx="'+idx+'" role="button" tabindex="0" aria-label="'+esc(p.sym)+'">'+
         '<div class="axtop"><span class="axverb '+(wait?'axv-warn':'axv-buy')+'">'+(wait?'⏳':'🟢')+' '+esc((p.verdict||'GET IN').toUpperCase())+'</span>'+tfBW(p.tf)+'<span class="axsym">'+esc(p.sym)+'</span>'+chip+(p.price?'<span class="axpx mono">'+esc(p.price)+'</span>':'')+ex.wb+'</div>'+ex.chart+
@@ -2976,13 +2983,12 @@ function render(D,H){
         if(sg){
           // #210 — a flagged "next best" suggestion (display-only, never graded). Tap opens the real
           // per-ticker read via openMover (pick/candidate → analyst fallback), same as Top Movers.
-          var _sgChip=juiceChip(sg.score,sg.sym,sg.name,signalRows(sg,rg.id));
+          var _sgChip=dualChip(sg.score,sg.sym,sg.name,signalRows(sg,rg.id));
           return '<div class="pickcol"><article class="card card-sugg" tabindex="0" role="button" data-sugg-sym="'+esc(sg.sym)+'" data-sugg-region="'+esc(rg.id)+'" aria-label="Next-best suggestion '+esc(sg.sym)+' (not a served pick)">'+
-            '<div class="tf"><span class="name">'+tfBW(p.tf)+'</span><span class="tf-r"><span class="verdict v-sugg">💡 next best</span></span></div>'+
+            '<div class="tf"><span class="name">'+tfBW(p.tf)+'</span><span class="tf-r">'+_sgChip+'<span class="verdict v-sugg">💡 next best</span></span></div>'+
             '<div class="suggflag">No name cleared the bar for this slot, so here\'s the <b>strongest one we found but didn\'t serve</b> — lower conviction, and <b>not</b> one of tonight\'s graded calls.</div>'+
             '<div class="tick"><span class="symwrap"><span class="sym">'+qlink(sg.sym,rg.id)+'</span><span class="co">'+qlink(sg.sym,rg.id,sg.name)+' ↗</span></span>'+
             '<span class="px"><span class="p mono">'+esc(sg.price||'—')+'</span>'+(sg.change?'<br><span class="c mono '+chgTone(sg.change,sg.up)+'">'+esc(sg.change)+'</span>':'')+'</span></div>'+
-            (_sgChip?'<div class="sentrow">'+_sgChip+'</div>':'')+
             (sg.note?'<p class="plain">'+esc(sg.note)+'</p>':'')+
             // #239 (user ask) — the next-best card was missing the mini-chart + range bar every real pick
             // card shows. The candidate carries `spark` and the full technical set (per #126), so render the
@@ -3140,8 +3146,10 @@ function render(D,H){
     var shortChip=(c.short!=null&&c.short>=4)?'<span class="pmc-short">🩳 '+c.short+'%</span>':'';
     var _crows=signalRows(c,c.region||'us');
     var jc=juiceChip(c.score,c.sym,c.name,_crows)+cherryChip(c.score,c.sym,c.name,_crows);   // #173/#186 🍊 + #266 🍒
+    var _bn=(c.score&&c.score.buy_now!=null)?c.score.buy_now:0;
+    var _ov=(c.score&&c.score.buy_now!=null)?(overallScore(c.score.buy_now,_crows)||{}).score:0;   // #270 — cherry score for the OR-filter
     var rankBadge=rank?'<span class="pmc-rank">'+rank+'</span>':'';   // #211 — Stock Pot Top 20 is a numbered leaderboard
-    return '<div class="potcard h-'+esc(c.heat)+(rank?' ranked':'')+'" data-ci="'+i+'" data-score="'+((c.score&&c.score.buy_now!=null)?c.score.buy_now:0)+'" role="button" tabindex="0" aria-label="Details for '+esc(c.sym)+'">'+
+    return '<div class="potcard h-'+esc(c.heat)+(rank?' ranked':'')+'" data-ci="'+i+'" data-score="'+_bn+'" data-cherry="'+(_ov||0)+'" role="button" tabindex="0" aria-label="Details for '+esc(c.sym)+'">'+
       '<div class="pmc-top">'+rankBadge+(c.heat==='cold'?'<span class="ph no">⛔</span>':'<span class="ph"></span>')+'<b class="pmc-sym">'+esc(c.sym)+'</b>'+shortChip+'<span class="pmc-flag">'+(c.region==='au'?'AU':'US')+'</span>'+
         '<button class="watchbtn iconwatch pmc-watch" data-sym="'+esc(c.sym)+'" data-region="'+esc(c.region||'us')+'"'+(c.name?' data-name="'+esc(c.name)+'"':'')+' aria-pressed="false" title="Add to watchlist">+</button></div>'+
       (c.name?'<div class="pmc-name">'+esc(c.name)+'</div>':'')+
@@ -3350,6 +3358,13 @@ var FACTOR_EXPLAIN={
 // Reuses the JUICE_CACHE + the document-level .juicebtn delegated listener, so no extra wiring.
 // #186 — the 🍊 chip is now the SINGLE entry to a consolidated breakdown (score bar + simple checklist +
 // signal charts + raw derivation), replacing the old 3 separate chips (🍊 juice / 🧮 signals / 🧾 checklist).
+// #266 — every card FACE should show both the 🍊 (timing) and 🍒 (overall conviction) chips, not just the
+// orange. dualChip is the one-liner used across action cards, next-best, What's Coming Up, movers, misses,
+// watchlists — same signature as juiceChip, so a call site just swaps the name.
+function dualChip(score,sym,name,sigRows){
+  if(!score||score.buy_now==null) return '';
+  return juiceChip(score,sym,name,sigRows)+cherryChip(score,sym,name,sigRows);
+}
 function juiceChip(score,sym,name,sigRows){
   // #orange-top fix (11 Aug 2026) — was requiring score.detail, so a pick WITHOUT detail (e.g. CPU) fell to
   // a dead <span>, and its 🍊 did nothing. Render the chip for ANY scored name; openJuice degrades cleanly
@@ -3589,8 +3604,9 @@ function _openJuiceInner(id,j,score,d){
   var segs=facs.map(function(fc){return '<span class="scoreseg s-'+fc.k+'" style="width:'+fc.pts+'%"></span>';}).join('');
   var leg=facs.map(function(fc){return '<span><i class="s-'+fc.k+'"></i>'+esc(SCORE_FLAB[fc.k]||fc.k)+' '+fc.pts+'</span>';}).join('');
   if(score.heat&&score.heat>1) leg+='<span class="pen">− overheated '+Math.round(score.heat)+'</span>';
-  var scoreViz=(facs.length?'<div class="scorebar">'+segs+'</div><div class="scorelegend">'+leg+'</div>':'')+
-    (score.verdict?'<div class="rsimeta" style="margin-top:7px"><b>'+esc(score.verdict)+'</b>'+(score.child_sentence?' — '+esc(score.child_sentence):'')+'</div>':'');
+  // #271 (user ask) — the score-factor SEGMENT bar + legend (Earnings/Volume/Analysts/Trend) duplicated the
+  // 🍲 recipe ingredient list right above it, so it's removed. Keep only the verdict sentence here.
+  var scoreViz=(score.verdict?'<div class="rsimeta" style="margin-top:7px"><b>'+esc(score.verdict)+'</b>'+(score.child_sentence?' — '+esc(score.child_sentence):'')+'</div>':'');
   // #215 follow-up (user: "how does it score 85 when only 2/8 signals look good?") — make the composition
   // explicit. The score is the WEIGHTED FACTOR bar above (catalyst + trend/high + volume); the 8 technical
   // checks below are secondary timing signals that only nudge it. This closes the gap between "2/8 green"
@@ -3598,7 +3614,7 @@ function _openJuiceInner(id,j,score,d){
   var _facsSorted=facs.slice().sort(function(a,b){return b.pts-a.pts;});
   var _dom=_facsSorted[0];
   var whyBlock=facs.length?('<div class="jwhy85"><div class="jwhy85-h">🧮 Why '+score.buy_now+'/100 — not '+(j.sigRows?j.sigRows.filter(function(r){return r.tone==="pos";}).length:0)+'/'+((j.sigRows||[]).length)+'?</div>'+
-    '<p>The number is set by the <b>big weighted factors</b> in the bar above — '+
+    '<p>The number is set by the <b>big weighted factors</b> in the recipe above — '+
       _facsSorted.map(function(f){return '<b>'+esc(SCORE_FLAB[f.k]||f.k)+' '+f.pts+'</b>';}).join(' + ')+
       (score.heat&&score.heat>1?' <span class="down">− overheated '+Math.round(score.heat)+'</span>':'')+
       ' = <b>'+score.buy_now+'</b>. '+(_dom?'Most of it is <b>'+esc(SCORE_FLAB[_dom.k]||_dom.k)+'</b>':'')+
@@ -5943,7 +5959,8 @@ function wire(D){
       var lbl=document.getElementById('potThrLbl'); if(lbl) lbl.textContent=FULL_POT_THR+'+';
       var shown=0;
       document.querySelectorAll('#fullpot .potcard[data-score]').forEach(function(c){
-        var ok=(+c.getAttribute('data-score'))>=FULL_POT_THR; c.style.display=ok?'':'none'; if(ok) shown++;
+        // #270 — pass if EITHER the 🍊 buy-now OR the 🍒 overall conviction clears the threshold.
+        var ok=Math.max(+c.getAttribute('data-score'),+(c.getAttribute('data-cherry')||0))>=FULL_POT_THR; c.style.display=ok?'':'none'; if(ok) shown++;
       });
       // hide a band group whose visible cards are all filtered out
       document.querySelectorAll('#fullpot .potband').forEach(function(g){
@@ -6264,8 +6281,10 @@ function simpleFullPotHtml(D){
     .slice().sort(function(a,b){return (b.score.buy_now||0)-(a.score.buy_now||0);});
   if(!cands.length) return '';
   var rows=cands.map(function(c){
-    var chip=juiceChip(c.score,c.sym,c.name,signalRows(c,c.region||'au'));
-    return '<div class="spot-row" data-spot-score="'+(c.score.buy_now||0)+'" data-sugg-sym="'+esc(c.sym)+'" data-sugg-region="'+esc(c.region||'au')+'" role="button" tabindex="0" aria-label="'+esc(c.sym)+' details">'+
+    var _rows=signalRows(c,c.region||'au');
+    var chip=dualChip(c.score,c.sym,c.name,_rows);
+    var _ov=(overallScore(c.score.buy_now,_rows)||{}).score||0;   // #270 — cherry for the OR-filter
+    return '<div class="spot-row" data-spot-score="'+(c.score.buy_now||0)+'" data-spot-cherry="'+_ov+'" data-sugg-sym="'+esc(c.sym)+'" data-sugg-region="'+esc(c.region||'au')+'" role="button" tabindex="0" aria-label="'+esc(c.sym)+' details">'+
       '<span class="spot-flag">'+((c.region||'au')==='au'?'🇦🇺':'🇺🇸')+'</span>'+
       '<span class="rltier rltier-1" title="Type 1 — the catalyst pot">T1</span>'+
       '<span class="spot-sym">'+esc(c.sym)+'</span>'+
@@ -6351,7 +6370,7 @@ function wireSimple(D){
       var t=+spotThr.value; SIMPLE_POT_THR=t;
       var lbl=document.getElementById('spotThrLbl'); if(lbl) lbl.textContent=t+'+';
       var shown=0;
-      document.querySelectorAll('#spotList .spot-row').forEach(function(r){ var ok=(+r.dataset.spotScore)>=t; r.style.display=ok?'':'none'; if(ok)shown++; });
+      document.querySelectorAll('#spotList .spot-row').forEach(function(r){ var ok=Math.max(+r.dataset.spotScore,+(r.dataset.spotCherry||0))>=t; r.style.display=ok?'':'none'; if(ok)shown++; });
       var none=document.getElementById('spotNone'); if(none) none.hidden=shown>0;
     };
     spotThr.addEventListener('input', applySpot); applySpot();
