@@ -810,6 +810,7 @@
   /* #116 follow-up (10 Aug 2026) — verdict pill moved out of the cramped top row onto its own line
      (see tcard()); small left-aligned chip, never collides with the symbol row's + button now. */
   .tsc-verd{margin-top:1px;align-self:flex-start;font-size:10px;padding:3px 8px;letter-spacing:.03em}
+  .tsc-chips{display:flex;flex-wrap:wrap;gap:5px;margin:5px 0 2px}  /* #288 🍊/🍒 on theme-leader cards */
   .tscard{border:1px solid var(--line);border-radius:13px;padding:11px 12px;display:flex;flex-direction:column;gap:6px;background:var(--surface-2)}
   .tscard.tappable{cursor:pointer;transition:transform .12s,border-color .12s}
   .tscard.tappable:hover{transform:translateY(-2px);border-color:var(--broth)}
@@ -4838,6 +4839,11 @@ function openTheme(src,idx){
     // handler + openMover(), which opens the real pick/candidate card when there is one, else falls
     // back to the generic per-ticker analyst read (works for any symbol).
     var tap=' data-kind="'+esc(it.kind)+'" data-region="'+esc(reg)+'" role="button" tabindex="0"';
+    // #288 — theme-leader cards were missing the 🍊/🍒 chips even though the leader is a scored pick/candidate.
+    // Pull the real score object off whichever intel matched and render the same dual chip every other card uses.
+    var _lobj=it.p||it.c||it.wi||null;
+    var _lscore=_lobj?_lobj.score:null;
+    var chips=(_lobj&&_lscore&&_lscore.buy_now!=null)?dualChip(_lscore,sym,(_lobj.name||sym),signalRows(_lobj,reg)):'';
     var pi=pm[sym+'|'+reg]||pm[sym+'|au']||pm[sym+'|us']||{};
     var hasPx=pi.price!=null, hasSpk=(pi.spark&&pi.spark.length>2);
     var pxrow = hasPx ? '<div class="tsc-pxrow"><span class="tsc-px">'+esc(pi.price)+'</span>'+(pi.change?'<span class="tsc-chg '+(pi.up?'up':'down')+'">'+(pi.up?'▲':'▼')+' '+esc(pi.change)+'</span>':'')+'</div>'
@@ -4855,6 +4861,7 @@ function openTheme(src,idx){
         '<span class="pmc-flag">'+(reg==='au'?'AU':'US')+'</span>'+
         '<button class="watchbtn iconwatch" data-sym="'+esc(sym)+'" data-region="'+esc(reg)+'" style="margin-left:auto" aria-pressed="false" title="Add to watchlist">+</button></div>'+
       (verd?'<span class="mverd '+esc(vcl)+' tsc-verd">'+esc(verd)+'</span>':'')+
+      (chips?'<div class="tsc-chips">'+chips+'</div>':'')+
       pxrow+spk+
       '<div class="tsc-why">'+why+'</div>'+nh+
       (cue?'<div class="tsc-cue">'+cue+'</div>':'')+'</div>';
