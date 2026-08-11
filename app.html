@@ -2905,12 +2905,14 @@ function openPead(){
   var rows=list.map(function(c){
     var reg=c.region||st.region||'us', cur=reg==='au'?'A$':'$';
     var pead=Math.round(((((c.score||{}).detail||{}).contrib||{}).pead)||0);
-    var px=c.price?'<span class="pd-px">'+esc(cur)+esc(cleanPrice(c.price))+(c.change?' <span class="'+(c.up?'up':'down')+'">'+(c.up?'▲':'▼')+esc(c.change)+'</span>':'')+'</span>':'';
+    // cleanPrice already carries the currency symbol — don't prepend cur (that made "$$87.47").
+    var px=c.price?'<span class="pd-px">'+esc(cleanPrice(c.price))+(c.change?' <span class="'+(c.up?'up':'down')+'">'+(c.up?'▲':'▼')+esc(c.change)+'</span>':'')+'</span>':'';
     var chips=(c.score&&c.score.buy_now!=null)?dualChip(c.score,c.sym,c.name,signalRows(c,reg)):'';
     var spk=(c.spark&&c.spark.length>2)?'<div class="pd-spark">'+sparkSVG(c.spark.slice(-30))+'</div>':'';
+    var rng=rangeBarsHtml(c,cur);   // #292 (user ask) — the week/month/year low→high 'where it sits' sliders
     return '<div class="pdrow" data-pd-sym="'+esc(c.sym)+'" data-pd-region="'+esc(reg)+'" role="button" tabindex="0">'+
       '<div class="pd-h"><b class="pd-sym">'+esc(c.sym)+'</b>'+(c.name?'<span class="pd-nm">'+esc(c.name)+'</span>':'')+'<span class="pd-strength" title="How much the earnings beat is feeding this stock\'s score">🎯 +'+pead+'</span></div>'+
-      '<div class="pd-b">'+px+chips+'</div>'+spk+
+      '<div class="pd-b">'+px+chips+'</div>'+spk+(rng||'')+
       (c.note?'<div class="pd-note">'+esc(c.note)+'</div>':'')+'</div>';
   }).join('');
   m.innerHTML='<div class="mhead"><button class="mclose" id="mClose" aria-label="Close">✕</button><div class="mtf">📈 PEAD — earnings-drift plays</div>'+
@@ -6235,11 +6237,15 @@ function wire(D){
       var lbl=document.getElementById('potThrLbl'); if(lbl) lbl.textContent=FULL_POT_THR+'+';
       var shown=0;
       document.querySelectorAll('#fullpot .potcard[data-score]').forEach(function(c){
+        if(c.closest('#potLose')) return;   // the collapsed "N more below the top 20" section shows ALL of them
+        // when expanded — the threshold only governs the top-20 view (else expanding it revealed only display:none
+        // cards → "83 more doesn't expand", user-caught 12 Aug).
         // #270 — pass if EITHER the 🍊 buy-now OR the 🍒 overall conviction clears the threshold.
         var ok=Math.max(+c.getAttribute('data-score'),+(c.getAttribute('data-cherry')||0))>=FULL_POT_THR; c.style.display=ok?'':'none'; if(ok) shown++;
       });
-      // hide a band group whose visible cards are all filtered out
+      // hide a band group whose visible cards are all filtered out (top-20 groups only; leave the "more" section alone)
       document.querySelectorAll('#fullpot .potband').forEach(function(g){
+        if(g.closest('#potLose')) return;
         var any=Array.prototype.some.call(g.querySelectorAll('.potcard[data-score]'),function(c){return c.style.display!=='none';});
         g.style.display=any?'':'none';
       });
