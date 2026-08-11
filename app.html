@@ -2417,6 +2417,15 @@ function signalRows(p,region,opts){
       read:(cmf>=0?'Accumulation':'Distribution')+' · CMF '+(cmf>=0?'+':'')+cmf+(mfw.mfi!=null?' · MFI '+mfw.mfi:''),
       explain:'Is real money flowing IN or OUT? Chaikin Money Flow ('+(cmf>=0?'+':'')+cmf+', −1 to +1) reads where each day\'s close landed in its range × volume — positive = buyers absorbing supply (accumulation), negative = sellers in control (distribution).'+(mfw.mfi!=null?' Money Flow Index '+mfw.mfi+'/100 is a volume-weighted RSI ('+(mfw.mfi>80?'overbought — money rushing in':mfw.mfi<20?'oversold — washed out':'neutral')+').':'')+' Both from the daily price+volume history, no new data.'});
   }
+  // intraday RVOL + session VWAP (11 Aug 2026, picks only) — a REAL intraday read (via yfinance 5m bars),
+  // the signal the app never had because every price source was EOD-only. Above VWAP = buyers in control today.
+  var iv=p&&p.intraday;
+  if(iv&&iv.vwap!=null){
+    var av=iv.above_vwap, ivtone=av?'pos':'neg';
+    rows.push({icon:'⏱️',label:'Intraday (VWAP/RVOL)',tone:ivtone,
+      read:(av?'Above':'Below')+' VWAP '+(iv.vs_vwap_pct>=0?'+':'')+iv.vs_vwap_pct+'%'+(iv.rvol!=null?' · '+iv.rvol+'× volume':''),
+      explain:'A real INTRADAY read from 5-minute bars (not the end-of-day close). Session VWAP (volume-weighted average price) is '+esc(String(iv.vwap))+' — price is '+(iv.vs_vwap_pct>=0?'+':'')+iv.vs_vwap_pct+'% '+(av?'ABOVE':'BELOW')+' it, so '+(av?'buyers are in control':'sellers are in control')+' today. '+(iv.rvol!=null?'Intraday RVOL '+iv.rvol+'× means '+(iv.rvol>=1.5?'unusually heavy':iv.rvol<0.8?'lighter-than-usual':'normal')+' participation vs this point of the session on prior days.':'')+' Source: yfinance intraday.'});
+  }
   // #19 (11 Aug 2026) — short-SQUEEZE SETUP: heavily shorted AND price still climbing = covering-rally fuel.
   var ssq=p&&p.squeeze_setup;
   if(ssq&&ssq.level&&ssq.level!=='low'){
