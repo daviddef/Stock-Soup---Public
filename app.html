@@ -1441,6 +1441,9 @@
   .rc-sect.rc-dn{color:var(--dont)}
   .rcr{display:grid;grid-template-columns:1fr 84px 38px;align-items:center;gap:9px;padding:5px 0;border-bottom:1px solid var(--line);font-size:13px}
   .rcr .nm{font-weight:700} .rcr .nm .em{margin-right:5px}
+  .rclit{font-size:10.5px;color:var(--muted);font-weight:700;margin-left:7px}  /* #279 literal input folded into the recipe row */
+  .cvtally{display:flex;flex-wrap:wrap;gap:8px 14px;padding:6px 0 2px;font-size:12.5px;font-weight:800}  /* #279 signal-vote tally (detail is the cards below) */
+  .cvtally .cvt-y{color:var(--buy)} .cvtally .cvt-n{color:var(--dont)} .cvtally .cvt-m{color:var(--muted)}
   .rcbar{height:9px;background:var(--surface-2);border-radius:5px;overflow:hidden}
   .rcbf{height:100%;border-radius:5px}
   .rcr.up .rcbf{background:var(--buy)} .rcr.dn .rcbf{background:var(--dont)}
@@ -3472,6 +3475,16 @@ var RECIPE_EMOJI={pead:'🎯',rev:'📈',hi:'🍅',news:'🧅',vol:'🌽',ins:'�
   bollinger_squeeze:'🪤',seasonality:'📅',rsi_overbought:'🌶️',extended_vs_sma20:'🚀',
   short_interest:'🩳',capital_raise:'💸',stale_catalyst:'🕰️',priced_in:'🏷️',insider_selling:'📉'};
 function recipeLabel(k){return (typeof SCORE_FLAB!=='undefined'&&SCORE_FLAB[k])||(''+k).replace(/_/g,' ');}
+// #279 — the ONE genuinely-unique thing the old standalone "factor cards" section carried was the literal
+// input behind a factor ("4.6× normal volume", "beat by 12%"). Fold it into the recipe row itself so that
+// section can be deleted (it otherwise just re-listed the same factors the recipe already shows).
+function recipeLit(score,k){
+  var raw=(score&&score.detail&&score.detail.raw)||{};
+  if(k==='vol'&&raw.volume_ratio!=null){var v=+raw.volume_ratio;return v.toFixed(1)+'× normal volume';}
+  if(k==='pead'&&raw.eps_surprise!=null){var e=+raw.eps_surprise;return (e>=0?'beat by ':'missed by ')+Math.abs(e).toFixed(1)+'%';}
+  if(k==='rev'&&raw.analyst_net!=null)return 'net '+raw.analyst_net+' analyst '+(raw.analyst_net>=0?'upgrades':'downgrades');
+  return '';
+}
 // 🍒 OVERALL CONVICTION (user ask) — one number that considers EVERYTHING: the 🍊 buy-now score (the
 // timing/weighted engine, the backbone) blended with how ALL the signals line up — including the "garnish"
 // technical reads that don't move the buy-now score on their own. A single, plain "all things considered,
@@ -3512,16 +3525,18 @@ function cherryChip(score,sym,name,rows){
 }
 function cherryCardHtml(ov,rows){
   if(!ov) return '';
-  function vote(r){var t=r.tone==='pos'?['✅','for']:r.tone==='neg'?['⚠️','against']:['•','neutral'];
-    return '<div class="cvrow cv-'+r.tone+'"><span class="cvi">'+t[0]+'</span><span class="cvl">'+(r.icon?r.icon+' ':'')+esc(r.label)+'</span><span class="cvv">'+esc(r.read||'')+'</span></div>';}
-  var sig=(rows||[]).map(vote).join('')||'<p class="muted" style="font-size:12px;margin:4px 0">No signals available for this name yet.</p>';
+  // #279 — this card is the 60/40 MATH only (backbone + vote tally). The per-signal rows used to be listed
+  // here AND again as full cards below (signalCardsHtml) — the same signals twice. The tally summarises;
+  // the detail lives once, in the cards below.
+  var nrows=(rows||[]).length, neu=Math.max(0,nrows-ov.pos-ov.neg);
   return '<div class="rcard"><div class="rc-kick">🍒 OVERALL CONVICTION</div>'+
     '<div class="rc-serves">scores <b>'+ov.score+'</b>/100 · '+esc(ov.verdict)+'</div>'+
     '<div class="rc-sect">The backbone · 60%</div>'+
     '<div class="cvrow cv-pos"><span class="cvi">🍊</span><span class="cvl">Buy-now score (timing engine)</span><span class="cvv">'+ov.buy+'/100</span></div>'+
-    '<div class="rc-sect">The signal vote · 40% — '+ov.pos+' for, '+ov.neg+' against</div>'+sig+
+    '<div class="rc-sect">The signal vote · 40%</div>'+
+    '<div class="cvtally"><span class="cvt-y">✅ '+ov.pos+' for</span><span class="cvt-n">⚠️ '+ov.neg+' against</span>'+(neu>0?'<span class="cvt-m">• '+neu+' neutral</span>':'')+'</div>'+
     '<div class="rc-total"><span>OVERALL</span><b>'+ov.score+' / 100</b></div>'+
-    '<p class="rc-foot">One number for "all things considered": the buy-now timing score blended with how <b>every</b> signal lines up — including the context reads (RSI, levels, VWAP…) that don\'t move the buy-now score on their own. Green = for, amber = against.</p></div>';
+    '<p class="rc-foot">One number for "all things considered": the buy-now timing score (60%) blended with how <b>every</b> signal lines up (40%) — including the context reads (RSI, levels, VWAP…) that don\'t move the buy-now score on their own. <b>Each signal is detailed below.</b></p></div>';
 }
 // The 🍒 cherry owns the SIGNAL reads (all the technical signals, each with its diagram) — this is the
 // "how all the signals line up" detail, split out from the 🍊 orange (which owns the SCORE math). Reuses
@@ -3547,7 +3562,10 @@ function openOverall(id){
   LASTFOCUS=document.activeElement;
   var m=document.getElementById('modal'); m.className='modal';
   var body='';
-  try{ body=overallBannerHtml(c.ov)+cherryCardHtml(c.ov,c.rows)+(c.sym?juicePriceViz(c.sym):'')+signalCardsHtml(c.rows); }
+  // #279 — juicePriceViz (price ladder + stop/target + RSI) was STOCK FACTS living in the conviction modal.
+  // Those belong under the stock (its own card/modal), not here. The 🍒 now holds ONLY the conviction math +
+  // the signal reads. RSI etc. still appear — as signal cards — so nothing real is lost, just the duplication.
+  try{ body=overallBannerHtml(c.ov)+cherryCardHtml(c.ov,c.rows)+signalCardsHtml(c.rows); }
   catch(err){ try{console.error('openOverall section failed:',err);}catch(_){}
     body=overallBannerHtml(c.ov)+cherryCardHtml(c.ov,c.rows); }   // fail-open: always show the vote at least
   m.innerHTML='<div class="mhead"><button class="mclose" id="mClose" aria-label="Close">✕</button><div class="mtf">🍒 Overall conviction — all the signals</div>'+
@@ -3573,8 +3591,8 @@ function recipeCardHtml(score){
   var up=items.filter(function(i){return i.pts>0;}).sort(function(a,b){return b.pts-a.pts;});
   var dn=items.filter(function(i){return i.pts<0;}).sort(function(a,b){return a.pts-b.pts;});
   var mx=Math.max.apply(null,items.map(function(i){return Math.abs(i.pts);}))||1;
-  function row(i){var pos=i.pts>=0;
-    return '<div class="rcr '+(pos?'up':'dn')+'"><div class="nm"><span class="em">'+(RECIPE_EMOJI[i.k]||'•')+'</span>'+esc(recipeLabel(i.k))+'</div>'+
+  function row(i){var pos=i.pts>=0, lit=recipeLit(score,i.k);
+    return '<div class="rcr '+(pos?'up':'dn')+'"><div class="nm"><span class="em">'+(RECIPE_EMOJI[i.k]||'•')+'</span>'+esc(recipeLabel(i.k))+(lit?'<span class="rclit">'+esc(lit)+'</span>':'')+'</div>'+
       '<div class="rcbar"><div class="rcbf" style="width:'+Math.max(5,Math.min(100,Math.abs(i.pts)/mx*100))+'%"></div></div>'+
       '<div class="pt">'+(pos?'+':'−')+Math.abs(i.pts).toFixed(Math.abs(i.pts)<10?1:0)+'</div></div>';
   }
@@ -3644,35 +3662,21 @@ function _openJuiceInner(id,j,score,d){
   // and a high headline number.
   var _facsSorted=facs.slice().sort(function(a,b){return b.pts-a.pts;});
   var _dom=_facsSorted[0];
-  var whyBlock=facs.length?('<div class="jwhy85"><div class="jwhy85-h">🧮 Why '+score.buy_now+'/100 — not '+(j.sigRows?j.sigRows.filter(function(r){return r.tone==="pos";}).length:0)+'/'+((j.sigRows||[]).length)+'?</div>'+
-    '<p>The number is set by the <b>big weighted factors</b> in the recipe above — '+
+  // #279 — one sharp "why this number" line (was two paragraphs; the recipe above + its foot already point
+  // the technical reads to the 🍒 cherry, so the 2nd paragraph was redundant). The old standalone
+  // "🧩 What makes up the score" factor-card section is GONE — it re-listed the same factors the recipe
+  // already shows; its one unique bit (the literal input) now rides inside the recipe rows via recipeLit().
+  var whyBlock=facs.length?('<div class="jwhy85"><div class="jwhy85-h">🧮 Why '+score.buy_now+'/100?</div>'+
+    '<p>Set by the <b>big weighted factors</b> in the recipe — '+
       _facsSorted.map(function(f){return '<b>'+esc(SCORE_FLAB[f.k]||f.k)+' '+f.pts+'</b>';}).join(' + ')+
       (score.heat&&score.heat>1?' <span class="down">− overheated '+Math.round(score.heat)+'</span>':'')+
-      ' = <b>'+score.buy_now+'</b>. '+(_dom?'Most of it is <b>'+esc(SCORE_FLAB[_dom.k]||_dom.k)+'</b>':'')+
-      (score.child_sentence?' — '+esc(score.child_sentence):'')+'.</p>'+
-    '<p>The <b>'+((j.sigRows||[]).length)+' technical signal reads</b> (RSI, trend, levels…) live under the <b>🍒 cherry</b> — they feed the <i>overall conviction</i> but only nudge <i>this</i> score by a few points. That’s why a stock can score high on a genuine catalyst even while several of those reads are amber or red. This 🍊 is a forward read on the <i>setup</i> — not a call on today’s move.</p></div>'):'';
-  // #215 follow-up — one explainer card per score factor (Trend/High, Catalyst, Volume…), the same
-  // "what it is + what makes it up" idiom as the technical-signal cards, so each bar segment is legible.
-  // #195 — the literal input behind a factor, so Volume reads "4.6× normal volume today" not "raw 100%".
-  var _raw=(score.detail&&score.detail.raw)||{};
-  function _litFor(k){
-    if(k==='vol'&&_raw.volume_ratio!=null){var v=+_raw.volume_ratio;return v.toFixed(1)+'× its normal daily volume'+(v>=1.5?' — real money behind the move':v<0.9?' — quiet, a thin move':'');}
-    if(k==='pead'&&_raw.eps_surprise!=null){var e=+_raw.eps_surprise;return (e>=0?'beat earnings by ':'missed earnings by ')+Math.abs(e).toFixed(1)+'%';}
-    if(k==='rev'&&_raw.analyst_net!=null)return 'net '+_raw.analyst_net+' analyst '+(_raw.analyst_net>=0?'upgrades':'downgrades')+' recently';
-    return '';
-  }
-  var factorCards=facs.map(function(fc){ var fe=FACTOR_EXPLAIN[fc.k]||{ic:'•',what:'',makeup:''}; var lit=_litFor(fc.k);
-    return '<div class="jfac"><div class="jfac-h"><span class="jfac-dot s-'+fc.k+'"></span><b>'+esc(SCORE_FLAB[fc.k]||fc.k)+'</b><span class="jfac-pts">'+fc.pts+' pts</span></div>'+
-      (lit?'<div class="jfac-lit">'+(fe.ic||'📊')+' <b>'+esc(lit)+'</b></div>':'')+
-      (fe.what?'<div class="jfac-what">'+fe.ic+' '+esc(fe.what)+'</div>':'')+
-      (fe.makeup?'<div class="jfac-makeup">'+fe.makeup+'</div>':'')+'</div>';
-  }).join('');
-  var factorSection=facs.length?('<div class="jfac-head">🧩 What makes up the score</div><div class="jfaclist">'+factorCards+'</div>'):'';
+      ' = <b>'+score.buy_now+'</b>. '+(_dom?'Mostly <b>'+esc(SCORE_FLAB[_dom.k]||_dom.k)+'</b>':'')+
+      (score.child_sentence?' — '+esc(score.child_sentence):'')+'. The technical reads live under the <b>🍒 cherry</b>.</p></div>'):'';
   // #266 — the per-signal READ cards (RSI, trend, levels + their diagrams) moved to the 🍒 cherry, where
   // "all the signals line up" belongs. The 🍊 keeps the SCORE math only: category weights + penalties +
   // nudges (the score adjustments), always shown here now that they no longer ride on the signal cards.
   var hh='font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:800;margin:4px 0 8px';
-  var deriv='<details class="jsec" open><summary>🧮 The full derivation — category weights, penalties & nudges</summary>'+
+  var deriv='<details class="jsec"><summary>🧮 The full derivation — category weights, penalties & nudges</summary>'+
     '<h4 style="'+hh+'">Category scores (weight × raw signal = points)</h4><div class="jgrid">'+catRows+'</div>'+
     '<h4 style="'+hh+';margin-top:14px">Penalties</h4><div class="jpengrid">'+penRows+'</div>'+
     '<h4 style="'+hh+';margin-top:14px">Layered nudges</h4><div class="jpengrid">'+nudgeRows+'</div>'+
@@ -3682,7 +3686,7 @@ function _openJuiceInner(id,j,score,d){
     '<div class="mbody">'+
       (flags.length?'<p class="mtake" style="color:var(--dont)">'+flags.join(' · ')+'</p>':'')+
       recipeCardHtml(score)+
-      scoreViz+whyBlock+factorSection+deriv+
+      scoreViz+whyBlock+deriv+
     '</div>';
   var ov=document.getElementById('overlay'); ov.classList.add('open'); ov.setAttribute('aria-hidden','false');
   document.getElementById('mClose').onclick=closeModal; document.getElementById('mClose').focus();
