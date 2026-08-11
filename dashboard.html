@@ -2292,6 +2292,16 @@ function signalRows(p,region,opts){
       read:fib.rr+':1 · '+esc(fib.rr_verdict),
       explain:'Fibonacci levels off the recent swing ('+esc(String(fib.swing_low))+' low → '+esc(String(fib.swing_high))+' high). Staged entries near '+fib.entries.map(function(e){return esc(String(e));}).join(' / ')+', stop under '+esc(String(fib.stop))+', next target '+esc(String(fib.next_target))+'. Reward:risk = the gain to that target ÷ the risk down to the stop — 2:1 or better is the classic "worth taking" bar.'});
   }
+  // #255 (11 Aug 2026) — how this stock actually MOVES when it reports. A name that routinely gaps ±8% on
+  // results is a very different bet the day before earnings than one that barely twitches. Tone follows the
+  // historical lean; the point is the risk read (typical swing), not a buy/sell call.
+  var erx=p&&p.earnings_reaction;
+  if(erx&&erx.n){
+    var eltone=erx.lean&&erx.lean.indexOf('pop')>=0?'pos':(erx.lean&&erx.lean.indexOf('sell')>=0?'neg':'mix');
+    rows.push({icon:'📊',label:'Earnings reaction',tone:eltone,
+      read:'±'+erx.typical_abs_pct+'% typical · '+erx.up+'/'+erx.n+' up · '+esc(erx.lean),
+      explain:'What the stock actually did the day after each of its last '+erx.n+' earnings reports (moves measured across the report, close-to-close). Typical swing ±'+erx.typical_abs_pct+'%, averaging '+(erx.avg_pct>=0?'+':'')+erx.avg_pct+'%, biggest '+(erx.biggest_pct>=0?'+':'')+erx.biggest_pct+'%, up '+erx.up+' of '+erx.n+' times. This is a RISK read (how violent the move tends to be), not a prediction of direction. Source: report dates from a public earnings database + our own price history.'});
+  }
   if(p&&p.news_sentiment!=null){
     var v=p.news_sentiment, tone=v>=0.12?'pos':v<=-0.12?'neg':'mix';
     rows.push({icon:'📰',label:'News buzz',tone:tone,
