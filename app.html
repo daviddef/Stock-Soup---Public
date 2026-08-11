@@ -4288,22 +4288,28 @@ function updateOwnCount(){ var el=document.getElementById('ownCount'); if(el){ t
 // Each item carries the full model score + signals (like a Full Pot candidate), so the cards get the 🍊/🍒
 // chips + a live price; tapping opens the per-ticker read via openMover (works for any symbol).
 function wlCard(c){
-  var rows=signalRows(c, c.region||'us');
+  // #293 — match the STANDARD Favourites watchlist card (.wcard), not the compact Full-Pot potcard, so the
+  // eToro lists look consistent with the rest of the tab. Keep the .wlcard class + data-wlsym so the existing
+  // tap handler (→ openMover) still fires.
+  var reg=c.region||'us';
+  var rows=signalRows(c,reg);
   var jc=(c.score&&c.score.buy_now!=null)?juiceChip(c.score,c.sym,c.name,rows)+cherryChip(c.score,c.sym,c.name,rows):'';
   var chg=c.change?'<span class="pmc-chg '+(c.up?'up':'down')+'">'+(c.up?'▲':'▼')+' '+esc(c.change)+'</span>':'';
-  return '<div class="potcard wlcard h-'+esc(c.heat||'mid')+'" data-wlsym="'+esc(c.sym)+'" data-wlregion="'+esc(c.region||'us')+'" role="button" tabindex="0" aria-label="Details for '+esc(c.sym)+'">'+
-    '<div class="pmc-top">'+(c.heat==='cold'?'<span class="ph no">⛔</span>':'<span class="ph"></span>')+'<b class="pmc-sym">'+esc(c.sym)+'</b><span class="pmc-flag">'+((c.region||'us')==='au'?'AU':'US')+'</span>'+
-      '<button class="watchbtn iconwatch pmc-watch" data-sym="'+esc(c.sym)+'" data-region="'+esc(c.region||'us')+'"'+(c.name?' data-name="'+esc(c.name)+'"':'')+' aria-pressed="false" title="Add to watchlist">+</button></div>'+
+  var spk=(c.spark&&c.spark.length>2)?'<div class="pmc-spark">'+sparkSVG(c.spark.slice(-30))+'</div>':'';
+  var verd=(c.score&&c.score.verdict)?'<span class="wic vd '+(/get in|buy/i.test(c.score.verdict)?'v-buy':/late|wait|skip/i.test(c.score.verdict)?'v-dont':'v-hold')+'">'+esc(c.score.verdict)+'</span>':'';
+  return '<div class="wrow wcard wlcard" data-wlsym="'+esc(c.sym)+'" data-wlregion="'+esc(reg)+'" role="button" tabindex="0" aria-label="Details for '+esc(c.sym)+'">'+
+    '<div class="wc-head"><a class="wsym" href="'+yf(c.sym,reg)+'" target="_blank" rel="noopener">'+esc(c.sym)+' <span class="wflag">'+(reg==='au'?'AU':'US')+'</span></a>'+
+      '<span class="wc-btns"><button class="watchbtn iconwatch" data-sym="'+esc(c.sym)+'" data-region="'+esc(reg)+'"'+(c.name?' data-name="'+esc(c.name)+'"':'')+' aria-pressed="false" title="Add to watchlist">+</button></span></div>'+
     (c.name?'<div class="pmc-name">'+esc(c.name)+'</div>':'')+
-    '<div class="pmc-px">'+(c.price?'<span class="pmc-price">'+esc(cleanPrice(c.price))+'</span>':'')+chg+'</div>'+
-    (jc?'<div class="pmc-juice">'+jc+'</div>':'')+'</div>';
+    '<div class="wc-px">'+(c.price?'<span class="pmc-price">'+esc(cleanPrice(c.price))+'</span>':'')+chg+'</div>'+spk+
+    (jc?'<div class="wc-tag">'+jc+'</div>':(verd?'<div class="wc-tag">'+verd+'</div>':''))+'</div>';
 }
 function etoroWL(title,emoji,wl,shared){
   if(!wl||!wl.items||!wl.items.length) return '';
   var ago=wl.updatedAt?timeAgo(wl.updatedAt):'';
   return '<section class="etorowl"><div class="sec-head"><h2 class="display">'+emoji+' '+esc(title)+'</h2></div>'+
     '<p class="sec-sub">'+(shared?'Shared with everyone':'🔒 Private to you')+' — curated on eToro, scored by the model'+(ago?' · synced '+esc(ago):'')+'. Tap a card for the full read.</p>'+
-    '<div class="movergrid">'+wl.items.map(wlCard).join('')+'</div></section>';
+    '<div class="wlgrid">'+wl.items.map(wlCard).join('')+'</div></section>';
 }
 function favesHead(){
   // #228 (user ask) — dropped the WATCHING / YOU OWN header stat pills: the counts already show in the
