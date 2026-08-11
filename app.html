@@ -1300,6 +1300,13 @@
   .spot-ctl{display:flex;align-items:center;justify-content:center;gap:8px;font-size:12px;color:var(--muted);font-weight:700;margin-bottom:10px}
   .spot-ctl b{color:var(--ink);min-width:34px;text-align:center} .spot-ctl input[type=range]{flex:1;max-width:220px;accent-color:var(--broth)}
   .potthr-ctl{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);font-weight:700;margin:0 0 12px}
+  /* #273 — Full Pot ranking-lens toggle (🍊 timing / 🍒 conviction) */
+  .potlens-ctl{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:0 0 10px;font-size:12px;color:var(--muted);font-weight:800}
+  .potlens-ctl .pll-lbl{letter-spacing:.02em}
+  .potlensbtn{font-family:var(--font);font-size:12px;font-weight:800;color:var(--muted);background:var(--surface-2);border:1px solid var(--line);border-radius:999px;padding:4px 11px;cursor:pointer;transition:all .12s}
+  .potlensbtn:hover{border-color:var(--broth)}
+  .potlensbtn.on{color:var(--ink);border-color:var(--broth);background:color-mix(in srgb,var(--broth) 16%,transparent)}
+  .potlensbtn:focus-visible{outline:2px solid var(--broth);outline-offset:2px}
   .potthr-ctl b{color:var(--ink);min-width:34px;text-align:center} .potthr-ctl input[type=range]{flex:1;max-width:260px;accent-color:var(--broth)}
   .potthr-none{color:var(--broth);font-weight:700}
   .spot-list{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
@@ -1683,6 +1690,7 @@ function mktBarHtml(D){
 }
 var LAST=null, LASTFOCUS=null;
 var TIER='type1';   // #152 — selected model tier: type1 (production, default) / type2 (whole-market quant) / type3 (per-indicator leaderboards)
+var POTLENS='timing';   // #273 — Full Pot ranking lens: 'timing' (🍊 buy-now) or 'conviction' (🍒 overall). Flips sort + heat-band grouping so you see the same shortlist ranked either way, no duplicate grids.
 // #152 — the ONE place that resolves "which picks array is this region actually showing right now."
 // Global (not nested in render()) because click handlers outside render() (openFromEl, ruCard, etc.)
 // need the exact same resolution to correctly index into whichever array built the card the user
@@ -3185,7 +3193,17 @@ function render(D,H){
       '<div class="pmc-note">'+esc(c.note||c.news)+'</div>'+(jc?'<div class="pmc-juice">'+jc+'</div>':'')+'</div>';   // WHY it's rated this way beats a random news headline (was c.news||c.note)
   }
   var _cands=(D.candidates||[]);
-  var _byScore=function(a,b){var sa=(_cands[a].score&&_cands[a].score.buy_now)||0,sb=(_cands[b].score&&_cands[b].score.buy_now)||0;return sb-sa;};
+  // #273 — lens: rank/group the Full Pot by 🍊 timing (buy_now) or 🍒 conviction (overallScore). Cherry is
+  // memoised per index (it re-derives the signal vote), so sort + banding + top-20 all read the same number.
+  var _ovCache={};
+  function _candOv(i){ if(_ovCache[i]!=null) return _ovCache[i]; var c=_cands[i];
+    var ov=(c&&c.score&&c.score.buy_now!=null)?overallScore(c.score.buy_now, signalRows(c,c.region||'us')):null;
+    _ovCache[i]=ov||{score:-1}; return _ovCache[i]; }
+  function _lensScore(i){ var c=_cands[i]; if(POTLENS==='conviction') return _candOv(i).score;
+    return (c&&c.score&&c.score.buy_now!=null)?c.score.buy_now:-1; }
+  function _lensBand(i){ if(POTLENS!=='conviction') return _cands[i].heat||'cold';
+    var s=_candOv(i).score; return s>=78?'hot':s>=62?'good':s>=45?'mid':'cold'; }   // same cut points as overallScore's verdict bands
+  var _byScore=function(a,b){return _lensScore(b)-_lensScore(a);};
   // #211 (revised) — The Full Pot is the WHOLE shortlist, grouped by heat band (Sizzling/Tasty/Maybe/Pass).
   // Only the top-20 by score are shown up front (still inside their band groups); everything past rank 20
   // collapses behind an expander. The old separate "Stock Pot Top 20" section is gone — it was identical.
@@ -3197,7 +3215,7 @@ function render(D,H){
   var bargainCards=_bargainIdx.map(function(i){return potCard(_cands[i],i);}).join('');
   // the top-20 by score in this market — the cutoff between "shown" and "collapsed" (grouping is kept
   // on both sides; this only decides which side a card falls on).
-  var _top20set={}; _cands.map(function(c,i){return {i:i,sc:(c.score&&c.score.buy_now!=null)?c.score.buy_now:-1,rg:(c.region||'us')};})
+  var _top20set={}; _cands.map(function(c,i){return {i:i,sc:_lensScore(i),rg:(c.region||'us')};})   // #273 top-20 by the active lens
     .filter(function(o){return o.sc>=0&&o.rg===MKT;}).sort(function(a,b){return b.sc-a.sc;}).slice(0,20).forEach(function(o){_top20set[o.i]=1;});
   var _visN=0; Object.keys(_top20set).forEach(function(){_visN++;});
   var _hidN=_potN-_visN;
@@ -3277,7 +3295,12 @@ function render(D,H){
       '<p class="sec-sub">Genuinely cheap right now — oversold, not in freefall, and nothing actively wrong that we can see. <b>Tap any for the full read.</b></p>'+
       '<div class="pot">'+bargainCards+'</div></section>':'')+
     '<section id="fullpot"><div class="sec-head"><h2 class="display"><span class="k">05</span> The full pot</h2>'+infoBtn('fullpot')+'</div>'+
-      '<p class="sec-sub">Every '+(MKT==='au'?'🇦🇺 Australian':'🇺🇸 US')+' candidate the scan shortlisted tonight — <b>'+_potN+' names</b>, sorted into buckets by how appetising the model found each one. Showing the <b>top 20</b>; the rest are one tap away. <b>Tap any for the full read.</b></p>'+
+      '<p class="sec-sub">Every '+(MKT==='au'?'🇦🇺 Australian':'🇺🇸 US')+' candidate the scan shortlisted tonight — <b>'+_potN+' names</b>, ranked by '+(POTLENS==='conviction'?'🍒 <b>overall conviction</b>':'🍊 <b>buy-now timing</b>')+'. Showing the <b>top 20</b>; the rest are one tap away. <b>Tap any for the full read.</b></p>'+
+      // #273 — lens toggle: rank the SAME shortlist by 🍊 timing (buy-now) or 🍒 conviction (overall). One grid,
+      // flip the lens — no duplicate orange/cherry grids. Re-renders in place (applyView) preserving scroll.
+      '<div class="potlens-ctl"><span class="pll-lbl">Rank by</span>'+
+        '<button class="potlensbtn'+(POTLENS==='timing'?' on':'')+'" data-lens="timing" aria-pressed="'+(POTLENS==='timing')+'">🍊 Timing</button>'+
+        '<button class="potlensbtn'+(POTLENS==='conviction'?' on':'')+'" data-lens="conviction" aria-pressed="'+(POTLENS==='conviction')+'">🍒 Conviction</button></div>'+
       // #231 — same score-threshold slider as the Simple view's whole-pot (#199): drag to hide the weaker
       // names client-side, no re-render. Filters every potcard by its model score; a band group whose cards
       // all fall below the line hides its header too.
@@ -6017,6 +6040,11 @@ function wire(D){
     };
     potThr.addEventListener('input',applyPotThr); applyPotThr();
   }
+  // #273 — Full Pot ranking-lens toggle: flip POTLENS and re-render the view in place (preserves scroll).
+  document.querySelectorAll('.potlensbtn[data-lens]').forEach(function(b){ b.onclick=function(){
+    if(b.dataset.lens===POTLENS) return; POTLENS=b.dataset.lens;
+    var sc=window.pageYOffset; applyView(); window.scrollTo(0,sc);
+  };});
   var rm=document.getElementById('runMore'), rr=document.getElementById('runRest');
   if(rm&&rr){ var rrN=rr.children.length; rm.onclick=function(){ var open=rr.hasAttribute('hidden'); if(open)rr.removeAttribute('hidden'); else rr.setAttribute('hidden',''); rm.setAttribute('aria-expanded',open?'true':'false'); rm.innerHTML=(open?'▴ Hide older runs':'➖ '+rrN+' older runs ▾'); }; }
   var kh=document.getElementById('kitchenHealthBtn'); if(kh) kh.onclick=openDataHealth;
