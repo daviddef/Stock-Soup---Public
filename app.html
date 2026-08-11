@@ -67,6 +67,12 @@
   .hero h1 .hot,.menuhead h1 .hot{color:var(--broth)}
   .chef{font-size:clamp(15px,2.2vw,19px);color:var(--muted);max-width:60ch;text-wrap:pretty}
   .chef b{color:var(--ink)}
+  /* chef-note collapse (user ask) — the chef intro can run several paragraphs; clamp it to a few lines with
+     a soft fade + a "read the full note" toggle so it's punchy by default, never a wall of text. */
+  .chefwrap{position:relative}
+  .chefwrap:not(.open) .chef{max-height:7.4em;overflow:hidden;-webkit-mask-image:linear-gradient(180deg,#000 60%,transparent);mask-image:linear-gradient(180deg,#000 60%,transparent)}
+  .chefmore{margin-top:2px;background:none;border:0;color:var(--broth);font-weight:800;font-size:13px;cursor:pointer;padding:3px 0;letter-spacing:.01em}
+  .chefmore:hover{text-decoration:underline}
   .metastrip{display:flex;flex-wrap:wrap;gap:8px;margin-top:20px}
   .chip{font-size:12px;font-weight:700;padding:6px 11px;border-radius:999px;border:1px solid var(--line);
     background:var(--surface-2);display:inline-flex;align-items:center;gap:6px;white-space:nowrap;color:var(--ink)}
@@ -3216,7 +3222,7 @@ function render(D,H){
     '<div class="tabhead menuhead">'+
       '<div class="eyebrow schedlink" data-info="schedule" role="button" tabindex="0" title="Major runs are manually triggered — this is the target window, not a guarantee" style="letter-spacing:.06em">'+esc(stampNoWeekday(D.stamp))+(D.next?' · next ~'+esc(D.next):'')+' <span class="schedi">i</span></div>'+
       '<h1 class="display">Two pots on the boil:<br><span class="hot">'+esc(hdl(D,'a'))+'</span> &amp; <span class="hot">'+esc(hdl(D,'b'))+'</span>.</h1>'+
-      '<p class="chef">'+chefFor(D)+'</p>'+
+      '<div class="chefwrap"><p class="chef">'+chefFor(D)+'</p><button class="chefmore" aria-expanded="false">Read the chef’s full note ▾</button></div>'+
       /* #risk polish — the standalone "you're OK to take risk…" pill is gone; that read now opens by
          tapping the risk meter itself (#197), so the pill was redundant. */
       (function(){var fm=riskFactorMarks(r); return '<div class="meter tappable" id="riskMeterBtn" role="button" tabindex="0" title="Tap for tonight’s market read" aria-label="Open tonight’s market read"><div class="track"><div class="needle" id="needle"></div>'+fm.marks+'</div>'+
@@ -3533,11 +3539,18 @@ function openOverall(id){
   document.getElementById('mClose').onclick=closeModal; document.getElementById('mClose').focus();
 }
 function recipeCardHtml(score){
-  if(!score||score.buy_now==null||!score.detail) return '';
+  if(!score||score.buy_now==null) return '';
   var d=score.detail||{}, items=[], contrib=d.contrib||{};
-  Object.keys(contrib).forEach(function(k){ if(contrib[k]>0.05) items.push({k:k,pts:contrib[k]}); });
-  (d.nudges||[]).forEach(function(n){ if(n.pts) items.push({k:n.k,pts:n.pts}); });
-  (d.penalty_detail||[]).forEach(function(p){ if(p.pts) items.push({k:p.k,pts:-Math.abs(p.pts)}); });
+  if(Object.keys(contrib).length){
+    Object.keys(contrib).forEach(function(k){ if(contrib[k]>0.05) items.push({k:k,pts:contrib[k]}); });
+    (d.nudges||[]).forEach(function(n){ if(n.pts) items.push({k:n.k,pts:n.pts}); });
+    (d.penalty_detail||[]).forEach(function(p){ if(p.pts) items.push({k:p.k,pts:-Math.abs(p.pts)}); });
+  } else {
+    // #recipe-fallback (user: "click the orange, no ingredient list") — a name without the full detail
+    // blob (e.g. a T2/T3 scan candidate like BDSX) still carries the weighted `factors`. Build the
+    // ingredient list from those so the 🍲 recipe ALWAYS renders under the orange.
+    (score.factors||[]).forEach(function(f){ if(f.pts) items.push({k:f.k,pts:f.pts}); });
+  }
   if(!items.length) return '';
   var up=items.filter(function(i){return i.pts>0;}).sort(function(a,b){return b.pts-a.pts;});
   var dn=items.filter(function(i){return i.pts<0;}).sort(function(a,b){return a.pts-b.pts;});
@@ -3804,6 +3817,14 @@ document.addEventListener('click',function(e){
   var w=e.target.closest('.wlcard'); if(!w)return;
   if(e.target.closest('.juicebtn')||e.target.closest('.cherrybtn')||e.target.closest('.watchbtn')||e.target.closest('a'))return;
   e.preventDefault(); openMover(w.dataset.wlsym, w.dataset.wlregion);
+});
+// chef-note collapse toggle (user ask — the intro can run several paragraphs).
+document.addEventListener('click',function(e){
+  var b=e.target.closest('.chefmore'); if(!b)return;
+  var w=b.closest('.chefwrap'); if(!w)return;
+  var open=w.classList.toggle('open');
+  b.textContent=open?'Show less ▴':'Read the chef’s full note ▾';
+  b.setAttribute('aria-expanded',open?'true':'false');
 });
 // #224 — the compact risk chip opens the risk-vs-tolerance detail modal (capturing + stopPropagation so a
 // chip inside a tappable card opens the risk modal, not the card).
