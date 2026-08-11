@@ -1373,6 +1373,23 @@
   .scorenum{font-size:13px;font-weight:800;color:var(--ink)}
   .juicebtn{background:rgba(255,140,0,.14);color:#FF8C00;border:1px solid rgba(255,140,0,.4);border-radius:7px;font-size:10.5px;font-weight:800;padding:3px 8px;margin-left:8px;cursor:pointer;vertical-align:middle}
   .juicebtn:hover{background:rgba(255,140,0,.24)}
+  /* #261 — the Recipe / nutrition-label score card (leads the 🍊 juice modal) */
+  .rcard{background:var(--surface);border:2px solid var(--ink);border-radius:12px;padding:14px 16px;margin:2px 0 14px}
+  .rc-kick{font-size:11px;font-weight:900;letter-spacing:.14em;color:var(--muted)}
+  .rc-serves{font-size:13px;font-weight:700;color:var(--muted);margin-top:1px;border-bottom:3px solid var(--ink);padding-bottom:9px;margin-bottom:8px}
+  .rc-serves b{color:var(--broth,#FF8C00);font-size:17px}
+  .rc-sect{font-size:11px;font-weight:900;letter-spacing:.05em;text-transform:uppercase;color:var(--buy);margin:9px 0 5px}
+  .rc-sect.rc-dn{color:var(--dont)}
+  .rcr{display:grid;grid-template-columns:1fr 84px 38px;align-items:center;gap:9px;padding:5px 0;border-bottom:1px solid var(--line);font-size:13px}
+  .rcr .nm{font-weight:700} .rcr .nm .em{margin-right:5px}
+  .rcbar{height:9px;background:var(--surface-2);border-radius:5px;overflow:hidden}
+  .rcbf{height:100%;border-radius:5px}
+  .rcr.up .rcbf{background:var(--buy)} .rcr.dn .rcbf{background:var(--dont)}
+  .rcr .pt{text-align:right;font-weight:900;font-variant-numeric:tabular-nums}
+  .rcr.up .pt{color:var(--buy)} .rcr.dn .pt{color:var(--dont)}
+  .rc-total{display:flex;justify-content:space-between;align-items:baseline;font-weight:900;margin-top:8px;border-top:3px solid var(--ink);padding-top:8px}
+  .rc-total span{font-size:12.5px;letter-spacing:.03em} .rc-total b{font-size:20px;color:var(--broth,#FF8C00)}
+  .rc-foot{margin:9px 0 0;font-size:11.5px;color:var(--muted);line-height:1.5}
   .pmc-juice{margin-top:7px}  /* #173 — 🍊 chip on the Full Pot candidate card face */
   .jgrid{display:flex;flex-direction:column;gap:8px}
   /* Real bug (10 Aug 2026, user screenshot): this was named .jrow, same class the Journey feature's
@@ -3312,6 +3329,39 @@ function juicePriceViz(sym){
 // #105 — admin-only "real juice": the full raw-logic derivation behind a score, not just the
 // top-2-factor summary bar. Every category's weight%/subscore/points, every penalty with its real
 // trigger value, every layered nudge (sentiment/trend/Bollinger/RS/short-trend/EMA) with its reason.
+// #261 (11 Aug 2026, user pick "Option C") — THE RECIPE CARD: dumb-simple, on-brand "nutrition label" for
+// the whole score. Every real contributor (weighted categories + layered nudges − penalties) becomes a line
+// item with a fill-bar sized by its effect, split into flavour-boosters vs spoilers, totalling the score.
+// One glance = "THIS is why it scored 84". Reuses the exact score.detail the raw derivation already uses —
+// no new data. Leads the 🍊 juice modal; the technical charts + raw math stay below for anyone who wants them.
+var RECIPE_EMOJI={pead:'🎯',rev:'📈',hi:'🍅',news:'🧅',vol:'🌽',ins:'🧑‍💼',
+  news_sentiment:'🗞️',trend_quality:'📉',bollinger:'🎈',relative_strength:'🥕',ema_confirmation:'🌿',
+  short_interest_trend:'🩳',insider_cluster:'👥',fundamentals:'📊',retail_buzz:'🗣️',
+  bollinger_squeeze:'🪤',seasonality:'📅',rsi_overbought:'🌶️',extended_vs_sma20:'🚀',
+  short_interest:'🩳',capital_raise:'💸',stale_catalyst:'🕰️',priced_in:'🏷️',insider_selling:'📉'};
+function recipeLabel(k){return (typeof SCORE_FLAB!=='undefined'&&SCORE_FLAB[k])||(''+k).replace(/_/g,' ');}
+function recipeCardHtml(score){
+  if(!score||score.buy_now==null||!score.detail) return '';
+  var d=score.detail||{}, items=[], contrib=d.contrib||{};
+  Object.keys(contrib).forEach(function(k){ if(contrib[k]>0.05) items.push({k:k,pts:contrib[k]}); });
+  (d.nudges||[]).forEach(function(n){ if(n.pts) items.push({k:n.k,pts:n.pts}); });
+  (d.penalty_detail||[]).forEach(function(p){ if(p.pts) items.push({k:p.k,pts:-Math.abs(p.pts)}); });
+  if(!items.length) return '';
+  var up=items.filter(function(i){return i.pts>0;}).sort(function(a,b){return b.pts-a.pts;});
+  var dn=items.filter(function(i){return i.pts<0;}).sort(function(a,b){return a.pts-b.pts;});
+  var mx=Math.max.apply(null,items.map(function(i){return Math.abs(i.pts);}))||1;
+  function row(i){var pos=i.pts>=0;
+    return '<div class="rcr '+(pos?'up':'dn')+'"><div class="nm"><span class="em">'+(RECIPE_EMOJI[i.k]||'•')+'</span>'+esc(recipeLabel(i.k))+'</div>'+
+      '<div class="rcbar"><div class="rcbf" style="width:'+Math.max(5,Math.min(100,Math.abs(i.pts)/mx*100))+'%"></div></div>'+
+      '<div class="pt">'+(pos?'+':'−')+Math.abs(i.pts).toFixed(Math.abs(i.pts)<10?1:0)+'</div></div>';
+  }
+  return '<div class="rcard"><div class="rc-kick">🍲 THE RECIPE</div>'+
+    '<div class="rc-serves">serves <b>'+score.buy_now+'</b>/100 · '+esc(score.band||'')+'</div>'+
+    (up.length?'<div class="rc-sect">Flavour boosters</div>'+up.map(row).join(''):'')+
+    (dn.length?'<div class="rc-sect rc-dn">Spoilers</div>'+dn.map(row).join(''):'')+
+    '<div class="rc-total"><span>TOTAL SCORE</span><b>'+score.buy_now+' / 100</b></div>'+
+    '<p class="rc-foot">Read it like a nutrition label — each line is one signal, the bar is how big its effect is, and it all adds up to the score.</p></div>';
+}
 function openJuice(id){
   var j=JUICE_CACHE[id]; if(!j)return;
   var score=j.score||{}, d=score.detail||{};
@@ -3428,6 +3478,7 @@ function openJuice(id){
     '<div class="mtop"><div class="msym" style="line-height:1.25">'+jhead+'</div></div></div>'+
     '<div class="mbody">'+
       (flags.length?'<p class="mtake" style="color:var(--dont)">'+flags.join(' · ')+'</p>':'')+
+      recipeCardHtml(score)+
       scoreViz+(j.sym?juicePriceViz(j.sym):'')+whyBlock+factorSection+sigSection+deriv+
     '</div>';
   var ov=document.getElementById('overlay'); ov.classList.add('open'); ov.setAttribute('aria-hidden','false');
