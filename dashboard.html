@@ -1373,8 +1373,19 @@
   .scorelegend i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px;vertical-align:middle}
   .scorelegend .pen{color:var(--dont)}
   .scorenum{font-size:13px;font-weight:800;color:var(--ink)}
-  .juicebtn{background:rgba(255,140,0,.14);color:#FF8C00;border:1px solid rgba(255,140,0,.4);border-radius:7px;font-size:10.5px;font-weight:800;padding:3px 8px;margin-left:8px;cursor:pointer;vertical-align:middle}
+  .juicebtn{position:relative;overflow:visible;background:rgba(255,140,0,.14);color:#FF8C00;border:1px solid rgba(255,140,0,.4);border-radius:7px;font-size:10.5px;font-weight:800;padding:3px 8px;margin-left:8px;cursor:pointer;vertical-align:middle;transition:background .15s,transform .18s cubic-bezier(.34,1.6,.64,1)}
   .juicebtn:hover{background:rgba(255,140,0,.24)}
+  /* a bit of fun (user ask) — a leaf sprouts + unfurls out of the 🍊 on hover/tap, and the chip gives a
+     ripe little bounce. Purely decorative; honours reduced-motion. */
+  .juicebtn::after{content:"🍃";position:absolute;top:-7px;left:5px;font-size:11px;line-height:1;
+    transform:scale(0) rotate(-45deg);transform-origin:bottom center;opacity:0;pointer-events:none;
+    transition:transform .4s cubic-bezier(.34,1.7,.5,1),opacity .25s}
+  .juicebtn:hover::after,.juicebtn:focus-visible::after,.juicebtn:active::after{transform:scale(1) rotate(-8deg);opacity:1}
+  .juicebtn:hover,.juicebtn:focus-visible{transform:translateY(-1px) scale(1.05)}
+  .juicebtn:active{transform:scale(.94)}
+  @keyframes juicePop{0%{transform:scale(1)}45%{transform:scale(1.25) rotate(6deg)}100%{transform:scale(1)}}
+  .juicebtn.pop{animation:juicePop .5s cubic-bezier(.34,1.6,.5,1)}
+  @media (prefers-reduced-motion:reduce){.juicebtn,.juicebtn::after,.juicebtn.pop{transition:none!important;animation:none!important}.juicebtn:hover::after,.juicebtn:active::after{transform:scale(1) rotate(-8deg);opacity:1}}
   /* #261 — the Recipe / nutrition-label score card (leads the 🍊 juice modal) */
   .rcard{background:var(--surface);border:2px solid var(--ink);border-radius:12px;padding:14px 16px;margin:2px 0 14px}
   .rc-kick{font-size:11px;font-weight:900;letter-spacing:.14em;color:var(--muted)}
@@ -3649,6 +3660,8 @@ document.addEventListener('keydown',function(e){
 document.addEventListener('click',function(e){
   var b=e.target.closest('.juicebtn'); if(!b)return;
   e.preventDefault(); e.stopPropagation();
+  b.classList.remove('pop'); void b.offsetWidth; b.classList.add('pop');   /* a bit of fun — ripe bounce on tap */
+  setTimeout(function(){b.classList.remove('pop');},520);
   openJuice(+b.dataset.juiceId);
 },true);
 // #243 — tap any run row (log OR scheduled) → "what this run does" + market context. Delegated + bubble
