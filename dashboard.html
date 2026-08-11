@@ -275,6 +275,7 @@
   .pd-strength{margin-left:auto;font-weight:800;font-size:12.5px;color:var(--buy)}
   .pd-b{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:6px} .pd-px{font-weight:800;font-variant-numeric:tabular-nums}
   .pd-note{font-size:12px;color:var(--muted);margin-top:5px} .pdfoot{font-size:11.5px;color:var(--muted);line-height:1.5;margin-top:12px}
+  .pd-spark{margin-top:7px;height:38px} .pd-spark svg{width:100%;height:100%}
   .axtop{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
   .axverb{font-size:12px;font-weight:900;letter-spacing:.04em;color:var(--buy)}
   .axsym{font-weight:900;font-size:16px;color:var(--ink)}
@@ -2206,7 +2207,11 @@ function chgArrow(tone){ return tone==='up'?'▲':tone==='down'?'▼':'•'; }
 function buyAction(p){
   // States the PRICE relationship to the ideal buy — not a buy/sell command (that's the verdict pill up top).
   var s=buyState(p); if(!s) return '';
-  var g=(p.nNow/p.nEntry-1)*100;
+  // Guard non-numeric levels: some picks author nEntry as a RANGE STRING ("A$30.40 – 31.60"), which turned
+  // (nNow/nEntry) into NaN → the literal "NaN% above" (user-caught on MND). No number → no % claim.
+  var ne=+p.nEntry, nn=+p.nNow;
+  if(!isFinite(ne)||ne<=0||!isFinite(nn)) return '';
+  var g=(nn/ne-1)*100; if(!isFinite(g)) return '';
   if(s==='in') return ' <span class="baact">· at buy ✓</span>';
   return ' <span class="baact">· '+Math.round(g)+'% above</span>';   // close + wait — colour carries the nuance
 }
@@ -2901,9 +2906,10 @@ function openPead(){
     var pead=Math.round(((((c.score||{}).detail||{}).contrib||{}).pead)||0);
     var px=c.price?'<span class="pd-px">'+esc(cur)+esc(cleanPrice(c.price))+(c.change?' <span class="'+(c.up?'up':'down')+'">'+(c.up?'▲':'▼')+esc(c.change)+'</span>':'')+'</span>':'';
     var chips=(c.score&&c.score.buy_now!=null)?dualChip(c.score,c.sym,c.name,signalRows(c,reg)):'';
+    var spk=(c.spark&&c.spark.length>2)?'<div class="pd-spark">'+sparkSVG(c.spark.slice(-30))+'</div>':'';
     return '<div class="pdrow" data-pd-sym="'+esc(c.sym)+'" data-pd-region="'+esc(reg)+'" role="button" tabindex="0">'+
       '<div class="pd-h"><b class="pd-sym">'+esc(c.sym)+'</b>'+(c.name?'<span class="pd-nm">'+esc(c.name)+'</span>':'')+'<span class="pd-strength" title="How much the earnings beat is feeding this stock\'s score">🎯 +'+pead+'</span></div>'+
-      '<div class="pd-b">'+px+chips+'</div>'+
+      '<div class="pd-b">'+px+chips+'</div>'+spk+
       (c.note?'<div class="pd-note">'+esc(c.note)+'</div>':'')+'</div>';
   }).join('');
   m.innerHTML='<div class="mhead"><button class="mclose" id="mClose" aria-label="Close">✕</button><div class="mtf">📈 PEAD — earnings-drift plays</div>'+
@@ -3150,8 +3156,10 @@ function render(D,H){
         '<div class="tick"><span class="symwrap"><span class="sym">'+qlink(p.sym,rg.id)+'</span><span class="co">'+qlink(p.sym,rg.id,p.name)+' ↗</span></span>'+
         '<span class="px"><span class="p mono">'+esc(p.price)+'</span><br><span class="c mono '+chgTone(p.change,p.up)+'">'+esc(p.change)+'</span></span></div>'+
         /* miniTraj removed — inconsistent (only carried-over picks had it) + confusing 'since 23:33'; the range bar shows the trend */
-        '<div class="buyat'+(p.nEntry?' ba-'+buyState(p):'')+'">'+(p.nEntry?'<span class="bl">🎯 Ideal buy</span> ~'+esc(rg.cur||'$')+p.nEntry+buyAction(p):'<span class="bl">Track this pick</span>')+'</div>'+
-        '<p class="plain">'+esc(p.plain)+'</p>'+(function(){var jc=juiceChip(p.score,p.sym,p.name,signalRows(p,rg.id)),vc=valChip(p),rc=riskTolWarn(p);return (jc||vc||rc)?'<div class="sentrow">'+jc+vc+rc+'</div>':'';})()+'<div class="lvls">'+(p.levels||'')+'</div>'+
+        '<div class="buyat'+(p.nEntry?' ba-'+buyState(p):'')+'">'+(p.nEntry?'<span class="bl">🎯 Ideal buy</span> ~'+esc(rg.cur||'$')+esc(String(p.nEntry).replace(/^\s*A?\$\s*/i,''))+buyAction(p):'<span class="bl">Track this pick</span>')+'</div>'+   /* strip a currency already baked into a range-string nEntry so it isn't doubled ("A$A$…") */
+        // #dup-orange (user: "2 orange cards") — the 🍊 already sits in the card HEADER (with the 🍒); the
+        // sentrow's second juiceChip was a duplicate. Keep only the value/risk chips here.
+        '<p class="plain">'+esc(p.plain)+'</p>'+(function(){var vc=valChip(p),rc=riskTolWarn(p);return (vc||rc)?'<div class="sentrow">'+vc+rc+'</div>':'';})()+'<div class="lvls">'+(p.levels||'')+'</div>'+
         /* #214/#212 — the mini-chart is back on the pick card, now as a live intraday view with a
            vertical marker at the moment the confirming run SERVED this pick (the earliest you could
            have acted). The longer 2-month daily trend still lives in the detail modal. */
