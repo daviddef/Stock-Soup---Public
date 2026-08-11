@@ -1386,6 +1386,18 @@
   @keyframes juicePop{0%{transform:scale(1)}45%{transform:scale(1.25) rotate(6deg)}100%{transform:scale(1)}}
   .juicebtn.pop{animation:juicePop .5s cubic-bezier(.34,1.6,.5,1)}
   @media (prefers-reduced-motion:reduce){.juicebtn,.juicebtn::after,.juicebtn.pop{transition:none!important;animation:none!important}.juicebtn:hover::after,.juicebtn:active::after{transform:scale(1) rotate(-8deg);opacity:1}}
+  /* 🍒 Overall conviction banner — the single all-signals number, leads the juice modal */
+  .ovbanner{display:flex;align-items:center;gap:14px;border-radius:14px;padding:13px 16px;margin:2px 0 12px;
+    border:2px solid var(--line);background:var(--surface-2)}
+  .ovbanner.ov-buy{border-color:var(--buy);background:linear-gradient(180deg,rgba(35,194,103,.14),transparent 80%),var(--surface-2)}
+  .ovbanner.ov-watch{border-color:var(--hold,#e0a020)}
+  .ovbanner.ov-avoid{border-color:var(--dont);background:linear-gradient(180deg,rgba(209,80,58,.12),transparent 80%),var(--surface-2)}
+  .ovbanner .ovnum{font-size:30px;font-weight:900;line-height:1;color:var(--ink);white-space:nowrap;font-variant-numeric:tabular-nums}
+  .ovbanner .ovnum small{font-size:13px;color:var(--muted);font-weight:700}
+  .ovbanner .ovtxt{display:flex;flex-direction:column;gap:2px;min-width:0}
+  .ovbanner .ovtxt b{font-size:16px;font-weight:900}
+  .ovbanner.ov-buy .ovtxt b{color:var(--buy)} .ovbanner.ov-avoid .ovtxt b{color:var(--dont)}
+  .ovbanner .ovtxt span{font-size:11.5px;color:var(--muted);line-height:1.4}
   /* #261 — the Recipe / nutrition-label score card (leads the 🍊 juice modal) */
   .rcard{background:var(--surface);border:2px solid var(--ink);border-radius:12px;padding:14px 16px;margin:2px 0 14px}
   .rc-kick{font-size:11px;font-weight:900;letter-spacing:.14em;color:var(--muted)}
@@ -3401,6 +3413,27 @@ var RECIPE_EMOJI={pead:'🎯',rev:'📈',hi:'🍅',news:'🧅',vol:'🌽',ins:'�
   bollinger_squeeze:'🪤',seasonality:'📅',rsi_overbought:'🌶️',extended_vs_sma20:'🚀',
   short_interest:'🩳',capital_raise:'💸',stale_catalyst:'🕰️',priced_in:'🏷️',insider_selling:'📉'};
 function recipeLabel(k){return (typeof SCORE_FLAB!=='undefined'&&SCORE_FLAB[k])||(''+k).replace(/_/g,' ');}
+// 🍒 OVERALL CONVICTION (user ask) — one number that considers EVERYTHING: the 🍊 buy-now score (the
+// timing/weighted engine, the backbone) blended with how ALL the signals line up — including the "garnish"
+// technical reads that don't move the buy-now score on their own. A single, plain "all things considered,
+// how strong is this?" read, because a complicated signal set is hard to hold in your head. It ADDS to the
+// 🍊 (doesn't replace it): 🍊 = when to buy · 🍒 = overall strength.
+function overallScore(buyNow, rows){
+  if(buyNow==null) return null;
+  var scored=(rows||[]).filter(function(r){return r.tone==='pos'||r.tone==='neg';});
+  var pos=scored.filter(function(r){return r.tone==='pos';}).length;
+  var neg=scored.filter(function(r){return r.tone==='neg';}).length;
+  var consensus=scored.length?50+50*((pos-neg)/scored.length):50;            // 0-100, the signal vote
+  var overall=Math.max(0,Math.min(100,Math.round(0.6*buyNow+0.4*consensus))); // 60% engine · 40% signal vote
+  var verdict=overall>=78?'Strong buy':overall>=62?'Buy':overall>=45?'Worth a look':overall>=30?'Hold / wait':'Avoid';
+  var vcls=overall>=62?'ov-buy':overall>=45?'ov-watch':'ov-avoid';
+  return {score:overall,verdict:verdict,vcls:vcls,buy:buyNow,pos:pos,neg:neg,total:scored.length,consensus:Math.round(consensus)};
+}
+function overallBannerHtml(ov){
+  if(!ov) return '';
+  return '<div class="ovbanner '+ov.vcls+'"><div class="ovnum">🍒 '+ov.score+'<small>/100</small></div>'+
+    '<div class="ovtxt"><b>'+esc(ov.verdict)+'</b><span>Overall conviction — the buy-now score ('+ov.buy+') blended with how all '+ov.total+' signals line up ('+ov.pos+' for · '+ov.neg+' against)</span></div></div>';
+}
 function recipeCardHtml(score){
   if(!score||score.buy_now==null||!score.detail) return '';
   var d=score.detail||{}, items=[], contrib=d.contrib||{};
@@ -3539,6 +3572,7 @@ function openJuice(id){
     '<div class="mtop"><div class="msym" style="line-height:1.25">'+jhead+'</div></div></div>'+
     '<div class="mbody">'+
       (flags.length?'<p class="mtake" style="color:var(--dont)">'+flags.join(' · ')+'</p>':'')+
+      overallBannerHtml(overallScore(score.buy_now, j.sigRows))+
       recipeCardHtml(score)+
       scoreViz+(j.sym?juicePriceViz(j.sym):'')+whyBlock+factorSection+sigSection+deriv+
     '</div>';
