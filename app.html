@@ -5818,7 +5818,8 @@ document.getElementById('overlay').addEventListener('click',function(e){if(e.tar
 /* ---- View mode: simple (mobile default) vs full, with toggle ---- */
 var VIEW = null, SREGION = 'au', PULSES = null, TRACK = null, MKT = 'au', OUTCOMES = null, TAB = null, RUNNING = null, RUNLOG = [], WL_FILTER = 'all';
 var SIMPLE_POT_THR = 50;   // #199 — the Simple-view whole-pot score threshold (persists across re-renders)
-var FULL_POT_THR = 0;      // #231 — the Full-view Full Pot score threshold (default 0 = show all, unlike Simple's 50)
+var FULL_POT_THR = 50;     // #231 — the Full-view Full Pot score threshold. Default 50+ (user ask 11 Aug 2026):
+                           // open filtered to the worthwhile names (Buy/Watch), not the whole Pass-band tail. Matches Simple's 50.
 var TABLABEL={menu:"Tonight's Menu",reviews:'Dinner Reviews',faves:'Favourite Course',kitchen:'Inside the Kitchen'};
 // #253 (user ask) — the shareable URL now also remembers the AU/US market + the T1/2/3 model type, so a
 // copied link (or a reload) lands on the same filters, not just the same tab. Defaults (au · type1) are
