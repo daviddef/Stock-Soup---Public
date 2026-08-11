@@ -2439,6 +2439,14 @@ function signalRows(p,region,opts){
       explain:'Is this a good business at a fair price? Blends how CHEAP it is (value '+(fd.value_score!=null?fd.value_score:'–')+'/100), how PROFITABLE & healthy (quality '+(fd.quality_score!=null?fd.quality_score:'–')+'/100), and GROWTH ('+(fd.growth_score!=null?fd.growth_score:'–')+'/100). '+((fd.why&&fd.why.length)?'Real numbers: '+esc(fd.why.join(' · '))+'.':'')+deep+' Source: company financials via Yahoo.',
       diagram:fundBarsHtml(fd)});
   }
+  // #283 (12 Aug 2026) — OPTIONS FLOW: what the options market is paying to bet on. Put/call ratio + a flag
+  // for unusually heavy flow. A different, often-earlier tell than the equity tape. US-only (thin ASX coverage).
+  var of=p&&p.options_flow;
+  if(of&&(of.pcr_oi!=null||of.pcr_vol!=null)){
+    rows.push({icon:'⚖️',label:'Options flow',tone:(of.tone||'mix'),
+      read:esc(of.read||of.why)+(of.unusual?' · 🔥 unusual':''),
+      explain:'What the OPTIONS market is positioned for (a different, often-earlier tell than the share tape): '+esc(of.why)+'. A put/call ratio above ~1.3 is put-heavy (hedging/bearish, or squeeze fuel on a riser); below ~0.7 is call-heavy (bullish, or complacency near a top). "Unusual" means today\'s option volume is running hot vs all standing open interest — fresh positioning. Display only, US-only. Source: option chain via Yahoo.'});
+  }
   // #280 (12 Aug 2026) — ANALYST REVISIONS: are the experts revising their earnings estimates UP or DOWN?
   // A real forward-looking read, now for BOTH markets incl. ASX (yfinance eps_revisions) — the gap that left
   // every ASX name with a permanently-empty `rev` category (see buy-now-score ADJ-5).
