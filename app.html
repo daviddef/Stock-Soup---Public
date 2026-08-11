@@ -3421,7 +3421,7 @@ function recipeCardHtml(score){
     (up.length?'<div class="rc-sect">Flavour boosters</div>'+up.map(row).join(''):'')+
     (dn.length?'<div class="rc-sect rc-dn">Spoilers</div>'+dn.map(row).join(''):'')+
     '<div class="rc-total"><span>TOTAL SCORE</span><b>'+score.buy_now+' / 100</b></div>'+
-    '<p class="rc-foot">Read it like a nutrition label — each line is one signal, the bar is how big its effect is, and it all adds up to the score.</p></div>';
+    '<p class="rc-foot">Read it like a nutrition label — each line is one ingredient, the bar shows how much it added or took away, and they add up to the score. <b>These are the signals that actually flavour the number.</b> The technical reads further down (RSI, trend, levels, VWAP…) are the <b>garnish</b>: real, useful context we show you, but they don’t change the score.</p></div>';
 }
 function openJuice(id){
   var j=JUICE_CACHE[id]; if(!j)return;
