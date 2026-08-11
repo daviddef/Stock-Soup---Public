@@ -3593,18 +3593,21 @@ function cherryChip(score,sym,name,rows){
 }
 function cherryCardHtml(ov,rows){
   if(!ov) return '';
-  // #279 — this card is the 60/40 MATH only (backbone + vote tally). The per-signal rows used to be listed
-  // here AND again as full cards below (signalCardsHtml) — the same signals twice. The tally summarises;
-  // the detail lives once, in the cards below.
+  // #279 split score-math (🍊) from signal-reads (🍒). The itemised signal list — the "cherry ingredient
+  // list" — lives HERE (not only in the tap-cards below), because a user relies on it and it must render even
+  // if the richer diagram-cards ever fail (real regression, 12 Aug 2026: signalCardsHtml threw on one row and
+  // the whole list vanished, leaving just a tally). So: backbone + tally + the full for/against ingredient list.
   var nrows=(rows||[]).length, neu=Math.max(0,nrows-ov.pos-ov.neg);
+  function vote(r){var t=r.tone==='pos'?'✅':r.tone==='neg'?'⚠️':'•';
+    return '<div class="cvrow cv-'+esc(r.tone||'neu')+'"><span class="cvi">'+t+'</span><span class="cvl">'+(r.icon?esc(r.icon)+' ':'')+esc(r.label||'')+'</span><span class="cvv">'+esc(r.read||'')+'</span></div>';}
+  var sig=(rows||[]).map(vote).join('')||'<p class="muted" style="font-size:12px;margin:4px 0">No signals available for this name yet.</p>';
   return '<div class="rcard"><div class="rc-kick">🍒 OVERALL CONVICTION</div>'+
     '<div class="rc-serves">scores <b>'+ov.score+'</b>/100 · '+esc(ov.verdict)+'</div>'+
     '<div class="rc-sect">The backbone · 60%</div>'+
     '<div class="cvrow cv-pos"><span class="cvi">🍊</span><span class="cvl">Buy-now score (timing engine)</span><span class="cvv">'+ov.buy+'/100</span></div>'+
-    '<div class="rc-sect">The signal vote · 40%</div>'+
-    '<div class="cvtally"><span class="cvt-y">✅ '+ov.pos+' for</span><span class="cvt-n">⚠️ '+ov.neg+' against</span>'+(neu>0?'<span class="cvt-m">• '+neu+' neutral</span>':'')+'</div>'+
+    '<div class="rc-sect">The signal vote · 40% — <span class="cvt-y">✅ '+ov.pos+' for</span> · <span class="cvt-n">⚠️ '+ov.neg+' against</span>'+(neu>0?' · <span class="cvt-m">'+neu+' neutral</span>':'')+'</div>'+sig+
     '<div class="rc-total"><span>OVERALL</span><b>'+ov.score+' / 100</b></div>'+
-    '<p class="rc-foot">One number for "all things considered": the buy-now timing score (60%) blended with how <b>every</b> signal lines up (40%) — including the context reads (RSI, levels, VWAP…) that don\'t move the buy-now score on their own. <b>Each signal is detailed below.</b></p></div>';
+    '<p class="rc-foot">One number for "all things considered": the buy-now timing score (60%) blended with how <b>every</b> signal above lines up (40%) — including the context reads (RSI, levels, VWAP…) that don\'t move the buy-now score on their own. Green = for, amber = against. Tap any signal below for the full read + chart.</p></div>';
 }
 // The 🍒 cherry owns the SIGNAL reads (all the technical signals, each with its diagram) — this is the
 // "how all the signals line up" detail, split out from the 🍊 orange (which owns the SCORE math). Reuses
@@ -3613,14 +3616,17 @@ function signalCardsHtml(sigRows){
   var sr=sigRows||[]; if(!sr.length) return '';
   var n=0;
   var cards=sr.map(function(r){ n++;
-    var f=checklistFun(r);
-    return '<div class="jsig jsig-'+(r.tone==='pos'?'y':r.tone==='neg'?'n':'m')+'">'+
-      '<div class="jsig-h"><span class="jsignum">'+n+'</span><span class="jsig-ic">'+(r.icon||'•')+'</span><b>'+esc(r.label)+'</b>'+
-        '<span class="jsig-read '+(r.tone==='pos'?'up':r.tone==='neg'?'down':'')+'">'+esc(r.read)+'</span></div>'+
-      '<div class="jsig-plain">'+esc(f.mark)+' '+esc(f.line)+'</div>'+
-      (r.diagram||'')+
-      (r.explain?'<div class="jsig-explain">'+esc(r.explain)+'</div>':'')+
-    '</div>';
+    try{
+      if(!r) return '';
+      var f=checklistFun(r);
+      return '<div class="jsig jsig-'+(r.tone==='pos'?'y':r.tone==='neg'?'n':'m')+'">'+
+        '<div class="jsig-h"><span class="jsignum">'+n+'</span><span class="jsig-ic">'+(r.icon||'•')+'</span><b>'+esc(r.label)+'</b>'+
+          '<span class="jsig-read '+(r.tone==='pos'?'up':r.tone==='neg'?'down':'')+'">'+esc(r.read)+'</span></div>'+
+        '<div class="jsig-plain">'+esc(f.mark)+' '+esc(f.line)+'</div>'+
+        (r.diagram||'')+
+        (r.explain?'<div class="jsig-explain">'+esc(r.explain)+'</div>':'')+
+      '</div>';
+    }catch(e){ return ''; }   // one malformed row must never wipe the whole signal list (#279 regression fix)
   }).join('');
   var ticked=sr.filter(function(r){return r.tone==='pos';}).length;
   return '<p class="chkscore" style="margin:16px 0 10px">The '+sr.length+' signal read'+(sr.length===1?'':'s')+' behind the conviction — <b>'+ticked+' green</b>, the rest neutral or cooling. Tap any for the detail:</p><div class="jsiglist">'+cards+'</div>';
