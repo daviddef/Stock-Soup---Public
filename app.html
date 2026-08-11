@@ -1398,6 +1398,7 @@
   .ovbanner .ovtxt b{font-size:16px;font-weight:900}
   .ovbanner.ov-buy .ovtxt b{color:var(--buy)} .ovbanner.ov-avoid .ovtxt b{color:var(--dont)}
   .ovbanner .ovtxt span{font-size:11.5px;color:var(--muted);line-height:1.4}
+  .ovbanner .ovthin{font-size:11px;font-weight:800;color:var(--muted);letter-spacing:.02em}
   /* 🍒 chip — the all-signals conviction number, sits beside the 🍊 on cards. Cherry-red vs the 🍊's orange. */
   .cherrybtn{position:relative;overflow:visible;background:rgba(214,40,60,.14);color:#d6283c;border:1px solid rgba(214,40,60,.42);border-radius:7px;font-size:10.5px;font-weight:800;padding:3px 8px;cursor:pointer;vertical-align:middle;font-variant-numeric:tabular-nums;transition:background .15s,transform .18s cubic-bezier(.34,1.6,.64,1)}
   .cherrybtn.ov-buy{color:#1f9d54;background:rgba(35,194,103,.15);border-color:rgba(35,194,103,.42)}
@@ -1794,7 +1795,7 @@ function discoveryFunnel(D){
     return {t:t, c:c, sc:(sc!=null?sc:-1)};
   }).sort(function(a,b){return b.sc-a.sc;}).map(function(x){
     var t=x.t, c=x.c, sc=x.sc;
-    var jc=(c&&c.score&&c.score.buy_now!=null&&c.score.detail)?juiceChip(c.score,c.sym,c.name,signalRows(c,c.region||'us')):(sc>=0?'<span class="dvscore">🍊 '+sc+'</span>':'');
+    var jc=(c&&c.score&&c.score.buy_now!=null)?juiceChip(c.score,c.sym,c.name,signalRows(c,c.region||'us')):(sc>=0?'<span class="dvscore">🍊 '+sc+'</span>':'');   // #266 — juiceChip now degrades w/o detail, so a scored ticker always gets a LIVE chip (no dead 🍊 badge)
     var nm=(c&&c.name)?esc(c.name):(t.signal?esc(t.signal):'');
     var net=t.source?'<span class="dvnet" title="Found via the '+esc(t.source)+' net">'+(NETICON[t.source]||'')+' '+esc(t.source)+'</span>':'';
     var stage=servedSyms[t.sym+'|'+t.region]?'dv-served':(c?'dv-short':'dv-scan');
@@ -3435,21 +3436,29 @@ function recipeLabel(k){return (typeof SCORE_FLAB!=='undefined'&&SCORE_FLAB[k])|
 // technical reads that don't move the buy-now score on their own. A single, plain "all things considered,
 // how strong is this?" read, because a complicated signal set is hard to hold in your head. It ADDS to the
 // 🍊 (doesn't replace it): 🍊 = when to buy · 🍒 = overall strength.
+var OV_FULL_COVERAGE=6;   // signals needed for the vote to carry full weight (below this it's shrunk toward neutral)
 function overallScore(buyNow, rows){
   if(buyNow==null) return null;
   var scored=(rows||[]).filter(function(r){return r.tone==='pos'||r.tone==='neg';});
   var pos=scored.filter(function(r){return r.tone==='pos';}).length;
   var neg=scored.filter(function(r){return r.tone==='neg';}).length;
-  var consensus=scored.length?50+50*((pos-neg)/scored.length):50;            // 0-100, the signal vote
+  var tot=scored.length;
+  // Coverage weight — a unanimous 2-signal slate is NOT the same conviction as a unanimous 8-signal one.
+  // Shrink the vote toward neutral (50) in proportion to how much of full coverage we actually have, so a
+  // thin-but-agreeing name can't leap a weak engine score into "buy" on 2–3 signals (the FERG/CRM inflation).
+  var cov=Math.min(1, tot/OV_FULL_COVERAGE);
+  var raw=tot?((pos-neg)/tot):0;
+  var consensus=50+50*raw*cov;                                                // 0-100, coverage-weighted vote
   var overall=Math.max(0,Math.min(100,Math.round(0.6*buyNow+0.4*consensus))); // 60% engine · 40% signal vote
   var verdict=overall>=78?'Strong buy':overall>=62?'Buy':overall>=45?'Worth a look':overall>=30?'Hold / wait':'Avoid';
   var vcls=overall>=62?'ov-buy':overall>=45?'ov-watch':'ov-avoid';
-  return {score:overall,verdict:verdict,vcls:vcls,buy:buyNow,pos:pos,neg:neg,total:scored.length,consensus:Math.round(consensus)};
+  var thin=tot<4;   // #257 coverage-honesty: flag when few signals actually back the number
+  return {score:overall,verdict:verdict,vcls:vcls,buy:buyNow,pos:pos,neg:neg,total:tot,thin:thin,consensus:Math.round(consensus)};
 }
 function overallBannerHtml(ov){
   if(!ov) return '';
   return '<div class="ovbanner '+ov.vcls+'"><div class="ovnum">🍒 '+ov.score+'<small>/100</small></div>'+
-    '<div class="ovtxt"><b>'+esc(ov.verdict)+'</b><span>Overall conviction — the buy-now score ('+ov.buy+') blended with how all '+ov.total+' signals line up ('+ov.pos+' for · '+ov.neg+' against)</span></div></div>';
+    '<div class="ovtxt"><b>'+esc(ov.verdict)+(ov.thin?' <span class="ovthin">· limited coverage</span>':'')+'</b><span>Overall conviction — the buy-now score ('+ov.buy+') blended with how all '+ov.total+' signals line up ('+ov.pos+' for · '+ov.neg+' against)'+(ov.thin?'. Only '+ov.total+' signal'+(ov.total===1?'':'s')+' back it, so the vote is weighted down.':'')+'</span></div></div>';
 }
 // 🍒 chip + its OWN tappable "ingredient list" (separate from the 🍊 recipe, per user ask). The chip goes on
 // cards; tapping opens openOverall — a plain checklist of how the conviction is built: the buy-now backbone
@@ -3509,6 +3518,23 @@ function openJuice(id){
   var j=JUICE_CACHE[id]; if(!j)return;
   var score=j.score||{}, d=score.detail||{};
   LASTFOCUS=document.activeElement;
+  // #266 fail-open: the full breakdown builds a lot of HTML from live data; if ANY of it throws (a bad
+  // field on one card, a null the harness never saw), the old code left the overlay unopened → the 🍊
+  // silently "did nothing" while the simpler 🍒 worked. Now a throw still opens the overlay with the core
+  // read (banner + recipe + score), so tapping the orange ALWAYS produces something.
+  try{ return _openJuiceInner(id,j,score,d); }
+  catch(err){
+    try{ if(window.console&&console.error) console.error('openJuice failed, showing core view:',err); }catch(_){}
+    var m=document.getElementById('modal'); if(!m) return; m.className='modal';
+    m.innerHTML='<div class="mhead"><button class="mclose" id="mClose" aria-label="Close">✕</button><div class="mtf">🍊 Real juice</div>'+
+      '<div class="mtop"><div class="msym" style="line-height:1.25">'+(j.sym?'<b style="font-size:21px">'+esc(j.sym)+'</b>'+(j.name?' <span style="font-size:14px;color:var(--muted);font-weight:700">'+esc(j.name)+'</span>':''):'')+
+        '<br><span style="font-size:16px;font-weight:800">'+(score.buy_now!=null?score.buy_now:'—')+'/100'+(score.band?' · '+esc(score.band):'')+'</span></div></div></div>'+
+      '<div class="mbody">'+overallBannerHtml(overallScore(score.buy_now, j.sigRows))+recipeCardHtml(score)+'</div>';
+    var ov=document.getElementById('overlay'); if(ov){ ov.classList.add('open'); ov.setAttribute('aria-hidden','false'); }
+    var mc=document.getElementById('mClose'); if(mc){ mc.onclick=closeModal; mc.focus(); }
+  }
+}
+function _openJuiceInner(id,j,score,d){
   // #185 (10 Aug 2026, user: labels fell off screen) — stack the number ABOVE the bar so nothing overflows
   // the modal horizontally, instead of a fixed 130px column the "w X% · raw Y% → Zpt" text couldn't fit.
   function bar(label,w,s,c){
@@ -3768,7 +3794,7 @@ document.addEventListener('keydown',function(e){
 // which stopPropagation's) still opens juice instead; the closest('.juicebtn') guard is belt-and-braces.
 document.addEventListener('click',function(e){
   var c=e.target.closest('.card-sugg,.spot-row'); if(!c)return;   // #199 spot-rows reuse the same open path
-  if(e.target.closest('.juicebtn')||e.target.closest('.risktolchip')||e.target.closest('a'))return;
+  if(e.target.closest('.juicebtn')||e.target.closest('.cherrybtn')||e.target.closest('.risktolchip')||e.target.closest('a'))return;
   e.preventDefault(); openMover(c.dataset.suggSym, c.dataset.suggRegion);
 });
 // #224 — the compact risk chip opens the risk-vs-tolerance detail modal (capturing + stopPropagation so a
