@@ -2764,6 +2764,12 @@ function actionsHtml(D){
   function _axFind(sym,region){ var f=null;
     (D.regions||[]).forEach(function(rg){ if(rg.id!==region)return; (rg.picks||[]).forEach(function(p){ if(p.sym===sym)f=p; }); });
     if(!f)(D.candidates||[]).forEach(function(c){ if(c.sym===sym&&(c.region||'us')===region)f=c; });
+    // #action-chip (11 Aug 2026) — a holding/REASSESS card's ticker often isn't in tonight's picks/candidates,
+    // so it had no 🍊. Also look in the SCORED watchlist (defaultWatchlist / watchlistIntel, both carry the
+    // model score for tracked names) so any ticker we've actually scored shows its chip. Still nothing if it's
+    // genuinely unscored — we never fabricate a score.
+    if(!f||!f.score)(D.defaultWatchlist||[]).forEach(function(w){ if(w.sym===sym&&(w.region||'us')===region&&w.score)f=w; });
+    if(!f||!f.score){ var wi=(D.watchlistIntel||{})[sym+'|'+region]||(D.watchlistIntel||{})[sym]; if(wi&&wi.score)f={sym:sym,name:(wi.name||sym),score:wi.score}; }
     return f; }
   function _axChip(sym,region){ var o=_axFind(sym,region); return (o&&o.score)?'<span class="axchip">'+juiceChip(o.score,o.sym,o.name,signalRows(o,region))+'</span>':''; }
   function _when(d){ return d===0?'Today':d===1?'Tomorrow':'In '+d+'d'; }
