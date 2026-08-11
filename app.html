@@ -2431,6 +2431,17 @@ function signalRows(p,region,opts){
       explain:'Is this a good business at a fair price? Blends how CHEAP it is (value '+(fd.value_score!=null?fd.value_score:'–')+'/100), how PROFITABLE & healthy (quality '+(fd.quality_score!=null?fd.quality_score:'–')+'/100), and GROWTH ('+(fd.growth_score!=null?fd.growth_score:'–')+'/100). '+((fd.why&&fd.why.length)?'Real numbers: '+esc(fd.why.join(' · '))+'.':'')+deep+' Source: company financials via Yahoo.',
       diagram:fundBarsHtml(fd)});
   }
+  // #280 (12 Aug 2026) — ANALYST REVISIONS: are the experts revising their earnings estimates UP or DOWN?
+  // A real forward-looking read, now for BOTH markets incl. ASX (yfinance eps_revisions) — the gap that left
+  // every ASX name with a permanently-empty `rev` category (see buy-now-score ADJ-5).
+  var ar=p&&p.analyst_revisions;
+  if(ar&&ar.total30>0){
+    var artone=ar.net30>0?'pos':(ar.net30<0?'neg':'mix');
+    var arnet=(ar.net30>0?'+':'')+ar.net30;
+    rows.push({icon:'📈',label:'Analyst revisions',tone:artone,
+      read:esc(ar.why||(arnet+' net over 30d')),
+      explain:'How the analysts who cover this are changing their earnings estimates: '+Math.round(ar.up30)+' revised UP vs '+Math.round(ar.down30)+' DOWN over the last 30 days (net '+arnet+'), '+Math.round(ar.up7||0)+' up / '+Math.round(ar.down7||0)+' down in the last 7. Rising estimates lead rising prices; falling estimates are an early warning. This feeds the model\'s "analysts" (rev) factor — and is the signal that was structurally missing for ASX names until now. Source: analyst estimate revisions via Yahoo.'});
+  }
   // ASX-analyst unlock (11 Aug 2026) — analyst price target + buy/hold/sell consensus. The big win is ASX:
   // this was previously BLANK for every Australian name (our US analyst feed doesn't cover the ASX). tone by
   // upside-to-target; only shows with real coverage (≥3 analysts).
