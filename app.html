@@ -3482,13 +3482,36 @@ function cherryCardHtml(ov,rows){
     '<div class="rc-total"><span>OVERALL</span><b>'+ov.score+' / 100</b></div>'+
     '<p class="rc-foot">One number for "all things considered": the buy-now timing score blended with how <b>every</b> signal lines up — including the context reads (RSI, levels, VWAP…) that don\'t move the buy-now score on their own. Green = for, amber = against.</p></div>';
 }
+// The 🍒 cherry owns the SIGNAL reads (all the technical signals, each with its diagram) — this is the
+// "how all the signals line up" detail, split out from the 🍊 orange (which owns the SCORE math). Reuses
+// the exact .jsig card + checklistFun the juice modal used, just relocated to where it belongs.
+function signalCardsHtml(sigRows){
+  var sr=sigRows||[]; if(!sr.length) return '';
+  var n=0;
+  var cards=sr.map(function(r){ n++;
+    var f=checklistFun(r);
+    return '<div class="jsig jsig-'+(r.tone==='pos'?'y':r.tone==='neg'?'n':'m')+'">'+
+      '<div class="jsig-h"><span class="jsignum">'+n+'</span><span class="jsig-ic">'+(r.icon||'•')+'</span><b>'+esc(r.label)+'</b>'+
+        '<span class="jsig-read '+(r.tone==='pos'?'up':r.tone==='neg'?'down':'')+'">'+esc(r.read)+'</span></div>'+
+      '<div class="jsig-plain">'+esc(f.mark)+' '+esc(f.line)+'</div>'+
+      (r.diagram||'')+
+      (r.explain?'<div class="jsig-explain">'+esc(r.explain)+'</div>':'')+
+    '</div>';
+  }).join('');
+  var ticked=sr.filter(function(r){return r.tone==='pos';}).length;
+  return '<p class="chkscore" style="margin:16px 0 10px">The '+sr.length+' signal read'+(sr.length===1?'':'s')+' behind the conviction — <b>'+ticked+' green</b>, the rest neutral or cooling. Tap any for the detail:</p><div class="jsiglist">'+cards+'</div>';
+}
 function openOverall(id){
   var c=CHERRY_CACHE[id]; if(!c)return;
   LASTFOCUS=document.activeElement;
   var m=document.getElementById('modal'); m.className='modal';
-  m.innerHTML='<div class="mhead"><button class="mclose" id="mClose" aria-label="Close">✕</button><div class="mtf">🍒 Overall conviction — the whole picture</div>'+
+  var body='';
+  try{ body=overallBannerHtml(c.ov)+cherryCardHtml(c.ov,c.rows)+(c.sym?juicePriceViz(c.sym):'')+signalCardsHtml(c.rows); }
+  catch(err){ try{console.error('openOverall section failed:',err);}catch(_){}
+    body=overallBannerHtml(c.ov)+cherryCardHtml(c.ov,c.rows); }   // fail-open: always show the vote at least
+  m.innerHTML='<div class="mhead"><button class="mclose" id="mClose" aria-label="Close">✕</button><div class="mtf">🍒 Overall conviction — all the signals</div>'+
     '<div class="mtop"><div class="msym" style="line-height:1.25">'+(c.sym?'<b style="font-size:21px">'+esc(c.sym)+'</b>'+(c.name?' <span style="font-size:14px;color:var(--muted);font-weight:700">'+esc(c.name)+'</span>':''):'')+'</div></div></div>'+
-    '<div class="mbody">'+overallBannerHtml(c.ov)+cherryCardHtml(c.ov,c.rows)+'</div>';
+    '<div class="mbody">'+body+'</div>';
   var ov=document.getElementById('overlay'); ov.classList.add('open'); ov.setAttribute('aria-hidden','false');
   document.getElementById('mClose').onclick=closeModal; document.getElementById('mClose').focus();
 }
@@ -3512,7 +3535,7 @@ function recipeCardHtml(score){
     (up.length?'<div class="rc-sect">Flavour boosters</div>'+up.map(row).join(''):'')+
     (dn.length?'<div class="rc-sect rc-dn">Spoilers</div>'+dn.map(row).join(''):'')+
     '<div class="rc-total"><span>TOTAL SCORE</span><b>'+score.buy_now+' / 100</b></div>'+
-    '<p class="rc-foot">Read it like a nutrition label — each line is one ingredient, the bar shows how much it added or took away, and they add up to the score. <b>These are the signals that actually flavour the number.</b> The technical reads further down (RSI, trend, levels, VWAP…) are the <b>garnish</b>: real, useful context we show you, but they don’t change the score.</p></div>';
+    '<p class="rc-foot">Read it like a nutrition label — each line is one ingredient, the bar shows how much it added or took away, and they add up to the score. <b>These are the signals that actually flavour the number.</b> The technical reads (RSI, trend, levels, VWAP…) are the <b>garnish</b> — real, useful context, but they don’t set this score. You’ll find them under the <b>🍒 cherry</b>, which blends them all into the overall conviction.</p></div>';
 }
 function openJuice(id){
   var j=JUICE_CACHE[id]; if(!j)return;
@@ -3529,7 +3552,7 @@ function openJuice(id){
     m.innerHTML='<div class="mhead"><button class="mclose" id="mClose" aria-label="Close">✕</button><div class="mtf">🍊 Real juice</div>'+
       '<div class="mtop"><div class="msym" style="line-height:1.25">'+(j.sym?'<b style="font-size:21px">'+esc(j.sym)+'</b>'+(j.name?' <span style="font-size:14px;color:var(--muted);font-weight:700">'+esc(j.name)+'</span>':''):'')+
         '<br><span style="font-size:16px;font-weight:800">'+(score.buy_now!=null?score.buy_now:'—')+'/100'+(score.band?' · '+esc(score.band):'')+'</span></div></div></div>'+
-      '<div class="mbody">'+overallBannerHtml(overallScore(score.buy_now, j.sigRows))+recipeCardHtml(score)+'</div>';
+      '<div class="mbody">'+recipeCardHtml(score)+'</div>';
     var ov=document.getElementById('overlay'); if(ov){ ov.classList.add('open'); ov.setAttribute('aria-hidden','false'); }
     var mc=document.getElementById('mClose'); if(mc){ mc.onclick=closeModal; mc.focus(); }
   }
@@ -3578,7 +3601,7 @@ function _openJuiceInner(id,j,score,d){
       (score.heat&&score.heat>1?' <span class="down">− overheated '+Math.round(score.heat)+'</span>':'')+
       ' = <b>'+score.buy_now+'</b>. '+(_dom?'Most of it is <b>'+esc(SCORE_FLAB[_dom.k]||_dom.k)+'</b>':'')+
       (score.child_sentence?' — '+esc(score.child_sentence):'')+'.</p>'+
-    '<p>The <b>'+((j.sigRows||[]).length)+' technical checks</b> below are <b>secondary</b>: they cover short-term timing (is it overbought, stalling, stretched?) and only nudge the total by a few points. That’s why a stock can score high on a genuine catalyst even while several of those checks are amber or red. It’s a forward read on the <i>setup</i> — not a call on today’s move.</p></div>'):'';
+    '<p>The <b>'+((j.sigRows||[]).length)+' technical signal reads</b> (RSI, trend, levels…) live under the <b>🍒 cherry</b> — they feed the <i>overall conviction</i> but only nudge <i>this</i> score by a few points. That’s why a stock can score high on a genuine catalyst even while several of those reads are amber or red. This 🍊 is a forward read on the <i>setup</i> — not a call on today’s move.</p></div>'):'';
   // #215 follow-up — one explainer card per score factor (Trend/High, Catalyst, Volume…), the same
   // "what it is + what makes it up" idiom as the technical-signal cards, so each bar segment is legible.
   // #195 — the literal input behind a factor, so Volume reads "4.6× normal volume today" not "raw 100%".
@@ -3596,60 +3619,21 @@ function _openJuiceInner(id,j,score,d){
       (fe.makeup?'<div class="jfac-makeup">'+fe.makeup+'</div>':'')+'</div>';
   }).join('');
   var factorSection=facs.length?('<div class="jfac-head">🧩 What makes up the score</div><div class="jfaclist">'+factorCards+'</div>'):'';
-  var sr=j.sigRows||[];
-  // #215 (user ask) — group the breakdown BY SIGNAL, numbered. For each signal (RSI, Trend, …) show,
-  // together in one card: the plain-English checklist line, the detail chart/explanation, and any
-  // penalty/nudge the model applied to that same signal. Adjustments that don't map to a shown signal
-  // (capital raise, stale catalyst, priced-in…) collect in a final "Other adjustments" card.
-  function _sigKey(label){ var L=(label||'').toLowerCase();
-    if(/rsi/.test(L))return'rsi'; if(/bollinger/.test(L))return'boll'; if(/ema/.test(L))return'ema';
-    if(/trend|adx|macd/.test(L))return'trend'; if(/vs |relative|strength/.test(L))return'rs';
-    if(/supply|demand/.test(L))return'zone'; if(/news|buzz|sentiment/.test(L))return'news';
-    if(/insider/.test(L))return'insider'; if(/short/.test(L))return'short'; if(/vol/.test(L))return'vol';
-    if(/risk tier/.test(L))return'risk'; return'other'; }
-  function _adjKey(k){ var K=(k||'').toLowerCase();
-    if(/rsi/.test(K))return'rsi'; if(/bollinger|bb/.test(K))return'boll'; if(/ema/.test(K))return'ema';
-    if(/trend|adx|macd|extended|sma/.test(K))return'trend'; if(/relativ|_rs|strength/.test(K))return'rs';
-    if(/supply|demand|zone/.test(K))return'zone'; if(/news|sentiment/.test(K))return'news';
-    if(/insider/.test(K))return'insider'; if(/short/.test(K))return'short'; if(/vol/.test(K))return'vol';
-    return'other'; }
-  var _adjs=(d.penalty_detail||[]).map(function(p){return {k:p.k,pts:-Math.abs(p.pts),why:p.why};})
-    .concat((d.nudges||[]).map(function(n){return {k:n.k,pts:n.pts,why:n.why};}));
-  _adjs.forEach(function(a){a._b=_adjKey(a.k);});
-  function _adjHtml(a){ return '<div class="jsigadj '+(a.pts>=0?'up':'down')+'"><span class="jsigadj-k">'+(a.pts>=0?'+':'')+a.pts.toFixed(a.pts%1?2:0)+'pt</span> '+esc(a.why||(a.k||'').replace(/_/g,' '))+'</div>'; }
-  var _n=0;
-  var sigCards=sr.map(function(r){ _n++;
-    var bk=_sigKey(r.label), f=checklistFun(r);
-    var mine=_adjs.filter(function(a){return !a._used&&a._b===bk;}); mine.forEach(function(a){a._used=1;});
-    return '<div class="jsig jsig-'+(r.tone==='pos'?'y':r.tone==='neg'?'n':'m')+'">'+
-      '<div class="jsig-h"><span class="jsignum">'+_n+'</span><span class="jsig-ic">'+r.icon+'</span><b>'+esc(r.label)+'</b>'+
-        '<span class="jsig-read '+(r.tone==='pos'?'up':r.tone==='neg'?'down':'')+'">'+esc(r.read)+'</span></div>'+
-      '<div class="jsig-plain">'+esc(f.mark)+' '+esc(f.line)+'</div>'+
-      (r.diagram||'')+
-      (r.explain?'<div class="jsig-explain">'+esc(r.explain)+'</div>':'')+
-      (mine.length?'<div class="jsig-adjs">'+mine.map(_adjHtml).join('')+'</div>':'')+
-    '</div>';
-  }).join('');
-  var _left=_adjs.filter(function(a){return !a._used;});
-  var otherCard=_left.length?('<div class="jsig jsig-m"><div class="jsig-h"><span class="jsignum">'+(++_n)+'</span><span class="jsig-ic">⚙️</span><b>Other adjustments</b>'+
-      '<span class="jsig-read">not tied to one signal</span></div>'+
-      '<div class="jsig-adjs">'+_left.map(function(a){return _adjHtml({pts:a.pts,why:((a.k||'').replace(/_/g,' '))+' — '+(a.why||'')});}).join('')+'</div></div>'):'';
-  var ticked=sr.filter(function(r){return r.tone==='pos';}).length;
-  var sigSection=sr.length?('<p class="chkscore" style="margin:16px 0 10px">The '+sr.length+' technical fine-tuning checks — <b>'+ticked+' outright green</b>, the rest neutral or cooling. These nudge the score; they don’t set it:</p><div class="jsiglist">'+sigCards+otherCard+'</div>'):'';
+  // #266 — the per-signal READ cards (RSI, trend, levels + their diagrams) moved to the 🍒 cherry, where
+  // "all the signals line up" belongs. The 🍊 keeps the SCORE math only: category weights + penalties +
+  // nudges (the score adjustments), always shown here now that they no longer ride on the signal cards.
   var hh='font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:800;margin:4px 0 8px';
-  // full model-weighting math kept, collapsed, for anyone who wants the raw category composition
-  var deriv='<details class="jsec"><summary>🧮 The full derivation — category weights (advanced)</summary>'+
+  var deriv='<details class="jsec" open><summary>🧮 The full derivation — category weights, penalties & nudges</summary>'+
     '<h4 style="'+hh+'">Category scores (weight × raw signal = points)</h4><div class="jgrid">'+catRows+'</div>'+
-    (sr.length?'':'<h4 style="'+hh+';margin-top:14px">Penalties</h4><div class="jpengrid">'+penRows+'</div>'+
-      '<h4 style="'+hh+';margin-top:14px">Layered nudges</h4><div class="jpengrid">'+nudgeRows+'</div>')+
+    '<h4 style="'+hh+';margin-top:14px">Penalties</h4><div class="jpengrid">'+penRows+'</div>'+
+    '<h4 style="'+hh+';margin-top:14px">Layered nudges</h4><div class="jpengrid">'+nudgeRows+'</div>'+
     '<p style="font-size:11px;color:var(--faint);margin-top:12px">Dominant signal: <b>'+esc(SCORE_FLAB[d.dominant_signal]||d.dominant_signal||'—')+'</b>. The exact derivation the model used — same numbers.</p></details>';
-  m.innerHTML='<div class="mhead"><button class="mclose" id="mClose" aria-label="Close">✕</button><div class="mtf">🍊 Real juice — the full breakdown</div>'+
+  m.innerHTML='<div class="mhead"><button class="mclose" id="mClose" aria-label="Close">✕</button><div class="mtf">🍊 The buy-now score — how it’s built</div>'+
     '<div class="mtop"><div class="msym" style="line-height:1.25">'+jhead+'</div></div></div>'+
     '<div class="mbody">'+
       (flags.length?'<p class="mtake" style="color:var(--dont)">'+flags.join(' · ')+'</p>':'')+
-      overallBannerHtml(overallScore(score.buy_now, j.sigRows))+
       recipeCardHtml(score)+
-      scoreViz+(j.sym?juicePriceViz(j.sym):'')+whyBlock+factorSection+sigSection+deriv+
+      scoreViz+whyBlock+factorSection+deriv+
     '</div>';
   var ov=document.getElementById('overlay'); ov.classList.add('open'); ov.setAttribute('aria-hidden','false');
   document.getElementById('mClose').onclick=closeModal; document.getElementById('mClose').focus();
