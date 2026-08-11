@@ -109,7 +109,10 @@
   @media(prefers-reduced-motion:reduce){.meter .needle{animation:none}}
   /* #219 — on a narrow phone the 24px dot + big halo read as oversized/jittery; scale both down so the
      pulse stays a tasteful accent, not the loudest thing on the row. */
-  @media(max-width:560px){ .meter .needle{--rs:9px;width:19px;height:19px;top:-4.5px;box-shadow:0 0 0 2.5px var(--surface)} .meter .needle::after{top:calc(100% + 2px)} }
+  @media(max-width:560px){ .meter .needle{--rs:9px;width:19px;height:19px;top:-4.5px;box-shadow:0 0 0 2.5px var(--surface)} .meter .needle::after{top:calc(100% + 2px)}
+    /* #276 — on a phone the below-track emoji ticks + the Risk label were crowding/clipping: shrink the
+       emojis, and give the meter box explicit bottom room so nothing is shaved off. */
+    .factormark .fmi{font-size:13px;top:15px} .meter .lbls{margin-top:34px;font-size:10px} .meter.tappable{padding-bottom:10px} .factorleg{font-size:12px;gap:7px 12px} }
   .meter .lbls{display:flex;justify-content:space-between;font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-top:40px;font-weight:800}
   .meterleg{display:flex;gap:14px;justify-content:center;margin-top:8px;font-size:10.5px;font-weight:700;color:var(--muted)}
   .meterleg i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:5px;vertical-align:middle}
@@ -1645,7 +1648,9 @@ var RISK_FACT_IC={vix:'😨',btc:'₿',gold:'🥇',oil:'🛢️',audusd:'🇦�
 function riskFactorMarks(r){
   var F=(r&&r.factors)||[]; F=F.filter(function(f){return f&&f.score!=null;});
   if(!F.length) return {marks:'',leg:''};
-  var marks=F.map(function(f){ return '<div class="factormark" style="left:'+f.score+'%" title="'+esc(f.label)+' — '+f.score+'/100 on the risk line (weight '+f.weight+'%)"><span class="fmi">'+(RISK_FACT_IC[f.k]||'•')+'</span></div>'; }).join('');
+  // #276 — clamp the marker's horizontal position off the rounded track ends so an emoji at 0%/100% (with
+  // translateX(-50%)) doesn't render half-off the edge and get clipped on a narrow phone.
+  var marks=F.map(function(f){ var lx=Math.max(4,Math.min(96,f.score)); return '<div class="factormark" style="left:'+lx+'%" title="'+esc(f.label)+' — '+f.score+'/100 on the risk line (weight '+f.weight+'%)"><span class="fmi">'+(RISK_FACT_IC[f.k]||'•')+'</span></div>'; }).join('');
   var leg='<div class="factorleg">'+F.map(function(f){ return '<span>'+(RISK_FACT_IC[f.k]||'•')+' '+esc(f.label)+' <b>'+f.score+'</b></span>'; }).join('')+'</div>';
   return {marks:marks,leg:leg};
 }
@@ -4383,6 +4388,8 @@ function upcomingRunsHtml(){
   // Whole-market scans — fixed daily anchors (AU 03:00, US 14:00 AEST ≈ local for the AU user)
   items.push({t:at(3,0),ic:'🔬',tier:'T2·3',kind:'scan',mkt:'au',lbl:'Whole-market scan · 🇦🇺 Australia',est:estFor('scan-au')});
   items.push({t:at(14,0),ic:'🔬',tier:'T2·3',kind:'scan',mkt:'us',lbl:'Whole-market scan · 🇺🇸 United States',est:estFor('scan-us')});
+  // #272 — the daily eToro-watchlist sync (07:00 AEST) is a real scheduled run; show it as a future row.
+  items.push({t:at(7,0),ic:'🥣',tier:null,kind:'watchlist',mkt:'both',lbl:'eToro watchlists · sync',est:estFor('watchlist')});
   // Next re-price ≈ last pulse + 10 min, else ~now+10 — market-agnostic (refreshes whatever's live)
   var lastP=_pu.length?_pu[_pu.length-1].iso:null;
   var rep=lastP?new Date(new Date(lastP).getTime()+10*60000):new Date(now.getTime()+10*60000);
