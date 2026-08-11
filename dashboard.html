@@ -108,7 +108,9 @@
      labelled "Risk", with a gentle pulse so it clearly reads as the live overall reading vs the small
      per-indicator emoji ticks above the track. */
   .meter .needle{--rs:15px;position:absolute;top:-7px;width:24px;height:24px;border-radius:50%;background:var(--ink);box-shadow:0 0 0 3px var(--surface);left:50%;transform:translateX(-50%);transition:left .8s cubic-bezier(.2,.8,.2,1);z-index:4;animation:riskpulse 2.4s ease-out infinite}
-  .meter .needle::after{content:"Risk";position:absolute;top:calc(100% + 3px);left:50%;transform:translateX(-50%);font-size:9px;font-weight:900;letter-spacing:.03em;color:var(--ink);background:var(--surface);padding:0 4px;border-radius:4px;white-space:nowrap}
+  /* #276 follow-up (user ask, 12 Aug) — the "Risk" needle label collided with the pulse halo AND forced the
+     factor emojis down into a clip. Dropped: the needle dot + the legend below already make it obvious. */
+  .meter .needle::after{content:none}
   @keyframes riskpulse{0%{box-shadow:0 0 0 3px var(--surface),0 0 0 3px var(--rcp,rgba(120,120,120,.35))}70%{box-shadow:0 0 0 3px var(--surface),0 0 0 var(--rs) rgba(120,120,120,0)}100%{box-shadow:0 0 0 3px var(--surface),0 0 0 3px rgba(120,120,120,0)}}
   @media(prefers-reduced-motion:reduce){.meter .needle{animation:none}}
   /* #219 — on a narrow phone the 24px dot + big halo read as oversized/jittery; scale both down so the
@@ -116,8 +118,8 @@
   @media(max-width:560px){ .meter .needle{--rs:9px;width:19px;height:19px;top:-4.5px;box-shadow:0 0 0 2.5px var(--surface)} .meter .needle::after{top:calc(100% + 2px)}
     /* #276 — on a phone the below-track emoji ticks + the Risk label were crowding/clipping: shrink the
        emojis, and give the meter box explicit bottom room so nothing is shaved off. */
-    .factormark .fmi{font-size:13px;top:32px} .meter .lbls{margin-top:52px;font-size:10px} .meter.tappable{padding-bottom:12px} .factorleg{font-size:12px;gap:7px 12px} }
-  .meter .lbls{display:flex;justify-content:space-between;font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-top:60px;font-weight:800}
+    .factormark .fmi{font-size:13px;top:15px} .meter .lbls{margin-top:34px;font-size:10px} .meter.tappable{padding-bottom:10px} .factorleg{font-size:12px;gap:7px 12px} }
+  .meter .lbls{display:flex;justify-content:space-between;font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-top:38px;font-weight:800}
   .meterleg{display:flex;gap:14px;justify-content:center;margin-top:8px;font-size:10.5px;font-weight:700;color:var(--muted)}
   .meterleg i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:5px;vertical-align:middle}
   .meterleg i.ink{background:var(--ink)} .meterleg i.vix{background:#9b6bff}
@@ -127,9 +129,9 @@
   .factormark{position:absolute;top:0;bottom:0;width:0;transform:translateX(-50%);pointer-events:none}
   .factormark::after{content:'';position:absolute;top:-3px;bottom:-3px;left:0;width:2px;transform:translateX(-50%);border-radius:1px;background:var(--ink);opacity:.55}
   /* #256 — emoji label BELOW the tick (was top:-22px above it), so nothing above the track can clip it.
-     #276 — pushed down into its own lane (was top:16px) so it clears the "Risk" needle label above it
-     instead of colliding with it when the needle sits near a factor tick. lbls margin-top follows. */
-  .factormark .fmi{position:absolute;top:38px;left:0;transform:translateX(-50%);font-size:17px;line-height:1;white-space:nowrap}
+     #276-followup — back tight under the bar (top:16px): the "Risk" needle label that used to collide here
+     is gone, so the emojis no longer need a deep lane (which was getting clipped → "no icons"). */
+  .factormark .fmi{position:absolute;top:16px;left:0;transform:translateX(-50%);font-size:17px;line-height:1;white-space:nowrap}
   .factorleg{display:flex;flex-wrap:wrap;gap:9px 18px;justify-content:center;margin-top:12px;font-size:13.5px;font-weight:700;color:var(--muted)}
   .factorleg span{white-space:nowrap;display:inline-flex;align-items:center;gap:5px} .factorleg b{color:var(--ink);font-variant-numeric:tabular-nums;font-weight:800}
   .tagword{opacity:.7;font-weight:700}
