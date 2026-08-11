@@ -2409,6 +2409,14 @@ function signalRows(p,region,opts){
         explain:'How WIDE the Bollinger band is right now vs its own last 6 months. A narrow band (low percentile) means volatility has compressed into a coil — the best-studied cheap pre-breakout setup. It doesn\'t say which way it breaks; read that from the trend/momentum rows. Source: 20-day Bollinger bandwidth off daily closes.'});
     }
   }
+  // money-flow bundle (11 Aug 2026) — CMF (accumulation vs distribution) + MFI (volume-weighted RSI).
+  var mfw=p&&p.moneyFlow;
+  if(mfw&&mfw.cmf!=null){
+    var cmf=mfw.cmf, mftone=cmf>=0.05?'pos':(cmf<=-0.05?'neg':'mix');
+    rows.push({icon:'💧',label:'Money flow',tone:mftone,
+      read:(cmf>=0?'Accumulation':'Distribution')+' · CMF '+(cmf>=0?'+':'')+cmf+(mfw.mfi!=null?' · MFI '+mfw.mfi:''),
+      explain:'Is real money flowing IN or OUT? Chaikin Money Flow ('+(cmf>=0?'+':'')+cmf+', −1 to +1) reads where each day\'s close landed in its range × volume — positive = buyers absorbing supply (accumulation), negative = sellers in control (distribution).'+(mfw.mfi!=null?' Money Flow Index '+mfw.mfi+'/100 is a volume-weighted RSI ('+(mfw.mfi>80?'overbought — money rushing in':mfw.mfi<20?'oversold — washed out':'neutral')+').':'')+' Both from the daily price+volume history, no new data.'});
+  }
   // #19 (11 Aug 2026) — short-SQUEEZE SETUP: heavily shorted AND price still climbing = covering-rally fuel.
   var ssq=p&&p.squeeze_setup;
   if(ssq&&ssq.level&&ssq.level!=='low'){
@@ -2943,7 +2951,7 @@ function render(D,H){
           /* #orange-top (user ask) — the 🍊 score chip now leads the header, next to the + watch button,
              instead of only appearing lower by the score bar. Same chip/behaviour: tap → the full breakdown
              (juice modal) when we have the detail, else a plain 🍊 score badge. */
-          ((p.score&&p.score.buy_now!=null)?(p.score.detail?juiceChip(p.score,p.sym,p.name,signalRows(p,rg.id)):'<span class="dvscore">🍊 '+p.score.buy_now+'</span>'):'')+
+          ((p.score&&p.score.buy_now!=null)?juiceChip(p.score,p.sym,p.name,signalRows(p,rg.id)):'')+
           '<button class="watchbtn iconwatch" data-sym="'+esc(p.sym)+'" data-region="'+esc(rg.id)+'" data-name="'+esc(p.name)+'"'+(p.nEntry!=null?' data-entry="'+p.nEntry+'"':'')+' aria-pressed="false" title="Add to watchlist">+</button><span class="verdict '+esc(p.vclass)+'">'+esc(p.verdict)+'</span></span></div>'+
         replNote+
         '<div class="tick"><span class="symwrap"><span class="sym">'+qlink(p.sym,rg.id)+'</span><span class="co">'+qlink(p.sym,rg.id,p.name)+' ↗</span></span>'+
@@ -3285,7 +3293,11 @@ var FACTOR_EXPLAIN={
 // #186 — the 🍊 chip is now the SINGLE entry to a consolidated breakdown (score bar + simple checklist +
 // signal charts + raw derivation), replacing the old 3 separate chips (🍊 juice / 🧮 signals / 🧾 checklist).
 function juiceChip(score,sym,name,sigRows){
-  if(!score||score.buy_now==null||!score.detail) return '';
+  // #orange-top fix (11 Aug 2026) — was requiring score.detail, so a pick WITHOUT detail (e.g. CPU) fell to
+  // a dead <span>, and its 🍊 did nothing. Render the chip for ANY scored name; openJuice degrades cleanly
+  // when detail is absent (shows the factor bar + signal rows). Callers that want the plain-badge fallback
+  // still gate on detail before calling, so this doesn't change their behaviour.
+  if(!score||score.buy_now==null) return '';
   var jid=++JUICE_SEQ; JUICE_CACHE[jid]={score:score,sym:sym,name:name,sigRows:sigRows||[]};
   return '<button class="juicebtn" data-juice-id="'+jid+'" title="Tap for the full breakdown — '+esc(score.band||'')+'">🍊 '+score.buy_now+'</button>';
 }
