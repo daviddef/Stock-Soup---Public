@@ -3214,12 +3214,12 @@ function render(D,H){
       (function(){var fm=riskFactorMarks(r); return '<div class="meter tappable" id="riskMeterBtn" role="button" tabindex="0" title="Tap for tonight’s market read" aria-label="Open tonight’s market read"><div class="track"><div class="needle" id="needle"></div>'+fm.marks+'</div>'+
       '<div class="lbls"><span>🔴 Hide the cash</span><span>⚪ Steady</span><span>🟢 Send it</span></div>'+
       fm.leg+'</div>';})()+
-      '<div class="sec-head" style="margin:26px 0 3px"><h2 class="display"><span class="k">01</span> Take your seat, time for Action</h2>'+infoBtn('actions')+'</div>'+
-      '<p class="sec-sub" style="margin:0 0 10px">It’s time to eat — enough of the mood, here’s what’s worth <b>acting on</b> right now.</p>'+
-      actionsHtml(D)+
+      '<div class="sec-head" style="margin:26px 0 3px"><h2 class="display"><span class="k">01</span> Serving today in '+(MKT==='us'?'the U.S.':'Australia')+'</h2>'+infoBtn('menu')+'</div>'+
+      '<p class="sec-sub" style="margin:0 0 10px">Three time horizons — '+tfB('Day')+' a quick feed · '+tfB('Week')+' a few days · '+tfB('Long')+' slow-cooked. Tap a card for the full serve; tap a name for Yahoo.</p>'+tierToggleHtml+menus+
     '</div>'+
-    '<section><div class="sec-head"><h2 class="display"><span class="k">02</span> Serving today in '+(MKT==='us'?'the U.S.':'Australia')+'</h2>'+infoBtn('menu')+'</div>'+
-      '<p class="sec-sub" style="margin-top:4px">Three time horizons — '+tfB('Day')+' a quick feed · '+tfB('Week')+' a few days · '+tfB('Long')+' slow-cooked. Tap a card for the full serve; tap a name for Yahoo.</p>'+tierToggleHtml+menus+'</section>'+
+    '<section><div class="sec-head"><h2 class="display"><span class="k">02</span> Take your seat, time for Action</h2>'+infoBtn('actions')+'</div>'+
+      '<p class="sec-sub" style="margin-top:4px">It’s time to eat — enough of the mood, here’s what’s worth <b>acting on</b> right now.</p>'+
+      actionsHtml(D)+'</section>'+
     // Change-environment retired — its trajectory + "ready to buy" now live inside each pick card (miniTraj + buyat + rangeBar).
     topNewsHtml(D)+
     '<section><div class="sec-head"><h2 class="display"><span class="k">03</span> The world &amp; the sectors</h2>'+infoBtn('world')+'</div>'+
@@ -3287,6 +3287,8 @@ function render(D,H){
       '<div class="wlsummary" id="wlSummary"></div>'+
       '<div class="wlpills" id="wlPills"></div>'+
       '<div class="wlauth" id="wlAuth"></div></section>'+
+    etoroWL('Stock Soup Watchlist','🥣',D.soupWatchlist,true)+
+    (isAdmin()?etoroWL("David's Primary Watchlist",'🔒',D.davidWatchlist,false):'')+
   '</div>'+
 
   // ===== 👨‍🍳 INSIDE THE KITCHEN =====
@@ -3781,6 +3783,12 @@ document.addEventListener('click',function(e){
   if(e.target.closest('.juicebtn')||e.target.closest('.cherrybtn')||e.target.closest('.risktolchip')||e.target.closest('a'))return;
   e.preventDefault(); openMover(c.dataset.suggSym, c.dataset.suggRegion);
 });
+// eToro-watchlist cards (Stock Soup / David's Primary) → per-ticker read, same fallback chain as Top Movers.
+document.addEventListener('click',function(e){
+  var w=e.target.closest('.wlcard'); if(!w)return;
+  if(e.target.closest('.juicebtn')||e.target.closest('.cherrybtn')||e.target.closest('.watchbtn')||e.target.closest('a'))return;
+  e.preventDefault(); openMover(w.dataset.wlsym, w.dataset.wlregion);
+});
 // #224 — the compact risk chip opens the risk-vs-tolerance detail modal (capturing + stopPropagation so a
 // chip inside a tappable card opens the risk modal, not the card).
 document.addEventListener('click',function(e){
@@ -4008,6 +4016,27 @@ function reviewsHead(){
   return tabHead('🍽️ The scorecard',verdict,'We check <b>every</b> pick after its own timeframe — a day-trade the next day, a week pick after a week, a month pick after a month. Tap any call below for the story.',stats);
 }
 function updateOwnCount(){ var el=document.getElementById('ownCount'); if(el){ try{ el.textContent=wlGet().filter(function(w){return w.own;}).length; }catch(e){} } }
+// eToro-curated watchlists (synced by soup-watchlist-sync.py → latest.soupWatchlist / latest.davidWatchlist).
+// Each item carries the full model score + signals (like a Full Pot candidate), so the cards get the 🍊/🍒
+// chips + a live price; tapping opens the per-ticker read via openMover (works for any symbol).
+function wlCard(c){
+  var rows=signalRows(c, c.region||'us');
+  var jc=(c.score&&c.score.buy_now!=null)?juiceChip(c.score,c.sym,c.name,rows)+cherryChip(c.score,c.sym,c.name,rows):'';
+  var chg=c.change?'<span class="pmc-chg '+(c.up?'up':'down')+'">'+(c.up?'▲':'▼')+' '+esc(c.change)+'</span>':'';
+  return '<div class="potcard wlcard h-'+esc(c.heat||'mid')+'" data-wlsym="'+esc(c.sym)+'" data-wlregion="'+esc(c.region||'us')+'" role="button" tabindex="0" aria-label="Details for '+esc(c.sym)+'">'+
+    '<div class="pmc-top">'+(c.heat==='cold'?'<span class="ph no">⛔</span>':'<span class="ph"></span>')+'<b class="pmc-sym">'+esc(c.sym)+'</b><span class="pmc-flag">'+((c.region||'us')==='au'?'AU':'US')+'</span>'+
+      '<button class="watchbtn iconwatch pmc-watch" data-sym="'+esc(c.sym)+'" data-region="'+esc(c.region||'us')+'"'+(c.name?' data-name="'+esc(c.name)+'"':'')+' aria-pressed="false" title="Add to watchlist">+</button></div>'+
+    (c.name?'<div class="pmc-name">'+esc(c.name)+'</div>':'')+
+    '<div class="pmc-px">'+(c.price?'<span class="pmc-price">'+esc(cleanPrice(c.price))+'</span>':'')+chg+'</div>'+
+    (jc?'<div class="pmc-juice">'+jc+'</div>':'')+'</div>';
+}
+function etoroWL(title,emoji,wl,shared){
+  if(!wl||!wl.items||!wl.items.length) return '';
+  var ago=wl.updatedAt?timeAgo(wl.updatedAt):'';
+  return '<section class="etorowl"><div class="sec-head"><h2 class="display">'+emoji+' '+esc(title)+'</h2></div>'+
+    '<p class="sec-sub">'+(shared?'Shared with everyone':'🔒 Private to you')+' — curated on eToro, scored by the model'+(ago?' · synced '+esc(ago):'')+'. Tap a card for the full read.</p>'+
+    '<div class="movergrid">'+wl.items.map(wlCard).join('')+'</div></section>';
+}
 function favesHead(){
   // #228 (user ask) — dropped the WATCHING / YOU OWN header stat pills: the counts already show in the
   // section titles below ("Things you own (17)" / "What you could have owned"), so these were a third,
@@ -4058,12 +4087,19 @@ function archiveHtml(H){
     var out=snap.map(pickBlock).join('');
     return out||'<div class="archnone">No picks this run.</div>';
   }
-  var cards=menus.slice(0,20).map(function(m){
+  function card(m){
     return '<div class="archcard2"><div class="archwhen">'+esc(m.stamp)+' · '+esc(m.time)+' AEST</div>'+
       '<div class="archcols"><div><div class="archcolh">🇦🇺 AU</div>'+side(m.auSnap)+'</div>'+
       '<div><div class="archcolh">🇺🇸 US</div>'+side(m.usSnap)+'</div></div></div>';
-  }).join('');
-  return '<div class="archgrid2">'+cards+'</div>';
+  }
+  // #archive-collapse (user ask) — show the last 2 runs, tuck the rest behind a default-collapsed expander.
+  var recent=menus.slice(0,2), older=menus.slice(2,20);
+  var out='<div class="archgrid2">'+recent.map(card).join('')+'</div>';
+  if(older.length){
+    out+='<details class="archmore"><summary>Show '+older.length+' earlier run'+(older.length===1?'':'s')+' →</summary>'+
+      '<div class="archgrid2" style="margin-top:12px">'+older.map(card).join('')+'</div></details>';
+  }
+  return out;
 }
 function kitchenHead(D){
   // "Re-prices today" must be TODAY's count, not PULSES.length — PULSES is a capped list (~24), so it
@@ -6388,7 +6424,8 @@ var RUN_TRIGGER_TYPES=[
   {rt:'menu-us',ic:'🇺🇸', name:'Type 1 · United States', sub:'Catalyst menu — 3 global picks only'},
   {rt:'scan-au',ic:'⚙️', name:'Type 2/3 · Australia', sub:'Whole-market technical scan (ASX)'},
   {rt:'scan-us',ic:'🌶️', name:'Type 2/3 · United States', sub:'Whole-market technical scan (US)'},
-  {rt:'price',  ic:'⏱️', name:'Price refresh',      sub:'Just re-price the standing menu'}
+  {rt:'price',  ic:'⏱️', name:'Price refresh',      sub:'Just re-price the standing menu'},
+  {rt:'watchlist', ic:'🥣', name:'Update eToro Watchlists', sub:'Re-pull + re-score the Stock Soup + your Primary lists'}
 ];
 function openRunTrigger(){
   if(!isAdmin()) return;
