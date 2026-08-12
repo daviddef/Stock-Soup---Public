@@ -721,6 +721,11 @@
   .srowtap:hover .sname{color:var(--broth,#FF8C00)} .srowchev{opacity:.5;margin-left:3px;font-weight:900}
   .sname{color:var(--ink)} .setf{color:var(--faint);font-size:11px;font-weight:700}
   .sval{font-weight:800;font-variant-numeric:tabular-nums}
+  /* #326 — aligned verdict chip on each money-flow row */
+  .srv{font-size:10.5px;font-weight:800;letter-spacing:.02em;padding:2px 7px;border-radius:99px;margin-left:auto;margin-right:9px;white-space:nowrap}
+  .srv-buy{color:var(--buy,#23c267);background:rgba(35,194,103,.14)}
+  .srv-avoid{color:var(--dont,#e5484d);background:rgba(229,72,77,.13)}
+  .srv-watch{color:var(--broth,#FF8C00);background:rgba(255,140,0,.12)}
   /* #249 — rotation nested inside the Sectors buy/skip column */
   .srotwrap{margin-top:12px;padding-top:10px;border-top:1px dashed var(--line)}
   .eyebrow-sub{font-size:12px;opacity:.92}
@@ -3090,10 +3095,16 @@ function sectorRotationHtml(D){
   var top=rows.slice(0,3), bottom=rows.slice(-3).reverse();
   function row(r){
     var pos=r.rs20d>=0;
+    // #326 — each rotation row now carries an aligned VERDICT (a recommendation, not just a number): a
+    // strongly-heating sector reads "Buy basket" (the ETF itself IS the buy-the-basket play, and it's
+    // tappable), a cooling one reads "Cooling" (steer clear), the middle is "Watch". Derived from the real
+    // 20-day relative strength, so it can't contradict the number beside it.
+    var v = r.rs20d>=1.0 ? {t:'🟢 Buy basket',c:'srv-buy'} : (r.rs20d<=-1.0 ? {t:'🔴 Cooling',c:'srv-avoid'} : {t:'🟡 Watch',c:'srv-watch'});
     // #259 — tappable: opens the sector ETF's per-ticker read (openMover → real card if it's a pick/
     // candidate, else the generic "What would you do?" analyst read). Same idiom as Top Movers / theme cards.
     return '<button type="button" class="srow srowtap" data-sym="'+esc(r.etf)+'" data-region="'+MKT+'" aria-label="'+esc(r.sector)+' '+esc(r.etf)+', open read">'+
       '<span class="sname">'+esc(r.sector)+' <span class="setf">'+esc(r.etf)+'</span></span>'+
+      '<span class="srv '+v.c+'">'+v.t+'</span>'+
       '<span class="sval '+(pos?'up':'down')+'">'+(pos?'+':'')+r.rs20d+'pt <span class="srowchev">›</span></span></button>';
   }
   var upd=sr.updatedAt?new Date(sr.updatedAt):null;
