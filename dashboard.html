@@ -5260,9 +5260,20 @@ function runLogHtml(){
       var reqName=esc(e.label||'Run requested');
       return '<div class="rlrow rlfail" style="border-left-color:var(--broth);background:linear-gradient(90deg,rgba(255,107,26,.1),transparent 62%)"><div class="rltop"><span class="rltag" style="color:var(--broth)">⏳ '+reqName+' · requested</span>'+manTag+'<span class="rlwhen">'+fmtWhen(new Date(e.requestedAt).getTime())+'</span></div><div class="rlbody"><div class="rlline"><span class="qt">Queued — runs when a session next picks it up, not instantly.</span></div></div></div>';
     }
-    var rts=new Date(e.startedAt).getTime(), isMenu=e.kind!=='reprice', kindTxt=(isMenu?'🍳 Menu':'⏱ Re-price');
-    // #178 follow-up — a live/failed MENU run is a Type 1 (catalyst) run; badge it while cooking, not just once done.
-    var tierTag=isMenu?'<span class="rltier rltier-1" title="Type 1 — the catalyst-driven pipeline (news/earnings/analyst nets). Type 2/3 are the separate daily whole-market scans.">T1</span>':'';
+    // Kind-aware label (13 Aug fix): the old `isMenu = e.kind!=='reprice'` labelled EVERY non-reprice
+    // attempt (a failed eToro watchlist sync, a stalled scan…) as "🍳 Menu · T1" — so a daily watchlist-sync
+    // failure showed up as a scary "MENU FAILED", user-caught. Map each kind to its real name + right badge.
+    var rts=new Date(e.startedAt).getTime(), k=String(e.kind||'');
+    var isMenu=/^menu/.test(k), isScan=/^scan/.test(k), mf=/au/i.test(k)?' 🇦🇺':/us/i.test(k)?' 🇺🇸':'';
+    var kindTxt = isMenu ? '🍳 Menu'
+                : isScan ? '🔬 Whole-market scan'
+                : k==='reprice' ? '⏱ Re-price'
+                : k==='watchlist' ? '🥣 eToro watchlist sync'
+                : (e.label ? esc(e.label) : '• Run');
+    // Only a real Type-1 menu (or Type-2/3 scan) carries a tier badge — a watchlist sync / re-price is neither.
+    var tierTag = isMenu ? '<span class="rltier rltier-1" title="Type 1 — the catalyst-driven pipeline (news/earnings/analyst nets). Type 2/3 are the separate daily whole-market scans.">T1'+mf+'</span>'
+                : isScan ? '<span class="rltier rltier-23" title="Type 2/3 — the daily whole-market technical scan">T2·3'+mf+'</span>'
+                : '';
     if(e.status==='failed') return '<div class="rlrow rlfail"><div class="rltop"><span class="rltag rltag-fail">✕ '+kindTxt+' · failed</span>'+tierTag+'<span class="rlwhen">'+fmtWhen(rts)+'</span></div><div class="rlbody"><div class="rlline"><span class="qt">'+esc(e.note||'this run didn’t finish — the previous menu still stands')+'</span></div></div></div>';
     if(e.status==='cancelled') return '<div class="rlrow rlcancel"><div class="rltop"><span class="rltag rltag-cancel">⊘ '+kindTxt+' · cancelled</span>'+tierTag+'<span class="rlwhen">'+fmtWhen(rts)+'</span></div><div class="rlbody"><div class="rlline"><span class="qt">'+esc(e.note||'cancelled — superseded by a newer run')+'</span></div></div></div>';
     return '<div class="rlrow rllive"><div class="rltop"><span class="rltag rltag-live"><span class="rlspin"></span>'+kindTxt+' · cooking now</span>'+tierTag+'<span class="rlwhen">started '+fmtWhen(rts)+'</span></div><div class="rlbody"><div class="rlline"><span class="qt">'+esc(e.label||(isMenu?'six fresh picks land the moment it finishes…':'refreshing prices…'))+'</span></div></div></div>';
