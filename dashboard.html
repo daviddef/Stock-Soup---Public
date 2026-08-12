@@ -2337,7 +2337,10 @@ function buyAction(p){
   var ne=+p.nEntry, nn=+p.nNow;
   if(!isFinite(ne)||ne<=0||!isFinite(nn)) return '';
   var g=(nn/ne-1)*100; if(!isFinite(g)) return '';
-  if(s==='in') return ' <span class="baact">· at buy ✓</span>';
+  // #305 — when the price IS in the buy zone, the green .ba-in tint already says so; the "· at buy ✓" text
+  // just echoed the "Get in" verdict pill (the #278 redundancy). Drop it — colour carries it. The "% above"
+  // case stays: that distance is real, non-redundant timing (verdict = the call; this = wait for the dip).
+  if(s==='in') return '';
   return ' <span class="baact">· '+Math.round(g)+'% above</span>';   // close + wait — colour carries the nuance
 }
 
