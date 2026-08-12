@@ -991,6 +991,9 @@
   .annwhy{font-size:12px;color:var(--muted);margin-top:3px;line-height:1.4}
   .anndr{display:inline-block;font-size:11px;font-weight:800;color:var(--broth);margin-top:6px;cursor:pointer;text-decoration:none}
   .anndr:hover{text-decoration:underline}
+  .ecallwrap{margin:6px 0 2px}
+  .ecall{display:inline-block;font-size:12.5px;font-weight:700;color:var(--broth);text-decoration:none;background:var(--broth-tint,rgba(255,122,26,.10));border:1px solid var(--line);border-radius:10px;padding:8px 12px}
+  .ecall:hover{border-color:var(--broth)}
   .tag{font-size:11px;font-weight:900;padding:4px 9px;border-radius:7px;text-transform:uppercase;letter-spacing:.03em;white-space:nowrap}
   .t-buy{background:rgba(35,194,103,.16);color:var(--buy)}
   .t-dont{background:rgba(255,77,77,.16);color:var(--dont)}
@@ -4451,6 +4454,7 @@ function openModal(p,region,cur){
       '</div>'+
       announcementsHtml(p.announcements)+
       newsLineHtml(p.news, p.news_url, p.news_date)+
+      earningsCallLink(p.sym,region)+
       // #323 P1 — fold the "fine print" (how we found it · short interest · risks · other options) into ONE
       // collapsed <details>, so the fold isn't eaten by four secondary panels. The decision, chart, signals,
       // announcements and news stay open above; the reference material is one tap away.
@@ -5558,6 +5562,7 @@ function openCandidate(idx){
       (signalRows(c,c.region).length?'<h4 style="margin-top:16px">🧮 All the signals, in one place</h4>'+signalDetailHtml(c,c.region):'')+
       announcementsHtml(c.announcements)+
       newsLineHtml(c.news, c.news_url, c.news_date)+
+      earningsCallLink(c.sym,c.region)+
       (c.short!=null?'<div class="mshort">🩳 <span class="lead">Short interest:</span> <b>'+c.short+'%</b> of shares sold short'+(c.short>=8?' — <b>elevated</b> (squeeze fuel / bearish crowd)':c.short>=4?' — moderate':' — light')+'</div>':'')+
       '<div class="mrisk" style="background:var(--surface-2);border-color:var(--line)"><b>Didn\'t make the top 3</b> — it\'s on the radar, not a pick this run.</div>'+
       '<div class="mfoot"><button class="mbtn watchbtn" data-sym="'+esc(c.sym)+'" data-region="'+esc(c.region)+'"'+(c.name?' data-name="'+esc(c.name)+'"':'')+' aria-pressed="false">＋ Watch</button>'+
@@ -5588,6 +5593,13 @@ function newsLineHtml(news, newsUrl, newsDate){
   return '<div class="mnews'+(old?' mnews-old':'')+'">📰 <span class="lead">In the news'+(old?' ⚠️ OLD':'')+':</span> '+
     (newsUrl?'<a href="'+esc(newsUrl)+'" target="_blank" rel="noopener">'+esc(news)+' ↗</a>':esc(news))+
     (age?'<span class="mnews-age">'+age+'</span>':'')+'</div>';
+}
+// #324 (US-only, user ask 13 Aug) — a light "read the earnings call" link: what management ACTUALLY said,
+// straight from the horse's mouth. Scoped search to Motley Fool's free public transcript archive (US-only;
+// LINK only — we never scrape the copyrighted transcript text). ASX has no equivalent free transcript source.
+function earningsCallLink(sym,region){
+  if(region!=='us'||!sym) return '';
+  return '<div class="ecallwrap"><a class="ecall" href="https://www.google.com/search?q='+encodeURIComponent('site:fool.com '+sym+' earnings call transcript')+'" target="_blank" rel="noopener" title="Find '+esc(sym)+'’s latest earnings-call transcript on fool.com">📄 Read '+esc(sym)+'’s latest earnings call ↗</a></div>';
 }
 // #136 (user ask) — the "News buzz" signal row used to show only a bare tone word ("Positive
 // coverage"); the underlying fetch already pulls up to 5 real articles for its sentiment average,
