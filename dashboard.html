@@ -1465,6 +1465,12 @@
   .s2btn.primary{background:var(--broth);color:#fff}
   .s2btn.ghost{background:transparent;border:1.5px solid var(--line);color:var(--ink)}
   .s2foot{text-align:center;font-size:12px;color:var(--faint);padding:26px 20px 70px}
+  /* #325 — onboarding tour: full-screen scrolly overlay reusing the .s2* scenes */
+  #onboard{position:fixed;inset:0;z-index:300;background:var(--ground);overflow-y:auto;-webkit-overflow-scrolling:touch;display:none}
+  #onboard.open{display:block}
+  #onboard .ob-prog{position:fixed;top:0;left:0;height:3px;width:0;background:linear-gradient(90deg,var(--broth),var(--dont));z-index:2;transition:width .1s linear}
+  #onboard .ob-close{position:fixed;top:12px;right:14px;z-index:3;background:var(--surface);border:1px solid var(--line);color:var(--muted);font-weight:800;font-size:12.5px;padding:8px 13px;border-radius:99px;cursor:pointer}
+  #onboard .ob-close:hover{color:var(--broth);border-color:var(--broth)}
   /* #172/#247 — the 3×3 type × timeframe matrix (Villager view). Cols: Type3→Type2→Type1 (wild→safe). Rows:
      DAY/WEEK/MONTH. Now shares the .simple column width (no more 96vw breakout) so it aligns edge-to-edge
      with the hero/risk-chart above it. */
@@ -3767,6 +3773,7 @@ function render(D,H){
           '<button class="bmitem" id="shareTabBtn" role="menuitem">🔗 Share this page</button>'+
           '<button class="bmitem" id="viewBtn" role="menuitem">😋 Simple view</button>'+
           '<button class="bmitem" id="themeBtn" role="menuitem">🌗 Switch theme</button>'+
+          '<button class="bmitem" id="tourBtn" role="menuitem">👋 Take the tour</button>'+
           '<button class="bmitem" id="guideBtn" role="menuitem">📖 User guide</button>'+
           '<button class="bmitem" id="methodBtn" role="menuitem">🎓 For your advisor</button>'+
           '<button class="bmitem" id="adminBtn" role="menuitem" style="display:none">🛠 Admin tools</button>'+
@@ -6875,6 +6882,7 @@ function wire(D){
   }
   var adb=document.getElementById('adminBtn'); if(adb){ if(isAdmin()){ adb.style.display=''; adb.onclick=function(){var _bm=document.getElementById('burgerMenu');if(_bm)_bm.setAttribute('hidden','');openAdminDrawer();}; } else { adb.style.display='none'; } }
   var gb=document.getElementById('guideBtn'); if(gb) gb.onclick=openUserGuide;
+  var tbFull=document.getElementById('tourBtn'); if(tbFull) tbFull.onclick=openOnboarding;
   var mb=document.getElementById('methodBtn'); if(mb) mb.onclick=openExpertBrief;
   // Unified Favourites bar: one ticker input + market toggle → either ＋Watchlist or 🧠 What to do?
   (function(){ var inp=document.getElementById('uniInput'), au=document.getElementById('uniAu'), us=document.getElementById('uniUs'),
@@ -7074,6 +7082,7 @@ function boot(D,H){
   if(VIEW===null){ try{ VIEW=localStorage.getItem('soup_view'); }catch(e){} if(!VIEW) VIEW = (window.innerWidth<768?'simple':'full'); }
   applyView();
   if(!DEEPLINK_DONE){ DEEPLINK_DONE=true; setTimeout(applyDeepLink,0); }
+  maybeOnboard(); // #325 — first-run onboarding tour (localStorage-gated, once per browser)
 }
 var BIG = {"Day":"⚡ TODAY","Week":"📅 THIS WEEK","Long":"📈 LONG GAME"};
 
@@ -7359,6 +7368,72 @@ function s2Close(p,region){
     '<p class="s2foot rev d3">Not financial advice — just a friendly kitchen guide. The call is always yours.</p>'+
   '</section>';
 }
+// #325 — new-user onboarding as a scrollytelling STORY, reusing the #320 scrolly engine (.s2scene/.rev).
+// One-time (localStorage-gated) guided tour, replayable from the burger. Full-screen overlay on <body>.
+function onboardingScenes(){
+  return ''+
+  '<section class="s2scene s2end">'+
+    '<div class="s2eye rev">👋 Welcome</div>'+
+    '<h1 class="rev d1">The<br>Stock&nbsp;Soup 🍲</h1>'+
+    '<p class="s2lead rev d2" style="margin:20px auto 0">Every night we cook up <b>6 stock ideas</b> — 3 Australian 🇦🇺, 3 American 🇺🇸 — and tell you exactly what we’d do with each. Here’s the 60-second tour.</p>'+
+    '<div class="s2cue rev d3"><span class="arw">↓</span> scroll</div>'+
+  '</section>'+
+  '<section class="s2scene">'+
+    '<div class="s2eye rev">What you get</div>'+
+    '<h2 class="rev d1">Six ideas a night.</h2>'+
+    '<p class="rev d2">Three from the ASX, three from the US — each tagged <b>Day</b>, <b>Week</b> or <b>Month</b> for how long we’d hold it.</p>'+
+    '<div class="s2teach rev d3"><span class="tk">Don’t panic</span>You don’t have to act on all six. Usually one is the standout — we literally call it <b>“tonight’s one move”</b>.</div>'+
+  '</section>'+
+  '<section class="s2scene">'+
+    '<div class="s2eye rev">The two numbers</div>'+
+    '<h2 class="rev d1">🍊 and 🍒.</h2>'+
+    '<p class="rev d2"><b>🍊 Buy-now</b> is a <b>timing</b> score — is <i>now</i> a good moment? <b>🍒 Conviction</b> is how good the idea is <b>overall</b>. Both out of 100.</p>'+
+    '<div class="s2teach rev d3"><span class="tk">Rule of thumb</span>🍒 tells you <b>IF</b>. 🍊 tells you <b>WHEN</b>.</div>'+
+  '</section>'+
+  '<section class="s2scene">'+
+    '<div class="s2eye rev">Every pick has a plan</div>'+
+    '<h2 class="rev d1">Buy · Stop · Target.</h2>'+
+    '<p class="rev d2">A <b>buy zone</b> (where we’d get in), a <b>stop</b> (where we’d bail if we’re wrong), and a <b>target</b> (where we think it’s headed).</p>'+
+    '<div class="s2teach rev d3"><span class="tk">The one habit</span>Know your <b>exit</b> before you enter — it’s what separates survivors from beginners.</div>'+
+  '</section>'+
+  '<section class="s2scene">'+
+    '<div class="s2eye rev">Can you trust it?</div>'+
+    '<h2 class="rev d1">We show our losers.</h2>'+
+    '<p class="rev d2">Every pick gets <b>graded</b> after its deadline — win or lose — and the scoreboard is public in <b>Dinner Reviews</b>.</p>'+
+    '<div class="s2teach rev d3"><span class="tk">Trust test</span>Anyone who only shows their winners is selling you something.</div>'+
+  '</section>'+
+  '<section class="s2scene">'+
+    '<div class="s2eye rev">Make it yours</div>'+
+    '<h2 class="rev d1">Tap the ☆.</h2>'+
+    '<p class="rev d2">Star any stock to save it to your <b>watchlist</b> — we’ll track how it’s done since you flagged it, your own little scoreboard.</p>'+
+  '</section>'+
+  '<section class="s2scene">'+
+    '<div class="s2eye rev">Two ways to read it</div>'+
+    '<h2 class="rev d1">Simple or Full.</h2>'+
+    '<p class="rev d2">This <b>Simple</b> view tells tonight’s move as a story. Tap <b>📋</b> anytime for the <b>Full</b> view — the whole kitchen: every pick, the sectors, the scorecard and more.</p>'+
+  '</section>'+
+  '<section class="s2scene s2end">'+
+    '<div class="s2eye rev">That’s the tour</div>'+
+    '<h2 class="rev d1" style="font-style:normal">Tonight’s picks<br>are waiting.</h2>'+
+    '<div class="s2btns rev d2"><button class="s2btn primary ob-start" type="button">Start cooking →</button></div>'+
+    '<p class="s2foot rev d3">Not financial advice — a friendly kitchen guide. The call is always yours.</p>'+
+  '</section>';
+}
+function openOnboarding(){
+  var el=document.getElementById('onboard');
+  if(!el){ el=document.createElement('div'); el.id='onboard'; document.body.appendChild(el); }
+  el.innerHTML='<div class="ob-prog" id="obProg"></div><button class="ob-close" id="obClose" type="button" aria-label="Skip the tour">Skip ✕</button><div class="s2wrap">'+onboardingScenes()+'</div>';
+  el.classList.add('open'); el.scrollTop=0; document.body.style.overflow='hidden';
+  try{ localStorage.setItem('soup_onboarded','1'); }catch(e){}
+  var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting)e.target.classList.add('in');});},{threshold:.16,root:el});
+  el.querySelectorAll('.rev').forEach(function(n){io.observe(n);});
+  var prog=document.getElementById('obProg');
+  el.onscroll=function(){ var mx=el.scrollHeight-el.clientHeight; if(prog) prog.style.width=(mx>0?(el.scrollTop/mx*100):0).toFixed(1)+'%'; };
+  var cb=document.getElementById('obClose'); if(cb) cb.onclick=closeOnboarding;
+  el.querySelectorAll('.ob-start').forEach(function(b){ b.onclick=closeOnboarding; });
+}
+function closeOnboarding(){ var el=document.getElementById('onboard'); if(el){ el.classList.remove('open'); el.innerHTML=''; } document.body.style.overflow=''; }
+function maybeOnboard(){ if(window._obTried) return; window._obTried=1; try{ if(localStorage.getItem('soup_onboarded')) return; }catch(e){ return; } setTimeout(function(){ try{ openOnboarding(); }catch(e){} }, 800); }
 function renderSimple(D){
   var region=s2Region(), p=s2TopPick(D,region);
   document.getElementById('app').innerHTML =
@@ -7378,6 +7453,7 @@ function renderSimple(D){
           '<button class="bmitem" id="refreshBtnS" role="menuitem">↻ Refresh prices</button>'+
           '<button class="bmitem" id="viewFull" role="menuitem">📋 Full view</button>'+
           '<button class="bmitem" id="themeBtn2" role="menuitem">🌗 Switch theme</button>'+
+          '<button class="bmitem" id="tourBtnS" role="menuitem">👋 Take the tour</button>'+
           '<button class="bmitem" id="guideBtnS" role="menuitem">📖 User guide</button>'+
           '<button class="bmitem" id="methodBtnS" role="menuitem">🎓 For your advisor</button>'+
           '<button class="bmitem" id="adminBtnS" role="menuitem" style="display:none">🛠 Admin tools</button>'+
@@ -7404,6 +7480,7 @@ function wireSimple(D){
   var rbS=document.getElementById('refreshBtnS'); if(rbS){ if(!isAdmin()) rbS.style.display='none'; else rbS.onclick=function(){refreshPrices(rbS);}; }
   var adbS=document.getElementById('adminBtnS'); if(adbS){ if(isAdmin()){ adbS.style.display=''; adbS.onclick=function(){var _bm=document.getElementById('burgerMenuS');if(_bm)_bm.setAttribute('hidden','');openAdminDrawer();}; } }
   var gbS=document.getElementById('guideBtnS'); if(gbS) gbS.onclick=openUserGuide;
+  var tbS=document.getElementById('tourBtnS'); if(tbS) tbS.onclick=openOnboarding;
   var mbS=document.getElementById('methodBtnS'); if(mbS) mbS.onclick=openExpertBrief;
   // market switch → re-render the story for the other market
   document.querySelectorAll('.s2mkt button[data-mkt]').forEach(function(b){ b.onclick=function(){ if(b.dataset.mkt===MKT)return; MKT=b.dataset.mkt; try{pushViewState();}catch(e){} window.scrollTo(0,0); renderSimple(D); }; });
