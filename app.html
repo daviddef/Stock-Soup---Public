@@ -1239,6 +1239,26 @@
   .acctbtn{display:block;width:100%;text-align:left;background:var(--surface-2);border:1px solid var(--line);color:var(--ink);font-weight:700;font-size:14px;padding:12px 14px;border-radius:11px;cursor:pointer;font-family:inherit}
   .acctbtn:hover{border-color:var(--broth)}
   .acctfoot{display:flex;gap:10px;margin-top:18px}
+  /* #322 — admin members & usage analytics */
+  .anagrid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin:2px 0 4px}
+  .anatile{background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:12px 10px;text-align:center}
+  .anaval{font-family:var(--disp,inherit);font-weight:800;font-size:26px;line-height:1;color:var(--ink);font-variant-numeric:tabular-nums}
+  .analbl{font-size:11px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin-top:5px}
+  .anasub{font-size:10.5px;color:var(--faint);margin-top:2px}
+  .anasec{margin-top:16px}
+  .anah{font-size:12px;font-weight:800;letter-spacing:.03em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+  .anabars{display:flex;align-items:flex-end;gap:2px;height:50px;padding:2px 0;border-bottom:1px solid var(--line)}
+  .anabar{flex:1;min-width:2px;background:var(--broth);border-radius:2px 2px 0 0;opacity:.85}
+  .anafoot{font-size:10.5px;color:var(--faint);margin-top:5px;display:flex;justify-content:space-between}
+  .analist{display:flex;flex-direction:column;gap:1px}
+  .anarow{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;padding:8px 2px;border-bottom:1px solid var(--line);font-size:13px}
+  .anarow:last-child{border-bottom:0}
+  .anaem{font-weight:700;color:var(--ink);word-break:break-all}
+  .anawhen{color:var(--muted);font-size:12px}
+  .analast{color:var(--faint);font-size:11.5px;margin-left:auto}
+  .anadim{color:var(--faint);font-style:italic}
+  .anacard{background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:14px}
+  .anapre{background:var(--ground);border:1px solid var(--line);border-radius:9px;padding:10px;font-size:11.5px;overflow-x:auto;white-space:pre;margin:8px 0 0;color:var(--ink)}
   .acctbtn.ghost{flex:1;text-align:center;background:none}
   .acctbtn.danger{flex:1;text-align:center;background:none;color:var(--dont);border-color:rgba(255,77,77,.4)}
   .acctbtn.danger:hover{background:rgba(255,77,77,.08);border-color:var(--dont)}
@@ -6676,6 +6696,7 @@ function openAdminDrawer(){
     '<div class="mtop"><div class="msym" style="font-size:22px">🛠 Admin drawer</div></div></div>'+
     '<div class="mbody"><p class="sec-sub" style="margin-top:0">Everything admin, in one place.</p>'+
     '<div class="admdrawer">'+
+      '<button class="acctbtn" data-adm="analytics">📊 Members &amp; usage — who\'s signed up, how often</button>'+
       '<button class="acctbtn" data-adm="health">💓 Data-source health</button>'+
       '<button class="acctbtn" data-adm="controls">🎛️ Kitchen controls — trigger a run</button>'+
       '<button class="acctbtn" data-adm="docs">📖 Kitchen Manual — methodology &amp; data flow</button>'+
@@ -6683,11 +6704,63 @@ function openAdminDrawer(){
   var ov=document.getElementById('overlay'); ov.classList.add('open'); ov.setAttribute('aria-hidden','false');
   m.querySelectorAll('[data-adm]').forEach(function(b){ b.onclick=function(){
     var k=b.dataset.adm;
-    if(k==='health') openDataHealth();
+    if(k==='analytics') openAdminAnalytics();
+    else if(k==='health') openDataHealth();
     else if(k==='controls') openRunTrigger();
     else if(k==='docs') openDocs();
   };});
   document.getElementById('mClose').onclick=closeModal; document.getElementById('mClose').focus();
+}
+// #322 — admin analytics: registered members, new signups, and how often the site is used.
+// Reads GET /admin/stats (admin-gated in the Worker). Degrades gracefully if the backend
+// endpoint isn't deployed yet (shows the two deploy commands rather than a broken panel).
+function openAdminAnalytics(){
+  if(!isAdmin()) return;
+  var m=document.getElementById('modal'); m.className='modal';
+  m.innerHTML='<div class="mhead"><button class="mclose" id="mClose" aria-label="Close">✕</button><div class="mtf"><span class="adminbadge">ADMIN</span> Members &amp; usage</div>'+
+    '<div class="mtop"><div class="msym" style="font-size:22px">📊 Members &amp; usage</div></div></div>'+
+    '<div class="mbody" id="anaBody"><p class="sec-sub" style="margin-top:0">Loading the numbers…</p></div>';
+  var ov=document.getElementById('overlay'); ov.classList.add('open'); ov.setAttribute('aria-hidden','false');
+  document.getElementById('mClose').onclick=closeModal; document.getElementById('mClose').focus();
+  var body=document.getElementById('anaBody');
+  fetch(API_BASE+'/admin/stats',{headers:apiHdr(),cache:'no-store'})
+    .then(function(r){ if(!r.ok) throw r.status; return r.json(); })
+    .then(function(d){ body.innerHTML=adminAnalyticsHtml(d); })
+    .catch(function(st){
+      if(st===404){ body.innerHTML='<div class="anacard"><b>Usage analytics isn’t live yet.</b><p class="sec-sub" style="margin:8px 0 0">The frontend is ready, but the backend needs the latest Worker + one D1 migration deployed. From <code>~/stock-soup/backend</code>:</p>'+
+        '<pre class="anapre">npx wrangler d1 execute stocksoup --remote \\\n  --command "ALTER TABLE users ADD COLUMN last_seen INTEGER"\nnpx wrangler d1 execute stocksoup --remote --file=./schema.sql\nnpx wrangler deploy</pre>'+
+        '<p class="sec-sub" style="margin:8px 0 0">(The ALTER is harmless if the column already exists.) Numbers start accruing from first deploy — no history before then.</p></div>'; }
+      else if(st===401||st===403){ body.innerHTML='<div class="anacard">Admin sign-in required.</div>'; }
+      else { body.innerHTML='<div class="anacard">Couldn’t load stats ('+esc(String(st))+'). Try again shortly.</div>'; }
+    });
+}
+function adminAnalyticsHtml(d){
+  d=d||{}; var u=d.users||{}, us=d.usage||{}, w=d.watch||{};
+  function ago(sec){ if(!sec) return '—'; var s=Math.floor(Date.now()/1000)-sec; if(s<60)return 'just now'; var mi=Math.floor(s/60); if(mi<60)return mi+'m ago'; var h=Math.floor(mi/60); if(h<24)return h+'h ago'; var dd=Math.floor(h/24); return dd+'d ago'; }
+  function tile(lbl,val,sub){ return '<div class="anatile"><div class="anaval">'+esc(String(val))+'</div><div class="analbl">'+esc(lbl)+'</div>'+(sub?'<div class="anasub">'+esc(sub)+'</div>':'')+'</div>'; }
+  var tiles='<div class="anagrid">'+
+    tile('Members',u.total!=null?u.total:'—','all-time')+
+    tile('New · 7d',u.new7!=null?('+'+u.new7):'—','last week')+
+    tile('Active today',us.dau!=null?us.dau:'—','unique')+
+    tile('Active · 7d',us.wau!=null?us.wau:'—','WAU')+
+    tile('Active · 30d',us.mau!=null?us.mau:'—','MAU')+
+    tile('Opens · 30d',us.hits30!=null?us.hits30:'—','app loads')+
+  '</div>';
+  // 30-day activity sparkbars (daily opens; distinct users on hover title)
+  var daily=us.daily||[], bars='';
+  if(daily.length){ var mx=1; daily.forEach(function(x){ if((x.hits||0)>mx)mx=x.hits; });
+    bars=daily.map(function(x){ var hh=Math.max(3,Math.round((x.hits||0)/mx*46)); return '<div class="anabar" title="'+esc(x.day)+' · '+(x.hits||0)+' opens · '+(x.users||0)+' users" style="height:'+hh+'px"></div>'; }).join('');
+    bars='<div class="anasec"><div class="anah">Daily opens · last 30 days</div><div class="anabars">'+bars+'</div><div class="anafoot">'+esc(daily[0].day)+' → '+esc(daily[daily.length-1].day)+' · '+(us.hitsToday!=null?us.hitsToday+' today':'')+'</div></div>';
+  }
+  // recent signups
+  var rec=u.recent||[], recRows=rec.length? rec.map(function(x){ return '<div class="anarow"><span class="anaem">'+esc(x.email||'—')+'</span><span class="anawhen">joined '+ago(x.created_at)+'</span><span class="analast">'+(x.last_seen?('seen '+ago(x.last_seen)):'never opened')+'</span></div>'; }).join('') : '<div class="anarow anadim">No members yet.</div>';
+  var recSec='<div class="anasec"><div class="anah">Newest members'+(u.total!=null?' · '+u.total+' total':'')+'</div><div class="analist">'+recRows+'</div></div>';
+  // most active
+  var top=us.topActive||[], topRows=top.length? top.map(function(x){ return '<div class="anarow"><span class="anaem">'+esc(x.email||'—')+'</span><span class="anawhen">'+(x.hits||0)+' opens · 30d</span><span class="analast">last '+esc(x.lastday||'—')+'</span></div>'; }).join('') : '<div class="anarow anadim">No usage recorded yet.</div>';
+  var topSec='<div class="anasec"><div class="anah">Most active · last 30 days</div><div class="analist">'+topRows+'</div></div>';
+  var wl='<div class="anasec"><div class="anah">Watchlists</div><div class="anarow"><span>'+(w.items!=null?w.items:'—')+' saved stocks across '+(w.users!=null?w.users:'—')+' member'+((w.users===1)?'':'s')+'</span></div></div>';
+  var note='<p class="sec-sub" style="margin:14px 0 0;opacity:.7">Privacy-minimal: we store only email + a per-day open count. Numbers accrue from the day this shipped — there’s no back-history.</p>';
+  return tiles+bars+recSec+topSec+wl+note;
 }
 function renderAuth(){
   var el=document.getElementById('wlAuth'); if(!el)return;
@@ -7087,6 +7160,7 @@ function boot(D,H){
   applyView();
   if(!DEEPLINK_DONE){ DEEPLINK_DONE=true; setTimeout(applyDeepLink,0); }
   maybeOnboard(); // #325 — first-run onboarding tour (localStorage-gated, once per browser)
+  if(!window._pinged){ window._pinged=1; try{ apiPush('POST','/me/ping'); }catch(e){} } // #322 — usage heartbeat, once per load (no-op if signed out)
 }
 var BIG = {"Day":"⚡ TODAY","Week":"📅 THIS WEEK","Long":"📈 LONG GAME"};
 
