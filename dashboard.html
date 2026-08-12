@@ -6728,8 +6728,8 @@ function openAdminAnalytics(){
     .then(function(d){ body.innerHTML=adminAnalyticsHtml(d); })
     .catch(function(st){
       if(st===404){ body.innerHTML='<div class="anacard"><b>Usage analytics isn’t live yet.</b><p class="sec-sub" style="margin:8px 0 0">The frontend is ready, but the backend needs the latest Worker + one D1 migration deployed. From <code>~/stock-soup/backend</code>:</p>'+
-        '<pre class="anapre">npx wrangler d1 execute stocksoup --remote \\\n  --command "ALTER TABLE users ADD COLUMN last_seen INTEGER"\nnpx wrangler d1 execute stocksoup --remote --file=./schema.sql\nnpx wrangler deploy</pre>'+
-        '<p class="sec-sub" style="margin:8px 0 0">(The ALTER is harmless if the column already exists.) Numbers start accruing from first deploy — no history before then.</p></div>'; }
+        '<pre class="anapre">npx wrangler d1 execute stocksoup --remote --command \\\n  "ALTER TABLE users ADD COLUMN last_seen INTEGER"\nnpx wrangler d1 execute stocksoup --remote --command \\\n  "CREATE TABLE IF NOT EXISTS visits (user_id TEXT NOT NULL, day TEXT NOT NULL, hits INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (user_id, day))"\nnpx wrangler d1 execute stocksoup --remote --command \\\n  "CREATE INDEX IF NOT EXISTS idx_visits_day ON visits(day)"\nnpx wrangler deploy</pre>'+
+        '<p class="sec-sub" style="margin:8px 0 0">(Run the ALTER once — it errors harmlessly if the column already exists; the rest are idempotent.) Numbers start accruing from first deploy — no history before then.</p></div>'; }
       else if(st===401||st===403){ body.innerHTML='<div class="anacard">Admin sign-in required.</div>'; }
       else { body.innerHTML='<div class="anacard">Couldn’t load stats ('+esc(String(st))+'). Try again shortly.</div>'; }
     });
