@@ -816,6 +816,22 @@
   .eqrsvg{width:100%;height:46px;display:block;margin-top:5px}
   .eqrsvg polyline{fill:none;stroke:var(--dont);stroke-width:1.5;stroke-dasharray:3 3;opacity:.5;vector-effect:non-scaling-stroke}
   .eqrcap{margin-top:6px}
+  /* #317 — Shadow Portfolio */
+  .sppanel{margin-top:20px}
+  .spfunds{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:6px 0}
+  @media(max-width:560px){.spfunds{grid-template-columns:1fr}}
+  .spfund{border:1px solid var(--line);border-radius:14px;padding:14px;background:var(--surface)}
+  .spf-h{display:flex;align-items:center;gap:9px;margin-bottom:8px}
+  .spf-ic{font-size:20px;flex:0 0 auto}
+  .spf-name{font-size:14px;font-weight:800;color:var(--ink)}
+  .spf-tag{font-size:11px;color:var(--muted);line-height:1.3}
+  .spf-pnl{font-family:var(--mono);font-weight:900;font-size:26px;letter-spacing:-.01em;line-height:1}
+  .spf-pnl.up{color:var(--buy)} .spf-pnl.down{color:var(--dont)}
+  .spchart{margin:8px 0 2px} .spchart .spark{width:100%;height:34px}
+  .spnochart{margin:10px 0;font-size:11.5px;color:var(--faint);font-weight:700}
+  .spf-stats{display:flex;gap:12px;flex-wrap:wrap;font-size:11.5px;color:var(--muted);margin-top:6px}
+  .spf-stats b{color:var(--ink);font-variant-numeric:tabular-nums}
+  .spf-open{font-size:11px;color:var(--faint);margin-top:7px;line-height:1.4}
   .tfs .tft{font-size:11px;font-weight:800;color:var(--muted)}
   .tfs .tfv{font-size:20px;font-weight:850;font-variant-numeric:tabular-nums;margin-top:2px;line-height:1}
   .tfs .tfn{font-size:10px;color:var(--faint);margin-top:2px}
@@ -1887,6 +1903,32 @@ function equityCurveHtml(graded){
     '<p class="eqcap">A flat $1,000 into each graded Day &amp; Week pick (no compounding), added up over time, vs buying its market index instead — the live product, scored honestly.</p>'+
     repair+
     '</div>';
+}
+// #317 — Shadow Portfolio: two virtual funds that follow our own calls. $1,000 into each pick, held to its
+// timeframe, realised P&L only (same basis as the scorecard). Everything fund = every served pick (real
+// history from the grader); One-move fund = only the nightly headline pick (tracks forward from startedAt).
+function shadowPortfolioHtml(D){
+  var sp=D.shadowPortfolio; if(!sp||(!sp.everything&&!sp.oneMove)) return '';
+  function fund(f,name,tag,ic){
+    if(!f) return '';
+    var up=(f.pnl||0)>=0;
+    var chart=(f.curve&&f.curve.length>1)?('<div class="spchart">'+sparkSVG(f.curve)+'</div>'):'<div class="spnochart">📈 tracking begins now — grows each run</div>';
+    var openList=(f.open&&f.open.length)?(f.open.length+' open · '+f.open.map(function(o){return esc(o.sym);}).slice(0,8).join(', ')):'nothing open yet';
+    return '<div class="spfund">'+
+      '<div class="spf-h"><span class="spf-ic">'+ic+'</span><div class="spf-ht"><div class="spf-name">'+esc(name)+'</div><div class="spf-tag">'+esc(tag)+'</div></div></div>'+
+      '<div class="spf-pnl '+(up?'up':'down')+'">'+fmtMoney(f.pnl||0)+'</div>'+
+      chart+
+      '<div class="spf-stats"><span><b>'+(f.n||0)+'</b> closed</span><span><b>'+(f.n?Math.round((f.winRate||0)*100)+'%':'—')+'</b> win</span><span><b>'+(f.n?((f.avgRet>=0?'+':'')+(f.avgRet*100).toFixed(1)+'%'):'—')+'</b>/trade</span></div>'+
+      '<div class="spf-open">'+openList+'</div></div>';
+  }
+  return '<section class="sppanel"><div class="sec-head"><h2 class="display">🌘 Shadow Portfolio</h2></div>'+
+    '<p class="sec-sub">Two make-believe funds that <b>follow our own calls</b> — so you can see what would’ve happened if you’d acted on them. <b>$1,000 into each pick, held to its timeframe, no real money.</b>'+(sp.startedAt?' The one-move fund tracks forward from '+esc(sp.startedAt)+'.':'')+'</p>'+
+    '<div class="spfunds">'+
+      fund(sp.oneMove,'One-move fund','Buys only the nightly headline pick','🎯')+
+      fund(sp.everything,'Everything fund','Buys every served pick','🍲')+
+    '</div>'+
+    '<p class="eqcap">Realised P&amp;L only (closed positions), same $1,000-per-pick, hold-to-horizon basis as the scorecard. The <b>one-move fund is the more selective bet</b> — it only ever buys the single strongest pick, skipping the weaker slots that drag the everything fund. The question this answers over time: does concentration beat breadth?</p>'+
+    '</section>';
 }
 // Inline mini-trajectory: the price path across our hourly runs, FIRST run → now.
 // Hidden when there's no real movement (e.g. market closed) so it never shows a meaningless 0.0%.
@@ -3640,6 +3682,7 @@ function render(D,H){
       (ocOn?'<p style="font-size:11.5px;color:var(--muted);margin-top:12px;line-height:1.5">One scorecard for <b>all three model tiers</b> — <span class="rltier rltier-1">T1</span> catalyst picks and <span class="rltier rltier-23">T2</span>/<span class="rltier rltier-23">T3</span> whole-market scans — graded the same honest way. We check every pick after <b>its own timeframe</b> — a day-trade the next day, a week pick after a week, a long hold after a month. <span style="color:var(--buy);font-weight:700">Green = it made money.</span> <b>“beat mkt”</b> means it also did better than the whole market. Tap any row for the full story.</p>'
            :'<p style="font-size:11px;color:var(--faint);margin-top:12px">'+esc(sb.closedNote||'')+'</p>')+
       '<button class="trackcta" id="trackCta">See the full month graded → what we learned, what we\'d change</button></div></section>'+
+    shadowPortfolioHtml(D)+
     postmortemHtml(D)+
     missesSection(D)+
   '</div>'+
