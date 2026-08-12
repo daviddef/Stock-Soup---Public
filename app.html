@@ -5303,6 +5303,17 @@ function openCandidate(idx){
   var HEAT={hot:'🔥 sizzling',good:'✅ tasty',mid:'➖ maybe',cold:'⛔ send it back'};
   var vc=(c.heat==='good'||c.heat==='hot')?'v-buy':(c.heat==='cold'?'v-dont':'v-hold');
   var spk=(c.spark&&c.spark.length>2)?sparkSVG(c.spark.slice(-30)):'';
+  // #318 — a Full-Pot candidate that ISN'T also a served pick now renders the SAME top visual block as the
+  // pick overlay (price-range bars + RSI meter), using the technical fields score-pot.py attaches (#126).
+  // Candidates have no hand-set buy-zone/stop/target, so the stop→target ladder + position-sizing stay
+  // pick-only (honestly — a candidate isn't a served call) — but the chart/ranges/RSI now match.
+  var cCur=(c.region==='au'?'A$':'$');
+  var cRanges=''; try{ cRanges=rangeBarsHtml(c,cCur); }catch(e){}
+  var cRsi=(c.rsi!=null)?c.rsi:null;
+  var cRsiBlock = (cRsi!=null) ? '<div class="viz"><h4>How hot is it right now? · RSI</h4>'+
+    '<div class="rsibar"><span class="rcap" style="left:'+clamp(cRsi)+'%">RSI '+esc(cRsi)+'</span><span class="rn" style="left:'+clamp(cRsi)+'%"></span></div>'+
+    '<div class="lends"><span class="g">Cheap</span><span class="r">Overheated</span></div>'+
+    '<div class="rsimeta">'+(cRsi>=70?'🔥 hot — wait for it to cool':cRsi<=35?'🧊 cheap — bargain zone':'😌 comfortable — not stretched')+'</div></div>' : '';
   var m=document.getElementById('modal'); m.className='modal';
   m.innerHTML='<div class="mhead '+vc+'"><button class="mclose" id="mClose" aria-label="Close">✕</button>'+
     mShareBtn('sym/'+c.region+'/'+encodeURIComponent(c.sym),c.sym)+
@@ -5312,6 +5323,8 @@ function openCandidate(idx){
     '<span class="mverd '+vc+'">'+esc(HEAT[c.heat]||c.heat)+'</span></div>'+
     '<div class="mbody">'+
       (spk?'<div class="viz"><h4>Recent trend · last ~6 weeks</h4>'+spk+'</div>':'')+
+      cRanges+
+      cRsiBlock+
       '<div class="mnews">🔎 <span class="lead">How we picked it up:</span> '+esc(c.note||'a signal in tonight\'s scan')+'<div class="mfound">'+(c.foundVia?esc(c.foundVia):'Caught by our wide-net scan — live news, market movers and analyst actions — then priced &amp; scored into the pot.')+'</div></div>'+
       (signalRows(c,c.region).length?'<h4 style="margin-top:16px">🧮 All the signals, in one place</h4>'+signalDetailHtml(c,c.region):'')+
       scoreBarHtml(c.score,c.sym,c.name)+
@@ -5551,7 +5564,13 @@ function openPulseLog(){
 function wireThemes(){ document.querySelectorAll('.clickline[data-theme]').forEach(function(l){ l.onclick=function(){ openTheme(l.dataset.theme,+l.dataset.ti); }; l.onkeydown=function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); openTheme(l.dataset.theme,+l.dataset.ti); } }; });
   document.querySelectorAll('[data-mchip]').forEach(function(c){ c.onclick=function(){ openMarketChip(c.dataset.mchip); }; c.onkeydown=function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); openMarketChip(c.dataset.mchip); } }; });
   document.querySelectorAll('[data-theme-src]').forEach(function(c){ var go=function(){ openTheme(c.dataset.themeSrc,+c.dataset.themeIdx); }; c.onclick=go; c.onkeydown=function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); go(); } }; });
-  document.querySelectorAll('.potcard[data-ci]').forEach(function(p){ p.onclick=function(e){ if(e.target.closest('a'))return; if(e.target.closest('.watchbtn'))return; if(e.target.closest('.juicebtn'))return; if(e.target.closest('.cherrybtn'))return; openCandidate(+p.dataset.ci); }; p.onkeydown=function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); openCandidate(+p.dataset.ci); } }; }); }
+  // #318 — Full Pot cards route through openTicker (via the candidate's sym), NOT openCandidate directly,
+  // so a name that is ALSO a served pick opens the SAME rich pick overlay you'd get from tonight's menu —
+  // not a second, differently-laid-out "candidate" card for the identical ticker (the HGO confusion).
+  document.querySelectorAll('.potcard[data-ci]').forEach(function(p){
+    var open=function(){ var c=((LAST.D||{}).candidates||[])[+p.dataset.ci]; if(c) openTicker(c.sym,c.region); else openCandidate(+p.dataset.ci); };
+    p.onclick=function(e){ if(e.target.closest('a'))return; if(e.target.closest('.watchbtn'))return; if(e.target.closest('.juicebtn'))return; if(e.target.closest('.cherrybtn'))return; open(); };
+    p.onkeydown=function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); open(); } }; }); }
 function wireInfo(){ document.querySelectorAll('[data-info]').forEach(function(b){
   b.onclick=function(e){ e.preventDefault(); openInfo(b.dataset.info); };
   b.onkeydown=function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); openInfo(b.dataset.info); } };
