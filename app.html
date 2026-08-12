@@ -387,6 +387,9 @@
   .wlstat-big{font-size:26px;font-weight:900;margin-top:4px;font-variant-numeric:tabular-nums}
   .wlstat-big.up{color:var(--buy)} .wlstat-big.down{color:var(--dont)}
   .wlstat-sub{font-size:11px;color:var(--faint);margin-top:2px}
+  .wlstat-today{margin-top:7px;font-size:12.5px;font-weight:800;font-variant-numeric:tabular-nums;display:flex;align-items:baseline;gap:6px;flex-wrap:wrap}
+  .wlstat-today.up{color:var(--buy)} .wlstat-today.down{color:var(--dont)}
+  .wlstat-today small{font-size:10px;font-weight:600;color:var(--faint)}
   .wlstat-row{display:flex;justify-content:space-between;align-items:center;margin-top:10px;font-size:12px;font-weight:700}
   .wlstat-wl{display:flex;align-items:baseline;gap:6px;flex-wrap:wrap} .wlstat-wl .up{color:var(--buy)} .wlstat-wl .down{color:var(--dont)}
   .wlstat-wlnote{font-size:10px;font-weight:600;color:var(--faint)}
@@ -5903,7 +5906,7 @@ function wlIntel(w,D){
 // flagged price". Only counts rows with BOTH a real entry and a real current price — no fabricated %s.
 function wlStatBlock(rows,title,icon,emptyMsg){
   var cnt=rows.length?' ('+rows.length+')':'';   // #207 — fold the count into the card title
-  var usable=rows.filter(function(r){return r.gap!=null;});
+  var usable=rows.filter(function(r){return r.gap!=null&&isFinite(r.gap);});
   if(!usable.length) return '<div class="wlstat-card"><div class="wlstat-h">'+icon+' '+esc(title)+cnt+'</div><div class="wlstat-empty">'+esc(emptyMsg)+'</div></div>';
   var sum=0; usable.forEach(function(r){sum+=r.gap;});
   var avg=sum/usable.length;
@@ -5924,6 +5927,12 @@ function wlStatBlock(rows,title,icon,emptyMsg){
   // #250 (user ask) — spell out W/L as Wins/Losses, and turn Best/Worst into tappable chips that state the
   // period ("since added <date>") and open the full per-ticker detail (entry, current, the story) on tap.
   var winTxt=wins+' '+(wins===1?'win':'wins'), lossTxt=losses+' '+(losses===1?'loss':'losses');
+  // "since last market open" — today's move (vs prior close; we don't capture the exact session open price).
+  // A SECOND lens alongside "since flagged": how these names moved in the latest session, not just since we
+  // first flagged them. Averaged only across rows that actually carry a live daily change. #319.
+  var withChg=rows.filter(function(r){return typeof r.change==='number'&&isFinite(r.change);});
+  var todayAvg=withChg.length?withChg.reduce(function(s,r){return s+r.change;},0)/withChg.length:null;
+  var todayHtml=(todayAvg!=null)?'<div class="wlstat-today '+(todayAvg>=0?'up':'down')+'">'+(todayAvg>=0?'▲ +':'▼ ')+todayAvg.toFixed(1)+'% since last market open <small>today’s move, across '+withChg.length+' priced name'+(withChg.length===1?'':'s')+'</small></div>':'';
   function bwChip(r,ic,lbl){
     var d=r.w.addedAt?(' '+new Date(r.w.addedAt).toLocaleDateString('en-AU',{day:'numeric',month:'short'})):'';
     return '<button class="wlstat-chip" data-wl-sym="'+esc(r.w.sym)+'" data-wl-region="'+esc(r.w.region||'au')+'" title="Tap for '+esc(r.w.sym)+'’s full detail — buy price, now, and the story">'+
@@ -5957,7 +5966,11 @@ function renderWatchlist(){
     var it=wlIntel(w,D);
     var entry=(w.entry!=null?w.entry:(info&&info.entry!=null?info.entry:(it.entry!=null?it.entry:null)));
     var price=info?info.price:null, cur=info?info.cur:(it.cur||(w.region==='au'?'A$':'$'));
-    var gap=(entry&&price)?(price/entry-1)*100:null;
+    // entry/price can be captured as strings ("A$40.90") — coerce via numLevel so a string doesn't
+    // make (price/entry) NaN, which would slip past a truthiness check and poison the avg (best/worst
+    // dodge it since NaN comparisons are always false, so only the mean showed "NaN%"). #318.
+    var _eN=numLevel(entry), _pN=numLevel(price);
+    var gap=(isFinite(_eN)&&_eN>0&&isFinite(_pN))?(_pN/_eN-1)*100:null;
     return {w:w,price:price,cur:cur,up:info?info.up:null,change:info?info.change:null,entry:entry,gap:gap,intel:it,
       name:(info&&info.name)||w.name||null, spark:(info&&info.spark)||null};
   });
