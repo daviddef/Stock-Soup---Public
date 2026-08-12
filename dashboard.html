@@ -6304,7 +6304,27 @@ function wire(D){
   tabs.forEach(function(t){t.addEventListener('click',function(){ setMkt(t.dataset.region); });});
   bindTierPills();   // #152 tier pills now live in the header (tierBarHtml), same as the market filter
   function regionOf(id){var a=(D.regions||[]).filter(function(x){return x.id===id;});return a[0];}
-  function openFromEl(el){var rg=regionOf(el.dataset.region);if(!rg)return;var p=tierPicks(rg)[+el.dataset.idx];if(p)openModal(p,rg.id,rg.cur||'$');}
+  function openFromEl(el){
+    var rg=regionOf(el.dataset.region);if(!rg)return;var p=tierPicks(rg)[+el.dataset.idx];if(!p)return;
+    // fail-open: if building the full pick modal throws (e.g. a pick authored with range-STRING levels like
+    // "A$42.20–43.30" that break the ladder math), a tap used to do NOTHING (user-caught 12 Aug). Now a throw
+    // still opens a core read — sym/price/verdict/plain/score — instead of a dead click.
+    try{ openModal(p,rg.id,rg.cur||'$'); }
+    catch(err){
+      try{ if(window.console&&console.error) console.error('openModal threw, showing core view:',err); }catch(_){}
+      var m=document.getElementById('modal'); if(!m) return; m.className='modal';
+      m.innerHTML='<div class="mhead '+esc(p.vclass||'')+'"><button class="mclose" id="mClose" aria-label="Close">✕</button>'+
+        '<div class="mtf">'+tfBW(p.tf)+' · '+(rg.id==='au'?'🇦🇺 ASX':'🇺🇸 US')+'</div>'+
+        '<div class="mtop"><div><div class="msym">'+esc(p.sym)+'</div><div class="mco">'+esc(p.name||'')+'</div></div>'+
+          '<div class="mpx"><div class="mp mono">'+esc(p.price||'')+'</div><div class="mono '+chgTone(p.change,p.up)+'" style="font-weight:700;font-size:13px">'+esc(p.change||'')+'</div></div></div>'+
+        (p.verdict?'<div class="mverd '+esc(p.vclass||'')+'">'+esc(p.verdict)+'</div>':'')+'</div>'+
+        '<div class="mbody">'+(p.plain?'<p class="plain">'+esc(p.plain)+'</p>':'')+
+          (p.chefTake?'<p class="mtake"><span class="lead">Chef says:</span> '+esc(p.chefTake)+'</p>':'')+
+          (scoreBarHtml(p.score,p.sym,p.name)||'')+'</div>';
+      var ov=document.getElementById('overlay'); if(ov){ov.classList.add('open');ov.setAttribute('aria-hidden','false');}
+      var mc=document.getElementById('mClose'); if(mc){mc.onclick=closeModal;mc.focus();}
+    }
+  }
   document.querySelectorAll('.axhold').forEach(function(c){
     function go(){ openSym(c.dataset.sym, c.dataset.region); }
     c.addEventListener('click',function(e){if(e.target.closest('a'))return;go();});
