@@ -1047,6 +1047,14 @@
   .nt3-old .nt3age{color:var(--dont)}
   .mfound{font-size:12px;color:var(--muted);margin-top:6px;line-height:1.45}
   .mshort{font-size:13px;line-height:1.5;color:var(--ink)}
+  /* #323 P1 — "the fine print" collapsible: reference material tucked out of the main scroll */
+  .mfine{border-top:1px solid var(--line);margin-top:6px;padding-top:4px}
+  .mfine>summary{list-style:none;cursor:pointer;font-size:12.5px;font-weight:700;color:var(--muted);padding:10px 2px;display:flex;align-items:center;gap:7px}
+  .mfine>summary::-webkit-details-marker{display:none}
+  .mfine>summary::after{content:"▾";margin-left:auto;color:var(--faint);transition:transform .2s}
+  .mfine[open]>summary::after{transform:rotate(180deg)}
+  .mfine>summary:hover{color:var(--broth)}
+  .mfine>*+*{margin-top:12px}
   .potcard:hover{transform:translateY(-2px)}
   .potcard:focus-visible{outline:2px solid var(--broth);outline-offset:2px}
   .potcard .ph{width:9px;height:9px;border-radius:50%;flex:0 0 auto}
@@ -1530,7 +1538,8 @@
   button.mverd .chipi{opacity:.7;margin-left:2px}
   .mbody{padding:20px 22px 24px;display:flex;flex-direction:column;gap:18px}
   .viz{background:var(--surface-2);border:1px solid var(--line);border-radius:14px;padding:16px}
-  .viz h4{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:800;margin-bottom:16px}
+  /* #323 P1 — de-shout every overlay section header at once: sentence-case, not ALL-CAPS. One rule, whole app. */
+  .viz h4{font-size:13px;letter-spacing:0;text-transform:none;color:var(--muted);font-weight:750;margin-bottom:14px}
   .ladder{position:relative;height:8px;border-radius:999px;background:linear-gradient(90deg,rgba(255,77,77,.5),rgba(255,197,61,.4),rgba(35,194,103,.55));margin:26px 0 8px}
   .ladder .mk{position:absolute;top:50%;transform:translate(-50%,-50%)}
   .ladder .now{width:16px;height:16px;border-radius:50%;background:var(--ink);box-shadow:0 0 0 3px var(--surface);z-index:2}
@@ -4255,7 +4264,7 @@ function openModal(p,region,cur){
       sparkHtml+
       rangesHtml+
       '<div class="viz"><h4>Where the price sits · stop → target</h4>'+
-        '<div class="ladder"><span class="cap now" style="left:'+nowPct+'%">Now '+esc(p.price)+'</span>'+
+        '<div class="ladder"><span class="cap now" style="left:'+nowPct+'%">Now</span>'+   /* #323 P1 — price is in the header; drop it here (also fixes the Now/Stop label overlap on low-priced stocks) */
           '<span class="mk ent" style="left:'+entPct+'%"></span><span class="cap" style="left:'+entPct+'%">Buy</span>'+
           '<span class="mk now" style="left:'+nowPct+'%"></span></div>'+
         '<div class="lends"><span class="r">Stop '+money(cur,_nStop)+'</span><span class="g">Target '+money(cur,_nTarget)+'</span></div>'+
@@ -4274,11 +4283,16 @@ function openModal(p,region,cur){
       announcementsHtml(p.announcements)+
       '<p class="mtake"><span class="lead">Chef says:</span> '+esc(p.chefTake)+'</p>'+
       newsLineHtml(p.news, p.news_url, p.news_date)+
-      (p.short!=null?'<div class="mshort">🩳 <span class="lead">Short interest:</span> <b>'+p.short+'%</b>'+(p.short>=8?' — elevated (squeeze fuel)':p.short>=4?' — moderate':' — light')+'</div>':'')+
-      (p.shortDaysToCover!=null?'<div class="mshort">🩳 <span class="lead">Short interest:</span> <b>'+p.shortDaysToCover+' days to cover</b>'+(p.shortDaysToCover>=8?' — elevated (squeeze fuel)':p.shortDaysToCover>=4?' — moderate':' — light')+(p.shortDtcChange!=null?' <span class="'+(p.shortDtcChange<0?'up':'down')+'">('+(p.shortDtcChange>=0?'+':'')+p.shortDtcChange+'% since last cycle)</span>':'')+' <span class="mfoot">— FINRA, real US short-position data</span></div>':'')+
-      '<div><h4 style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:800;margin-bottom:10px">🔎 How we found it · why it\'s on the menu</h4><div class="mfound" style="margin:-2px 0 9px">'+(p.foundVia?esc(p.foundVia):'Surfaced in tonight\'s wide-net scan (news · movers · analyst actions), then scored to the top 6.')+' The signals:</div><ul class="mcat">'+cats+'</ul></div>'+
-      '<div class="mrisk"><b>Watch out:</b> '+esc(p.risk)+'</div>'+
-      altsHtml+
+      // #323 P1 — fold the "fine print" (how we found it · short interest · risks · other options) into ONE
+      // collapsed <details>, so the fold isn't eaten by four secondary panels. The decision, chart, signals,
+      // announcements and news stay open above; the reference material is one tap away.
+      '<details class="mfine"><summary>ⓘ The fine print — how we found it, short interest, risks &amp; other options</summary>'+
+        '<div><h4>🔎 How we found it · why it’s on the menu</h4><div class="mfound" style="margin:-2px 0 9px">'+(p.foundVia?esc(p.foundVia):'Surfaced in tonight\'s wide-net scan (news · movers · analyst actions), then scored to the top 6.')+' The signals:</div><ul class="mcat">'+cats+'</ul></div>'+
+        (p.short!=null?'<div class="mshort">🩳 <span class="lead">Short interest:</span> <b>'+p.short+'%</b>'+(p.short>=8?' — elevated (squeeze fuel)':p.short>=4?' — moderate':' — light')+'</div>':'')+
+        (p.shortDaysToCover!=null?'<div class="mshort">🩳 <span class="lead">Short interest:</span> <b>'+p.shortDaysToCover+' days to cover</b>'+(p.shortDaysToCover>=8?' — elevated (squeeze fuel)':p.shortDaysToCover>=4?' — moderate':' — light')+(p.shortDtcChange!=null?' <span class="'+(p.shortDtcChange<0?'up':'down')+'">('+(p.shortDtcChange>=0?'+':'')+p.shortDtcChange+'% since last cycle)</span>':'')+' <span class="mfoot">— FINRA, real US short-position data</span></div>':'')+
+        '<div class="mrisk"><b>Watch out:</b> '+esc(p.risk)+'</div>'+
+        altsHtml+
+      '</details>'+
       '<div class="mfoot"><button class="mbtn watchbtn" data-sym="'+esc(p.sym)+'" data-region="'+esc(region)+'"'+(p.name?' data-name="'+esc(p.name)+'"':'')+(p.nEntry!=null?' data-entry="'+p.nEntry+'"':'')+' aria-pressed="false">＋ Watch</button>'+
         '<button class="mbtn ownbtn" data-sym="'+esc(p.sym)+'" data-region="'+esc(region)+'"'+(p.name?' data-name="'+esc(p.name)+'"':'')+' aria-pressed="false">📦 I own it</button>'+
         '<a class="mbtn" href="'+yf(p.sym,region)+'" target="_blank" rel="noopener">📈 Yahoo ↗</a>'+
