@@ -2257,7 +2257,7 @@ function upcomingHtml(D){
     // #217 — the passive "★ we track this" label became the standard actionable "+" watch toggle (per #115),
     // so tracking can be turned on/off right on the row. It's static page content, so the global
     // .watchbtn[data-sym] pass in wire() binds it and syncWatchButtons() reflects the ✓/+ state — no local wiring.
-    var wb=r.sym?'<button class="watchbtn iconwatch upwatch" data-sym="'+esc(r.sym)+'" data-region="'+esc(r.region||MKT)+'" aria-pressed="false" title="Add to watchlist" onclick="event.stopPropagation()">+</button>':'';
+    var wb=r.sym?'<button class="watchbtn iconwatch upwatch" data-sym="'+esc(r.sym)+'" data-region="'+esc(r.region||MKT)+'" aria-pressed="false" title="Add to watchlist" onclick="event.stopPropagation()">☆</button>':'';
     return '<div class="uprow3'+(tracked?' uptracked':'')+(tappable?' uptappable':'')+'"'+
       (tappable?' role="button" tabindex="0" data-up-sym="'+esc(r.sym)+'" data-up-region="'+esc(r.region||MKT)+'"':'')+'>'+
       '<span class="up3when"><span class="up3ic">'+r.ic+'</span>'+when+'</span>'+
@@ -2338,7 +2338,7 @@ function topMoversHtml(D){
       // row 1: ticker + change% + watch(+). The two score chips (dualChip) go on their OWN row below —
       // on a half-width mover card all four in one row overflowed the right edge (user-caught, #277).
       '<div class="movertop"><span class="upsym">'+esc(m.sym)+'</span><span class="'+(m.change_pct>=0?'up':'down')+' mvchg" style="font-weight:800;font-size:12.5px">'+(m.change_pct>=0?'▲':'▼')+' '+Math.abs(m.change_pct)+'%</span>'+
-      '<button class="watchbtn iconwatch" data-sym="'+esc(m.sym)+'" data-region="'+esc(MKT)+'" style="width:19px;height:19px;font-size:13px" aria-pressed="false" title="Add to watchlist">+</button></div>'+
+      '<button class="watchbtn iconwatch" data-sym="'+esc(m.sym)+'" data-region="'+esc(MKT)+'" style="width:19px;height:19px;font-size:13px" aria-pressed="false" title="Add to watchlist">☆</button></div>'+
       (chip?'<div class="mvchips">'+chip+'</div>':'')+
       '<div class="upwhen">'+esc(cur)+esc(m.price)+(m.volume?' · vol '+esc(m.volume):'')+'</div>'+
       missChartSlot(m.sym,MKT,cur)+
@@ -3304,7 +3304,7 @@ function actionsHtml(D){
     var isPick=false; (D.regions||[]).forEach(function(rg){ if(rg.id!==region)return; (rg.picks||[]).forEach(function(p){ if(p.sym===sym&&p.sym!=='NONE')isPick=true; }); });
     var iso=isPick?pickServedISO(sym,region):null;
     var chart='<div class="axspark">'+servedChartSlot(sym,region,cur,iso)+'</div>';
-    var wb='<button class="watchbtn iconwatch axwatch" data-sym="'+esc(sym)+'" data-region="'+esc(region)+'"'+((o&&o.name)?' data-name="'+esc(o.name)+'"':'')+' aria-pressed="false" title="Add to watchlist">+</button>';
+    var wb='<button class="watchbtn iconwatch axwatch" data-sym="'+esc(sym)+'" data-region="'+esc(region)+'"'+((o&&o.name)?' data-name="'+esc(o.name)+'"':'')+' aria-pressed="false" title="Add to watchlist">☆</button>';
     return {price:price, chart:chart, wb:wb};
   }
   // #181 (user: "don't group — too much real estate; the verb pill already names the type; sort by
@@ -3500,7 +3500,7 @@ function render(D,H){
              instead of only appearing lower by the score bar. Same chip/behaviour: tap → the full breakdown
              (juice modal) when we have the detail, else a plain 🍊 score badge. */
           dualChip(p.score,p.sym,p.name,signalRows(p,rg.id))+
-          '<button class="watchbtn iconwatch" data-sym="'+esc(p.sym)+'" data-region="'+esc(rg.id)+'" data-name="'+esc(p.name)+'"'+(p.nEntry!=null?' data-entry="'+p.nEntry+'"':'')+' aria-pressed="false" title="Add to watchlist">+</button><span class="verdict '+esc(p.vclass)+'">'+esc(p.verdict)+'</span></span></div>'+
+          '<button class="watchbtn iconwatch" data-sym="'+esc(p.sym)+'" data-region="'+esc(rg.id)+'" data-name="'+esc(p.name)+'"'+(p.nEntry!=null?' data-entry="'+p.nEntry+'"':'')+' aria-pressed="false" title="Add to watchlist">☆</button><span class="verdict '+esc(p.vclass)+'">'+esc(p.verdict)+'</span></span></div>'+
         replNote+
         '<div class="tick"><span class="symwrap"><span class="sym">'+qlink(p.sym,rg.id)+'</span><span class="co">'+qlink(p.sym,rg.id,p.name)+' ↗</span></span>'+
         '<span class="px"><span class="p mono">'+esc(p.price)+'</span><br><span class="c mono '+chgTone(p.change,p.up)+'">'+esc(p.change)+'</span></span></div>'+
@@ -3642,7 +3642,7 @@ function render(D,H){
     var rankBadge=rank?'<span class="pmc-rank">'+rank+'</span>':'';   // #211 — Stock Pot Top 20 is a numbered leaderboard
     return '<div class="potcard h-'+esc(c.heat)+(rank?' ranked':'')+'" data-ci="'+i+'" data-score="'+_bn+'" data-cherry="'+(_ov||0)+'" role="button" tabindex="0" aria-label="Details for '+esc(c.sym)+'">'+
       '<div class="pmc-top">'+rankBadge+(c.heat==='cold'?'<span class="ph no">⛔</span>':'<span class="ph"></span>')+'<b class="pmc-sym">'+esc(c.sym)+'</b>'+shortChip+'<span class="pmc-flag">'+(c.region==='au'?'AU':'US')+'</span>'+
-        '<button class="watchbtn iconwatch pmc-watch" data-sym="'+esc(c.sym)+'" data-region="'+esc(c.region||'us')+'"'+(c.name?' data-name="'+esc(c.name)+'"':'')+' aria-pressed="false" title="Add to watchlist">+</button></div>'+
+        '<button class="watchbtn iconwatch pmc-watch" data-sym="'+esc(c.sym)+'" data-region="'+esc(c.region||'us')+'"'+(c.name?' data-name="'+esc(c.name)+'"':'')+' aria-pressed="false" title="Add to watchlist">☆</button></div>'+
       (c.name?'<div class="pmc-name">'+esc(c.name)+'</div>':'')+
       '<div class="pmc-px">'+(c.price?'<span class="pmc-price">'+esc(cleanPrice(c.price))+'</span>':'')+chg+'</div>'+
       (spk?'<div class="pmc-spark">'+spk+'</div>':'')+
@@ -4338,7 +4338,7 @@ function openModal(p,region,cur){
   if(isFinite(_nEntry)&&isFinite(_nStop)&&isFinite(_nTarget)&&(_nEntry-_nStop)>0){ var _rr=(_nTarget-_nEntry)/(_nEntry-_nStop); if(_rr>0) _plan.push('<span class="plk">R:R</span> '+_rr.toFixed(1)+':1'); }
   // #323 — a compact "+" watch toggle sits in "the call" row (matching the card face), so you can add a
   // name without scrolling to the footer. Same .watchbtn data attrs → watchToggleFromEl + syncWatchButtons.
-  var _callWatch='<button class="watchbtn iconwatch callwatch" data-sym="'+esc(p.sym)+'" data-region="'+esc(region)+'"'+(p.name?' data-name="'+esc(p.name)+'"':'')+(p.nEntry!=null?' data-entry="'+p.nEntry+'"':'')+' aria-pressed="false" title="Add to watchlist">+</button>';
+  var _callWatch='<button class="watchbtn iconwatch callwatch" data-sym="'+esc(p.sym)+'" data-region="'+esc(region)+'"'+(p.name?' data-name="'+esc(p.name)+'"':'')+(p.nEntry!=null?' data-entry="'+p.nEntry+'"':'')+' aria-pressed="false" title="Add to watchlist">☆</button>';
   var callHtml='<div class="mcall">'+
     '<div class="callchips">'+_callChips+_callWatch+'</div>'+
     (_plan.length?'<div class="callplan">'+_plan.join('<span class="pldot">·</span>')+'</div>':'')+
@@ -4707,7 +4707,7 @@ function wlCard(c){
   var verd=(c.score&&c.score.verdict)?'<span class="wic vd '+(/get in|buy/i.test(c.score.verdict)?'v-buy':/late|wait|skip/i.test(c.score.verdict)?'v-dont':'v-hold')+'">'+esc(c.score.verdict)+'</span>':'';
   return '<div class="wrow wcard wlcard" data-wlsym="'+esc(c.sym)+'" data-wlregion="'+esc(reg)+'" role="button" tabindex="0" aria-label="Details for '+esc(c.sym)+'">'+
     '<div class="wc-head"><a class="wsym" href="'+yf(c.sym,reg)+'" target="_blank" rel="noopener">'+esc(c.sym)+' <span class="wflag">'+(reg==='au'?'AU':'US')+'</span></a>'+
-      '<span class="wc-btns"><button class="watchbtn iconwatch" data-sym="'+esc(c.sym)+'" data-region="'+esc(reg)+'"'+(c.name?' data-name="'+esc(c.name)+'"':'')+' aria-pressed="false" title="Add to watchlist">+</button></span></div>'+
+      '<span class="wc-btns"><button class="watchbtn iconwatch" data-sym="'+esc(c.sym)+'" data-region="'+esc(reg)+'"'+(c.name?' data-name="'+esc(c.name)+'"':'')+' aria-pressed="false" title="Add to watchlist">☆</button></span></div>'+
     (c.name?'<div class="pmc-name">'+esc(c.name)+'</div>':'')+
     '<div class="wc-px">'+(c.price?'<span class="pmc-price">'+esc(cleanPrice(c.price))+'</span>':'')+chg+'</div>'+spk+
     (jc?'<div class="wc-tag">'+jc+'</div>':(verd?'<div class="wc-tag">'+verd+'</div>':''))+'</div>';
@@ -5374,7 +5374,7 @@ function openTheme(src,idx){
     return '<div class="tscard tappable" data-sym="'+esc(sym)+'" data-region="'+esc(reg)+'"'+hy+tap+'>'+
       '<div class="tsc-top"><a class="trsym" href="'+yf(sym,reg)+'" target="_blank" rel="noopener">'+esc(sym)+'</a>'+
         '<span class="pmc-flag">'+(reg==='au'?'AU':'US')+'</span>'+
-        '<button class="watchbtn iconwatch" data-sym="'+esc(sym)+'" data-region="'+esc(reg)+'" style="margin-left:auto" aria-pressed="false" title="Add to watchlist">+</button></div>'+
+        '<button class="watchbtn iconwatch" data-sym="'+esc(sym)+'" data-region="'+esc(reg)+'" style="margin-left:auto" aria-pressed="false" title="Add to watchlist">☆</button></div>'+
       (verd?'<span class="mverd '+esc(vcl)+' tsc-verd">'+esc(verd)+'</span>':'')+
       (chips?'<div class="tsc-chips">'+chips+'</div>':'')+
       pxrow+spk+
@@ -5461,7 +5461,7 @@ function openCandidate(idx){
       _ccChips+='<button class="juicebtn callchip" data-juice-id="'+_ccjid+'" title="Buy-now score — tap for the full breakdown">🍊 '+c.score.buy_now+'</button>'; }
     try{ _ccChips+=cherryChip(c.score,c.sym,c.name,signalRows(c,c.region)); }catch(e){}
   }
-  var _ccWatch='<button class="watchbtn iconwatch callwatch" data-sym="'+esc(c.sym)+'" data-region="'+esc(c.region)+'"'+(c.name?' data-name="'+esc(c.name)+'"':'')+' aria-pressed="false" title="Add to watchlist">+</button>';
+  var _ccWatch='<button class="watchbtn iconwatch callwatch" data-sym="'+esc(c.sym)+'" data-region="'+esc(c.region)+'"'+(c.name?' data-name="'+esc(c.name)+'"':'')+' aria-pressed="false" title="Add to watchlist">☆</button>';
   var ccallHtml='<div class="mcall"><div class="callchips">'+_ccChips+_ccWatch+'</div></div>';
   var m=document.getElementById('modal'); m.className='modal';
   m.innerHTML='<div class="mhead '+vc+'"><button class="mclose" id="mClose" aria-label="Close">✕</button>'+
@@ -6312,7 +6312,10 @@ function syncWatchButtons(){
   document.querySelectorAll('.watchbtn[data-sym]').forEach(function(b){
     var on=wlHas(b.dataset.sym,b.dataset.region);
     b.classList.toggle('on',on);
-    b.innerHTML = b.classList.contains('iconwatch') ? (on?'✓':'+') : (on?'✓ Watching':'＋ Watch');
+    // #326 (user ask) — the compact watch toggle was a "+"/"✓" in an orange circle, which read like an
+    // empty orange SCORE chip sitting next to the 🍊/🍒 chips. Switch to the universal star metaphor
+    // (☆ add · ★ watching) so it unmistakably means "save to my list", not a score. Text button stays "＋ Watch".
+    b.innerHTML = b.classList.contains('iconwatch') ? (on?'★':'☆') : (on?'✓ Watching':'＋ Watch');
     b.setAttribute('aria-pressed',on?'true':'false');
     b.title = on?'Watching — tap to remove':'Add to watchlist';
   });
@@ -7010,7 +7013,7 @@ function villagerCard(p,rid,idx){
     return '<article class="vcard vcard-zzz" tabindex="0" role="button" data-region="'+rid+'" data-idx="'+idx+'" aria-label="No pick this run"><div class="vmasc">😴</div><div class="vsticker '+s.cls+'">'+s.emoji+' '+s.word+'</div><div class="vline">'+esc(line)+'</div></article>';
   }
   return '<article class="vcard" tabindex="0" role="button" data-region="'+rid+'" data-idx="'+idx+'" aria-label="Details for '+esc(p.sym)+'">'+
-    '<button class="watchbtn iconwatch vwatch" data-sym="'+esc(p.sym)+'" data-region="'+esc(rid)+'" data-name="'+esc(p.name)+'"'+(p.nEntry!=null?' data-entry="'+p.nEntry+'"':'')+' aria-pressed="false" title="Keep an eye on it">+</button>'+
+    '<button class="watchbtn iconwatch vwatch" data-sym="'+esc(p.sym)+'" data-region="'+esc(rid)+'" data-name="'+esc(p.name)+'"'+(p.nEntry!=null?' data-entry="'+p.nEntry+'"':'')+' aria-pressed="false" title="Keep an eye on it">☆</button>'+
     '<div class="vmasc">'+villagerMascot(p.sym)+'</div>'+
     '<div class="vsym">'+esc(p.sym)+'</div>'+
     (p.name?'<div class="vname">'+esc(p.name)+'</div>':'')+
