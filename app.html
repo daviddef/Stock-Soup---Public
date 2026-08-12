@@ -77,6 +77,10 @@
   .chefwrap:not(.open) .chef{max-height:7.4em;overflow:hidden;-webkit-mask-image:linear-gradient(180deg,#000 60%,transparent);mask-image:linear-gradient(180deg,#000 60%,transparent)}
   .chefmore{margin-top:2px;background:none;border:0;color:var(--broth);font-weight:800;font-size:13px;cursor:pointer;padding:3px 0;letter-spacing:.01em}
   .chefmore:hover{text-decoration:underline}
+  /* expanded note uses the FULL width (user ask) — drop the 60ch measure once open; on wide screens
+     flow it into two columns so the right half is used and each line still reads at a sane length. */
+  .chefwrap.open .chef{max-width:none}
+  @media(min-width:820px){ .chefwrap.open .chef{columns:2;column-gap:46px} .chefwrap.open .chef p{break-inside:avoid} }
   .metastrip{display:flex;flex-wrap:wrap;gap:8px;margin-top:20px}
   .chip{font-size:12px;font-weight:700;padding:6px 11px;border-radius:999px;border:1px solid var(--line);
     background:var(--surface-2);display:inline-flex;align-items:center;gap:6px;white-space:nowrap;color:var(--ink)}
