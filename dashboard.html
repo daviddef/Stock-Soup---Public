@@ -2825,10 +2825,14 @@ function signalSummary(rows){
   return {verdict:'mixed',icon:'😐',label:label,coverage:cover};
 }
 function sigRowHtml(r){
+  // #323 — the outer .sigrow was left UNCLOSED (no </div>) while every caller ALSO wrapped it in another
+  // <div class="sigrow">…</div>. Net: one stray open <div> per row, so each signal nested inside the
+  // previous → the cascade of ever-indenting, ever-narrower rows. Now self-contained (opens AND closes),
+  // and the redundant caller wrappers are removed below, so each row is exactly one flat .sigrow sibling.
   return '<div class="sigrow"><div class="sigrow-top"><span class="sigicon">'+r.icon+'</span><b>'+esc(r.label)+'</b>'+
     '<span class="sigread '+(r.tone==='pos'?'up':r.tone==='neg'?'down':'')+'">'+esc(r.read)+'</span></div>'+
     (r.diagram||'')+
-    '<div class="sigexplain">'+esc(r.explain)+'</div>';
+    '<div class="sigexplain">'+esc(r.explain)+'</div></div>';
 }
 function sigRowsHtml(rows,opts){
   if(!rows.length) return '<p class="muted" style="font-size:12.5px;margin:4px 0">No technical signals available for this name — it wasn\'t in tonight\'s scored candidates.</p>';
@@ -2840,14 +2844,14 @@ function sigRowsHtml(rows,opts){
   // the rest inside a native <details> "show all N" disclosure. opts.all renders everything ungated —
   // used by the dedicated tap-through breakdown modal, where the whole point is the full list.
   if(opts.all || rows.length<=PRIMARY){
-    return '<div class="sigdetail">'+rows.map(function(r){return '<div class="sigrow">'+sigRowHtml(r)+'</div>';}).join('')+'</div>';
+    return '<div class="sigdetail">'+rows.map(function(r){return sigRowHtml(r);}).join('')+'</div>';
   }
   var ranked=rows.map(function(r,i){return {r:r,i:i,pri:(r.tone==='pos'||r.tone==='neg')?0:1};})
     .sort(function(a,b){return (a.pri-b.pri)||(a.i-b.i);}).map(function(x){return x.r;});
   return '<div class="sigdetail">'+
-    ranked.slice(0,PRIMARY).map(function(r){return '<div class="sigrow">'+sigRowHtml(r)+'</div>';}).join('')+
+    ranked.slice(0,PRIMARY).map(function(r){return sigRowHtml(r);}).join('')+
     '<details class="sigmore"><summary>Show all '+rows.length+' signals</summary>'+
-      ranked.slice(PRIMARY).map(function(r){return '<div class="sigrow">'+sigRowHtml(r)+'</div>';}).join('')+
+      ranked.slice(PRIMARY).map(function(r){return sigRowHtml(r);}).join('')+
     '</details></div>';
 }
 // Any signal pill, anywhere it's rendered (compact card, Simple view, Misses, candidate modal),
@@ -4225,6 +4229,9 @@ function openModal(p,region,cur){
   var span=(_nTarget-_nStop)||1;
   var nowPct=clamp((_nNow-_nStop)/span*100);
   var entPct=clamp((_nEntry-_nStop)/span*100);
+  // #323 — when the price is basically at the buy zone the two ladder labels ("Now" / "Buy") stack on top
+  // of each other ("NowBuy"). If they're within ~6% of the track, merge into one "Now · Buy" cap.
+  var _combineCap=Math.abs(nowPct-entPct)<6;
   var rsi=p.rsi!=null?p.rsi:50;
   var rsiWord=rsi>=70?"🔥 hot — wait for it to cool":rsi<=35?"🧊 cheap — bargain zone":"😌 comfortable — not stretched";
   var cats=(p.catalysts||[]).map(function(c){return '<li>'+esc(c)+'</li>';}).join('');
@@ -4267,7 +4274,9 @@ function openModal(p,region,cur){
   // insight is lost, it's just not shown four ways at once.
   var _callChips='';
   if(p.score){
-    if(p.score.detail){ var _cjid=++JUICE_SEQ; JUICE_CACHE[_cjid]={score:p.score,sym:p.sym,name:p.name,sigRows:[]};
+    // #323 — show the 🍊 whenever there's a score (was gated on score.detail, which hand-built PICKS often
+    // lack, so picks showed only 🍒). openJuice fail-opens (#266) if the detailed weight breakdown is thin.
+    if(p.score.buy_now!=null){ var _cjid=++JUICE_SEQ; JUICE_CACHE[_cjid]={score:p.score,sym:p.sym,name:p.name,sigRows:signalRows(p,region)};
       _callChips+='<button class="juicebtn callchip" data-juice-id="'+_cjid+'" title="Buy-now score — tap for the full breakdown">🍊 '+p.score.buy_now+'</button>'; }
     try{ _callChips+=cherryChip(p.score,p.sym,p.name,signalRows(p,region)); }catch(e){}
   }
@@ -4295,8 +4304,10 @@ function openModal(p,region,cur){
       sparkHtml+
       rangesHtml+
       '<div class="viz"><h4>Where the price sits · stop → target</h4>'+
-        '<div class="ladder"><span class="cap now" style="left:'+nowPct+'%">Now</span>'+   /* #323 P1 — price is in the header; drop it here (also fixes the Now/Stop label overlap on low-priced stocks) */
-          '<span class="mk ent" style="left:'+entPct+'%"></span><span class="cap" style="left:'+entPct+'%">Buy</span>'+
+        '<div class="ladder">'+
+          '<span class="cap now" style="left:'+nowPct+'%">Now'+(_combineCap?' · Buy':'')+'</span>'+   /* #323 — merge Now/Buy when they overlap; price lives in the header */
+          '<span class="mk ent" style="left:'+entPct+'%"></span>'+
+          (_combineCap?'':'<span class="cap" style="left:'+entPct+'%">Buy</span>')+
           '<span class="mk now" style="left:'+nowPct+'%"></span></div>'+
         '<div class="lends"><span class="r">Stop '+money(cur,_nStop)+'</span><span class="g">Target '+money(cur,_nTarget)+'</span></div>'+
         posSizeHtml(p,cur)+
@@ -5394,7 +5405,7 @@ function openCandidate(idx){
   // lean layout — the detail still opens from these chips.
   var _ccChips='';
   if(c.score){
-    if(c.score.detail){ var _ccjid=++JUICE_SEQ; JUICE_CACHE[_ccjid]={score:c.score,sym:c.sym,name:c.name,sigRows:[]};
+    if(c.score.buy_now!=null){ var _ccjid=++JUICE_SEQ; JUICE_CACHE[_ccjid]={score:c.score,sym:c.sym,name:c.name,sigRows:signalRows(c,c.region)};
       _ccChips+='<button class="juicebtn callchip" data-juice-id="'+_ccjid+'" title="Buy-now score — tap for the full breakdown">🍊 '+c.score.buy_now+'</button>'; }
     try{ _ccChips+=cherryChip(c.score,c.sym,c.name,signalRows(c,c.region)); }catch(e){}
   }
