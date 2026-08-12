@@ -989,7 +989,8 @@
   .annchip{flex:0 0 auto}   /* #news-ticker — 🍊 score chip beside a news headline that names a ticker */
   .annspark{margin:7px 0 2px} .annspark .spark{height:28px;width:100%;display:block}
   .annwhy{font-size:12px;color:var(--muted);margin-top:3px;line-height:1.4}
-  .anndr{font-size:10.5px;font-weight:800;color:var(--hold);margin-top:4px;cursor:help}
+  .anndr{display:inline-block;font-size:11px;font-weight:800;color:var(--broth);margin-top:6px;cursor:pointer;text-decoration:none}
+  .anndr:hover{text-decoration:underline}
   .tag{font-size:11px;font-weight:900;padding:4px 9px;border-radius:7px;text-transform:uppercase;letter-spacing:.03em;white-space:nowrap}
   .t-buy{background:rgba(35,194,103,.16);color:var(--buy)}
   .t-dont{background:rgba(255,77,77,.16);color:var(--dont)}
@@ -3928,7 +3929,10 @@ function announcementsHtml(items){
     // #111 — admin-only hint: this filing fell through to the generic neutral read and is genuinely
     // price-sensitive, so a real WebSearch deep-read (signals_asx.py's deep_read_query()) usually finds
     // actual figures — visible only to the person who can act on it, never shown to regular users.
-    var dr=(isAdmin()&&a.deepReadQuery)?'<div class="anndr" title="'+esc(a.deepReadQuery)+'">🔍 Needs deep-read — generic classification</div>':'';
+    // #324 — the deep-read flag was an admin-only to-do marker. Make it a PUBLIC, tappable link that runs
+    // the ready-made query against the news, so any user can go a level deeper on a price-sensitive filing
+    // right now (the headline feed has no body text — this is the "read the real coverage" escape hatch).
+    var dr=a.deepReadQuery?'<a class="anndr" href="https://news.google.com/search?q='+encodeURIComponent(a.deepReadQuery)+'" target="_blank" rel="noopener" title="Search the news coverage for the real figures">🔎 Read the coverage ↗</a>':'';
     return '<div class="annrow '+t.cls+'"><div class="anntop"><span class="annic">'+t.ic+'</span>'+head+(a.date?'<span class="anndate">'+esc(String(a.date).slice(0,10))+'</span>':'')+'</div>'+
       '<div class="annwhy">'+esc(why)+'</div>'+dr+'</div>';
   }).join('');
