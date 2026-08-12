@@ -113,11 +113,16 @@
 <script>
   var API_BASE='https://stocksoup-api.defranceski.workers.dev';
   var SKEY='soup_session', EKEY='soup_email', APP='dashboard.html';
+  // Cache-buster: GitHub Pages serves the app HTML with a 10-min cache, so a repeat visitor could keep
+  // getting a stale build for up to 10 minutes after a deploy. Appending a per-minute version to the app
+  // URL means the browser treats each minute's load as a fresh resource → new deploys show within ~1 min,
+  // while still caching within any given minute (no re-download of the ~650KB on every navigation).
+  function appUrl(){ return APP+'?v='+Math.floor(Date.now()/60000); }
   function sess(){try{return localStorage.getItem(SKEY)||'';}catch(e){return'';}}
   (function(){
     var m=(location.hash||'').match(/session=([^&]+)/);
-    if(m){ try{localStorage.setItem(SKEY,decodeURIComponent(m[1]));}catch(e){} location.replace(APP); return; }
-    if(sess()){ location.replace(APP); }
+    if(m){ try{localStorage.setItem(SKEY,decodeURIComponent(m[1]));}catch(e){} location.replace(appUrl()); return; }
+    if(sess()){ location.replace(appUrl()); }
   })();
   var f=document.getElementById('f'), msg=document.getElementById('msg'), go=document.getElementById('go');
   f.addEventListener('submit',function(e){
