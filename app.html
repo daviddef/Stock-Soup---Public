@@ -312,6 +312,13 @@
   .sc-lim{background:var(--surface-2);color:var(--faint);font-style:italic}
   .sigsum{font-size:11.5px;padding:5px 10px}
   .sigdetail{display:flex;flex-direction:column;gap:1px;border:1px solid var(--line);border-radius:12px;overflow:hidden;margin-top:8px}
+  /* #297 — "show all N signals" native disclosure. Its own rows keep the 1px gap look via flex column. */
+  .sigmore{display:flex;flex-direction:column;gap:1px}
+  .sigmore>summary{padding:10px 14px;background:var(--surface-2,var(--surface));color:var(--broth);font-weight:800;font-size:12.5px;cursor:pointer;list-style:none;user-select:none}
+  .sigmore>summary::-webkit-details-marker{display:none}
+  .sigmore>summary::after{content:" ▾";font-size:11px}
+  .sigmore[open]>summary::after{content:" ▴"}
+  .sigmore>summary:hover{text-decoration:underline}
   .sigrow{padding:10px 14px;background:var(--surface)}
   .sigrow-top{display:flex;align-items:center;gap:7px;font-size:13px}
   .sigicon{font-size:13px}
@@ -2611,14 +2618,31 @@ function signalSummary(rows){
   if(neg-pos>=2&&neg>=2) return {verdict:'weak',icon:'⚠️',label:label,coverage:cover};
   return {verdict:'mixed',icon:'😐',label:label,coverage:cover};
 }
-function sigRowsHtml(rows){
+function sigRowHtml(r){
+  return '<div class="sigrow"><div class="sigrow-top"><span class="sigicon">'+r.icon+'</span><b>'+esc(r.label)+'</b>'+
+    '<span class="sigread '+(r.tone==='pos'?'up':r.tone==='neg'?'down':'')+'">'+esc(r.read)+'</span></div>'+
+    (r.diagram||'')+
+    '<div class="sigexplain">'+esc(r.explain)+'</div>';
+}
+function sigRowsHtml(rows,opts){
   if(!rows.length) return '<p class="muted" style="font-size:12.5px;margin:4px 0">No technical signals available for this name — it wasn\'t in tonight\'s scored candidates.</p>';
-  return '<div class="sigdetail">'+rows.map(function(r){
-    return '<div class="sigrow"><div class="sigrow-top"><span class="sigicon">'+r.icon+'</span><b>'+esc(r.label)+'</b>'+
-      '<span class="sigread '+(r.tone==='pos'?'up':r.tone==='neg'?'down':'')+'">'+esc(r.read)+'</span></div>'+
-      (r.diagram||'')+
-      '<div class="sigexplain">'+esc(r.explain)+'</div></div>';
-  }).join('')+'</div>';
+  opts=opts||{};
+  var PRIMARY=5;
+  // #297 (12 Aug 2026) — progressive disclosure. A stock card can carry ~21 signal rows; rendering them
+  // all at once was the single biggest cognitive-load sink in the app. Lead with the signals that
+  // actually MOVE the read (scored pos/neg first, original order preserved within each group) and tuck
+  // the rest inside a native <details> "show all N" disclosure. opts.all renders everything ungated —
+  // used by the dedicated tap-through breakdown modal, where the whole point is the full list.
+  if(opts.all || rows.length<=PRIMARY){
+    return '<div class="sigdetail">'+rows.map(function(r){return '<div class="sigrow">'+sigRowHtml(r)+'</div>';}).join('')+'</div>';
+  }
+  var ranked=rows.map(function(r,i){return {r:r,i:i,pri:(r.tone==='pos'||r.tone==='neg')?0:1};})
+    .sort(function(a,b){return (a.pri-b.pri)||(a.i-b.i);}).map(function(x){return x.r;});
+  return '<div class="sigdetail">'+
+    ranked.slice(0,PRIMARY).map(function(r){return '<div class="sigrow">'+sigRowHtml(r)+'</div>';}).join('')+
+    '<details class="sigmore"><summary>Show all '+rows.length+' signals</summary>'+
+      ranked.slice(PRIMARY).map(function(r){return '<div class="sigrow">'+sigRowHtml(r)+'</div>';}).join('')+
+    '</details></div>';
 }
 // Any signal pill, anywhere it's rendered (compact card, Simple view, Misses, candidate modal),
 // is tappable and opens the SAME breakdown — one cache keyed by a sequence id so every render
@@ -2745,7 +2769,7 @@ function openSignalBreakdown(key){
   var m=document.getElementById('modal'); m.className='modal';
   m.innerHTML='<div class="mhead"><button class="mclose" id="mClose" aria-label="Close">✕</button><div class="mtf">🧮 Signal breakdown</div>'+
     '<div class="mtop"><div class="msym" style="font-size:19px;line-height:1.2">'+esc(c.title)+'</div></div></div>'+
-    '<div class="mbody">'+sigRowsHtml(c.rows)+'</div>';
+    '<div class="mbody">'+sigRowsHtml(c.rows,{all:true})+'</div>';
   var ov=document.getElementById('overlay'); ov.classList.add('open'); ov.setAttribute('aria-hidden','false');
   document.getElementById('mClose').onclick=closeModal; document.getElementById('mClose').focus();
 }
