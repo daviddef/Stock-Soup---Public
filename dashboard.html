@@ -763,6 +763,23 @@
   .jg-win{color:var(--buy)} .jg-loss{color:var(--dont)} .jg-pend{color:var(--faint);font-weight:700}
   .tfscore{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0 4px}
   .tfs{background:var(--surface-2);border:1px solid var(--line);border-radius:11px;padding:9px 6px;text-align:center}
+  /* #309 — track-record equity curve */
+  .eqcurve{margin:14px 0 6px;padding:14px;border:1px solid var(--line);border-radius:14px;background:var(--surface)}
+  .eqhead{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:8px}
+  .eqhead h4{margin:0;font-size:14px}
+  .eqn{font-size:11.5px;color:var(--muted);font-weight:700;white-space:nowrap}
+  .eqsvg{width:100%;height:130px;display:block}
+  .eqzero{stroke:var(--line);stroke-width:1;stroke-dasharray:3 3}
+  .eqidx{fill:none;stroke:var(--faint);stroke-width:1.5;opacity:.7;vector-effect:non-scaling-stroke}
+  .eqours{fill:none;stroke-width:2.5;vector-effect:non-scaling-stroke}
+  .eqours.up{stroke:var(--buy)} .eqours.down{stroke:var(--dont)}
+  .eqdot.up{fill:var(--buy)} .eqdot.down{fill:var(--dont)} .eqdoti{fill:var(--faint)}
+  .eqlegend{display:flex;flex-wrap:wrap;gap:16px;margin-top:10px;font-size:12.5px;font-weight:700}
+  .eql i{display:inline-block;width:13px;height:3px;border-radius:2px;vertical-align:middle;margin-right:6px}
+  .eqlours.up i{background:var(--buy)} .eqlours.down i{background:var(--dont)} .eqlidx i{background:var(--faint)}
+  .eqedge{margin-top:9px;font-size:12.5px;color:var(--muted)}
+  .eqedge.up b{color:var(--buy)} .eqedge.down b{color:var(--dont)}
+  .eqcap{font-size:11px;color:var(--faint);margin:9px 0 0;line-height:1.5}
   .tfs .tft{font-size:11px;font-weight:800;color:var(--muted)}
   .tfs .tfv{font-size:20px;font-weight:850;font-variant-numeric:tabular-nums;margin-top:2px;line-height:1}
   .tfs .tfn{font-size:10px;color:var(--faint);margin-top:2px}
@@ -1780,6 +1797,47 @@ function sparkSVG(vals){
   return '<svg class="spark '+(up?'up':'down')+'" viewBox="0 0 '+w+' '+h+'" preserveAspectRatio="none" aria-hidden="true">'+
     '<polygon points="0,'+h+' '+poly+' '+w+','+h+'"/><polyline points="'+poly+'"/>'+
     '<circle cx="'+last[0]+'" cy="'+last[1]+'" r="2.2"/></svg>';
+}
+// #309 — the track-record equity curve. HONEST by construction: a flat $1,000 into EVERY graded call (no
+// compounding — 43 sequential 100%-bets would wildly distort a ±2.5%/pick record into −84%), cumulative
+// over time, plotted against what that same money would've done in the pick's own index (STW/SPY) — the
+// index return is recovered from the grader's own `excess` field (index_ret = ret − excess). The gap
+// between the two lines IS the app's real edge. The caption names the worst timeframe from live data, so
+// the drag is called out truthfully rather than hidden. Renders only with ≥5 graded calls (else too noisy).
+function fmtMoney(v){var s=v<0?'−$':'+$';return s+Math.abs(Math.round(v)).toString().replace(/\B(?=(\d{3})+(?!\d))/g,',');}
+function equityCurveHtml(graded){
+  var g=(graded||[]).filter(function(o){return o&&o.ret!=null&&(o.exitDate||o.date);})
+    .slice().sort(function(a,b){return ((a.exitDate||a.date)||'').localeCompare((b.exitDate||b.date)||'');});
+  if(g.length<5) return '';
+  var STAKE=1000, ours=0, idx=0, ptsO=[], ptsI=[], lo=0, hi=0;
+  g.forEach(function(o){
+    ours+=(o.ret||0)*STAKE;
+    idx +=((o.ret||0)-(o.excess==null?0:o.excess))*STAKE;
+    ptsO.push(ours); ptsI.push(idx); lo=Math.min(lo,ours,idx); hi=Math.max(hi,ours,idx);
+  });
+  var n=g.length, W=340, H=130, PX=8, PY=12, span=(hi-lo)||1;
+  function xy(v,i){var x=PX+(n<2?0:(i/(n-1))*(W-2*PX));var y=PY+(1-(v-lo)/span)*(H-2*PY);return x.toFixed(1)+','+y.toFixed(1);}
+  var polyO=ptsO.map(xy).join(' '), polyI=ptsI.map(xy).join(' ');
+  var zeroY=(PY+(1-(0-lo)/span)*(H-2*PY)).toFixed(1);
+  var lastO=xy(ptsO[n-1],n-1).split(','), lastI=xy(ptsI[n-1],n-1).split(',');
+  var edge=ours-idx, ourUp=ours>=0, edgeUp=edge>=0;
+  // name the worst timeframe honestly from live data (avoids a hardcoded claim going stale)
+  var bt=(typeof OUTCOMES!=='undefined'&&OUTCOMES&&OUTCOMES.byTimeframe)||{}, worst=null;
+  ['Day','Week','Long'].forEach(function(tf){var a=bt[tf]; if(a&&a.n&&(worst===null||(a.avgRet||0)<((bt[worst].avgRet)||0))) worst=tf;});
+  var drag=worst?(' — the '+({Day:'day trades',Week:'week holds',Long:'monthly holds'}[worst])+' are the biggest drag'):'';
+  var svg='<svg viewBox="0 0 '+W+' '+H+'" class="eqsvg" preserveAspectRatio="none" aria-hidden="true">'+
+    '<line class="eqzero" x1="'+PX+'" y1="'+zeroY+'" x2="'+(W-PX)+'" y2="'+zeroY+'"/>'+
+    '<polyline class="eqidx" points="'+polyI+'"/>'+
+    '<polyline class="eqours '+(ourUp?'up':'down')+'" points="'+polyO+'"/>'+
+    '<circle class="eqdot '+(ourUp?'up':'down')+'" cx="'+lastO[0]+'" cy="'+lastO[1]+'" r="3"/>'+
+    '<circle class="eqdoti" cx="'+lastI[0]+'" cy="'+lastI[1]+'" r="2.5"/></svg>';
+  return '<div class="eqcurve"><div class="eqhead"><h4>📈 If you put $1,000 into every call</h4><span class="eqn">'+n+' graded calls</span></div>'+
+    svg+
+    '<div class="eqlegend"><span class="eql eqlours '+(ourUp?'up':'down')+'"><i></i> Our calls <b>'+fmtMoney(ours)+'</b></span>'+
+      '<span class="eql eqlidx"><i></i> Just the index <b>'+fmtMoney(idx)+'</b></span></div>'+
+    '<div class="eqedge '+(edgeUp?'up':'down')+'">Edge vs the market: <b>'+fmtMoney(edge)+'</b> across every call</div>'+
+    '<p class="eqcap">A flat $1,000 into each graded pick (no compounding), added up over time, vs buying its market index instead. The honest, warts-and-all record'+drag+'.</p>'+
+    '</div>';
 }
 // Inline mini-trajectory: the price path across our hourly runs, FIRST run → now.
 // Hidden when there's no real movement (e.g. market closed) so it never shows a meaningless 0.0%.
@@ -3465,6 +3523,7 @@ function render(D,H){
       '<div class="chef-note">'+note+'</div><div class="journey">'+journeyCols+'</div>'+
       '<div class="panel" style="margin-top:18px"><div class="paneltop"><h3>Closed calls · scored honestly</h3><button class="trackbtn" id="trackBtn">📊 Full month →</button></div>'+
       '<div class="score"><div><div class="big">'+esc(ocRecord||'—')+' <span class="wl">W–L</span></div>'+recClear2+'<div class="sub">'+(ocOn?'How our past tips actually did. <b>Tap any</b> to see the story.':esc(sb.recordNote||''))+'</div></div></div>'+
+      (ocOn?equityCurveHtml(ocGraded):'')+
       ocScorecard+
       ocTierScore+
       '<div class="rec">'+(ocOn?ocRows:recRows)+'</div>'+
