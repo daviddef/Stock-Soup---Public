@@ -3846,18 +3846,39 @@ function render(D,H){
 
 // #96 — plain-English ASX filing headlines ("Ceasing to be a substantial holder" -> "big investor
 // selling down"), never a raw legal headline shown bare. Shared by openModal (picks) and openCandidate.
+// #324 (user ask — "go a level deeper than the headline") — our ASX feed gives the headline only (no body
+// text; the PDF 404s, the site is a JS app). But the filing TYPE is usually right there in the headline,
+// so read it and give a genuinely more useful plain-English line than the one-size-fits-all "we're not
+// calling a direction". Distinguishes routine housekeeping (ignore) from a real result (read the numbers).
+// The genuinely price-sensitive-but-ambiguous ones still get the admin 🔍 deep-read marker for a live scan.
+function annDeeper(headline){
+  var h=String(headline||'').toLowerCase();
+  if(/appendix 4g|corporate governance/.test(h)) return 'Routine yearly governance paperwork — not a buy/sell trigger.';
+  if(/appendix 4e|appendix 4d|preliminary final|results? (presentation|announcement|release)|full[- ]year results|half[- ]year results|fy\d+ results|interim results/.test(h)) return 'This is the actual result — profit, revenue, dividend. The numbers decide the reaction; open it (or the news below) for the figures.';
+  if(/annual report|financial report|annual financial/.test(h)) return 'The full-year accounts. Detail matters, but the market usually already moved on the results release — tap to read.';
+  if(/independent auditor|auditor|review report/.test(h)) return 'Routine — a note about the accounts’ auditor. Not a trading signal.';
+  if(/notice of (annual general )?meeting|\bagm\b|annual general meeting/.test(h)) return 'Routine — the shareholder-meeting notice. Not a trading signal.';
+  if(/ceo|managing director|chief executive|chief financial|\bcfo\b|board|director|appoint|resign|retire|executive change/.test(h)) return 'A leadership change. Can matter (a surprise CEO exit especially) — worth a quick read, but not automatically good or bad.';
+  if(/guidance|upgrade|downgrade|earnings|profit (up|down|guidance)|trading update/.test(h)) return 'A guidance/earnings update — this moves prices. Read the actual numbers before acting.';
+  if(/dividend|distribution/.test(h)) return 'Dividend news — check the amount and the ex-date (own it before ex-date to get paid).';
+  if(/capital raise|placement|entitlement|share purchase plan|\bspp\b/.test(h)) return 'Raising money by issuing new shares — often dilutes existing holders short-term. Read how much and at what price.';
+  if(/quarterly (activities|cashflow|report)|appendix 5b|4c/.test(h)) return 'Quarterly operations + cash update — check cash on hand and whether they’re spending faster than planned.';
+  return '';
+}
 function announcementsHtml(items){
   if(!items||!items.length) return '';
   var TONE={bullish:{ic:'📈',cls:'ann-bull'},bearish:{ic:'📉',cls:'ann-bear'},neutral:{ic:'➖',cls:'ann-neu'}};
   var rows=items.slice(0,5).map(function(a){
     var t=TONE[a.tone]||TONE.neutral;
+    // #324 — for a neutral/generic filing, prefer the headline-type read over the vague fallback line.
+    var why=((a.tone==='neutral'||!a.tone)&&annDeeper(a.headline))||a.why||'';
     var head=a.link?'<a class="annhead" href="'+esc(a.link)+'" target="_blank" rel="noopener">'+esc(a.headline||'')+' ↗</a>':'<b class="annhead">'+esc(a.headline||'')+'</b>';
     // #111 — admin-only hint: this filing fell through to the generic neutral read and is genuinely
     // price-sensitive, so a real WebSearch deep-read (signals_asx.py's deep_read_query()) usually finds
     // actual figures — visible only to the person who can act on it, never shown to regular users.
     var dr=(isAdmin()&&a.deepReadQuery)?'<div class="anndr" title="'+esc(a.deepReadQuery)+'">🔍 Needs deep-read — generic classification</div>':'';
     return '<div class="annrow '+t.cls+'"><div class="anntop"><span class="annic">'+t.ic+'</span>'+head+(a.date?'<span class="anndate">'+esc(String(a.date).slice(0,10))+'</span>':'')+'</div>'+
-      '<div class="annwhy">'+esc(a.why||'')+'</div>'+dr+'</div>';
+      '<div class="annwhy">'+esc(why)+'</div>'+dr+'</div>';
   }).join('');
   return '<div class="viz"><h4>📢 Key announcements</h4>'+rows+'</div>';
 }
