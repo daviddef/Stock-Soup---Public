@@ -1,0 +1,418 @@
+{
+  "synced": "2026-08-12",
+  "source": "eToro watchlist API \u2014 /watchlists + /market-data/instruments/rates",
+  "watchlist_order": [
+    "Recently Invested",
+    "My Watchlist",
+    "Tempting",
+    "2026 New DJ",
+    "Quantum and AI",
+    "Stock Soup Watchlist",
+    "David's Primary Watchlist"
+  ],
+  "instruments": {
+    "SPB": {
+      "id": 1809,
+      "displayName": "Spectrum Brands Holdings Inc.",
+      "type": "Stock/ETF",
+      "watchlist": "Recently Invested"
+    },
+    "LMT.RTH": {
+      "id": 13629,
+      "displayName": "Lockheed Martin Corporation",
+      "type": "Stock/ETF",
+      "watchlist": "Recently Invested"
+    },
+    "PLTR": {
+      "id": 7991,
+      "displayName": "Palantir Technologies Inc.",
+      "type": "Stock/ETF",
+      "watchlist": "David's Primary Watchlist"
+    },
+    "SILVER": {
+      "id": 19,
+      "displayName": "Silver (Non Expiry)",
+      "type": "Forex/Index/Commodity",
+      "watchlist": "2026 New DJ"
+    },
+    "MIOTA": {
+      "id": 100018,
+      "displayName": "IOTA",
+      "type": "Crypto",
+      "watchlist": "2026 New DJ"
+    },
+    "BTGO": {
+      "id": 15208,
+      "displayName": "BitGo Holdings, Inc",
+      "type": "Stock/ETF",
+      "watchlist": "2026 New DJ"
+    },
+    "CRWV": {
+      "id": 12167,
+      "displayName": "CoreWeave Inc",
+      "type": "Stock/ETF",
+      "watchlist": "My Watchlist"
+    },
+    "BCH": {
+      "id": 100002,
+      "displayName": "Bitcoin Cash",
+      "type": "Crypto",
+      "watchlist": "2026 New DJ"
+    },
+    "GOLD": {
+      "id": 18,
+      "displayName": "Gold (Non Expiry)",
+      "type": "Forex/Index/Commodity",
+      "watchlist": "2026 New DJ"
+    },
+    "TEAM": {
+      "id": 4286,
+      "displayName": "Atlassian Corp PLC A",
+      "type": "Stock/ETF",
+      "watchlist": "My Watchlist"
+    },
+    "NFLX": {
+      "id": 1127,
+      "displayName": "Netflix, Inc.",
+      "type": "Stock/ETF",
+      "watchlist": "Recently Invested"
+    },
+    "MANA": {
+      "id": 100048,
+      "displayName": "Decentraland",
+      "type": "Crypto",
+      "watchlist": "2026 New DJ"
+    },
+    "CRML": {
+      "id": 15197,
+      "displayName": "Critical Metals Corp",
+      "type": "Stock/ETF",
+      "watchlist": "Recently Invested"
+    },
+    "OCGN": {
+      "id": 6258,
+      "displayName": "Ocugen Inc",
+      "type": "Stock/ETF",
+      "watchlist": "My Watchlist"
+    },
+    "BAC": {
+      "id": 1011,
+      "displayName": "Bank of America Corp",
+      "type": "Stock/ETF",
+      "watchlist": "Recently Invested"
+    },
+    "BTC": {
+      "id": 100000,
+      "displayName": "Bitcoin",
+      "type": "Crypto",
+      "watchlist": "2026 New DJ"
+    },
+    "VRM": {
+      "id": 8802,
+      "displayName": "Vroom Inc",
+      "type": "Stock/ETF",
+      "watchlist": "Recently Invested"
+    },
+    "AI.PA": {
+      "id": 1233,
+      "displayName": "Air Liquide SA",
+      "type": "Stock/ETF",
+      "watchlist": "Recently Invested"
+    },
+    "DDOG": {
+      "id": 6414,
+      "displayName": "Datadog Inc",
+      "type": "Stock/ETF",
+      "watchlist": "Recently Invested"
+    },
+    "HIPO": {
+      "id": 8624,
+      "displayName": "Hippo Holdings Inc",
+      "type": "Stock/ETF",
+      "watchlist": "Recently Invested"
+    },
+    "DOGE": {
+      "id": 100043,
+      "displayName": "Dogecoin",
+      "type": "Crypto",
+      "watchlist": "My Watchlist"
+    },
+    "NEO": {
+      "id": 100023,
+      "displayName": "NEO",
+      "type": "Crypto",
+      "watchlist": "Recently Invested"
+    },
+    "BNGO": {
+      "id": 6194,
+      "displayName": "BioNano Genomics Inc",
+      "type": "Stock/ETF",
+      "watchlist": "Tempting"
+    },
+    "SAGE": {
+      "id": 6036,
+      "displayName": "Sage Therapeutics Inc",
+      "type": "Stock/ETF",
+      "watchlist": "Tempting"
+    },
+    "TWLO": {
+      "id": 4340,
+      "displayName": "Twilio Inc A",
+      "type": "Stock/ETF",
+      "watchlist": "Tempting"
+    },
+    "BIDU": {
+      "id": 1141,
+      "displayName": "Baidu, Inc.-ADR",
+      "type": "Stock/ETF",
+      "watchlist": "Recently Invested"
+    },
+    "AU": {
+      "id": 6604,
+      "displayName": "AngloGold Ashanti Ltd-ADR",
+      "type": "Stock/ETF",
+      "watchlist": "2026 New DJ"
+    },
+    "GRWG": {
+      "id": 5074,
+      "displayName": "GrowGeneration",
+      "type": "Stock/ETF",
+      "watchlist": "Recently Invested"
+    },
+    "CMBN.ZU": {
+      "id": 5809,
+      "displayName": "Cembra Money Bank AG",
+      "type": "Stock/ETF",
+      "watchlist": "Recently Invested"
+    },
+    "ADA": {
+      "id": 100017,
+      "displayName": "Cardano",
+      "type": "Crypto",
+      "watchlist": "My Watchlist"
+    },
+    "ETC": {
+      "id": 100007,
+      "displayName": "Ethereum Classic",
+      "type": "Crypto",
+      "watchlist": "Recently Invested"
+    },
+    "XRP": {
+      "id": 100003,
+      "displayName": "XRP",
+      "type": "Crypto",
+      "watchlist": "Recently Invested"
+    },
+    "LTC": {
+      "id": 100005,
+      "displayName": "Litecoin",
+      "type": "Crypto",
+      "watchlist": "Tempting"
+    },
+    "DASH": {
+      "id": 100004,
+      "displayName": "Dash",
+      "type": "Crypto",
+      "watchlist": "2026 New DJ"
+    },
+    "AMZN": {
+      "id": 1005,
+      "displayName": "Amazon.com Inc",
+      "type": "Stock/ETF",
+      "watchlist": "My Watchlist"
+    },
+    "XLM": {
+      "id": 100020,
+      "displayName": "Stellar",
+      "type": "Crypto",
+      "watchlist": "Recently Invested"
+    },
+    "ETH": {
+      "id": 100001,
+      "displayName": "Ethereum",
+      "type": "Crypto",
+      "watchlist": "My Watchlist"
+    },
+    "TRX": {
+      "id": 100026,
+      "displayName": "TRON",
+      "type": "Crypto",
+      "watchlist": "Recently Invested"
+    },
+    "INDA": {
+      "id": 4429,
+      "displayName": "iShares MSCI India ETF",
+      "type": "Stock/ETF",
+      "watchlist": "My Watchlist"
+    },
+    "SOL": {
+      "id": 100063,
+      "displayName": "Solana",
+      "type": "Crypto",
+      "watchlist": "My Watchlist"
+    },
+    "TSLA": {
+      "id": 1111,
+      "displayName": "Tesla Motors, Inc.",
+      "type": "Stock/ETF",
+      "watchlist": "2026 New DJ"
+    },
+    "NIO": {
+      "id": 4489,
+      "displayName": "Nio Inc.-ADR",
+      "type": "Stock/ETF",
+      "watchlist": "My Watchlist"
+    },
+    "AAPL": {
+      "id": 1001,
+      "displayName": "Apple",
+      "type": "Stock/ETF",
+      "watchlist": "My Watchlist"
+    },
+    "AUDUSD": {
+      "id": 7,
+      "displayName": "AUD/USD",
+      "type": "Forex/Index/Commodity",
+      "watchlist": "My Watchlist"
+    },
+    "NSDQ100": {
+      "id": 28,
+      "displayName": "NASDAQ100 Index (Non Expiry)",
+      "type": "Forex/Index/Commodity",
+      "watchlist": "My Watchlist"
+    },
+    "OIL": {
+      "id": 17,
+      "displayName": "Oil (Non Expiry)",
+      "type": "Forex/Index/Commodity",
+      "watchlist": "2026 New DJ"
+    },
+    "JMIA": {
+      "id": 5664,
+      "displayName": "Jumia Technologies AG-ADR",
+      "type": "Stock/ETF",
+      "watchlist": "My Watchlist"
+    },
+    "GDOT": {
+      "id": 6711,
+      "displayName": "Green Dot Corp",
+      "type": "Stock/ETF",
+      "watchlist": "Tempting"
+    },
+    "JD.US": {
+      "id": 1378,
+      "displayName": "JD.com-ADR",
+      "type": "Stock/ETF",
+      "watchlist": "Tempting"
+    },
+    "00241.HK": {
+      "id": 2361,
+      "displayName": "Alibaba Health Information Tec",
+      "type": "Stock/ETF",
+      "watchlist": "Tempting"
+    },
+    "MQ": {
+      "id": 9273,
+      "displayName": "Marqeta Inc.",
+      "type": "Stock/ETF",
+      "watchlist": "Tempting"
+    },
+    "MNDY": {
+      "id": 9271,
+      "displayName": "Monday.com",
+      "type": "Stock/ETF",
+      "watchlist": "Tempting"
+    },
+    "HOOD": {
+      "id": 9272,
+      "displayName": "Robinhood Markets Inc.",
+      "type": "Stock/ETF",
+      "watchlist": "Tempting"
+    },
+    "INGN": {
+      "id": 6105,
+      "displayName": "Inogen Inc",
+      "type": "Stock/ETF",
+      "watchlist": "Tempting"
+    },
+    "LMT": {
+      "id": 1136,
+      "displayName": "Lockheed Martin Corporation",
+      "type": "Stock/ETF",
+      "watchlist": "2026 New DJ"
+    },
+    "ZS": {
+      "id": 4403,
+      "displayName": "Zscaler Inc",
+      "type": "Stock/ETF",
+      "watchlist": "2026 New DJ"
+    },
+    "QBTS": {
+      "id": 10881,
+      "displayName": "D-Wave Quantum Inc",
+      "type": "Stock/ETF",
+      "watchlist": "Quantum and AI"
+    },
+    "IONQ": {
+      "id": 9425,
+      "displayName": "IONQ Inc",
+      "type": "Stock/ETF",
+      "watchlist": "2026 New DJ"
+    },
+    "RIO.ASX": {
+      "id": 7006,
+      "displayName": "Rio Tinto Group",
+      "type": "Stock/ETF",
+      "watchlist": "Stock Soup Watchlist"
+    },
+    "NEM": {
+      "id": 1757,
+      "displayName": "Newmont Mining Corp",
+      "type": "Stock/ETF",
+      "watchlist": "David's Primary Watchlist"
+    },
+    "ECHO": {
+      "id": 9771,
+      "displayName": "EchoStar Corporation",
+      "type": "Stock/ETF",
+      "watchlist": "2026 New DJ"
+    },
+    "RIO": {
+      "id": 4240,
+      "displayName": "Rio Tinto PLC ADR",
+      "type": "Stock/ETF",
+      "watchlist": "Stock Soup Watchlist"
+    },
+    "BTG.US": {
+      "id": 6919,
+      "displayName": "B2Gold Corp",
+      "type": "Stock/ETF",
+      "watchlist": "2026 New DJ"
+    },
+    "SNOW": {
+      "id": 7999,
+      "displayName": "Snowflake Inc.",
+      "type": "Stock/ETF",
+      "watchlist": "2026 New DJ"
+    },
+    "PYPL": {
+      "id": 1484,
+      "displayName": "PayPal Holdings",
+      "type": "Stock/ETF",
+      "watchlist": "2026 New DJ"
+    }
+  },
+  "not_on_etoro": [
+    "A2M",
+    "DRO",
+    "DYL",
+    "EOS",
+    "IEL",
+    "NTU",
+    "PDN",
+    "SGH",
+    "TLX",
+    "VTM",
+    "WTC"
+  ]
+}

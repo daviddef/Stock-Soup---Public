@@ -1,9 +1,21 @@
 {
-  "last_synced": "2026-06-29T14:11:44.197059+10:00",
+  "last_synced": "2026-08-12T19:47:48.278567+10:00",
   "watchlists": [
     {
       "name": "Recently Invested",
       "items": [
+        {
+          "ticker": "SPB",
+          "exchange": "NYSE",
+          "name": "Spectrum Brands Holdings Inc.",
+          "id": 1809
+        },
+        {
+          "ticker": "LMT.RTH",
+          "exchange": "33",
+          "name": "Lockheed Martin Corporation",
+          "id": 13629
+        },
         {
           "ticker": "PLTR",
           "exchange": "NASDAQ",
@@ -354,10 +366,6 @@
       ]
     },
     {
-      "name": "DJ People Watch",
-      "items": []
-    },
-    {
       "name": "Tempting",
       "items": [
         {
@@ -432,6 +440,12 @@
       "name": "2026 New DJ",
       "items": [
         {
+          "ticker": "LMT",
+          "exchange": "NYSE",
+          "name": "Lockheed Martin Corporation",
+          "id": 1136
+        },
+        {
           "ticker": "ZS",
           "exchange": "NASDAQ",
           "name": "Zscaler Inc",
@@ -439,7 +453,7 @@
         },
         {
           "ticker": "QBTS",
-          "exchange": "NYSE",
+          "exchange": "NASDAQ",
           "name": "D-Wave Quantum Inc",
           "id": 10881
         },
@@ -570,9 +584,49 @@
       "items": [
         {
           "ticker": "QBTS",
-          "exchange": "NYSE",
+          "exchange": "NASDAQ",
           "name": "D-Wave Quantum Inc",
           "id": 10881
+        }
+      ]
+    },
+    {
+      "name": "Stock Soup Watchlist",
+      "items": [
+        {
+          "ticker": "RIO.ASX",
+          "exchange": "ASX",
+          "name": "Rio Tinto Group",
+          "id": 7006
+        },
+        {
+          "ticker": "RIO",
+          "exchange": "NYSE",
+          "name": "Rio Tinto PLC ADR",
+          "id": 4240
+        },
+        {
+          "ticker": "PLTR",
+          "exchange": "NASDAQ",
+          "name": "Palantir Technologies Inc.",
+          "id": 7991
+        }
+      ]
+    },
+    {
+      "name": "David's Primary Watchlist",
+      "items": [
+        {
+          "ticker": "NEM",
+          "exchange": "NYSE",
+          "name": "Newmont Mining Corp",
+          "id": 1757
+        },
+        {
+          "ticker": "PLTR",
+          "exchange": "NASDAQ",
+          "name": "Palantir Technologies Inc.",
+          "id": 7991
         }
       ]
     }
