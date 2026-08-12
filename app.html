@@ -1403,6 +1403,58 @@
   .s1wll{font-size:42px;font-weight:900;color:var(--dont);font-variant-numeric:tabular-nums;line-height:1}
   .s1wllbl{font-size:11.5px;color:var(--muted);margin-top:3px}
   .s1herowrap{margin-top:20px}
+  /* #320 — Simple view as a scroll-driven STORY (beginners), told for BOTH markets via a 🇦🇺/🇺🇸 switch.
+     Uses the app's theme vars so it works in light + dark. */
+  .s2prog{position:fixed;top:0;left:0;height:3px;width:0;background:linear-gradient(90deg,var(--broth),var(--dont));z-index:60;transition:width .1s linear}
+  .s2top{position:sticky;top:0;z-index:40;display:flex;align-items:center;gap:8px;padding:11px 15px;background:var(--surface);border-bottom:1px solid var(--line)}
+  .s2brand{font-family:var(--disp);font-style:italic;font-weight:800;font-size:15.5px;white-space:nowrap;display:flex;align-items:center;gap:7px}
+  .s2mkt{display:inline-flex;background:var(--surface-2);border:1px solid var(--line);border-radius:99px;padding:3px;margin-left:auto;gap:2px}
+  .s2mkt button{border:0;background:transparent;font-size:15px;padding:5px 12px;border-radius:99px;cursor:pointer;line-height:1;color:var(--muted);font-weight:800}
+  .s2mkt button.on{background:var(--broth);color:#fff}
+  .s2ico{background:transparent;border:0;font-size:17px;cursor:pointer;color:var(--muted);padding:5px 6px;line-height:1}
+  .s2wrap{max-width:660px;margin:0 auto}
+  .s2scene{min-height:86svh;display:flex;flex-direction:column;justify-content:center;padding:52px 24px}
+  .s2eye{font-size:12px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--broth);margin-bottom:15px}
+  .s2scene h1{font-family:var(--disp);font-weight:800;font-size:clamp(40px,13vw,66px);line-height:1;margin:0;letter-spacing:-.01em;text-wrap:balance}
+  .s2scene h2{font-family:var(--disp);font-weight:800;font-style:italic;font-size:clamp(26px,7vw,40px);line-height:1.1;margin:0 0 14px;text-wrap:balance}
+  .s2lead{font-size:clamp(17px,4.4vw,21px);max-width:26ch;color:var(--ink)}
+  .s2scene p{font-size:17px;color:var(--muted);text-wrap:pretty}
+  .s2scene p b{color:var(--ink)}
+  .s2sym{font-family:var(--disp);font-weight:800;font-size:clamp(42px,13vw,72px);line-height:.9}
+  .s2co{font-size:15px;color:var(--muted)}
+  .s2chips{display:flex;gap:8px;margin-top:20px;flex-wrap:wrap}
+  .s2chips .juicebtn,.s2chips .cherrybtn{font-size:15px;font-weight:800;padding:5px 13px;border-radius:22px}
+  .rev{opacity:0;transform:translateY(24px);transition:opacity .7s ease,transform .7s cubic-bezier(.2,.7,.2,1)}
+  .rev.in{opacity:1;transform:none}
+  .rev.d1{transition-delay:.1s}.rev.d2{transition-delay:.22s}.rev.d3{transition-delay:.34s}.rev.d4{transition-delay:.46s}
+  @media(prefers-reduced-motion:reduce){.rev{opacity:1;transform:none;transition:none}}
+  .s2cue{margin-top:36px;color:var(--faint);font-size:13px;font-weight:700;display:flex;align-items:center;gap:8px}
+  .s2cue .arw{display:inline-block;animation:s2bob 1.6s ease-in-out infinite}
+  @keyframes s2bob{0%,100%{transform:translateY(0)}50%{transform:translateY(5px)}}
+  .s2teach{margin-top:20px;border-left:3px solid var(--broth);background:rgba(255,122,26,.10);border-radius:0 12px 12px 0;padding:13px 15px;font-size:14.5px;color:var(--ink);line-height:1.5}
+  .s2teach .tk{display:block;font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--broth);margin-bottom:5px}
+  .s2teach b{color:var(--broth)}
+  .s2plan{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}
+  .s2plan .p{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 13px;font-size:14.5px;font-weight:700;font-variant-numeric:tabular-nums}
+  .s2plan .p small{display:block;font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:3px}
+  .s2plan .p.buy small{color:var(--broth)}.s2plan .p.stop small{color:var(--dont)}.s2plan .p.tgt small{color:var(--buy)}
+  .s2verd{font-family:var(--disp);font-style:italic;font-weight:800;font-size:clamp(28px,8vw,42px)}
+  .s2chart{margin-top:8px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px 14px}
+  .s2gauge{margin-top:18px;height:12px;border-radius:99px;background:linear-gradient(90deg,var(--buy),#E7C14B,var(--dont));position:relative}
+  .s2gauge .pin{position:absolute;top:-7px;width:26px;height:26px;border-radius:50%;background:var(--ink);border:3px solid var(--surface);transform:translateX(-50%);box-shadow:0 2px 10px rgba(0,0,0,.3)}
+  .s2gends{display:flex;justify-content:space-between;margin-top:9px;font-size:12px;font-weight:700}
+  .s2gends .g{color:var(--buy)}.s2gends .r{color:var(--dont)}
+  .s2board{margin-top:16px;display:flex;align-items:baseline;gap:12px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px 20px}
+  .s2board .w{font-family:var(--disp);font-weight:800;font-size:42px;color:var(--buy);line-height:1}
+  .s2board .x{font-size:22px;color:var(--faint)}
+  .s2board .l{font-family:var(--disp);font-weight:800;font-size:42px;color:var(--dont);line-height:1}
+  .s2board .lbl{font-size:12.5px;color:var(--muted)}
+  .s2end{text-align:center;align-items:center}
+  .s2btns{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin-top:24px}
+  .s2btn{font-weight:800;font-size:15.5px;padding:15px 26px;border-radius:99px;border:0;cursor:pointer;font-family:var(--font);text-decoration:none;display:inline-block}
+  .s2btn.primary{background:var(--broth);color:#fff}
+  .s2btn.ghost{background:transparent;border:1.5px solid var(--line);color:var(--ink)}
+  .s2foot{text-align:center;font-size:12px;color:var(--faint);padding:26px 20px 70px}
   /* #172/#247 — the 3×3 type × timeframe matrix (Villager view). Cols: Type3→Type2→Type1 (wild→safe). Rows:
      DAY/WEEK/MONTH. Now shares the .simple column width (no more 96vw breakout) so it aligns edge-to-edge
      with the hero/risk-chart above it. */
@@ -7197,49 +7249,129 @@ function s1TrackHtml(D){
     equityCurveHtml(ocGraded)+
     '</div>';
 }
+// #320 — Simple view reborn as a scroll-driven STORY for beginners (the "magical" concept), told for BOTH
+// markets via a 🇦🇺/🇺🇸 switch. Each market's story is generated from that market's real top pick, taps
+// through to the #318 overlay, and teaches concepts as it introduces them. v1 one-pager helpers (s1*)
+// are retired here (left defined, unused).
+function s2Region(){ return (MKT==='us')?'us':'au'; }
+function s2TopPick(D,region){
+  var rg=(D.regions||[]).filter(function(x){return (x.id||x.region)===region;})[0];
+  var picks=rg?(rg.picks||[]).filter(function(p){return p&&p.sym&&p.sym!=='NONE'&&p.score&&p.score.buy_now!=null;}):[];
+  picks=picks.slice().sort(function(a,b){return b.score.buy_now-a.score.buy_now;});
+  return (picks.length&&picks[0].score.buy_now>=45)?picks[0]:null;
+}
+function s2Story(D,region,p){
+  var cur=region==='au'?'A$':'$', place=region==='au'?'Australia':'the U.S.', flag=region==='au'?'🇦🇺':'🇺🇸';
+  if(!p){
+    return '<section class="s2scene s2end"><div class="s2eye rev">'+flag+' Tonight · '+place+'</div>'+
+      '<h2 class="rev d1" style="font-style:normal">Nothing worth chasing in '+place+' tonight.</h2>'+
+      '<p class="rev d2">Some nights the numbers just don’t line up — and forcing a trade is how beginners lose money. We’d rather say <b>sit this one out</b> than invent a reason.</p>'+
+      '<div class="s2cue rev d3">↑ try the other market</div></section>';
+  }
+  var _nStop=numLevel(p.nStop),_nEntry=numLevel(p.nEntry),_nTarget=numLevel(p.nTarget),_nNow=numLevel(p.nNow!=null?p.nNow:p.price);
+  var rr=(isFinite(_nEntry)&&isFinite(_nStop)&&isFinite(_nTarget)&&(_nEntry-_nStop)>0)?((_nTarget-_nEntry)/(_nEntry-_nStop)):null;
+  var rsi=(p.rsi!=null)?p.rsi:null, pin=rsi!=null?Math.max(4,Math.min(96,rsi)):50;
+  var hotLine=rsi==null?'It’s trading calmly.':(rsi>=70?'It’s running hot right now 🔥 — climbed fast, so it may need a breather.':rsi<=35?'It’s looking cheap 🧊 — beaten down, with room to bounce.':'Warm, not on fire 😌 — a steady climb, not a wild spike.');
+  var hotTrap=(rsi!=null&&rsi>=70)?'Buying something that already rocketed is how beginners get burned — they arrive right at the top.':'A steady climb is a friendlier place to step in than a vertical spike.';
+  var whole=(p.plain||p.chefTake||''), firstS=firstSentence(whole), restS=whole.slice(firstS.length).trim();
+  var chips=''; try{ chips=juiceChip(p.score,p.sym,p.name,signalRows(p,region))+cherryChip(p.score,p.sym,p.name,signalRows(p,region)); }catch(e){}
+  var chart=(p.spark&&p.spark.length>2)?levelChartSVG(p.spark,{stop:_nStop,entry:_nEntry,target:_nTarget,now:_nNow},cur):'';
+  var plan='';
+  if(p.nEntry) plan+='<span class="p buy"><small>Buy zone</small>'+esc(String(p.nEntry))+'</span>';
+  if(isFinite(_nStop)) plan+='<span class="p stop"><small>Bail if it hits</small>'+money(cur,_nStop)+'</span>';
+  if(isFinite(_nTarget)) plan+='<span class="p tgt"><small>Aiming for</small>'+money(cur,_nTarget)+'</span>';
+  return ''+
+    '<section class="s2scene s2end">'+
+      '<div class="s2eye rev">'+flag+' Tonight’s one move · '+place+'</div>'+
+      '<h1 class="rev d1">Meet<br>'+esc(p.sym)+'.</h1>'+
+      '<p class="s2lead rev d2" style="margin:20px auto 0">We looked at hundreds of companies '+(region==='au'?'on the ASX':'in the U.S.')+' today. <b>This is the one we’d act on.</b></p>'+
+      '<div class="s2cue rev d3"><span class="arw">↓</span> scroll — we’ll walk you through it</div>'+
+    '</section>'+
+    '<section class="s2scene">'+
+      '<div class="s2eye rev">First — what is it?</div>'+
+      '<div class="rev d1"><span class="s2sym">'+esc(p.sym)+'</span> <span class="s2co">'+esc(p.name||'')+'</span></div>'+
+      (firstS?'<p class="rev d2" style="margin-top:18px;font-size:18px;color:var(--ink)">'+esc(firstS)+'</p>':'')+
+      (restS?'<p class="rev d3" style="margin-top:12px">'+esc(restS)+'</p>':'')+
+    '</section>'+
+    (chart?'<section class="s2scene">'+
+      '<div class="s2eye rev">Here’s the picture.</div>'+
+      '<p class="rev d1" style="margin-bottom:12px">Its price lately — with the plan drawn right on it.</p>'+
+      '<div class="s2chart rev d2">'+chart+'</div>'+
+      '<div class="s2teach rev d3"><span class="tk">Golden rule</span>Know your <b>exit</b> before you enter. The red “bail” line caps a mistake — decide it now, while you’re calm.</div>'+
+    '</section>':'')+
+    (rsi!=null?'<section class="s2scene">'+
+      '<div class="s2eye rev">Is now a good moment?</div>'+
+      '<p class="rev d1" style="font-size:19px;color:var(--ink)">'+esc(hotLine)+'</p>'+
+      '<div class="s2gauge rev d2"><span class="pin" style="left:'+pin+'%"></span></div>'+
+      '<div class="s2gends rev d2"><span class="g">cheap / cold</span><span class="r">overheated</span></div>'+
+      '<div class="s2teach rev d3"><span class="tk">Beginner trap</span>'+esc(hotTrap)+'</div>'+
+    '</section>':'')+
+    '<section class="s2scene">'+
+      '<div class="s2eye rev">So — what would we do?</div>'+
+      '<div class="s2verd rev d1" style="color:var(--buy)">'+esc(p.verdict||'Have a look')+'</div>'+
+      (plan?'<div class="s2plan rev d2">'+plan+'</div>':'')+
+      (rr?'<p class="rev d3" style="margin-top:16px">For every <b>$1</b> at risk to the bail line, you’re playing for about <b>$'+rr.toFixed(1)+'</b> to target — the kind of odds worth taking.</p>':'')+
+      '<div class="s2teach rev d4"><span class="tk">How much?</span>Only put in an amount you’d be <b>genuinely relaxed</b> about losing. A good rule: never risk more than <b>1–2% of your money</b> on one idea.</div>'+
+      (chips?'<div class="s2chips rev d4">'+chips+'</div>':'')+
+    '</section>';
+}
+function s2Trust(D){
+  if(!(OUTCOMES&&OUTCOMES.outcomes)) return '';
+  var rec=(OUTCOMES.record||'').split(/[–-]/), w=(rec[0]||'0').trim(), l=(rec[1]||'0').trim();
+  return '<section class="s2scene">'+
+    '<div class="s2eye rev">Fair question — why listen to us?</div>'+
+    '<h2 class="rev d1">Because we show our losers too.</h2>'+
+    '<div class="s2board rev d2"><span class="w">'+esc(w)+'</span><span class="x">–</span><span class="l">'+esc(l)+'</span><div class="lbl">wins – losses<br>every graded call, no cherry-picking</div></div>'+
+    '<div class="s2teach rev d3"><span class="tk">Trust test</span>We grade <b>every</b> pick after its own deadline — win <i>or</i> lose — and keep score in public. Anyone who only shows winners is selling you something.</div>'+
+  '</section>';
+}
+function s2Close(p,region){
+  var cur=region==='au'?'A$':'$', st=numLevel(p.nStop);
+  return '<section class="s2scene s2end">'+
+    '<div class="s2eye rev">That’s tonight’s move.</div>'+
+    '<h2 class="rev d1" style="font-style:normal">'+esc(p.sym)+' — '+esc(String(p.verdict||'have a look').toLowerCase())+(isFinite(st)?', bail at '+money(cur,st):'')+'.</h2>'+
+    '<div class="s2btns rev d2">'+
+      '<button class="s2btn primary s2see" data-sym="'+esc(p.sym)+'" data-region="'+esc(region)+'">See the full card →</button>'+
+      '<button class="s2btn ghost watchbtn" data-sym="'+esc(p.sym)+'" data-region="'+esc(region)+'"'+(p.name?' data-name="'+esc(p.name)+'"':'')+(p.nEntry!=null?' data-entry="'+p.nEntry+'"':'')+' aria-pressed="false">＋ Watch</button>'+
+    '</div>'+
+    '<p class="s2foot rev d3">Not financial advice — just a friendly kitchen guide. The call is always yours.</p>'+
+  '</section>';
+}
 function renderSimple(D){
-  var r=D.risk||{}, mood=villagerMood(r), themeLine=villagerThemeLine(D), fm=riskFactorMarks(r);
-  var hero=oneMoveHtml(D), track=s1TrackHtml(D);
-  var shadow=''; try{ shadow=shadowPortfolioHtml(D); }catch(e){}
-  var upcoming=''; try{ if(typeof upcomingHtml==='function') upcoming=upcomingHtml(D); }catch(e){}
+  var region=s2Region(), p=s2TopPick(D,region);
   document.getElementById('app').innerHTML =
-    '<div class="simple s1">'+
-      '<div class="shero"><div class="brandrow"><div class="brand"><span class="hpot"><span class="hsteam"><i></i><i></i><i></i></span><span class="hpotbowl">🍲</span></span> The&nbsp;Stock&nbsp;Soup</div>'+
-        '<button class="viewtoggle" id="viewToggleS" title="Switch to Full view" aria-label="Switch to Full view">📋</button>'+
-        '<div class="burgerwrap"><button class="burger" id="burgerBtnS" aria-label="Menu" aria-haspopup="true" aria-expanded="false" aria-controls="burgerMenuS">☰</button>'+
-          '<div class="burgermenu" id="burgerMenuS" role="menu" hidden>'+
-            '<div class="bmhead"><span class="live"><span class="pulse"></span>LIVE</span><button class="bmupd" id="lastUpdS">updated…</button></div>'+
-            (isAdmin()?'<div class="bmadmin" title="You are signed in as the admin account"><span class="adminbadge">ADMIN</span> signed in as admin</div>':'')+
-            '<button class="bmitem" id="signInTopS" role="menuitem">👤 Sign in</button>'+
-            '<button class="bmitem" id="refreshBtnS" role="menuitem">↻ Refresh prices</button>'+
-            '<button class="bmitem" id="viewFull" role="menuitem">📋 Full view</button>'+
-            '<button class="bmitem" id="themeBtn2" role="menuitem">🌗 Switch theme</button>'+
-            '<button class="bmitem" id="guideBtnS" role="menuitem">📖 User guide</button>'+
-            '<button class="bmitem" id="methodBtnS" role="menuitem">🎓 For your advisor</button>'+
-            '<button class="bmitem" id="adminBtnS" role="menuitem" style="display:none">🛠 Admin tools</button>'+
-          '</div></div></div>'+
-        // The mascot mood + theme line (character), then the SAME real risk meter as Full view (needle +
-        // factor ticks + legend). One market read, tap for the full context.
-        '<div class="vmood"><div class="vmoodemoji">'+mood.emoji+'</div><div class="vmoodword">'+mood.word+'</div><div class="vmoodline">'+esc(mood.line)+'</div></div>'+
-        (themeLine?'<div class="vtheme">'+esc(themeLine)+'</div>':'')+
-        '<div class="meter tappable" id="riskMeterBtn" role="button" tabindex="0" title="Tap for tonight’s market read" aria-label="Open tonight’s market read"><div class="track"><div class="needle" id="needle"></div>'+fm.marks+'</div></div>'+fm.leg+
+    '<div class="s2prog" id="s2prog"></div>'+
+    '<div class="s2top">'+
+      '<div class="s2brand"><span class="hpotbowl">🍲</span> Stock&nbsp;Soup</div>'+
+      '<div class="s2mkt" role="tablist" aria-label="Market">'+
+        '<button data-mkt="au" class="'+(region==='au'?'on':'')+'" role="tab" aria-selected="'+(region==='au')+'">🇦🇺</button>'+
+        '<button data-mkt="us" class="'+(region==='us'?'on':'')+'" role="tab" aria-selected="'+(region==='us')+'">🇺🇸</button>'+
       '</div>'+
-      (hero?'<div class="s1herowrap">'+hero+'</div>':'')+
-      '<div class="s1sec"><h3 class="s1h"><span class="s1hi">🍽️</span> Tonight’s plates <small>tap for the full card</small></h3>'+s1PicksHtml(D)+'</div>'+
-      (track?'<div class="s1sec"><h3 class="s1h"><span class="s1hi">📊</span> How we’re doing <small>every graded call</small></h3>'+track+'</div>':'')+
-      (shadow?'<div class="s1sec">'+shadow+'</div>':'')+
-      '<div class="s1sec"><h3 class="s1h"><span class="s1hi">⭐</span> Your watchlist</h3><div id="wlSummary"></div></div>'+
-      (upcoming?'<div class="s1sec"><h3 class="s1h"><span class="s1hi">📅</span> Coming up</h3>'+upcoming+'</div>':'')+
-      '<button class="sfull" id="viewFull2">🔍 Show me the full grown-up version</button>'+
-      '<footer>Not financial advice — just a friendly kitchen guide. · The Stock Soup, served hot, hourly</footer>'+
+      '<button class="s2ico" id="viewToggleS" title="Switch to Full view" aria-label="Full view">📋</button>'+
+      '<div class="burgerwrap"><button class="s2ico burger" id="burgerBtnS" aria-label="Menu" aria-haspopup="true" aria-expanded="false" aria-controls="burgerMenuS">☰</button>'+
+        '<div class="burgermenu" id="burgerMenuS" role="menu" hidden>'+
+          '<div class="bmhead"><span class="live"><span class="pulse"></span>LIVE</span><button class="bmupd" id="lastUpdS">updated…</button></div>'+
+          (isAdmin()?'<div class="bmadmin"><span class="adminbadge">ADMIN</span> signed in as admin</div>':'')+
+          '<button class="bmitem" id="signInTopS" role="menuitem">👤 Sign in</button>'+
+          '<button class="bmitem" id="refreshBtnS" role="menuitem">↻ Refresh prices</button>'+
+          '<button class="bmitem" id="viewFull" role="menuitem">📋 Full view</button>'+
+          '<button class="bmitem" id="themeBtn2" role="menuitem">🌗 Switch theme</button>'+
+          '<button class="bmitem" id="guideBtnS" role="menuitem">📖 User guide</button>'+
+          '<button class="bmitem" id="methodBtnS" role="menuitem">🎓 For your advisor</button>'+
+          '<button class="bmitem" id="adminBtnS" role="menuitem" style="display:none">🛠 Admin tools</button>'+
+        '</div></div>'+
+    '</div>'+
+    '<div class="s2wrap">'+
+      s2Story(D,region,p)+
+      s2Trust(D)+
+      (p?s2Close(p,region):'<section class="s2scene s2end"><div class="s2btns"><button class="s2btn ghost" id="viewFull3">🔍 See the full menu</button></div></section>')+
     '</div>';
   wireSimple(D);
 }
 function wireSimple(D){
   var root=document.documentElement;
   var t=document.getElementById('themeBtn2'); if(t) t.onclick=function(){var c=root.getAttribute('data-theme')||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');root.setAttribute('data-theme',c==='dark'?'light':'dark');};
-  ['viewFull','viewFull2','viewToggleS'].forEach(function(id){var b=document.getElementById(id);if(b) b.onclick=function(){setView('full');};});
-  // Simple-view burger (parity with Full view)
+  ['viewFull','viewToggleS','viewFull3'].forEach(function(id){var b=document.getElementById(id);if(b) b.onclick=function(){setView('full');};});
   var bg=document.getElementById('burgerBtnS'), bm=document.getElementById('burgerMenuS');
   if(bg&&bm){ var closeBM=function(){ bm.setAttribute('hidden',''); bg.setAttribute('aria-expanded','false'); };
     bg.onclick=function(e){ e.stopPropagation(); if(bm.hasAttribute('hidden')){ var rc=bg.getBoundingClientRect(); bm.style.top=(rc.bottom+8)+'px'; bm.style.right=Math.max(10,(window.innerWidth-rc.right))+'px'; bm.removeAttribute('hidden'); bg.setAttribute('aria-expanded','true'); } else closeBM(); };
@@ -7251,27 +7383,20 @@ function wireSimple(D){
   var adbS=document.getElementById('adminBtnS'); if(adbS){ if(isAdmin()){ adbS.style.display=''; adbS.onclick=function(){var _bm=document.getElementById('burgerMenuS');if(_bm)_bm.setAttribute('hidden','');openAdminDrawer();}; } }
   var gbS=document.getElementById('guideBtnS'); if(gbS) gbS.onclick=openUserGuide;
   var mbS=document.getElementById('methodBtnS'); if(mbS) mbS.onclick=openExpertBrief;
-  // #320 — every one-pager tile routes through the #318 canonical overlay.
-  var _hero=document.querySelector('.s1herowrap .onemove');
-  if(_hero){ var _hgo=function(){ openTicker(_hero.dataset.sym,_hero.dataset.region); }; _hero.addEventListener('click',_hgo); _hero.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();_hgo();}}); }
-  document.querySelectorAll('.s1tile[data-sym]').forEach(function(el){ el.addEventListener('click',function(){ openTicker(el.dataset.sym,el.dataset.region); }); });
-  // watchlist performance (shared builder, MKT-scoped) into the one-pager's #wlSummary
-  try{ renderWlSummary(wlBuildRows(D).filter(function(rw){return (rw.w.region||'au')===MKT;})); }catch(e){}
-  // "Coming up" rows → canonical overlay (the <a>/qlink inside still opens the source independently)
-  document.querySelectorAll('.uprow3.uptappable[data-up-sym], .axcoming[data-up-sym], .axread[data-up-sym]').forEach(function(c){
-    var go=function(){ openTicker(c.dataset.upSym,c.dataset.upRegion); };
-    c.addEventListener('click',function(e){if(e.target.closest('a,button'))return;go();});
-    c.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();go();}});
-  });
-  document.querySelectorAll('.watchbtn[data-sym]').forEach(function(b){
-    b.addEventListener('click',function(e){e.preventDefault();e.stopPropagation();watchToggleFromEl(b);});
-  });
+  // market switch → re-render the story for the other market
+  document.querySelectorAll('.s2mkt button[data-mkt]').forEach(function(b){ b.onclick=function(){ if(b.dataset.mkt===MKT)return; MKT=b.dataset.mkt; try{pushViewState();}catch(e){} window.scrollTo(0,0); renderSimple(D); }; });
+  // scroll progress bar (single listener, replaced each render so it never accumulates)
+  var prog=document.getElementById('s2prog');
+  var onScroll=function(){ var h=document.documentElement; var mx=h.scrollHeight-h.clientHeight; if(prog) prog.style.width=(mx>0?(h.scrollTop/mx*100):0).toFixed(1)+'%'; };
+  if(window._s2scroll) window.removeEventListener('scroll',window._s2scroll);
+  window._s2scroll=onScroll; window.addEventListener('scroll',onScroll,{passive:true}); onScroll();
+  // scene reveal on scroll
+  var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting)e.target.classList.add('in');});},{threshold:.16});
+  document.querySelectorAll('.rev').forEach(function(el){io.observe(el);});
+  // "See the full card" → the #318 canonical overlay
+  document.querySelectorAll('.s2see[data-sym]').forEach(function(b){ b.onclick=function(){ openTicker(b.dataset.sym,b.dataset.region); }; });
+  document.querySelectorAll('.watchbtn[data-sym]').forEach(function(b){ b.addEventListener('click',function(e){e.preventDefault();e.stopPropagation();watchToggleFromEl(b);}); });
   syncWatchButtons();
-  try{ wireInfo(); }catch(e){}
-  hydrateMissCharts();   // any lazy intraday chart slots (shadow/upcoming/hero)
-  var lvl=(D.risk&&D.risk.level!=null)?D.risk.level:50;
-  requestAnimationFrame(function(){ placeNeedle('needle',lvl); });   // same needle as Full view
-  var rmbS=document.getElementById('riskMeterBtn'); if(rmbS){ rmbS.onclick=openMarketRead; rmbS.onkeydown=function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); openMarketRead(); } }; }
 }
 
 function flashToast(msg){
