@@ -1818,7 +1818,13 @@ function ruCard(ru,region,idx){var da=(region!=null?' data-region="'+region+'" d
   '<div class="rutop"><span class="rusym">'+esc(ru.sym)+'</span>'+
   '<span class="runame">'+esc(ru.name)+'</span><span class="rupx">'+esc(ru.price)+' <span class="'+(ru.up?'up':'down')+'">'+(ru.up?'▲':'▼')+' '+esc(ru.change)+'</span></span></div>'+
   '<div class="ruline">'+esc(ru.line)+'</div></article>';}
-function money(cur,n){return cur+(Math.abs(n%1)<1e-9?String(n):n.toFixed(2));}
+// numLevel — coerce a level field to a number. Picks are sometimes authored with DESCRIPTIVE STRING
+// levels (e.g. nStop:"A$40.90", nEntry:"A$42.20 – 43.30 (do NOT chase above A$44)") instead of numbers.
+// money() used to call n.toFixed() on those strings → TypeError → the WHOLE rich pick modal threw and
+// fell back to the minimal fail-open card (user-caught 12 Aug: "charts/signals gone"). numLevel pulls the
+// first number out of any shape (number→itself, "A$42.20 – 43.30"→42.20, junk→NaN) so the math + labels work.
+function numLevel(v){if(typeof v==='number')return v;if(v==null)return NaN;var m=String(v).replace(/,/g,'').match(/-?\d+(?:\.\d+)?/);return m?parseFloat(m[0]):NaN;}
+function money(cur,n){n=numLevel(n);return cur+(!isFinite(n)?'—':(Math.abs(n%1)<1e-9?String(n):n.toFixed(2)));}
 // Real bug (8 Aug 2026): a handful of candidates carried price as a raw JS number with float-precision
 // garbage (0.026000000000000002 instead of 0.026 — classic binary-float artifact from upstream Python
 // math), and it was being concatenated straight into card HTML with no rounding at all, showing an
@@ -3573,8 +3579,8 @@ function scoreBarHtml(score,sym,name){
 // a fixed risk budget so it works whatever your account size. Uses the model's own ideal-buy + stop as the
 // risk-per-share. General framework, not advice (consistent with the not-a-licensed-advisor stance).
 function posSizeHtml(p,cur){
-  var entry=(p.nEntry!=null?p.nEntry:p.nNow), stop=p.nStop;
-  if(entry==null||stop==null||!(entry>stop)) return '';
+  var entry=numLevel(p.nEntry!=null?p.nEntry:p.nNow), stop=numLevel(p.nStop);
+  if(!isFinite(entry)||!isFinite(stop)||!(entry>stop)) return '';
   var rps=entry-stop, stopPct=rps/entry*100;
   var perUnit=Math.max(1,Math.floor(500/rps));   // shares if you're willing to lose $500 on a stop-out
   var cost=perUnit*entry;
@@ -3907,9 +3913,10 @@ function _openJuiceInner(id,j,score,d){
 }
 function openModal(p,region,cur){
   LASTFOCUS=document.activeElement;
-  var span=(p.nTarget-p.nStop)||1;
-  var nowPct=clamp((p.nNow-p.nStop)/span*100);
-  var entPct=clamp((p.nEntry-p.nStop)/span*100);
+  var _nStop=numLevel(p.nStop),_nEntry=numLevel(p.nEntry),_nTarget=numLevel(p.nTarget),_nNow=numLevel(p.nNow!=null?p.nNow:p.price);
+  var span=(_nTarget-_nStop)||1;
+  var nowPct=clamp((_nNow-_nStop)/span*100);
+  var entPct=clamp((_nEntry-_nStop)/span*100);
   var rsi=p.rsi!=null?p.rsi:50;
   var rsiWord=rsi>=70?"🔥 hot — wait for it to cool":rsi<=35?"🧊 cheap — bargain zone":"😌 comfortable — not stretched";
   var cats=(p.catalysts||[]).map(function(c){return '<li>'+esc(c)+'</li>';}).join('');
@@ -3962,7 +3969,7 @@ function openModal(p,region,cur){
         '<div class="ladder"><span class="cap now" style="left:'+nowPct+'%">Now '+esc(p.price)+'</span>'+
           '<span class="mk ent" style="left:'+entPct+'%"></span><span class="cap" style="left:'+entPct+'%">Buy</span>'+
           '<span class="mk now" style="left:'+nowPct+'%"></span></div>'+
-        '<div class="lends"><span class="r">Stop '+money(cur,p.nStop)+'</span><span class="g">Target '+money(cur,p.nTarget)+'</span></div>'+
+        '<div class="lends"><span class="r">Stop '+money(cur,_nStop)+'</span><span class="g">Target '+money(cur,_nTarget)+'</span></div>'+
         posSizeHtml(p,cur)+
         '<h4 style="margin-top:20px">How hot is it right now? · RSI</h4>'+
         '<div class="rsibar"><span class="rcap" style="left:'+clamp(rsi)+'%">RSI '+esc(rsi)+'</span><span class="rn" style="left:'+clamp(rsi)+'%"></span></div>'+
