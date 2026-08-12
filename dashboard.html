@@ -1059,6 +1059,7 @@
   .mcall{margin:2px 0 4px}
   .callchips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:11px}
   .callchips .juicebtn,.callchips .cherrybtn{font-size:14px;font-weight:800;padding:4px 12px;border-radius:22px}
+  .callwatch{margin-left:2px}
   .callplan{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 4px;font-size:14.5px;font-weight:700;
     font-variant-numeric:tabular-nums;background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:10px 13px}
   .callplan .plk{font-size:10.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin-right:2px}
@@ -4322,8 +4323,11 @@ function openModal(p,region,cur){
   if(isFinite(_nStop)) _plan.push('<span class="plk r">Stop</span> '+money(cur,_nStop));
   if(isFinite(_nTarget)) _plan.push('<span class="plk g">Target</span> '+money(cur,_nTarget));
   if(isFinite(_nEntry)&&isFinite(_nStop)&&isFinite(_nTarget)&&(_nEntry-_nStop)>0){ var _rr=(_nTarget-_nEntry)/(_nEntry-_nStop); if(_rr>0) _plan.push('<span class="plk">R:R</span> '+_rr.toFixed(1)+':1'); }
+  // #323 — a compact "+" watch toggle sits in "the call" row (matching the card face), so you can add a
+  // name without scrolling to the footer. Same .watchbtn data attrs → watchToggleFromEl + syncWatchButtons.
+  var _callWatch='<button class="watchbtn iconwatch callwatch" data-sym="'+esc(p.sym)+'" data-region="'+esc(region)+'"'+(p.name?' data-name="'+esc(p.name)+'"':'')+(p.nEntry!=null?' data-entry="'+p.nEntry+'"':'')+' aria-pressed="false" title="Add to watchlist">+</button>';
   var callHtml='<div class="mcall">'+
-    (_callChips?'<div class="callchips">'+_callChips+'</div>':'')+
+    '<div class="callchips">'+_callChips+_callWatch+'</div>'+
     (_plan.length?'<div class="callplan">'+_plan.join('<span class="pldot">·</span>')+'</div>':'')+
     (p.chefTake?'<p class="callwhy">'+esc(p.chefTake)+'</p>':'')+
   '</div>';
@@ -4373,7 +4377,7 @@ function openModal(p,region,cur){
         '<a class="mbtn primary" href="'+esc(LAST.D.reportUrl)+'" target="_blank" rel="noopener">📖 Report ↗</a></div>'+
     '</div>';
   var _vb=document.getElementById('mVerdictBtn'); if(_vb) _vb.onclick=function(){openVerdictExplain(p.verdict);};
-  var _wb=m.querySelector('.watchbtn'); if(_wb) _wb.addEventListener('click',function(e){e.preventDefault();watchToggleFromEl(_wb);});
+  m.querySelectorAll('.watchbtn').forEach(function(_wb){ _wb.addEventListener('click',function(e){e.preventDefault();watchToggleFromEl(_wb);}); });   /* #323 — now wires BOTH the top "+" and the footer ＋Watch */
   var _ob=m.querySelector('.ownbtn'); if(_ob){ var _setOwn=function(on){_ob.textContent=on?'📦 Owned ✓':'📦 I own it';_ob.setAttribute('aria-pressed',on?'true':'false');_ob.classList.toggle('owned',on);}; _setOwn(wlOwns(p.sym,region)); _ob.addEventListener('click',function(e){e.preventDefault();var on=wlToggleOwn(p.sym,region,p.name);_setOwn(on);if(LAST&&LAST.D){var sc=window.pageYOffset;render(LAST.D,LAST.H);window.scrollTo(0,sc);}}); }
   m.querySelectorAll('.altcard[data-alt-ci]').forEach(function(el){
     var go=function(e){e.preventDefault();openCandidate(+el.dataset.altCi);};
@@ -5444,7 +5448,8 @@ function openCandidate(idx){
       _ccChips+='<button class="juicebtn callchip" data-juice-id="'+_ccjid+'" title="Buy-now score — tap for the full breakdown">🍊 '+c.score.buy_now+'</button>'; }
     try{ _ccChips+=cherryChip(c.score,c.sym,c.name,signalRows(c,c.region)); }catch(e){}
   }
-  var ccallHtml=_ccChips?'<div class="mcall"><div class="callchips">'+_ccChips+'</div></div>':'';
+  var _ccWatch='<button class="watchbtn iconwatch callwatch" data-sym="'+esc(c.sym)+'" data-region="'+esc(c.region)+'"'+(c.name?' data-name="'+esc(c.name)+'"':'')+' aria-pressed="false" title="Add to watchlist">+</button>';
+  var ccallHtml='<div class="mcall"><div class="callchips">'+_ccChips+_ccWatch+'</div></div>';
   var m=document.getElementById('modal'); m.className='modal';
   m.innerHTML='<div class="mhead '+vc+'"><button class="mclose" id="mClose" aria-label="Close">✕</button>'+
     mShareBtn('sym/'+c.region+'/'+encodeURIComponent(c.sym),c.sym)+
@@ -5469,7 +5474,7 @@ function openCandidate(idx){
         '<button class="mbtn anbtn" data-sym="'+esc(c.sym)+'" data-region="'+esc(c.region)+'">🧠 What would you do?</button>'+
         '<a class="mbtn primary" href="'+yf(c.sym,c.region)+'" target="_blank" rel="noopener">📈 Yahoo ↗</a></div>'+
     '</div>';
-  var _wb=m.querySelector('.watchbtn'); if(_wb)_wb.addEventListener('click',function(e){e.preventDefault();watchToggleFromEl(_wb);});
+  m.querySelectorAll('.watchbtn').forEach(function(_wb){ _wb.addEventListener('click',function(e){e.preventDefault();watchToggleFromEl(_wb);}); });   /* #323 — wires the top "+" and footer ＋Watch */
   syncWatchButtons();
   var ov=document.getElementById('overlay'); ov.classList.add('open'); ov.setAttribute('aria-hidden','false');
   document.getElementById('mClose').focus();
