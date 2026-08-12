@@ -3115,21 +3115,27 @@ function applyDeepLink(){
   if(parts[0]==='method'){ setTimeout(function(){ try{ openExpertBrief(); }catch(e){} },30); return; }
   if(TABNAMES[parts[0]]) switchTab(parts[0]);
 }
-function openSym(sym,region){
-  var it=themeIntel(sym,LAST.D||{});
-  if(it.kind==='pick'){var rg=((LAST.D||{}).regions||[]).filter(function(x){return x.id===it.region;})[0]; if(rg&&rg.picks[it.idx])openModal(rg.picks[it.idx],rg.id,rg.cur||'$'); return;}
-  if(it.kind==='cand'){openCandidate(it.idx); return;}
-  openWatchInsight(sym,region);
+// #318 (12 Aug 2026, user ask) — ONE canonical ticker-detail entry point. Every place a ticker is
+// tappable now routes here, so the SAME stock always opens the richest overlay its data supports,
+// regardless of which screen you tapped it from. Priority: served pick (the full openModal — chart,
+// ladder, RSI, all signals, news) > scored candidate (openCandidate — same signal set) > your watchlist
+// item with real captured intel (openWatchInsight) > generic live analyst read (openAnalyst, now also
+// with a chart). Before #318 each entry point had its OWN ad-hoc fallback, so Top Movers / theme cards
+// opened the thin analyst card even for a name that was a live pick, and openSym fell to a near-empty
+// openWatchInsight for non-watchlist names — same ticker, different overlay depending on where you tapped.
+function openTicker(sym,region){
+  sym=String(sym||'').toUpperCase().replace(/[^A-Z0-9.]/g,''); if(!sym) return;
+  var D=LAST.D||{}, it=themeIntel(sym,D);
+  if(it.kind==='pick'){ var rg=(D.regions||[]).filter(function(x){return x.id===it.region;})[0]; if(rg&&rg.picks[it.idx]){ openModal(rg.picks[it.idx],rg.id,rg.cur||'$'); return; } }
+  if(it.kind==='cand'){ openCandidate(it.idx); return; }
+  if(it.kind==='intel'){ openWatchInsight(sym,region||'us'); return; }
+  openAnalyst(sym,region||'us');
 }
-// Top Movers (#95) tap target (#120): most movers are neither a pick, candidate nor watchlist item,
-// so openSym's fallback (openWatchInsight, built for "your watchlist" context) would show an empty
-// shell. Fall back to the real generic per-ticker analyst read instead — works for any symbol.
-function openMover(sym,region){
-  var it=themeIntel(sym,LAST.D||{});
-  if(it.kind==='pick'){var rg=((LAST.D||{}).regions||[]).filter(function(x){return x.id===it.region;})[0]; if(rg&&rg.picks[it.idx]){openModal(rg.picks[it.idx],rg.id,rg.cur||'$'); return;}}
-  if(it.kind==='cand'){openCandidate(it.idx); return;}
-  openAnalyst(sym,region);
-}
+// openSym / openMover are kept as thin aliases so every existing caller (URL deep-links, ETF rows,
+// watchlist rows, Top Movers, theme leaders, next-best, what's-coming-up) funnels through the one
+// canonical resolver above with zero further edits.
+function openSym(sym,region){ openTicker(sym,region); }
+function openMover(sym,region){ openTicker(sym,region); }
 // #292 — PEAD ("post-earnings-announcement drift") explainer + watch list. Populated each render by actionsHtml.
 var PEAD_STATE={list:[],region:'us'};
 function openPead(){
@@ -5642,6 +5648,10 @@ function renderAnalyst(a){
     '<div class="mtop"><div><div class="msym">'+esc(a.sym)+'</div><div class="mco">'+esc(a.cur+a.price)+'</div></div><span class="mverd '+tc+'" style="align-self:flex-start">'+esc(a.verdict)+'</span></div></div>'+
     '<div class="mbody">'+
       '<p class="mtake"><span class="lead">'+esc(a.headline)+'.</span> '+a.action+'</p>'+
+      // #318 — every overlay now carries a chart. The generic analyst read used to have none, which is
+      // exactly the "no charts on some screens" inconsistency the user flagged. Lazy-hydrated 24h intraday,
+      // same slot pattern the Misses / Top Movers cards use — no backend change needed.
+      '<div class="viz"><h4>Recent trend · last 24h</h4>'+missChartSlot(a.sym,a.region,a.cur||(a.region==='au'?'A$':'$'))+'</div>'+
       '<div class="anchips">'+trend+rsi+chip('Volatility', s.atrPct!=null?('~'+s.atrPct+'%/day'):null)+chip('vs 20-day', s.ext20!=null?((s.ext20>=0?'+':'')+s.ext20+'%'):null, s.ext20>=15?'bd':'')+chip('52wk', s.near52!=null?(Math.round(s.near52*100)+'% of high'):null)+'</div>'+
       (_sigKey?'<div class="mfound" style="margin:-4px 0 10px">🧮 Tap any signal above for what it means &amp; where it comes from</div>':'')+
       (s.support!=null?'<div class="anzones"><div class="anz anz-buy"><span class="ank">🟢 Buying zone</span> '+esc(a.cur+s.support)+'</div><div class="anz anz-sell"><span class="ank">🔴 Selling zone</span> '+esc(a.cur+s.resistance)+'</div></div>':'')+
@@ -5653,6 +5663,7 @@ function renderAnalyst(a){
       '<p class="infofoot">A transparent, rules-based read straight off the price action — <b>not</b> a recommendation to trade. The call is yours.</p>'+
     '</div>';
   document.getElementById('mClose').onclick=closeModal;
+  hydrateMissCharts(m);   // #318 — fill the lazy 24h chart slot injected above
   var wb=m.querySelector('.watchbtn'); if(wb)wb.addEventListener('click',function(e){e.preventDefault();watchToggleFromEl(wb);}); syncWatchButtons();
   if(_sigKey){
     m.querySelectorAll('.antap[data-sigkey]').forEach(function(el){
@@ -5955,7 +5966,7 @@ function renderWlSummary(rows){
     '</div>';
   // #250 — Best/Worst chips tap through to the full per-ticker detail.
   el.querySelectorAll('.wlstat-chip[data-wl-sym]').forEach(function(b){
-    b.addEventListener('click',function(e){ e.preventDefault(); openWatchInsight(b.dataset.wlSym,b.dataset.wlRegion); });
+    b.addEventListener('click',function(e){ e.preventDefault(); openTicker(b.dataset.wlSym,b.dataset.wlRegion); });   // #318 — canonical resolver (pick/cand → rich card, else watch-insight)
   });
 }
 function renderWatchlist(){
@@ -6036,7 +6047,7 @@ function renderWatchlist(){
                group('📌 Also tracked','On your list but <b>not in tonight\'s scan yet</b> — we watch the price and give it the full scored read the moment it resurfaces.',plain);
   el.querySelectorAll('.wrm').forEach(function(b){b.addEventListener('click',function(e){e.stopPropagation();wlRemove(b.dataset.sym,b.dataset.region);renderWatchlist();syncWatchButtons();});});
   el.querySelectorAll('.wown').forEach(function(b){b.addEventListener('click',function(e){e.stopPropagation();var on=wlToggleOwn(b.dataset.sym,b.dataset.region);b.classList.toggle('owned',on);b.setAttribute('title',on?'You own this ✓ — tap to unflag':'I own it');renderWatchlist();updateOwnCount();});});
-  el.querySelectorAll('.wan').forEach(function(b){b.addEventListener('click',function(e){e.stopPropagation();openAnalyst(b.dataset.sym,b.dataset.region);});});
+  el.querySelectorAll('.wan').forEach(function(b){b.addEventListener('click',function(e){e.stopPropagation();openTicker(b.dataset.sym,b.dataset.region);});});
   function monLoad(b){   // pull the live chart into this card's monitor host
     var sym=b.dataset.sym, reg=b.dataset.region, wc=b.closest('.wcard'), host=wc?wc.querySelector('.wc-monspark'):null;
     if(!host) return;
@@ -6472,8 +6483,8 @@ function missSparkSVG(vals,markIdx){
     '<polygon points="0,'+h+' '+poly+' '+w+','+h+'"/><polyline points="'+poly+'"/>'+mark+
     '<circle cx="'+last[0].toFixed(1)+'" cy="'+last[1].toFixed(1)+'" r="2.2"/></svg>';
 }
-function hydrateMissCharts(){
-  document.querySelectorAll('.misschart[data-hydrate-chart]').forEach(function(slot){
+function hydrateMissCharts(root){
+  (root||document).querySelectorAll('.misschart[data-hydrate-chart]').forEach(function(slot){
     var sym=slot.dataset.sym, reg=slot.dataset.region, cur=slot.dataset.cur||'', checkTs=slot.dataset.checkTs?+slot.dataset.checkTs:null;
     fetch(API_BASE+'/intraday?sym='+encodeURIComponent(sym)+'&region='+encodeURIComponent(reg)).then(function(r){return r.ok?r.json():null;}).then(function(j){
       if(!j||!j.closes||j.closes.length<2){ slot.innerHTML=''; return; }
@@ -6599,7 +6610,7 @@ function wire(D){
     if(au)au.onclick=function(){set('au');}; if(us)us.onclick=function(){set('us');};
     function val(){ return (inp&&inp.value||'').trim().toUpperCase().replace(/[^A-Z0-9.]/g,''); }
     function doWatch(){ var v=val(); if(!v)return; wlAddItem({sym:v,region:reg.r}); if(inp)inp.value=''; renderWatchlist(); syncWatchButtons(); flashToast('✓ '+v+' added to your watchlist'); }
-    function doAsk(){ var v=val(); if(v) openAnalyst(v,reg.r); }
+    function doAsk(){ var v=val(); if(v) openTicker(v,reg.r); }   // #318 — a typed name that IS a pick/candidate opens its rich card, not the thin read
     if(watch)watch.onclick=doWatch; if(ask)ask.onclick=doAsk;
     if(inp)inp.addEventListener('keydown',function(e){ if(e.key==='Enter'){ e.preventDefault(); doWatch(); } });   // Enter = the primary action (add to watchlist)
   })();
@@ -6650,8 +6661,8 @@ function wire(D){
     c.addEventListener('click',function(e){if(e.target.closest('a'))return;go();});
     c.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();go();}});
   });
-  document.querySelectorAll('.axcoming[data-up-sym], .axread[data-up-sym]').forEach(function(c){   // #181 — Coming-up / Read card → the ticker's analyst read (headline <a> still opens the source)
-    function go(){ openAnalyst(c.dataset.upSym, c.dataset.upRegion); }
+  document.querySelectorAll('.axcoming[data-up-sym], .axread[data-up-sym]').forEach(function(c){   // #181/#318 — Coming-up / Read card → the ticker's rich card if it's a pick/candidate, else the analyst read (headline <a> still opens the source)
+    function go(){ openTicker(c.dataset.upSym, c.dataset.upRegion); }
     c.addEventListener('click',function(e){if(e.target.closest('a'))return;go();});
     c.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();go();}});
   });
@@ -6677,7 +6688,7 @@ function wire(D){
   // #137 — "What's Coming Up" rows with a real ticker now open the real per-ticker analyst read on
   // tap; the a,button guard lets the row's own Yahoo-quote link (qlink) still work independently.
   document.querySelectorAll('.uprow3.uptappable[data-up-sym]').forEach(function(c){
-    function go(){ openAnalyst(c.dataset.upSym,c.dataset.upRegion); }
+    function go(){ openTicker(c.dataset.upSym,c.dataset.upRegion); }   // #318 — pick/candidate → rich card, else analyst read
     c.addEventListener('click',function(e){if(e.target.closest('a,button'))return;go();});
     c.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();go();}});
   });
