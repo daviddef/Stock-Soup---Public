@@ -1397,6 +1397,8 @@
   /* #273 — Full Pot ranking-lens toggle (🍊 timing / 🍒 conviction) */
   .potlens-ctl{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:0 0 10px;font-size:12px;color:var(--muted);font-weight:800}
   .potlens-ctl .pll-lbl{letter-spacing:.02em}
+  .potlens-ctl .pll-sep{margin-left:8px;padding-left:8px;border-left:1px solid var(--line)}   /* #296 — divide Rank-by from View */
+  .potboard{grid-template-columns:1fr}   /* #296 — Leaderboard = one clean ranked column (rank badges via .pmc-rank) */
   .potlensbtn{font-family:var(--font);font-size:12px;font-weight:800;color:var(--muted);background:var(--surface-2);border:1px solid var(--line);border-radius:999px;padding:4px 11px;cursor:pointer;transition:all .12s}
   .potlensbtn:hover{border-color:var(--broth)}
   .potlensbtn.on{color:var(--ink);border-color:var(--broth);background:color-mix(in srgb,var(--broth) 16%,transparent)}
@@ -1785,6 +1787,7 @@ function mktBarHtml(D){
 var LAST=null, LASTFOCUS=null;
 var TIER='type1';   // #152 — selected model tier: type1 (production, default) / type2 (whole-market quant) / type3 (per-indicator leaderboards)
 var POTLENS='timing';   // #273 — Full Pot ranking lens: 'timing' (🍊 buy-now) or 'conviction' (🍒 overall). Flips sort + heat-band grouping so you see the same shortlist ranked either way, no duplicate grids.
+var POTVIEW='bands';    // #296 — Full Pot layout: 'bands' (grouped by heat) or 'board' (flat 1..N leaderboard). One surface, two skins — retires the old separate "Stock Pot Top 20".
 // #152 — the ONE place that resolves "which picks array is this region actually showing right now."
 // Global (not nested in render()) because click handlers outside render() (openFromEl, ruCard, etc.)
 // need the exact same resolution to correctly index into whichever array built the card the user
@@ -3491,6 +3494,15 @@ function render(D,H){
     return '<div class="potband"><div class="potband-h band-'+b.k+'">'+b.ic+' '+b.lbl+' <span class="potband-n">'+idxs.length+'</span></div><div class="pot">'+idxs.map(function(i){return potCard(_cands[i],i);}).join('')+'</div></div>'; }
   var potBands=_BANDS.map(function(b){return _bandGroup(b,true);}).join('');
   var potHidden=_BANDS.map(function(b){return _bandGroup(b,false);}).join('');
+  // #296 — LEADERBOARD view: the same shortlist as a flat 1..N ranked list (no band grouping). potCard's
+  // 3rd arg is a rank badge. Top-20 shown, the rest collapse behind the same expander as the band view.
+  var _boardOrder=_cands.map(function(c,i){return {i:i,sc:_lensScore(i),rg:(c.region||'us')};})
+    .filter(function(o){return o.rg===MKT&&o.sc>=0;}).sort(function(a,b){return b.sc-a.sc;});
+  var boardTop=_boardOrder.length?('<div class="pot potboard">'+_boardOrder.slice(0,20).map(function(o,ix){return potCard(_cands[o.i],o.i,ix+1);}).join('')+'</div>'):'';
+  var boardRest='<div class="pot potboard">'+_boardOrder.slice(20).map(function(o,ix){return potCard(_cands[o.i],o.i,ix+21);}).join('')+'</div>';
+  var _potMain=(POTVIEW==='board')?boardTop:potBands;
+  var _potHidden=(POTVIEW==='board')?boardRest:potHidden;
+  var _potHid=(POTVIEW==='board')?Math.max(0,_boardOrder.length-20):_hidN;
   var trail=(D.trail||[]).map(function(t){var jump=(t.jump?' <a class="trailjump" href="#'+esc(t.jump)+'">'+esc(t.jumpLabel||'see the list →')+'</a>':'');return '<div class="step"><span class="n">'+esc(t.n)+'</span><div class="st-txt">'+t.text+jump+'<small>'+esc(t.note)+'</small></div></div>';}).join('');
 
   document.getElementById('app').innerHTML=
@@ -3567,14 +3579,17 @@ function render(D,H){
       // flip the lens — no duplicate orange/cherry grids. Re-renders in place (applyView) preserving scroll.
       '<div class="potlens-ctl"><span class="pll-lbl">Rank by</span>'+
         '<button class="potlensbtn'+(POTLENS==='timing'?' on':'')+'" data-lens="timing" aria-pressed="'+(POTLENS==='timing')+'">🍊 Timing</button>'+
-        '<button class="potlensbtn'+(POTLENS==='conviction'?' on':'')+'" data-lens="conviction" aria-pressed="'+(POTLENS==='conviction')+'">🍒 Conviction</button></div>'+
+        '<button class="potlensbtn'+(POTLENS==='conviction'?' on':'')+'" data-lens="conviction" aria-pressed="'+(POTLENS==='conviction')+'">🍒 Conviction</button>'+
+        '<span class="pll-lbl pll-sep">View</span>'+
+        '<button class="potlensbtn'+(POTVIEW==='bands'?' on':'')+'" data-potview="bands" aria-pressed="'+(POTVIEW==='bands')+'">🔥 Bands</button>'+
+        '<button class="potlensbtn'+(POTVIEW==='board'?' on':'')+'" data-potview="board" aria-pressed="'+(POTVIEW==='board')+'">🏆 Leaderboard</button></div>'+
       // #231 — same score-threshold slider as the Simple view's whole-pot (#199): drag to hide the weaker
       // names client-side, no re-render. Filters every potcard by its model score; a band group whose cards
       // all fall below the line hides its header too.
       '<div class="potthr-ctl">Only show <b id="potThrLbl">'+FULL_POT_THR+'+</b> <input type="range" id="potThr" min="0" max="90" step="5" value="'+FULL_POT_THR+'" aria-label="Minimum score to show"> <span class="potthr-none" id="potThrNone" hidden>nothing that high — drag left</span></div>'+
-      (potBands||'<p class="potempty">Nothing scored in '+(MKT==='au'?'🇦🇺 Australia':'🇺🇸 US')+' tonight.</p>')+
-      (_hidN>0?'<button class="potmore'+(potBands?'':' potmore-lead')+'" id="potMore" data-n="'+_hidN+'" aria-expanded="false">➖ '+_hidN+' more below the top 20 ▾</button>'+
-        '<div id="potLose" hidden>'+potHidden+'</div>':'')+
+      (_potMain||'<p class="potempty">Nothing scored in '+(MKT==='au'?'🇦🇺 Australia':'🇺🇸 US')+' tonight.</p>')+
+      (_potHid>0?'<button class="potmore'+(_potMain?'':' potmore-lead')+'" id="potMore" data-n="'+_potHid+'" aria-expanded="false">➖ '+_potHid+' more below the top 20 ▾</button>'+
+        '<div id="potLose" hidden>'+_potHidden+'</div>':'')+
       '</section>'+
     upcomingHtml(D)+
     topMoversHtml(D)+
@@ -6464,6 +6479,10 @@ function wire(D){
   // #273 — Full Pot ranking-lens toggle: flip POTLENS and re-render the view in place (preserves scroll).
   document.querySelectorAll('.potlensbtn[data-lens]').forEach(function(b){ b.onclick=function(){
     if(b.dataset.lens===POTLENS) return; POTLENS=b.dataset.lens;
+    var sc=window.pageYOffset; applyView(); window.scrollTo(0,sc);
+  };});
+  document.querySelectorAll('.potlensbtn[data-potview]').forEach(function(b){ b.onclick=function(){   // #296
+    if(b.dataset.potview===POTVIEW) return; POTVIEW=b.dataset.potview;
     var sc=window.pageYOffset; applyView(); window.scrollTo(0,sc);
   };});
   var rm=document.getElementById('runMore'), rr=document.getElementById('runRest');
