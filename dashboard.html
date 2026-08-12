@@ -1346,6 +1346,38 @@
   .vmoodword{font-size:27px;font-weight:900;letter-spacing:.02em;margin-top:2px}
   .vmoodline{font-size:14.5px;color:var(--muted);margin-top:3px}
   .vtheme{text-align:center;font-size:14px;font-weight:800;margin:14px 0 0;color:var(--ink);text-wrap:pretty}
+  /* #320 — Simple reborn as a bold one-pager infographic: the whole app on a single scannable poster.
+     Panels stack; each zone leads with a big italic display header. Reuses brand tokens throughout. */
+  .s1sec{margin-top:24px}
+  .s1h{display:flex;align-items:center;gap:9px;font-family:var(--disp);font-style:italic;font-weight:800;font-size:20px;letter-spacing:-.01em;margin:0 0 13px;text-wrap:balance}
+  .s1h .s1hi{font-style:normal;font-size:21px;line-height:1}
+  .s1h small{font-family:var(--font);font-style:normal;font-weight:700;font-size:11.5px;color:var(--muted);margin-left:auto;letter-spacing:0;white-space:nowrap}
+  .s1mkt{margin-bottom:15px}
+  .s1mkth{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0 0 9px}
+  .s1grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(148px,1fr));gap:11px}
+  .s1tile{display:flex;flex-direction:column;gap:4px;text-align:left;width:100%;background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--line);border-radius:15px;padding:13px 14px;cursor:pointer;font-family:var(--font);color:var(--ink);transition:transform .12s,border-color .12s,box-shadow .12s}
+  .s1tile:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,.06)}
+  .s1tile:focus-visible{outline:2px solid var(--broth);outline-offset:2px}
+  .s1tile.v-buy{border-left-color:var(--buy)} .s1tile.v-dont{border-left-color:var(--dont)} .s1tile.v-hold{border-left-color:var(--broth)}
+  .s1tile-none{border-left-color:var(--line);opacity:.65;cursor:default}
+  .s1top{display:flex;align-items:center;gap:6px;flex-wrap:wrap;min-height:20px}
+  .s1sc{margin-left:auto;font-size:11px;font-weight:800;padding:1px 7px;border-radius:20px;font-variant-numeric:tabular-nums}
+  .s1juice{background:rgba(255,107,26,.14);color:var(--broth)}
+  .s1cherry{background:rgba(214,40,57,.12);color:var(--dont)}
+  .s1sym{font-family:var(--disp);font-weight:800;font-size:23px;line-height:1.02}
+  .s1nm{font-size:11.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .s1verd{font-size:11px;font-weight:800}
+  .s1verd.v-buy{color:var(--buy)} .s1verd.v-dont{color:var(--dont)} .s1verd.v-hold{color:var(--broth)}
+  .s1px{font-size:13px;font-weight:700;font-variant-numeric:tabular-nums}
+  .s1px .up{color:var(--buy)} .s1px .down{color:var(--dont)}
+  .s1why{font-size:12px;color:var(--muted);line-height:1.35;text-wrap:pretty}
+  .s1score{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px}
+  .s1wl{text-align:center;margin-bottom:4px}
+  .s1wlw{font-size:42px;font-weight:900;color:var(--buy);font-variant-numeric:tabular-nums;line-height:1}
+  .s1wlx{font-size:26px;font-weight:700;color:var(--muted);margin:0 7px;vertical-align:6px}
+  .s1wll{font-size:42px;font-weight:900;color:var(--dont);font-variant-numeric:tabular-nums;line-height:1}
+  .s1wllbl{font-size:11.5px;color:var(--muted);margin-top:3px}
+  .s1herowrap{margin-top:20px}
   /* #172/#247 — the 3×3 type × timeframe matrix (Villager view). Cols: Type3→Type2→Type1 (wild→safe). Rows:
      DAY/WEEK/MONTH. Now shares the .simple column width (no more 96vw breakout) so it aligns edge-to-edge
      with the hero/risk-chart above it. */
@@ -5988,10 +6020,11 @@ function renderWlSummary(rows){
     b.addEventListener('click',function(e){ e.preventDefault(); openTicker(b.dataset.wlSym,b.dataset.wlRegion); });   // #318 — canonical resolver (pick/cand → rich card, else watch-insight)
   });
 }
-function renderWatchlist(){
-  var el=document.getElementById('wlPills'); if(!el) return;
-  var D=(LAST&&LAST.D)||{}, pm=wlPriceMap(D);
-  var rows=wlGet().map(function(w){
+// #320 — shared watchlist row-builder so the Favourites tab AND the Simple-view one-pager compute
+// performance from the exact same source (and the #318/#319 NaN + since-last-open logic lives once).
+function wlBuildRows(D){
+  D=D||(LAST&&LAST.D)||{}; var pm=wlPriceMap(D);
+  return wlGet().map(function(w){
     var info=pm[w.sym+'|'+w.region]||null;
     var it=wlIntel(w,D);
     var entry=(w.entry!=null?w.entry:(info&&info.entry!=null?info.entry:(it.entry!=null?it.entry:null)));
@@ -6004,6 +6037,11 @@ function renderWatchlist(){
     return {w:w,price:price,cur:cur,up:info?info.up:null,change:info?info.change:null,entry:entry,gap:gap,intel:it,
       name:(info&&info.name)||w.name||null, spark:(info&&info.spark)||null};
   });
+}
+function renderWatchlist(){
+  var el=document.getElementById('wlPills'); if(!el) return;
+  var D=(LAST&&LAST.D)||{};
+  var rows=wlBuildRows(D);
   // #206 — the watchlist now honours the AU/US toggle like the rest of the page. Count how many sit in the
   // OTHER market so an empty AU (say) view can point the user to their US names instead of looking broken.
   var otherMkt=rows.filter(function(r){return (r.w.region||'au')!==MKT;}).length;
@@ -6977,55 +7015,88 @@ function simpleFullPotHtml(D){
     '<div class="spot-list" id="spotList">'+rows+'</div>'+
     '<div class="spot-none" id="spotNone" hidden>Nothing scoring that high right now — drag the slider down.</div></div>';
 }
+// #320 — Simple reborn as a bold one-pager. Each tile composes the SAME live helpers the Full view uses,
+// so nothing is a dumbed-down copy — it's the real data, arranged as a scannable poster, and every tile
+// taps through to the #318 canonical overlay.
+function s1PickTile(p,region){
+  if(!p||p.sym==='NONE'){
+    return '<div class="s1tile s1tile-none"><div class="s1top"><span class="s1tf">—</span></div><div class="s1sym">No pick</div><div class="s1why">Nothing cleared the bar here this run.</div></div>';
+  }
+  var bn=(p.score&&p.score.buy_now!=null)?p.score.buy_now:null;
+  var cherry=''; try{ var ov=overallScore(bn, signalRows(p,region)); if(ov) cherry='<span class="s1sc s1cherry">🍒 '+ov.score+'</span>'; }catch(e){}
+  var juice=(bn!=null)?'<span class="s1sc s1juice">🍊 '+bn+'</span>':'';
+  var why=firstSentence(p.plain||p.chefTake||'');
+  return '<button class="s1tile '+esc(p.vclass||'')+'" data-sym="'+esc(p.sym)+'" data-region="'+esc(region)+'" aria-label="'+esc(p.sym)+' — open the full card">'+
+    '<div class="s1top"><span class="s1tf">'+tfBW(p.tf)+'</span>'+juice+cherry+'</div>'+
+    '<div class="s1sym">'+esc(p.sym)+'</div>'+
+    (p.name?'<div class="s1nm">'+esc(p.name)+'</div>':'')+
+    (p.verdict?'<div class="s1verd '+esc(p.vclass||'')+'">'+esc(p.verdict)+'</div>':'')+
+    (p.price?'<div class="s1px">'+esc(p.price)+' <span class="'+chgTone(p.change,p.up)+'">'+esc(p.change||'')+'</span></div>':'')+
+    (why?'<div class="s1why">'+esc(why)+'</div>':'')+
+    '</button>';
+}
+function s1PicksHtml(D){
+  var out='';
+  [['au','🇦🇺 Australia'],['us','🇺🇸 United States']].forEach(function(m){
+    var rg=(D.regions||[]).filter(function(x){return (x.id||x.region)===m[0];})[0]; if(!rg) return;
+    var picks=(rg.picks||[]).slice(0,3); if(!picks.length) return;
+    out+='<div class="s1mkt"><div class="s1mkth">'+m[1]+'</div><div class="s1grid">'+picks.map(function(p){return s1PickTile(p,m[0]);}).join('')+'</div></div>';
+  });
+  return out||'<div class="s1why" style="text-align:center">No picks served this run.</div>';
+}
+function s1TrackHtml(D){
+  if(!(OUTCOMES&&OUTCOMES.outcomes)) return '';
+  var rec=(OUTCOMES.record||'').split(/[–-]/);
+  var wins=(rec[0]||'0').trim(), losses=(rec[1]||'0').trim();
+  var ocGraded=Object.keys(OUTCOMES.outcomes).map(function(k){var o=OUTCOMES.outcomes[k];o._k=k;return o;}).filter(function(o){return o.status==='graded';});
+  return '<div class="s1score">'+
+    '<div class="s1wl"><span class="s1wlw">'+esc(wins)+'</span><span class="s1wlx">–</span><span class="s1wll">'+esc(losses)+'</span>'+
+      '<div class="s1wllbl">wins – losses · every graded call, no cherry-picking</div></div>'+
+    equityCurveHtml(ocGraded)+
+    '</div>';
+}
 function renderSimple(D){
-  var r = D.risk||{};
-  var sStamp = stampNoWeekday(D.stamp);
-  var region = (D.regions||[]).filter(function(x){return x.id===MKT;})[0] || (D.regions||[])[0];
-  var rid = region?region.id:'au';
-  var mood=villagerMood(r);
-  var cards=(region?tierPicks(region):[]).map(function(p,idx){ return villagerCard(p,rid,idx); }).join('');   // #152 — honour the selected tier in Simple view too
-  var themeLine=villagerThemeLine(D);
+  var r=D.risk||{}, mood=villagerMood(r), themeLine=villagerThemeLine(D), fm=riskFactorMarks(r);
+  var hero=oneMoveHtml(D), track=s1TrackHtml(D);
+  var shadow=''; try{ shadow=shadowPortfolioHtml(D); }catch(e){}
+  var upcoming=''; try{ if(typeof upcomingHtml==='function') upcoming=upcomingHtml(D); }catch(e){}
   document.getElementById('app').innerHTML =
-    '<div class="simple villager"><div class="shero"><div class="brandrow"><div class="brand"><span class="hpot"><span class="hsteam"><i></i><i></i><i></i></span><span class="hpotbowl">🍲</span></span> The&nbsp;Stock&nbsp;Soup</div>'+
-      '<button class="viewtoggle" id="viewToggleS" title="Switch to Full view" aria-label="Switch to Full view">📋</button>'+
-      '<div class="burgerwrap"><button class="burger" id="burgerBtnS" aria-label="Menu" aria-haspopup="true" aria-expanded="false" aria-controls="burgerMenuS">☰</button>'+
-        '<div class="burgermenu" id="burgerMenuS" role="menu" hidden>'+
-          '<div class="bmhead"><span class="live"><span class="pulse"></span>LIVE</span><button class="bmupd" id="lastUpdS">updated…</button></div>'+
-          (isAdmin()?'<div class="bmadmin" title="You are signed in as the admin account"><span class="adminbadge">ADMIN</span> signed in as admin</div>':'')+
-          '<button class="bmitem" id="signInTopS" role="menuitem">👤 Sign in</button>'+
-          '<button class="bmitem" id="refreshBtnS" role="menuitem">↻ Refresh prices</button>'+
-          '<button class="bmitem" id="viewFull" role="menuitem">📋 Full view</button>'+
-          '<button class="bmitem" id="themeBtn2" role="menuitem">🌗 Switch theme</button>'+
-          '<button class="bmitem" id="guideBtnS" role="menuitem">📖 User guide</button>'+
-          '<button class="bmitem" id="methodBtnS" role="menuitem">🎓 For your advisor</button>'+
-          '<button class="bmitem" id="adminBtnS" role="menuitem" style="display:none">🛠 Admin tools</button>'+
-        '</div></div></div>'+
-      // #261 (user ask) — Simple is the dumb-simple view: drop the date/next-run line, the AU/US market
-      // toggle and the T1/T2/T3 tier pills. Both markets + all tiers now show together in the stacked 3×3s,
-      // so those filters are redundant here (they stay in Full view). Date/schedule is still one tap away
-      // via the burger's run-schedule link.
-      // #234 — Simple view used to show TWO risk read-outs (the villager mood gauge + a second dumbed-down
-      // needle). Now it's the villager MASCOT (emoji + word — character, not a chart) sitting above the ONE
-      // real risk meter, identical to Full view: same needle, same 5 factor ticks, same legend, same tap →
-      // tonight's market read. One chart, not two.
-      '<div class="vmood"><div class="vmoodemoji">'+mood.emoji+'</div><div class="vmoodword">'+mood.word+'</div></div>'+
-      // #260 (user ask) — the daily theme line ("Gold, Tin PFS… popular kids at school 🌟") sits directly
-      // under the GO TIME! header now, above the risk meter.
-      (themeLine?'<div class="vtheme">'+esc(themeLine)+'</div>':'')+
+    '<div class="simple s1">'+
+      '<div class="shero"><div class="brandrow"><div class="brand"><span class="hpot"><span class="hsteam"><i></i><i></i><i></i></span><span class="hpotbowl">🍲</span></span> The&nbsp;Stock&nbsp;Soup</div>'+
+        '<button class="viewtoggle" id="viewToggleS" title="Switch to Full view" aria-label="Switch to Full view">📋</button>'+
+        '<div class="burgerwrap"><button class="burger" id="burgerBtnS" aria-label="Menu" aria-haspopup="true" aria-expanded="false" aria-controls="burgerMenuS">☰</button>'+
+          '<div class="burgermenu" id="burgerMenuS" role="menu" hidden>'+
+            '<div class="bmhead"><span class="live"><span class="pulse"></span>LIVE</span><button class="bmupd" id="lastUpdS">updated…</button></div>'+
+            (isAdmin()?'<div class="bmadmin" title="You are signed in as the admin account"><span class="adminbadge">ADMIN</span> signed in as admin</div>':'')+
+            '<button class="bmitem" id="signInTopS" role="menuitem">👤 Sign in</button>'+
+            '<button class="bmitem" id="refreshBtnS" role="menuitem">↻ Refresh prices</button>'+
+            '<button class="bmitem" id="viewFull" role="menuitem">📋 Full view</button>'+
+            '<button class="bmitem" id="themeBtn2" role="menuitem">🌗 Switch theme</button>'+
+            '<button class="bmitem" id="guideBtnS" role="menuitem">📖 User guide</button>'+
+            '<button class="bmitem" id="methodBtnS" role="menuitem">🎓 For your advisor</button>'+
+            '<button class="bmitem" id="adminBtnS" role="menuitem" style="display:none">🛠 Admin tools</button>'+
+          '</div></div></div>'+
+        // The mascot mood + theme line (character), then the SAME real risk meter as Full view (needle +
+        // factor ticks + legend). One market read, tap for the full context.
+        '<div class="vmood"><div class="vmoodemoji">'+mood.emoji+'</div><div class="vmoodword">'+mood.word+'</div><div class="vmoodline">'+esc(mood.line)+'</div></div>'+
+        (themeLine?'<div class="vtheme">'+esc(themeLine)+'</div>':'')+
+        '<div class="meter tappable" id="riskMeterBtn" role="button" tabindex="0" title="Tap for tonight’s market read" aria-label="Open tonight’s market read"><div class="track"><div class="needle" id="needle"></div>'+fm.marks+'</div></div>'+fm.leg+
       '</div>'+
-    // #263 (user ask) — the risk meter moves DOWN into the type-cards panel and goes BARE: no factor icons
-    // (🛢️₿🇦🇺😨) and no 🔴/⚪/🟢 legend — just the gradient + needle, tap for the full read. It's built here and
-    // passed into tierMatrixHtml so it sits at the top of the same panel as the type cards.
-    // #262 — ONE combined grid: each Type × Timeframe box holds both markets (🇦🇺 top, 🇺🇸 bottom).
-    tierMatrixHtml(D, '<div class="meter tappable simplemeter" id="riskMeterBtn" role="button" tabindex="0" title="Tap for tonight’s market read" aria-label="Open tonight’s market read"><div class="track"><div class="needle" id="needle"></div></div></div>')+
-    '<button class="sfull" id="viewFull2">🔍 Show me the boring grown-up version</button>'+
-    '<footer>Not financial advice — just a friendly village guide. · The Stock Soup, served hot, hourly</footer></div>';
+      (hero?'<div class="s1herowrap">'+hero+'</div>':'')+
+      '<div class="s1sec"><h3 class="s1h"><span class="s1hi">🍽️</span> Tonight’s plates <small>tap for the full card</small></h3>'+s1PicksHtml(D)+'</div>'+
+      (track?'<div class="s1sec"><h3 class="s1h"><span class="s1hi">📊</span> How we’re doing <small>every graded call</small></h3>'+track+'</div>':'')+
+      (shadow?'<div class="s1sec">'+shadow+'</div>':'')+
+      '<div class="s1sec"><h3 class="s1h"><span class="s1hi">⭐</span> Your watchlist</h3><div id="wlSummary"></div></div>'+
+      (upcoming?'<div class="s1sec"><h3 class="s1h"><span class="s1hi">📅</span> Coming up</h3>'+upcoming+'</div>':'')+
+      '<button class="sfull" id="viewFull2">🔍 Show me the full grown-up version</button>'+
+      '<footer>Not financial advice — just a friendly kitchen guide. · The Stock Soup, served hot, hourly</footer>'+
+    '</div>';
   wireSimple(D);
 }
 function wireSimple(D){
   var root=document.documentElement;
   var t=document.getElementById('themeBtn2'); if(t) t.onclick=function(){var c=root.getAttribute('data-theme')||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');root.setAttribute('data-theme',c==='dark'?'light':'dark');};
-  ['viewFull','viewFull2','viewToggleS'].forEach(function(id){var b=document.getElementById(id);if(b) b.onclick=function(){setView('full');};});   // #174 round toggle in Simple view
+  ['viewFull','viewFull2','viewToggleS'].forEach(function(id){var b=document.getElementById(id);if(b) b.onclick=function(){setView('full');};});
   // Simple-view burger (parity with Full view)
   var bg=document.getElementById('burgerBtnS'), bm=document.getElementById('burgerMenuS');
   if(bg&&bm){ var closeBM=function(){ bm.setAttribute('hidden',''); bg.setAttribute('aria-expanded','false'); };
@@ -7038,42 +7109,26 @@ function wireSimple(D){
   var adbS=document.getElementById('adminBtnS'); if(adbS){ if(isAdmin()){ adbS.style.display=''; adbS.onclick=function(){var _bm=document.getElementById('burgerMenuS');if(_bm)_bm.setAttribute('hidden','');openAdminDrawer();}; } }
   var gbS=document.getElementById('guideBtnS'); if(gbS) gbS.onclick=openUserGuide;
   var mbS=document.getElementById('methodBtnS'); if(mbS) mbS.onclick=openExpertBrief;
-  document.querySelectorAll('.stoprail .mkf[data-region]').forEach(function(b){b.onclick=function(){ if(b.dataset.region===MKT)return; MKT=b.dataset.region; try{pushViewState();}catch(e){} renderSimple(D); };});
-  // #199 — whole-pot score-threshold slider: show/hide rows client-side (no re-render), persist the level
-  var spotThr=document.getElementById('spotThr');
-  if(spotThr){
-    var applySpot=function(){
-      var t=+spotThr.value; SIMPLE_POT_THR=t;
-      var lbl=document.getElementById('spotThrLbl'); if(lbl) lbl.textContent=t+'+';
-      var shown=0;
-      document.querySelectorAll('#spotList .spot-row').forEach(function(r){ var ok=Math.max(+r.dataset.spotScore,+(r.dataset.spotCherry||0))>=t; r.style.display=ok?'':'none'; if(ok)shown++; });
-      var none=document.getElementById('spotNone'); if(none) none.hidden=shown>0;
-    };
-    spotThr.addEventListener('input', applySpot); applySpot();
-  }
-  bindTierPills();   // #152 tier pills in the simple-view header too
-  function regionOf(id){return (D.regions||[]).filter(function(x){return x.id===id;})[0];}
-  // #172 — 3×3 matrix cells open the real pick modal for that tier × timeframe
-  document.querySelectorAll('.tmx-vcell[data-tier]').forEach(function(el){
-    el.onclick=function(){ var reg=el.dataset.region||MKT; var rg=regionOf(reg); var p=matrixPickAt(D,reg,el.dataset.tier,el.dataset.tf); if(!p) return;
-      // #233 — a backfilled next-best cell isn't a served pick, so open the generic per-ticker read
-      // (openMover: pick/candidate → analyst fallback), matching the Full view's suggestion-card tap.
-      // #260 — both markets now render, so the tap resolves against the cell's OWN region, not global MKT.
-      if(p._sugg) openMover(p.sym,reg); else openModal(p,reg,(rg&&rg.cur)||'$'); };
-  });
-  hydrateMissCharts();   // #172 — lazy-load each 3×3 cell's mini intraday chart (works for any ticker, incl T2/T3 with no spark)
-  document.querySelectorAll('.vcard').forEach(function(c){
-    function open(){var rg=regionOf(c.dataset.region);if(rg){var p=tierPicks(rg)[+c.dataset.idx];if(p) openModal(p,rg.id,rg.cur||'$');}}
-    c.addEventListener('click',function(e){if(e.target.closest('.vwatch'))return;open();});
-    c.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();open();}});
+  // #320 — every one-pager tile routes through the #318 canonical overlay.
+  var _hero=document.querySelector('.s1herowrap .onemove');
+  if(_hero){ var _hgo=function(){ openTicker(_hero.dataset.sym,_hero.dataset.region); }; _hero.addEventListener('click',_hgo); _hero.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();_hgo();}}); }
+  document.querySelectorAll('.s1tile[data-sym]').forEach(function(el){ el.addEventListener('click',function(){ openTicker(el.dataset.sym,el.dataset.region); }); });
+  // watchlist performance (shared builder, MKT-scoped) into the one-pager's #wlSummary
+  try{ renderWlSummary(wlBuildRows(D).filter(function(rw){return (rw.w.region||'au')===MKT;})); }catch(e){}
+  // "Coming up" rows → canonical overlay (the <a>/qlink inside still opens the source independently)
+  document.querySelectorAll('.uprow3.uptappable[data-up-sym], .axcoming[data-up-sym], .axread[data-up-sym]').forEach(function(c){
+    var go=function(){ openTicker(c.dataset.upSym,c.dataset.upRegion); };
+    c.addEventListener('click',function(e){if(e.target.closest('a,button'))return;go();});
+    c.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();go();}});
   });
   document.querySelectorAll('.watchbtn[data-sym]').forEach(function(b){
     b.addEventListener('click',function(e){e.preventDefault();e.stopPropagation();watchToggleFromEl(b);});
   });
   syncWatchButtons();
-  wireInfo();
+  try{ wireInfo(); }catch(e){}
+  hydrateMissCharts();   // any lazy intraday chart slots (shadow/upcoming/hero)
   var lvl=(D.risk&&D.risk.level!=null)?D.risk.level:50;
-  requestAnimationFrame(function(){ placeNeedle('needle',lvl); });   // #234 — same needle as Full view
+  requestAnimationFrame(function(){ placeNeedle('needle',lvl); });   // same needle as Full view
   var rmbS=document.getElementById('riskMeterBtn'); if(rmbS){ rmbS.onclick=openMarketRead; rmbS.onkeydown=function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); openMarketRead(); } }; }
 }
 
