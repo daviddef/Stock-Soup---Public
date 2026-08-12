@@ -2198,6 +2198,28 @@ function stampNoWeekday(s){return String(s||'').replace(/^[A-Za-z]{3}\s+/,'').re
 function clamp(x){return Math.max(3,Math.min(97,x));}
 // Action that moves with the ideal-buy price: at/below → get in, above → wait for the dip.
 // The real discovery funnel (only shown once a full run logs D.discovery — makes "48" real & inspectable)
+// #334 — a 4-step "how we got here" derived from THIS run's real data (counts, market, a real example),
+// so it never drifts stale like the old hand-authored trail. Split-run aware: names only the market(s)
+// actually served this run.
+function trailDerived(D){
+  var cands=(D.candidates||[]), regions=(D.regions||[]);
+  var shortlisted=cands.length;
+  var served=regions.reduce(function(n,rg){return n+(rg.picks||[]).filter(function(p){return p.sym&&p.sym!=='NONE';}).length;},0);
+  var listedN=((D.discovery||{}).tickers||[]).length||shortlisted;
+  var mkts={}; regions.forEach(function(rg){ (rg.picks||[]).forEach(function(p){ if(p.sym&&p.sym!=='NONE') mkts[(rg.id||p.region||'').toLowerCase()]=1; }); });
+  var mk=Object.keys(mkts).filter(Boolean);
+  var forWhere = mk.length>=2 ? 'across 🇦🇺 Australia and 🇺🇸 the world'
+               : mk[0]==='au' ? 'for 🇦🇺 Australia' : mk[0]==='us' ? 'for 🇺🇸 the US' : 'this run';
+  // a real, current example: the most-overheated candidate we docked (not a stale hardcoded name)
+  var hot=cands.filter(function(c){return c&&c.score&&(c.score.heat||0)>3;}).sort(function(a,b){return (b.score.heat||0)-(a.score.heat||0);})[0];
+  var hotEg = hot ? ('E.g. <b>'+esc(hot.sym)+'</b> was docked for running hot.') : 'Overheated names get docked so we don’t chase what already ran.';
+  return [
+    {n:'01',text:'<b>Scanned the market</b> — a wide net across news, market movers and analyst actions, then shortlisted the strongest.',note:'A live read — a different-sized net every run, depending on the day’s news.',jump:'howfunnel',jumpLabel:'see the '+listedN+' we can name →'},
+    {n:'02',text:'<b>Scored every candidate</b> — '+shortlisted+' names run through the model on fresh catalysts, then penalised for being extended.',note:hotEg},
+    {n:'03',text:'<b>Pulled live prices</b> and checked the charts on the survivors.',note:'Straight from live market data — every candidate priced.'},
+    {n:'04',text:'<b>Picked the top '+served+'</b> '+forWhere+' — the rest sit in <b>The Full Pot</b>, just outside the cut.',note:'No doubling up — each served pick is a distinct name.'}
+  ];
+}
 function discoveryFunnel(D){
   var dv=D.discovery; if(!dv) return '';
   var shortlisted=(D.candidates||[]).length;
@@ -2239,7 +2261,16 @@ function discoveryFunnel(D){
       ((nm||net)?'<div class="dvps">'+nm+((nm&&net)?' · ':'')+net+'</div>':'')+
     '</div>';
   }).join('');
-  return '<div class="funnel"><div class="fnrow"><span class="fnn fnn-scan">'+scanned+'</span> scanned <span class="fnar">→</span> <span class="fnn fnn-short">'+shortlisted+'</span> shortlisted <span class="fnar">→</span> <span class="fnn fnn-served">'+served+'</span> served</div>'+
+  // #333 (user-caught: "199 scanned → 199 shortlisted, correct?") — when no genuinely-wider scanned
+  // universe was recorded, `scanned` floors to the shortlist size, so the old 3-stage row read a
+  // degenerate "199 → 199 → 5". Only show the "scanned →" stage when a real wider net (> shortlist) was
+  // captured; otherwise start honestly at the number of names actually scored. (Recording a true
+  // top-of-funnel count — the whole-market/discovery-union size — is the authoring-side follow-up.)
+  var hasRealScan = (+dv.scanned||0) > shortlisted;
+  var fnrow = hasRealScan
+    ? '<span class="fnn fnn-scan">'+scanned+'</span> scanned <span class="fnar">→</span> <span class="fnn fnn-short">'+shortlisted+'</span> scored <span class="fnar">→</span> <span class="fnn fnn-served">'+served+'</span> served'
+    : '<span class="fnn fnn-short">'+shortlisted+'</span> names scored <span class="fnar">→</span> <span class="fnn fnn-served">'+served+'</span> served';
+  return '<div class="funnel"><div class="fnrow">'+fnrow+'</div>'+
     (list?'<details class="dvdet" open><summary>see the '+listedN+' we can name from this run</summary><div class="dvlist">'+list+'</div></details>':'')+'</div>';
 }
 // "The Misses" (#63): the day's real top movers, checked against what we actually scanned/served —
@@ -3794,7 +3825,12 @@ function render(D,H){
   var _potMain=(POTVIEW==='board')?boardTop:potBands;
   var _potHidden=(POTVIEW==='board')?boardRest:potHidden;
   var _potHid=(POTVIEW==='board')?Math.max(0,_boardOrder.length-20):_hidN;
-  var trail=(D.trail||[]).map(function(t){var jump=(t.jump?' <a class="trailjump" href="#'+esc(t.jump)+'">'+esc(t.jumpLabel||'see the list →')+'</a>':'');return '<div class="step"><span class="n">'+esc(t.n)+'</span><div class="st-txt">'+t.text+jump+'<small>'+esc(t.note)+'</small></div></div>';}).join('');
+  // #334 (user-caught: "4 steps? still accurate? seems off") — the trail used to be hand-authored per run,
+  // so its counts ("see all 16" vs 108 named), its split-run framing ("top 3 each for AU and the world" on a
+  // single-market run), and its example tickers all drifted stale. Derive it from THIS run's real data
+  // instead so it can't go stale; fall back to any authored D.trail only when there's nothing to derive from.
+  var trailSrc=(D.candidates&&D.candidates.length)?trailDerived(D):(D.trail||[]);
+  var trail=trailSrc.map(function(t){var jump=(t.jump?' <a class="trailjump" href="#'+esc(t.jump)+'">'+esc(t.jumpLabel||'see the list →')+'</a>':'');return '<div class="step"><span class="n">'+esc(t.n)+'</span><div class="st-txt">'+t.text+jump+'<small>'+esc(t.note)+'</small></div></div>';}).join('');
 
   document.getElementById('app').innerHTML=
   '<header class="hero"><div class="brandrow"><div class="brand"><span class="hpot"><span class="hsteam"><i></i><i></i><i></i></span><span class="hpotbowl">🍲</span></span> The&nbsp;Stock&nbsp;Soup</div>'+
