@@ -893,6 +893,12 @@
   .clickline{cursor:pointer;transition:border-color .12s,transform .1s}
   .clickline:hover{border-color:var(--broth)}
   .clickline:active{transform:scale(.995)}
+  /* #327 (user ask) — geo/sector cards carry a verdict-coloured left accent (matching their pill), so the
+     frames read as branded + meaningful at a glance instead of generic. Same colour system as the pick tiles. */
+  .line.lc-buy{border-left:3px solid var(--buy)}
+  .line.lc-hot,.line.lc-emerging{border-left:3px solid var(--broth)}
+  .line.lc-watch{border-left:3px solid var(--hold)}
+  .line.lc-meh,.line.lc-dont{border-left:3px solid var(--dont)}
   .themerow{display:flex;align-items:center;gap:10px;padding:9px 2px;border-bottom:1px solid var(--line)}
   .themerow:last-of-type{border-bottom:0}
   .themerow.tappable{cursor:pointer;margin:0 -8px;padding:9px 8px;border-radius:9px}
@@ -3675,7 +3681,7 @@ function render(D,H){
     // robust label: geo/sectors carry `name`, commodities carry `title` — fall back so neither shows
     // "undefined". note was concatenated raw (unescaped + unguarded → literal "undefined" when absent).
     var _label=x[key]||x.title||x.name||x.label||'';
-    return '<div class="line clickline" data-theme="'+esc(src)+'" data-ti="'+(off+i)+'" role="button" tabindex="0"><span class="em">'+esc(x.em||'')+'</span><div class="txt">'+esc(_label)+(x.note?'<small>'+esc(x.note)+'</small>':'')+lead+'</div><span class="tag '+esc(x.tclass)+'">'+esc(x.tag)+'</span></div>';
+    return '<div class="line clickline'+(x.tclass?' lc-'+esc(String(x.tclass).replace(/^t-/,'')):'')+'" data-theme="'+esc(src)+'" data-ti="'+(off+i)+'" role="button" tabindex="0"><span class="em">'+esc(x.em||'')+'</span><div class="txt">'+esc(_label)+(x.note?'<small>'+esc(x.note)+'</small>':'')+lead+'</div><span class="tag '+esc(x.tclass)+'">'+esc(x.tag)+'</span></div>';
   }).join('');}
   var story = (PULSES&&PULSES.length) ?
     ('<div class="panel"><h3>Tonight\'s hourly runs</h3><p class="panelsub"><b>Minor runs</b> — same menu, re-priced every hour ('+PULSES.length+' this session). The <b>major</b> menu changes are in The Journey. Newest first.</p>'+
