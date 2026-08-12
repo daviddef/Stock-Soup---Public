@@ -67,6 +67,8 @@
   .hero h1 .hot,.menuhead h1 .hot{color:var(--broth)}
   .chef{font-size:clamp(15px,2.2vw,19px);color:var(--muted);max-width:60ch;text-wrap:pretty}
   .chef b{color:var(--ink)}
+  .cheftk{color:var(--broth);font-weight:700;text-decoration:none;border-bottom:1px dotted var(--broth);cursor:pointer}  /* #327 — tappable ticker in chef prose */
+  .cheftk:hover{border-bottom-style:solid}
   /* chefByMkt is authored as multi-<p> HTML — .chef is a <div> (NOT a <p>, which can't legally nest <p>
      and would auto-close, spilling the note out of the clamp target). Tidy the inner paragraph rhythm. */
   .chef p{margin:0 0 .6em}
@@ -4616,6 +4618,58 @@ document.addEventListener('click',function(e){
   b.textContent=open?'Show less ▴':'Read the chef’s full note ▾';
   b.setAttribute('aria-expanded',open?'true':'false');
 });
+// #327 — make company mentions in the chef's note tappable. Build a name/ticker → {sym,region} dict from
+// THIS run's own data (picks/candidates/topNews/movers/watchlist), then linkify matches in the chef prose.
+// A covered name opens our own overlay (openTicker); everything routes there so the user can tap straight in.
+function chefTickerDict(D){
+  var map={}, syms={};
+  function strip(n){ return String(n||'').replace(/[,.]?\s+(Inc|Corp|Corporation|Ltd|Limited|Co|PLC|Group|Holdings|Class [A-Z]|NV|SA|AG)\.?$/i,'').trim(); }
+  function add(sym,region,name){
+    if(!sym) return; sym=String(sym).toUpperCase().replace(/\.(AX|US)$/,''); if(sym==='NONE'||sym.length<2) return;
+    region=(region==='au'||region==='us')?region:'us'; syms[sym]={sym:sym,region:region};
+    // only multi-word company names are safe to match in prose (single words false-positive too easily)
+    [String(name||''), strip(name)].forEach(function(n){ if(n && /\s/.test(n) && n.length>=6) map[n.toLowerCase()]={sym:sym,region:region}; });
+  }
+  try{
+    (D.regions||[]).forEach(function(rg){ (rg.picks||[]).forEach(function(p){ add(p.sym,p.region||rg.region,p.name); }); });
+    (D.candidates||[]).forEach(function(c){ add(c.sym,c.region,c.name); });
+    (D.topNews||[]).forEach(function(n){ if(n.sym) add(n.sym,n.region,n.name); });
+    ['au','us'].forEach(function(mk){ var tm=(D.topMovers||{})[mk]||{}; ['gainers','losers','byVolume'].forEach(function(k){ (tm[k]||[]).forEach(function(x){ add(x.sym,mk,x.name); }); }); });
+    (D.defaultWatchlist||[]).forEach(function(w){ add(w.sym,w.region,w.name); });
+  }catch(e){}
+  return {names:map, syms:syms};
+}
+function linkifyChef(){
+  var D=(window.LAST&&LAST.D)||null; if(!D) return;
+  var els=document.querySelectorAll('.chef'); if(!els.length) return;
+  var dict=chefTickerDict(D), nameKeys=Object.keys(dict.names), symKeys=Object.keys(dict.syms);
+  var alts=nameKeys.concat(symKeys).sort(function(a,b){return b.length-a.length;}).map(function(k){return k.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');});
+  if(!alts.length) return;
+  var rx=new RegExp('\\b('+alts.join('|')+')\\b','g');   // NOT case-insensitive: tickers must match exact case
+  function resolve(tok){ if(/^[A-Z]{2,6}$/.test(tok)&&dict.syms[tok]) return dict.syms[tok]; return dict.names[tok.toLowerCase()]||null; }
+  els.forEach(function(el){
+    if(el.dataset.linked) return; el.dataset.linked='1';
+    var walker=document.createTreeWalker(el,NodeFilter.SHOW_TEXT,null), nodes=[];
+    while(walker.nextNode()) nodes.push(walker.currentNode);
+    nodes.forEach(function(node){
+      if(node.parentNode&&node.parentNode.closest&&node.parentNode.closest('a,button')) return;
+      var txt=node.nodeValue||''; rx.lastIndex=0; if(!rx.test(txt)) return; rx.lastIndex=0;
+      var frag=document.createDocumentFragment(), last=0, m, made=false;
+      while((m=rx.exec(txt))){
+        var hit=resolve(m[0]); if(!hit) continue;
+        if(m.index>last) frag.appendChild(document.createTextNode(txt.slice(last,m.index)));
+        var a=document.createElement('a'); a.className='cheftk'; a.textContent=m[0]; a.href='#';
+        a.dataset.sym=hit.sym; a.dataset.region=hit.region; frag.appendChild(a);
+        last=m.index+m[0].length; made=true;
+      }
+      if(made){ if(last<txt.length) frag.appendChild(document.createTextNode(txt.slice(last))); node.parentNode.replaceChild(frag,node); }
+    });
+  });
+}
+document.addEventListener('click',function(e){
+  var a=e.target.closest('.cheftk'); if(!a) return; e.preventDefault();
+  try{ openTicker(a.dataset.sym, a.dataset.region); }catch(err){}
+});
 // #224 — the compact risk chip opens the risk-vs-tolerance detail modal (capturing + stopPropagation so a
 // chip inside a tappable card opens the risk modal, not the card).
 document.addEventListener('click',function(e){
@@ -6926,6 +6980,7 @@ function hydrateMissCharts(root){
 function wire(D){
   var root=document.documentElement;
   hydrateMissCharts();
+  try{ linkifyChef(); }catch(e){}   // #327 — make ticker mentions in the chef note tappable (post-render, text-node safe)
   document.getElementById('themeBtn').addEventListener('click',function(){
     var cur=root.getAttribute('data-theme')||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');
     root.setAttribute('data-theme',cur==='dark'?'light':'dark');
