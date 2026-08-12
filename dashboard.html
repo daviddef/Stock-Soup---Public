@@ -952,6 +952,12 @@
      the right edge (user screenshot). Fixed by making each card a compact VERTICAL stack (date · title
      · so-what, top to bottom) so it fits a narrow column cleanly, and the outer grid goes up to 3-up. */
   .up3list{display:grid;grid-template-columns:1fr;gap:10px}
+  /* #325 — "What's coming up" collapse: first 5 shown, rest under a toggle (its own .up3list inside gets a top gap) */
+  .upmore>summary{cursor:pointer;font-size:12.5px;font-weight:800;color:var(--broth);padding:12px 2px 4px;list-style:none;text-align:center}
+  .upmore>summary::-webkit-details-marker{display:none}
+  .upmore>summary::marker{content:''}
+  .upmore>summary:hover{text-decoration:underline}
+  .upmore[open]>.up3list{margin-top:10px}
   @media(min-width:600px){.up3list{grid-template-columns:1fr 1fr}}
   @media(min-width:980px){.up3list{grid-template-columns:1fr 1fr 1fr}}
   .uprow3.uptappable{cursor:pointer}
@@ -2241,7 +2247,7 @@ function upcomingHtml(D){
     (D.regions||[]).forEach(function(rg){(rg.picks||[]).forEach(function(p){if(p.sym===sym&&p.sym!=='NONE')found=p;});});
     if(!found)(D.candidates||[]).forEach(function(c){if(c.sym===sym&&(c.region||'us')===(region||MKT))found=c;});
     return found; };
-  var rowsHtml=rows.slice(0,20).map(function(r){
+  function renderUpRow(r){
     var tracked=weTrack(r.sym);
     var when=r.days!=null?whenLabel(r.days)+(r.dateStr?' · '+esc(r.dateStr):''):esc(r.dateStr);
     var whatHtml=r.sym?qlink(r.sym,r.region,r.whatLabel):r.what;
@@ -2257,10 +2263,17 @@ function upcomingHtml(D){
       '<span class="up3when"><span class="up3ic">'+r.ic+'</span>'+when+'</span>'+
       '<span class="up3what">'+whatHtml+chip+wb+'</span>'+
       '<span class="up3sowhat">'+r.soWhat+'</span></div>';
-  }).join('');
+  }
+  // #325 (user ask) — show the first 5 events, collapse the rest under a "Show N more" toggle (same
+  // progressive-disclosure pattern as Tonight's News #269). The <details> holds its OWN .up3list so the
+  // multi-column grid stays intact when expanded, and rows inside it are still in the DOM so the global
+  // .uprow3/.watchbtn wiring in wire() reaches them.
+  var _up=rows.slice(0,20), _upFirst=_up.slice(0,5), _upRest=_up.slice(5);
+  var rowsHtml='<div class="up3list">'+_upFirst.map(renderUpRow).join('')+'</div>'+
+    (_upRest.length?'<details class="upmore"><summary>Show '+_upRest.length+' more '+(_upRest.length===1?'event':'events')+' →</summary><div class="up3list">'+_upRest.map(renderUpRow).join('')+'</div></details>':'');
   return '<section id="upcoming"><div class="sec-head"><h2 class="display">📅 What\'s coming up</h2>'+infoBtn('upcoming')+'</div>'+
     '<p class="sec-sub">Real dates, not predictions — reporting season, dividends, new listings, and macro events, soonest first, with what to actually do about each.</p>'+
-    '<div class="up3list">'+rowsHtml+'</div>'+
+    rowsHtml+
     (DIV.usUnavailable&&MKT==='us'?'<p class="upgap">'+esc(DIV.usUnavailable)+'</p>':'')+
   '</section>';
 }
