@@ -780,6 +780,12 @@
   .eqedge{margin-top:9px;font-size:12.5px;color:var(--muted)}
   .eqedge.up b{color:var(--buy)} .eqedge.down b{color:var(--dont)}
   .eqcap{font-size:11px;color:var(--faint);margin:9px 0 0;line-height:1.5}
+  .eqrepair{margin-top:14px;padding-top:11px;border-top:1px dashed var(--line)}
+  .eqrh{font-size:12px;color:var(--muted);font-weight:700}
+  .eqrh b{color:var(--dont)} .eqrv{color:var(--dont);font-weight:800;font-variant-numeric:tabular-nums}
+  .eqrsvg{width:100%;height:46px;display:block;margin-top:5px}
+  .eqrsvg polyline{fill:none;stroke:var(--dont);stroke-width:1.5;stroke-dasharray:3 3;opacity:.5;vector-effect:non-scaling-stroke}
+  .eqrcap{margin-top:6px}
   .tfs .tft{font-size:11px;font-weight:800;color:var(--muted)}
   .tfs .tfv{font-size:20px;font-weight:850;font-variant-numeric:tabular-nums;margin-top:2px;line-height:1}
   .tfs .tfn{font-size:10px;color:var(--faint);margin-top:2px}
@@ -1798,45 +1804,54 @@ function sparkSVG(vals){
     '<polygon points="0,'+h+' '+poly+' '+w+','+h+'"/><polyline points="'+poly+'"/>'+
     '<circle cx="'+last[0]+'" cy="'+last[1]+'" r="2.2"/></svg>';
 }
-// #309 — the track-record equity curve. HONEST by construction: a flat $1,000 into EVERY graded call (no
-// compounding — 43 sequential 100%-bets would wildly distort a ±2.5%/pick record into −84%), cumulative
-// over time, plotted against what that same money would've done in the pick's own index (STW/SPY) — the
-// index return is recovered from the grader's own `excess` field (index_ret = ret − excess). The gap
-// between the two lines IS the app's real edge. The caption names the worst timeframe from live data, so
-// the drag is called out truthfully rather than hidden. Renders only with ≥5 graded calls (else too noisy).
+// #309 (reframed per user) — the track-record equity curve. HONEST by construction, but leads with the
+// LIVE PRODUCT: the headline curve is Day + Week calls only ($1,000 flat into each, no compounding — 43
+// sequential 100%-bets would distort a ±2.5%/pick record into −84%), plotted against buying the pick's own
+// index (index_ret recovered from the grader's `excess`: index_ret = ret − excess). The Long/monthly slot
+// (historically the weak one, now under active model repair — tighter extension guard, quality tilt, stop)
+// is shown SEPARATELY and faintly as an "under repair" line, NOT folded into the headline number — so the
+// competitive part isn't buried under the slot we're already fixing. Renders with ≥5 graded Day/Week calls.
 function fmtMoney(v){var s=v<0?'−$':'+$';return s+Math.abs(Math.round(v)).toString().replace(/\B(?=(\d{3})+(?!\d))/g,',');}
+function _eqCum(list,stake){var ours=0,idx=0,po=[],pi=[],lo=0,hi=0;
+  list.forEach(function(o){ours+=(o.ret||0)*stake; idx+=((o.ret||0)-(o.excess==null?0:o.excess))*stake; po.push(ours);pi.push(idx); lo=Math.min(lo,ours,idx);hi=Math.max(hi,ours,idx);});
+  return {ours:ours,idx:idx,po:po,pi:pi,lo:lo,hi:hi};}
 function equityCurveHtml(graded){
-  var g=(graded||[]).filter(function(o){return o&&o.ret!=null&&(o.exitDate||o.date);})
-    .slice().sort(function(a,b){return ((a.exitDate||a.date)||'').localeCompare((b.exitDate||b.date)||'');});
-  if(g.length<5) return '';
-  var STAKE=1000, ours=0, idx=0, ptsO=[], ptsI=[], lo=0, hi=0;
-  g.forEach(function(o){
-    ours+=(o.ret||0)*STAKE;
-    idx +=((o.ret||0)-(o.excess==null?0:o.excess))*STAKE;
-    ptsO.push(ours); ptsI.push(idx); lo=Math.min(lo,ours,idx); hi=Math.max(hi,ours,idx);
-  });
-  var n=g.length, W=340, H=130, PX=8, PY=12, span=(hi-lo)||1;
-  function xy(v,i){var x=PX+(n<2?0:(i/(n-1))*(W-2*PX));var y=PY+(1-(v-lo)/span)*(H-2*PY);return x.toFixed(1)+','+y.toFixed(1);}
-  var polyO=ptsO.map(xy).join(' '), polyI=ptsI.map(xy).join(' ');
-  var zeroY=(PY+(1-(0-lo)/span)*(H-2*PY)).toFixed(1);
-  var lastO=xy(ptsO[n-1],n-1).split(','), lastI=xy(ptsI[n-1],n-1).split(',');
-  var edge=ours-idx, ourUp=ours>=0, edgeUp=edge>=0;
-  // name the worst timeframe honestly from live data (avoids a hardcoded claim going stale)
-  var bt=(typeof OUTCOMES!=='undefined'&&OUTCOMES&&OUTCOMES.byTimeframe)||{}, worst=null;
-  ['Day','Week','Long'].forEach(function(tf){var a=bt[tf]; if(a&&a.n&&(worst===null||(a.avgRet||0)<((bt[worst].avgRet)||0))) worst=tf;});
-  var drag=worst?(' — the '+({Day:'day trades',Week:'week holds',Long:'monthly holds'}[worst])+' are the biggest drag'):'';
+  var all=(graded||[]).filter(function(o){return o&&o.ret!=null&&(o.exitDate||o.date);});
+  function byExit(a,b){return ((a.exitDate||a.date)||'').localeCompare((b.exitDate||b.date)||'');}
+  var core=all.filter(function(o){return o.tf==='Day'||o.tf==='Week';}).slice().sort(byExit);
+  var lng =all.filter(function(o){return o.tf==='Long';}).slice().sort(byExit);
+  if(core.length<5) return '';
+  var STAKE=1000, c=_eqCum(core,STAKE);
+  var n=core.length, W=340, H=130, PX=8, PY=12, span=(c.hi-c.lo)||1;
+  function xy(v,i){var x=PX+(n<2?0:(i/(n-1))*(W-2*PX));var y=PY+(1-(v-c.lo)/span)*(H-2*PY);return x.toFixed(1)+','+y.toFixed(1);}
+  var polyO=c.po.map(xy).join(' '), polyI=c.pi.map(xy).join(' ');
+  var zeroY=(PY+(1-(0-c.lo)/span)*(H-2*PY)).toFixed(1);
+  var lastO=xy(c.po[n-1],n-1).split(','), lastI=xy(c.pi[n-1],n-1).split(',');
+  var edge=c.ours-c.idx, ourUp=c.ours>=0, edgeUp=edge>=0;
   var svg='<svg viewBox="0 0 '+W+' '+H+'" class="eqsvg" preserveAspectRatio="none" aria-hidden="true">'+
     '<line class="eqzero" x1="'+PX+'" y1="'+zeroY+'" x2="'+(W-PX)+'" y2="'+zeroY+'"/>'+
     '<polyline class="eqidx" points="'+polyI+'"/>'+
     '<polyline class="eqours '+(ourUp?'up':'down')+'" points="'+polyO+'"/>'+
     '<circle class="eqdot '+(ourUp?'up':'down')+'" cx="'+lastO[0]+'" cy="'+lastO[1]+'" r="3"/>'+
     '<circle class="eqdoti" cx="'+lastI[0]+'" cy="'+lastI[1]+'" r="2.5"/></svg>';
-  return '<div class="eqcurve"><div class="eqhead"><h4>📈 If you put $1,000 into every call</h4><span class="eqn">'+n+' graded calls</span></div>'+
+  // Long slot — shown separately as a faint "under repair" line, its own scale, NOT in the headline total.
+  var repair='';
+  if(lng.length>=3){
+    var lstake=1000, lours=0, lp=[], llo=0, lhi=0;
+    lng.forEach(function(o){lours+=(o.ret||0)*lstake; lp.push(lours); llo=Math.min(llo,lours);lhi=Math.max(lhi,lours);});
+    var ln=lng.length, lW=340, lH=46, lspan=(lhi-llo)||1;
+    var lpoly=lp.map(function(v,i){var x=(ln<2?0:(i/(ln-1))*lW);var y=5+(1-(v-llo)/lspan)*(lH-10);return x.toFixed(1)+','+y.toFixed(1);}).join(' ');
+    repair='<div class="eqrepair"><div class="eqrh">🔧 Monthly (Long) holds — <b>under repair</b> · <span class="eqrv">'+fmtMoney(lours)+'</span></div>'+
+      '<svg viewBox="0 0 '+lW+' '+lH+'" class="eqrsvg" preserveAspectRatio="none" aria-hidden="true"><polyline points="'+lpoly+'"/></svg>'+
+      '<p class="eqcap eqrcap">Not counted above. The Long slot ran '+ln+' graded calls at a low hit-rate — the model’s new Long-slot guards (tighter extension limit, quality tilt, a real stop) are the fix. Shown honestly, kept separate until the record turns.</p></div>';
+  }
+  return '<div class="eqcurve"><div class="eqhead"><h4>📈 $1,000 into every Day &amp; Week call</h4><span class="eqn">'+n+' graded</span></div>'+
     svg+
-    '<div class="eqlegend"><span class="eql eqlours '+(ourUp?'up':'down')+'"><i></i> Our calls <b>'+fmtMoney(ours)+'</b></span>'+
-      '<span class="eql eqlidx"><i></i> Just the index <b>'+fmtMoney(idx)+'</b></span></div>'+
-    '<div class="eqedge '+(edgeUp?'up':'down')+'">Edge vs the market: <b>'+fmtMoney(edge)+'</b> across every call</div>'+
-    '<p class="eqcap">A flat $1,000 into each graded pick (no compounding), added up over time, vs buying its market index instead. The honest, warts-and-all record'+drag+'.</p>'+
+    '<div class="eqlegend"><span class="eql eqlours '+(ourUp?'up':'down')+'"><i></i> Our calls <b>'+fmtMoney(c.ours)+'</b></span>'+
+      '<span class="eql eqlidx"><i></i> Just the index <b>'+fmtMoney(c.idx)+'</b></span></div>'+
+    '<div class="eqedge '+(edgeUp?'up':'down')+'">Edge vs the market: <b>'+fmtMoney(edge)+'</b> across the Day &amp; Week calls</div>'+
+    '<p class="eqcap">A flat $1,000 into each graded Day &amp; Week pick (no compounding), added up over time, vs buying its market index instead — the live product, scored honestly.</p>'+
+    repair+
     '</div>';
 }
 // Inline mini-trajectory: the price path across our hourly runs, FIRST run → now.
