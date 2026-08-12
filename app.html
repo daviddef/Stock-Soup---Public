@@ -4338,23 +4338,15 @@ function openModal(p,region,cur){
       '<button class="mverd '+esc(p.vclass)+'" id="mVerdictBtn" type="button" title="Tap for plain English">'+esc(p.verdict)+' <span class="chipi">i</span></button></div>'+
     '<div class="mbody">'+
       callHtml+
-      // #323 P3 (A/B) — the NEW unified chart shown ABOVE the current spark + range bars + ladder, nothing
-      // removed, so old vs new can be compared before we retire the three old idioms.
-      '<div class="viz viznew"><h4>📊 The chart — price + your levels <span class="newtag">NEW · P3 preview</span></h4>'+
-        (p.spark?levelChartSVG(p.spark,{stop:_nStop,entry:_nEntry,target:_nTarget,now:_nNow},cur):'<div class="rsimeta">No price history to chart yet.</div>')+
-        '<div class="rsimeta" style="margin-top:8px">One chart carries the whole plan. Below is the <b>current</b> set — recent-trend spark, 1w/1m/1y range bars, and the stop→target ladder — which this would replace. Tell me if the new one works and I’ll remove the old three.</div></div>'+
-      '<div class="vizoldlbl">↓ current charts (for comparison)</div>'+
-      sparkHtml+
+      // #323 P3 — the unified price+levels chart REPLACES the old recent-trend spark and the stop→target
+      // ladder (one chart carries the trend + the whole plan). The 1w/1m/1y range sliders are KEPT (user
+      // ask) as the where-in-its-range context beneath it.
+      '<div class="viz"><h4>📊 The chart — price &amp; your levels</h4>'+
+        (p.spark?levelChartSVG(p.spark,{stop:_nStop,entry:_nEntry,target:_nTarget,now:_nNow},cur):'<div class="rsimeta">No price history to chart yet.</div>')+'</div>'+
       rangesHtml+
-      '<div class="viz"><h4>Where the price sits · stop → target</h4>'+
-        '<div class="ladder">'+
-          '<span class="cap now" style="left:'+nowPct+'%">Now'+(_combineCap?' · Buy':'')+'</span>'+   /* #323 — merge Now/Buy when they overlap; price lives in the header */
-          '<span class="mk ent" style="left:'+entPct+'%"></span>'+
-          (_combineCap?'':'<span class="cap" style="left:'+entPct+'%">Buy</span>')+
-          '<span class="mk now" style="left:'+nowPct+'%"></span></div>'+
-        '<div class="lends"><span class="r">Stop '+money(cur,_nStop)+'</span><span class="g">Target '+money(cur,_nTarget)+'</span></div>'+
+      '<div class="viz">'+
         posSizeHtml(p,cur)+
-        '<h4 style="margin-top:20px">How hot is it right now? · RSI</h4>'+
+        '<h4 style="margin-top:0">How hot is it right now? · RSI</h4>'+
         '<div class="rsibar"><span class="rcap" style="left:'+clamp(rsi)+'%">RSI '+esc(rsi)+'</span><span class="rn" style="left:'+clamp(rsi)+'%"></span></div>'+
         '<div class="lends"><span class="g">Cheap</span><span class="r">Overheated</span></div>'+
         '<div class="rsimeta">'+rsiWord+'</div>'+
@@ -5462,7 +5454,9 @@ function openCandidate(idx){
     '<span class="mverd '+vc+'">'+esc(HEAT[c.heat]||c.heat)+'</span></div>'+
     '<div class="mbody">'+
       ccallHtml+
-      (spk?'<div class="viz"><h4>Recent trend · last ~6 weeks</h4>'+spk+'</div>':'')+
+      // #323 P3 — candidate gets the SAME unified chart as picks (with just the Now line — a candidate has
+      // no served stop/target). Keeps the 1w/1m/1y range sliders below, matching the pick card.
+      ((c.spark&&c.spark.length>2)?'<div class="viz"><h4>📊 The chart</h4>'+levelChartSVG(c.spark,{now:numLevel(c.nNow!=null?c.nNow:c.price)},cCur)+'</div>':'')+
       cRanges+
       cRsiBlock+
       '<div class="mnews">🔎 <span class="lead">How we picked it up:</span> '+esc(c.note||'a signal in tonight\'s scan')+'<div class="mfound">'+(c.foundVia?esc(c.foundVia):'Caught by our wide-net scan — live news, market movers and analyst actions — then priced &amp; scored into the pot.')+'</div></div>'+
