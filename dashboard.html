@@ -1082,6 +1082,11 @@
   .callplan .plk.g{color:var(--buy)} .callplan .plk.r{color:var(--dont)}
   .callplan .pldot{color:var(--faint);margin:0 7px}
   .callwhy{font-size:14.5px;line-height:1.5;color:var(--ink);margin:11px 0 0}
+  .mplain{font-size:14.5px;line-height:1.62;color:var(--ink);margin:13px 2px 2px;text-wrap:pretty}  /* #330 — full company blurb in the overlay */
+  .msigs>summary{cursor:pointer;font-size:15px;font-weight:800;color:var(--ink);margin-top:20px;list-style:none}  /* #329 — collapse the duplicate signal wall */
+  .msigs>summary::-webkit-details-marker{display:none}
+  .msigs>summary::before{content:'▸ ';color:var(--broth)}
+  .msigs[open]>summary::before{content:'▾ '}
   .potcard:hover{transform:translateY(-2px)}
   .potcard:focus-visible{outline:2px solid var(--broth);outline-offset:2px}
   .potcard .ph{width:9px;height:9px;border-radius:50%;flex:0 0 auto}
@@ -2147,15 +2152,21 @@ function rangeBar(spark,cur,tf,entry){
   if(t.indexOf('day')>=0){ win=5; lbl='5-day range'; }
   else if(t.indexOf('week')>=0){ win=10; lbl='2-week range'; }
   else { win=Math.min(spark.length,22); lbl='1-month range'; }
-  var s=spark.slice(-win); if(s.length<2) s=spark.slice(-3);
+  var s0=spark.slice(-win); if(s0.length<2) s0=spark.slice(-3);
+  // #331 — spark values (and `entry`) can arrive as strings like "US$231–236"; raw Math.min/max on those
+  // yields NaN → the bar rendered "$NaN … $NaN". Coerce every point through numLevel and keep only finite
+  // numbers; if fewer than 2 real points survive, don't render the bar at all (better than showing NaN).
+  var s=s0.map(numLevel).filter(function(x){return isFinite(x);});
+  if(s.length<2) return '';
   var mn=Math.min.apply(null,s),mx=Math.max.apply(null,s),c=s[s.length-1];
+  var eN=numLevel(entry);
   // include the ideal-buy in the scale so its marker always lands on the bar
-  if(entry!=null){ mn=Math.min(mn,entry); mx=Math.max(mx,entry); }
+  if(isFinite(eN)){ mn=Math.min(mn,eN); mx=Math.max(mx,eN); }
   var span=(mx-mn)||1;
   var pos=Math.max(3,Math.min(97,((c-mn)/span)*100));
-  var buyPos=(entry!=null)?Math.max(2,Math.min(98,((entry-mn)/span)*100)):null;
+  var buyPos=isFinite(eN)?Math.max(2,Math.min(98,((eN-mn)/span)*100)):null;
   return '<div class="mrange"><div class="mrlbl">'+lbl+' · low → high</div>'+
-    '<div class="mrbar">'+(buyPos!=null?'<span class="mrbuy" style="left:'+buyPos.toFixed(0)+'%" title="ideal buy '+cur+entry+'"></span>':'')+'<span class="mrnow" style="left:'+pos.toFixed(0)+'%"></span></div>'+
+    '<div class="mrbar">'+(buyPos!=null?'<span class="mrbuy" style="left:'+buyPos.toFixed(0)+'%" title="ideal buy '+cur+eN.toFixed(2)+'"></span>':'')+'<span class="mrnow" style="left:'+pos.toFixed(0)+'%"></span></div>'+
     '<div class="mrends"><span>'+cur+mn.toFixed(2)+'</span><span>now '+cur+c.toFixed(2)+'</span><span>'+cur+mx.toFixed(2)+'</span></div></div>';
 }
 function ruCard(ru,region,idx){var da=(region!=null?' data-region="'+region+'" data-idx="'+idx+'" tabindex="0" role="button"':'');
@@ -4376,11 +4387,26 @@ function _openJuiceInner(id,j,score,d){
   // "all the signals line up" belongs. The 🍊 keeps the SCORE math only: category weights + penalties +
   // nudges (the score adjustments), always shown here now that they no longer ride on the signal cards.
   var hh='font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:800;margin:4px 0 8px';
-  var deriv='<details class="jsec"><summary>🧮 The full derivation — category weights, penalties & nudges</summary>'+
-    '<h4 style="'+hh+'">Category scores (weight × raw signal = points)</h4><div class="jgrid">'+catRows+'</div>'+
-    '<h4 style="'+hh+';margin-top:14px">Penalties</h4><div class="jpengrid">'+penRows+'</div>'+
-    '<h4 style="'+hh+';margin-top:14px">Layered nudges</h4><div class="jpengrid">'+nudgeRows+'</div>'+
-    '<p style="font-size:11px;color:var(--faint);margin-top:12px">Dominant signal: <b>'+esc(SCORE_FLAB[d.dominant_signal]||d.dominant_signal||'—')+'</b>. The exact derivation the model used — same numbers.</p></details>';
+  // #328 — a hand-built PICK often has no score.detail (weights/penalties/nudges are only attached to
+  // scored candidates), so catRows was empty and the modal looked broken ("nothing in the orange", CAH).
+  // When the derivation is genuinely absent, show the live SIGNAL reads (which the pick DOES carry) instead
+  // of an empty collapsed section, plus an honest one-liner. Real fix (backend) is to propagate the matching
+  // candidate's score.detail onto the pick at publish time — tracked separately.
+  var hasDeriv = !!(catRows || (d.penalty_detail&&d.penalty_detail.length) || (d.nudges&&d.nudges.length));
+  var deriv;
+  if(hasDeriv){
+    deriv='<details class="jsec" open><summary>🧮 The full derivation — category weights, penalties & nudges</summary>'+
+      '<h4 style="'+hh+'">Category scores (weight × raw signal = points)</h4><div class="jgrid">'+catRows+'</div>'+
+      '<h4 style="'+hh+';margin-top:14px">Penalties</h4><div class="jpengrid">'+penRows+'</div>'+
+      '<h4 style="'+hh+';margin-top:14px">Layered nudges</h4><div class="jpengrid">'+nudgeRows+'</div>'+
+      '<p style="font-size:11px;color:var(--faint);margin-top:12px">Dominant signal: <b>'+esc(SCORE_FLAB[d.dominant_signal]||d.dominant_signal||'—')+'</b>. The exact derivation the model used — same numbers.</p></details>';
+  } else {
+    var _sr=(j.sigRows||[]);
+    deriv='<div class="jsec"><h4 style="'+hh+';margin-top:10px">The signals behind the score</h4>'+
+      '<p style="font-size:12px;color:var(--muted);margin:0 0 10px">The weight-by-weight derivation isn’t attached to this served pick — here are the live signal reads that back the score. (The 🍒 cherry shows these same signals with charts.)</p>'+
+      (_sr.length?'<div class="sigdetail">'+_sr.map(function(r){return sigRowHtml(r);}).join('')+'</div>':'<p class="muted" style="font-size:12px">No signal detail available for this name yet.</p>')+
+      '</div>';
+  }
   m.innerHTML='<div class="mhead"><button class="mclose" id="mClose" aria-label="Close">✕</button><div class="mtf">🍊 The buy-now score — how it’s built</div>'+
     '<div class="mtop"><div class="msym" style="line-height:1.25">'+jhead+'</div></div></div>'+
     '<div class="mbody">'+
@@ -4472,6 +4498,10 @@ function openModal(p,region,cur){
       '<button class="mverd '+esc(p.vclass)+'" id="mVerdictBtn" type="button" title="Tap for plain English">'+esc(p.verdict)+' <span class="chipi">i</span></button></div>'+
     '<div class="mbody">'+
       callHtml+
+      // #330 — the plain-English company blurb (what it is + what just happened + why we like it) lives on
+      // the card FACE; it was missing from the overlay (the deeper view carried LESS prose than the card).
+      // Show the full p.plain here, prominently, under "the call". chefTake (callwhy) is the shorter take.
+      (p.plain?'<p class="mplain">'+esc(p.plain)+'</p>':'')+
       // #323 P3 — the unified price+levels chart REPLACES the old recent-trend spark and the stop→target
       // ladder (one chart carries the trend + the whole plan). The 1w/1m/1y range sliders are KEPT (user
       // ask) as the where-in-its-range context beneath it.
@@ -4486,8 +4516,11 @@ function openModal(p,region,cur){
         '<div class="rsimeta">'+rsiWord+'</div>'+
         (valChip(p)?'<div class="rsimeta" style="margin-top:6px">'+valChip(p)+'</div>':'')+
         (timingLine(p)?'<div class="rsimeta" style="margin-top:6px">'+timingLine(p)+'</div>':'')+
-        '<h4 style="margin-top:20px">🧮 All the signals, in one place</h4>'+
-        signalDetailHtml(p,region,{skipRsi:true})+
+        // #329 — this full signal breakdown is the SAME content the 🍒 cherry modal shows (user-flagged as
+        // near-duplicate). Keep it available but COLLAPSED so it isn't a wall competing with the cherry; the
+        // cherry stays the primary interactive read (it adds the for/against vote + charts).
+        '<details class="msigs"><summary>🧮 All the signals, in one place — the full read</summary>'+
+        signalDetailHtml(p,region,{skipRsi:true})+'</details>'+
       '</div>'+
       announcementsHtml(p.announcements)+
       newsLineHtml(p.news, p.news_url, p.news_date)+
@@ -4677,6 +4710,10 @@ var VERDICT_GLOSSARY=[
   [/momentum/i,'Momentum','The price is already moving strongly in one direction — the theory is it keeps going, at least for a while.'],
   [/breakout/i,'Breakout','The price just pushed through a level it had struggled to get past before — often read as a bullish signal.'],
   [/get in|buy now/i,'Get in','Our system rates this a buy right now, at today\'s price.'],
+  // #332 — the parenthetical qualifier was never explained; verdictExplainHtml shows ALL matches, so these
+  // append their own line beneath "Get in" when the verdict reads "Get in (small size)" / "(limit)".
+  [/small size|small position|half size/i,'…(small size)','We still rate it a buy — but it\'s a more volatile / higher-risk name, so take a SMALLER position than usual. That caps the damage if it turns against you.'],
+  [/\(limit\)|limit order|don.?t chase/i,'…(limit)','Buy it, but don\'t chase at market. Set a LIMIT order at or below the buy zone so you only get filled at a sensible price — not whatever the market happens to ask right now.'],
   [/wait|too late/i,'Wait / too late','It already moved a lot — buying now means chasing a price that\'s run ahead of the news.'],
   [/great bank|quality (long|hold)/i,'Quality hold','A genuinely good business — the caution is about the PRICE you pay for it, not the company itself.']
 ];
