@@ -6379,6 +6379,18 @@ function wire(D){
       if(signedIn()) apiPush('POST','/me/import',{items:seed});   // → David's backend account, syncs across his devices
     }
     if(isAdmin() && (D.defaultWatchlist||[]).length) localStorage.setItem('soup_wl_seeded','1');
+    // Keep the admin's live watchlist in sync with the seed WITHOUT re-adding names you've removed: each default
+    // name is "offered" exactly once (tracked in soup_wl_offered). So a NEW default (e.g. QAL, added server-side)
+    // auto-appears in your table on next load, but anything you delete stays deleted.
+    if(isAdmin() && (D.defaultWatchlist||[]).length){
+      var offered={}; (JSON.parse(localStorage.getItem('soup_wl_offered')||'[]')).forEach(function(k){offered[k]=1;});
+      var have={}; wlGet().forEach(function(w){have[w.sym+'|'+(w.region||'au')]=1;});
+      var add=[], allkeys=[];
+      D.defaultWatchlist.forEach(function(w){ if(!w.sym) return; var k=w.sym+'|'+(w.region||'au'); allkeys.push(k);
+        if(!offered[k] && !have[k]) add.push({sym:w.sym,region:w.region||'au'}); });
+      if(add.length){ wlSet(wlGet().concat(add)); if(signedIn()) apiPush('POST','/me/import',{items:add}); }
+      localStorage.setItem('soup_wl_offered', JSON.stringify(allkeys));
+    }
   }catch(e){}
   renderWatchlist();
 
