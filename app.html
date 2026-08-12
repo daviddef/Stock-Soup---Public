@@ -3187,7 +3187,7 @@ function render(D,H){
           /* #orange-top (user ask) — the 🍊 score chip now leads the header, next to the + watch button,
              instead of only appearing lower by the score bar. Same chip/behaviour: tap → the full breakdown
              (juice modal) when we have the detail, else a plain 🍊 score badge. */
-          ((p.score&&p.score.buy_now!=null)?juiceChip(p.score,p.sym,p.name,signalRows(p,rg.id))+cherryChip(p.score,p.sym,p.name,signalRows(p,rg.id)):'')+
+          dualChip(p.score,p.sym,p.name,signalRows(p,rg.id))+
           '<button class="watchbtn iconwatch" data-sym="'+esc(p.sym)+'" data-region="'+esc(rg.id)+'" data-name="'+esc(p.name)+'"'+(p.nEntry!=null?' data-entry="'+p.nEntry+'"':'')+' aria-pressed="false" title="Add to watchlist">+</button><span class="verdict '+esc(p.vclass)+'">'+esc(p.verdict)+'</span></span></div>'+
         replNote+
         '<div class="tick"><span class="symwrap"><span class="sym">'+qlink(p.sym,rg.id)+'</span><span class="co">'+qlink(p.sym,rg.id,p.name)+' ↗</span></span>'+
@@ -3324,7 +3324,7 @@ function render(D,H){
     var chg=c.change?'<span class="pmc-chg '+(c.up?'up':'down')+'">'+(c.up?'▲':'▼')+' '+esc(c.change)+'</span>':'';
     var shortChip=(c.short!=null&&c.short>=4)?'<span class="pmc-short">🩳 '+c.short+'%</span>':'';
     var _crows=signalRows(c,c.region||'us');
-    var jc=juiceChip(c.score,c.sym,c.name,_crows)+cherryChip(c.score,c.sym,c.name,_crows);   // #173/#186 🍊 + #266 🍒
+    var jc=dualChip(c.score,c.sym,c.name,_crows);   // #173/#186 🍊 + #266 🍒 → #298 leading-score pref
     var _bn=(c.score&&c.score.buy_now!=null)?c.score.buy_now:0;
     var _ov=(c.score&&c.score.buy_now!=null)?(overallScore(c.score.buy_now,_crows)||{}).score:0;   // #270 — cherry score for the OR-filter
     var rankBadge=rank?'<span class="pmc-rank">'+rank+'</span>':'';   // #211 — Stock Pot Top 20 is a numbered leaderboard
@@ -3557,7 +3557,12 @@ var FACTOR_EXPLAIN={
 // watchlists — same signature as juiceChip, so a call site just swaps the name.
 function dualChip(score,sym,name,sigRows){
   if(!score||score.buy_now==null) return '';
-  return juiceChip(score,sym,name,sigRows)+cherryChip(score,sym,name,sigRows);
+  // #298 — face shows the LEADING score only (per user pref); the other stays reachable in the detail modal.
+  var lead=curScoreLead();
+  var j=juiceChip(score,sym,name,sigRows), c=cherryChip(score,sym,name,sigRows);
+  if(lead==='orange') return j||c;
+  if(lead==='both') return j+c;
+  return c||j;   // 'cherry' (default) — 🍒 leads, fall back to 🍊 if conviction can't be computed
 }
 function juiceChip(score,sym,name,sigRows){
   // #orange-top fix (11 Aug 2026) — was requiring score.detail, so a pick WITHOUT detail (e.g. CPU) fell to
@@ -3757,6 +3762,13 @@ function cherryChip(score,sym,name,rows){
   var ov=overallScore(score&&score.buy_now, rows); if(!ov) return '';
   var cid=++CHERRY_SEQ; CHERRY_CACHE[cid]={ov:ov,sym:sym,name:name,rows:rows||[]};
   return '<button class="cherrybtn '+ov.vcls+'" data-cherry-id="'+cid+'" title="Overall conviction — tap for the full read">🍒 '+ov.score+'</button>';
+}
+// #298 — the detail modal always carries BOTH scores, so whichever one the face is set to HIDE stays one
+// tap away. The 🍊 buy-now bar is already in the modal (scoreBarHtml); this adds the 🍒 conviction chip.
+function cherryModalBlock(score,sym,name,rows){
+  var cc=cherryChip(score,sym,name,rows); if(!cc) return '';
+  return '<div class="viz"><h4>🍒 Overall conviction</h4>'+cc+
+    '<div class="rsimeta" style="margin-top:6px">The buy-now score blended with how every signal lines up — tap for the full ingredient list.</div></div>';
 }
 function cherryCardHtml(ov,rows){
   if(!ov) return '';
@@ -4005,6 +4017,7 @@ function openModal(p,region,cur){
         signalDetailHtml(p,region,{skipRsi:true})+
       '</div>'+
       scoreHtml+
+      cherryModalBlock(p.score,p.sym,p.name,signalRows(p,region))+
       announcementsHtml(p.announcements)+
       '<p class="mtake"><span class="lead">Chef says:</span> '+esc(p.chefTake)+'</p>'+
       newsLineHtml(p.news, p.news_url, p.news_date)+
@@ -4330,7 +4343,7 @@ function wlCard(c){
   // tap handler (→ openMover) still fires.
   var reg=c.region||'us';
   var rows=signalRows(c,reg);
-  var jc=(c.score&&c.score.buy_now!=null)?juiceChip(c.score,c.sym,c.name,rows)+cherryChip(c.score,c.sym,c.name,rows):'';
+  var jc=dualChip(c.score,c.sym,c.name,rows);   // #298 — leading-score pref (was juice+cherry pair)
   var chg=c.change?'<span class="pmc-chg '+(c.up?'up':'down')+'">'+(c.up?'▲':'▼')+' '+esc(c.change)+'</span>':'';
   var spk=(c.spark&&c.spark.length>2)?'<div class="pmc-spark">'+sparkSVG(c.spark.slice(-30))+'</div>':'';
   var verd=(c.score&&c.score.verdict)?'<span class="wic vd '+(/get in|buy/i.test(c.score.verdict)?'v-buy':/late|wait|skip/i.test(c.score.verdict)?'v-dont':'v-hold')+'">'+esc(c.score.verdict)+'</span>':'';
@@ -5081,6 +5094,7 @@ function openCandidate(idx){
       '<div class="mnews">🔎 <span class="lead">How we picked it up:</span> '+esc(c.note||'a signal in tonight\'s scan')+'<div class="mfound">'+(c.foundVia?esc(c.foundVia):'Caught by our wide-net scan — live news, market movers and analyst actions — then priced &amp; scored into the pot.')+'</div></div>'+
       (signalRows(c,c.region).length?'<h4 style="margin-top:16px">🧮 All the signals, in one place</h4>'+signalDetailHtml(c,c.region):'')+
       scoreBarHtml(c.score,c.sym,c.name)+
+      cherryModalBlock(c.score,c.sym,c.name,signalRows(c,c.region))+
       announcementsHtml(c.announcements)+
       newsLineHtml(c.news, c.news_url, c.news_date)+
       (c.short!=null?'<div class="mshort">🩳 <span class="lead">Short interest:</span> <b>'+c.short+'%</b> of shares sold short'+(c.short>=8?' — <b>elevated</b> (squeeze fuel / bearish crowd)':c.short>=4?' — moderate':' — light')+'</div>':'')+
@@ -5920,6 +5934,12 @@ function setTheme(t){document.documentElement.setAttribute('data-theme',t);try{l
 var RISK_TOL_MAX={conservative:25,balanced:45,aggressive:100};   // max riskTier.score this tolerance is comfortable with
 function curRiskTol(){try{return localStorage.getItem('soup_risktol')||'balanced';}catch(e){return 'balanced';}}
 function setRiskTol(t){try{localStorage.setItem('soup_risktol',t);}catch(e){}}
+// #298 (12 Aug 2026, user chose "toggle") — which score LEADS on compact card faces. Faces used to show
+// BOTH the 🍊 timing and 🍒 conviction chips side by side (double the interpretation load). Now the face
+// shows one (default 🍒 conviction — the "all things considered" number best for a hold/buy decision);
+// the other is always one tap away in the card's detail modal. 'both' restores the old dual-chip look.
+function curScoreLead(){try{return localStorage.getItem('soup_scorelead')||'cherry';}catch(e){return 'cherry';}}
+function setScoreLead(t){try{localStorage.setItem('soup_scorelead',t);}catch(e){}}
 // The header 👤 button → real account-management panel (settings, not the watchlist).
 function openAccount(){
   LASTFOCUS=document.activeElement;
@@ -5939,6 +5959,10 @@ function openAccount(){
         ['conservative','balanced','aggressive'].map(function(t){return '<button class="tseg'+(curRiskTol()===t?' on':'')+'" data-tol="'+t+'">'+(t==='conservative'?'🛡️ Low':t==='balanced'?'⚖️ Balanced':'🎢 High')+'</button>';}).join('')+
         '</span>'+infoBtn('risktol')+'</div>'+
       '<div class="acctsub">Picks riskier than your setting get a ⚠️ warning on their card — nothing\'s hidden, this just flags it.</div>'+
+      '<div class="acctrow"><span class="acctk">Score on cards</span><span class="themeseg" id="scoreLeadSeg">'+
+        [['cherry','🍒 Conviction'],['orange','🍊 Timing'],['both','Both']].map(function(t){return '<button class="tseg'+(curScoreLead()===t[0]?' on':'')+'" data-scorelead="'+t[0]+'">'+t[1]+'</button>';}).join('')+
+        '</span></div>'+
+      '<div class="acctsub">Which score leads on the small cards. The other is always one tap away inside the card. Default: 🍒 Conviction.</div>'+
       (isAdmin()?'<div class="acctadmin"><div class="acctk" style="margin-bottom:8px">🛠 Admin</div><button class="acctbtn" id="acctArch">📐 Architecture &amp; data flow</button><button class="acctbtn" id="acctHealth">💓 Data-source health</button></div>':'')+
       '<div class="acctfoot"><button class="acctbtn ghost" id="acctSignOut">Sign out</button></div>'+
       '<div class="acctmsg" id="acctMsg"></div>'+
@@ -5957,6 +5981,7 @@ function openAccount(){
   m.querySelectorAll('.tseg').forEach(function(b){ b.onclick=function(){
     if(b.dataset.th){ setTheme(b.dataset.th); document.querySelectorAll('.tseg[data-th]').forEach(function(x){x.classList.toggle('on',x===b);}); }
     else if(b.dataset.tol){ setRiskTol(b.dataset.tol); document.querySelectorAll('.tseg[data-tol]').forEach(function(x){x.classList.toggle('on',x===b);}); render(LAST.D,LAST.H); }
+    else if(b.dataset.scorelead){ setScoreLead(b.dataset.scorelead); document.querySelectorAll('.tseg[data-scorelead]').forEach(function(x){x.classList.toggle('on',x===b);}); render(LAST.D,LAST.H); }   // #298
   }; });
   // #157 (user ask) — moved here from Favourites; dynamically-injected modal content needs its own
   // local bind (same pattern as #115/#116's lesson), not the page-load-time generic wire() pass.
