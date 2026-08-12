@@ -1471,6 +1471,10 @@
   #onboard .ob-prog{position:fixed;top:0;left:0;height:3px;width:0;background:linear-gradient(90deg,var(--broth),var(--dont));z-index:2;transition:width .1s linear}
   #onboard .ob-close{position:fixed;top:12px;right:14px;z-index:3;background:var(--surface);border:1px solid var(--line);color:var(--muted);font-weight:800;font-size:12.5px;padding:8px 13px;border-radius:99px;cursor:pointer}
   #onboard .ob-close:hover{color:var(--broth);border-color:var(--broth)}
+  /* tour scenes hug their (short) content — no full-screen void between scenes, just rhythmic breathing room */
+  #onboard .s2scene{min-height:auto;padding:12svh 24px}
+  #onboard .s2scene.s2end{min-height:78svh;justify-content:center}
+  #onboard .s2wrap{padding-bottom:8svh}
   /* #172/#247 — the 3×3 type × timeframe matrix (Villager view). Cols: Type3→Type2→Type1 (wild→safe). Rows:
      DAY/WEEK/MONTH. Now shares the .simple column width (no more 96vw breakout) so it aligns edge-to-edge
      with the hero/risk-chart above it. */
