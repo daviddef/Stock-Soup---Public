@@ -104,6 +104,13 @@
   .omcta{font-size:12.5px;font-weight:900;color:#FF8C00;white-space:nowrap}
   @keyframes omReveal{from{opacity:0;transform:translateY(15px)}to{opacity:1;transform:translateY(0)}}
   @media(prefers-reduced-motion:reduce){.onemove{animation:none}.onemove:hover{transform:none}}
+  /* #312 — morning brief: a thin, dismissible status strip above the header */
+  .mbrief{display:flex;align-items:center;gap:9px;margin:0 0 14px;padding:9px 13px;border-radius:12px;background:var(--surface-2);border:1px solid var(--line);font-size:12.5px;color:var(--ink);animation:omReveal .5s ease both}
+  .mb-ic{font-size:15px;flex:0 0 auto}
+  .mb-txt{flex:1 1 auto;line-height:1.4} .mb-txt b{font-weight:800}
+  .mb-x{flex:0 0 auto;background:none;border:0;color:var(--muted);font-size:13px;cursor:pointer;padding:2px 5px;border-radius:6px;line-height:1}
+  .mb-x:hover{color:var(--ink);background:var(--surface)}
+  @media(prefers-reduced-motion:reduce){.mbrief{animation:none}}
   .metastrip{display:flex;flex-wrap:wrap;gap:8px;margin-top:20px}
   .chip{font-size:12px;font-weight:700;padding:6px 11px;border-radius:999px;border:1px solid var(--line);
     background:var(--surface-2);display:inline-flex;align-items:center;gap:6px;white-space:nowrap;color:var(--ink)}
@@ -2946,6 +2953,25 @@ function oneMoveHtml(D){
     '<div class="ombuy"><span class="ombz">'+buy+'</span><span class="omcta">See the full card →</span></div>'+
     '</div>';
 }
+// #312 — the glanceable morning brief. A thin, DISMISSIBLE one-liner at the very top: market status +
+// tonight's one move + a calendar heads-up — the 3-second orientation before diving into the full menu.
+// Deliberately light (a status strip, not a card) so it complements the bold hero rather than competing.
+// Dismiss hides it for the rest of the calendar day (per-device).
+function morningBriefHtml(D){
+  try{ if(localStorage.getItem('soup_brief_dismiss')===new Date().toISOString().slice(0,10)) return ''; }catch(e){}
+  var region=MKT, ms=marketStatus(region);
+  var rg=(D.regions||[]).filter(function(x){return (x.id||x.region)===region;})[0];
+  var picks=rg?(rg.picks||[]).filter(function(p){return p&&p.sym&&p.sym!=='NONE'&&p.score&&p.score.buy_now!=null;}):[];
+  picks=picks.slice().sort(function(a,b){return b.score.buy_now-a.score.buy_now;});
+  var mv=(picks.length&&picks[0].score.buy_now>=45)?picks[0]:null;
+  var move=mv?('tonight’s move <b>'+esc(mv.sym)+'</b>'+(mv.verdict?' ('+esc(mv.verdict)+')':'')):'nothing standout to act on';
+  var ev=(D.upcomingEarnings||[]).filter(function(e){return !e.error&&(e.region||'us')===region&&e.days_until!=null&&e.days_until<=3;}).length;
+  var evTxt=ev>0?(ev+' result'+(ev>1?'s':'')+' due within 3 days'):'a quiet calendar';
+  var greet=(function(){var h=new Date().getHours();return h<12?'Good morning':h<18?'Good afternoon':'Good evening';})();
+  return '<div class="mbrief" id="mbrief"><span class="mb-ic">☀️</span>'+
+    '<span class="mb-txt"><b>'+greet+'.</b> '+esc(ms.txt)+' · '+move+' · '+evTxt+'.</span>'+
+    '<button class="mb-x" id="mbriefX" type="button" aria-label="Dismiss for today">✕</button></div>';
+}
 // Custom tab icons (line-art, inherit currentColor → dim when idle, broth when active).
 var TABICONS={
   menu:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 11.5h17a8.5 8.5 0 0 1-17 0Z"/><path d="M2.5 11.5h19"/><path d="M9 4.4c.7.9-.5 1.5 0 2.4M13 4c.7.9-.5 1.5 0 2.4"/></svg>',
@@ -3537,6 +3563,7 @@ function render(D,H){
   // ===== 🍲 TONIGHT'S MENU =====
   '<div class="tabview active" id="tab-menu">'+
     '<div class="tabhead menuhead">'+
+      morningBriefHtml(D)+
       '<div class="eyebrow schedlink" data-info="schedule" role="button" tabindex="0" title="Major runs are manually triggered — this is the target window, not a guarantee" style="letter-spacing:.06em">'+esc(stampNoWeekday(D.stamp))+(D.next?' · next ~'+esc(D.next):'')+' <span class="schedi">i</span></div>'+
       '<h1 class="display">Two pots on the boil:<br><span class="hot">'+esc(hdl(D,'a'))+'</span> &amp; <span class="hot">'+esc(hdl(D,'b'))+'</span>.</h1>'+
       '<div class="chefwrap"><div class="chef">'+chefFor(D)+'</div><button class="chefmore" aria-expanded="false">Read the chef’s full note ▾</button></div>'+
@@ -6551,6 +6578,8 @@ function wire(D){
       var mc=document.getElementById('mClose'); if(mc){mc.onclick=closeModal;mc.focus();}
     }
   }
+  // #312 — dismiss the morning brief for the rest of the day
+  var mbx=document.getElementById('mbriefX'); if(mbx){ mbx.onclick=function(){ try{localStorage.setItem('soup_brief_dismiss',new Date().toISOString().slice(0,10));}catch(e){} var mb=document.getElementById('mbrief'); if(mb)mb.remove(); }; }
   // #295/#310 — the "one move" hero taps through to the full pick card
   document.querySelectorAll('.onemove').forEach(function(c){
     function go(){ var rg=c.dataset.region, sym=c.dataset.sym; var region=((LAST.D||{}).regions||[]).filter(function(x){return (x.id||x.region)===rg;})[0]; var p=region&&(region.picks||[]).filter(function(pp){return pp.sym===sym;})[0]; if(p) openModal(p, rg, rg==='au'?'A$':'$'); }
