@@ -81,6 +81,29 @@
      flow it into two columns so the right half is used and each line still reads at a sane length. */
   .chefwrap.open .chef{max-width:none}
   @media(min-width:820px){ .chefwrap.open .chef{columns:2;column-gap:46px} .chefwrap.open .chef p{break-inside:avoid} }
+  /* #295/#310 — "Tonight's one move" hero */
+  .onemove{position:relative;margin:24px 0 4px;padding:18px 20px 16px;border-radius:18px;cursor:pointer;overflow:hidden;
+    background:linear-gradient(135deg,rgba(255,140,0,.13),rgba(255,140,0,.03));border:1.5px solid rgba(255,140,0,.42);
+    animation:omReveal .6s cubic-bezier(.2,.72,.2,1) both;transition:border-color .18s,transform .18s}
+  .onemove:hover{border-color:rgba(255,140,0,.8);transform:translateY(-1px)}
+  .onemove:focus-visible{outline:2px solid var(--broth);outline-offset:2px}
+  .omeye{font-size:11px;font-weight:900;letter-spacing:.09em;text-transform:uppercase;color:#FF8C00;margin-bottom:9px}
+  .omtop{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
+  .omsym{font-family:var(--disp);font-weight:900;font-size:clamp(30px,7.4vw,46px);line-height:.95;letter-spacing:-.02em;color:var(--ink);text-transform:uppercase}
+  .omname{font-family:var(--font);font-size:13.5px;font-weight:700;color:var(--muted);letter-spacing:0;margin-left:8px;text-transform:none}
+  .omscores{display:flex;gap:7px;flex:0 0 auto}
+  .omsc{font-weight:800;font-size:13px;padding:4px 9px;border-radius:8px;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .omjuice{color:#FF8C00;background:rgba(255,140,0,.16);border:1px solid rgba(255,140,0,.4)}
+  .omcherry{color:#d6283c;background:rgba(214,40,60,.14);border:1px solid rgba(214,40,60,.42)}
+  .omverd{display:inline-block;margin:12px 0 0;font-weight:900;font-size:12.5px;padding:4px 11px;border-radius:999px;background:var(--surface-2);color:var(--ink)}
+  .onemove.v-buy .omverd,.onemove.v-yum .omverd{background:rgba(35,194,103,.17);color:var(--buy)}
+  .onemove.v-dont .omverd,.onemove.v-nah .omverd{background:rgba(209,80,58,.15);color:var(--dont)}
+  .omwhy{margin:11px 0 0;font-size:14.5px;line-height:1.5;color:var(--ink);max-width:62ch}
+  .ombuy{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:13px;flex-wrap:wrap}
+  .ombz{font-size:12.5px;font-weight:800;color:var(--muted)}
+  .omcta{font-size:12.5px;font-weight:900;color:#FF8C00;white-space:nowrap}
+  @keyframes omReveal{from{opacity:0;transform:translateY(15px)}to{opacity:1;transform:translateY(0)}}
+  @media(prefers-reduced-motion:reduce){.onemove{animation:none}.onemove:hover{transform:none}}
   .metastrip{display:flex;flex-wrap:wrap;gap:8px;margin-top:20px}
   .chip{font-size:12px;font-weight:700;padding:6px 11px;border-radius:999px;border:1px solid var(--line);
     background:var(--surface-2);display:inline-flex;align-items:center;gap:6px;white-space:nowrap;color:var(--ink)}
@@ -1151,6 +1174,7 @@
   .tseg{background:none;border:0;padding:6px 11px;border-radius:8px;font-size:12.5px;font-weight:700;cursor:pointer;color:var(--muted);font-family:inherit}
   .tseg.on{background:var(--broth);color:#fff}
   .acctadmin{margin:14px 0;padding:14px 0;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:8px}
+  .admdrawer{display:flex;flex-direction:column;gap:9px;margin-top:8px}  /* #301 — one admin drawer */
   .acctbtn{display:block;width:100%;text-align:left;background:var(--surface-2);border:1px solid var(--line);color:var(--ink);font-weight:700;font-size:14px;padding:12px 14px;border-radius:11px;cursor:pointer;font-family:inherit}
   .acctbtn:hover{border-color:var(--broth)}
   .acctfoot{display:flex;gap:10px;margin-top:18px}
@@ -2893,6 +2917,32 @@ function chefLine(D){
   }catch(e){ return (D&&D.chef)||''; }
 }
 function chefFor(D){ if(D&&D.chefByMkt&&D.chefByMkt[MKT])return D.chefByMkt[MKT]; return chefLine(D); }
+function firstSentence(s){ s=String(s||'').trim(); var m=s.match(/^.*?[.!?](\s|$)/); return (m?m[0]:s).trim(); }
+// #295/#310 — "Tonight's one move". The whole app in one card: the single most actionable pick RIGHT NOW
+// for the market you're viewing, chosen by the highest buy-now (timing) score among tonight's real picks.
+// Bold, animated (page-load reveal), taps through to the full pick. Falls back to nothing (the chef note +
+// servings still lead) when no pick clears an actionable bar — never forces a weak "move".
+function oneMoveHtml(D){
+  var region=MKT, cur=(region==='au'?'A$':'$');
+  var rg=(D.regions||[]).filter(function(x){return (x.id||x.region)===region;})[0];
+  if(!rg) return '';
+  var picks=(rg.picks||[]).filter(function(p){return p&&p.sym&&p.sym!=='NONE'&&p.score&&p.score.buy_now!=null;});
+  if(!picks.length) return '';
+  picks=picks.slice().sort(function(a,b){return (b.score.buy_now)-(a.score.buy_now);});
+  var p=picks[0];
+  if((p.score.buy_now||0)<45) return '';   // nothing actionable enough tonight — let the menu lead instead
+  var cherry=''; try{ var ov=overallScore(p.score.buy_now, signalRows(p,region)); if(ov) cherry='<span class="omsc omcherry">🍒 '+ov.score+'</span>'; }catch(e){}
+  var why=firstSentence(p.plain||p.chefTake||'');
+  var buy=(p.nEntry!=null&&String(p.nEntry).trim())?('📍 Buy zone '+esc(String(p.nEntry))):'';
+  return '<div class="onemove '+esc(p.vclass||'')+'" data-sym="'+esc(p.sym)+'" data-region="'+esc(region)+'" role="button" tabindex="0" aria-label="Tonight’s one move: '+esc(p.sym)+'">'+
+    '<div class="omeye">🍽️ Tonight’s one move · '+(region==='us'?'U.S.':'Australia')+'</div>'+
+    '<div class="omtop"><div class="omsym">'+esc(p.sym)+(p.name?' <span class="omname">'+esc(p.name)+'</span>':'')+'</div>'+
+      '<div class="omscores"><span class="omsc omjuice">🍊 '+p.score.buy_now+'</span>'+cherry+'</div></div>'+
+    (p.verdict?'<div class="omverd '+esc(p.vclass||'')+'">'+tfBW(p.tf)+' · '+esc(p.verdict)+'</div>':'')+
+    (why?'<p class="omwhy">'+esc(why)+'</p>':'')+
+    '<div class="ombuy"><span class="ombz">'+buy+'</span><span class="omcta">See the full card →</span></div>'+
+    '</div>';
+}
 // Custom tab icons (line-art, inherit currentColor → dim when idle, broth when active).
 var TABICONS={
   menu:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 11.5h17a8.5 8.5 0 0 1-17 0Z"/><path d="M2.5 11.5h19"/><path d="M9 4.4c.7.9-.5 1.5 0 2.4M13 4c.7.9-.5 1.5 0 2.4"/></svg>',
@@ -3459,8 +3509,7 @@ function render(D,H){
           '<button class="bmitem" id="themeBtn" role="menuitem">🌗 Switch theme</button>'+
           '<button class="bmitem" id="guideBtn" role="menuitem">📖 User guide</button>'+
           '<button class="bmitem" id="methodBtn" role="menuitem">🎓 For your advisor</button>'+
-          '<button class="bmitem" id="docsBtn" role="menuitem" style="display:none">📖 Kitchen Manual</button>'+
-          '<button class="bmitem" id="healthBtn" role="menuitem" style="display:none">💓 Data-source health</button>'+
+          '<button class="bmitem" id="adminBtn" role="menuitem" style="display:none">🛠 Admin tools</button>'+
         '</div></div>'+
     '</div></div>'+
     '<div class="toprow">'+mktBarHtml(D)+tierBarHtml()+'</div></header>'+
@@ -3484,6 +3533,7 @@ function render(D,H){
       (function(){var fm=riskFactorMarks(r); return '<div class="meter tappable" id="riskMeterBtn" role="button" tabindex="0" title="Tap for tonight’s market read" aria-label="Open tonight’s market read"><div class="track"><div class="needle" id="needle"></div>'+fm.marks+'</div>'+
       '<div class="lbls"><span>🔴 Hide the cash</span><span>⚪ Steady</span><span>🟢 Send it</span></div>'+
       fm.leg+'</div>';})()+
+      oneMoveHtml(D)+
       '<div class="sec-head" style="margin:26px 0 3px"><h2 class="display"><span class="k">01</span> Serving today in '+(MKT==='us'?'the U.S.':'Australia')+'</h2>'+infoBtn('menu')+'</div>'+
       '<p class="sec-sub" style="margin:0 0 10px">Three time horizons — '+tfB('Day')+' a quick feed · '+tfB('Week')+' a few days · '+tfB('Long')+' slow-cooked. Tap a card for the full serve; tap a name for Yahoo.</p>'+concentrationHtml(D)+tierToggleHtml+menus+convictionStripHtml(D)+
     '</div>'+
@@ -6037,7 +6087,7 @@ function openAccount(){
         [['cherry','🍒 Conviction'],['orange','🍊 Timing'],['both','Both']].map(function(t){return '<button class="tseg'+(curScoreLead()===t[0]?' on':'')+'" data-scorelead="'+t[0]+'">'+t[1]+'</button>';}).join('')+
         '</span></div>'+
       '<div class="acctsub">Which score leads on the small cards. The other is always one tap away inside the card. Default: 🍒 Conviction.</div>'+
-      (isAdmin()?'<div class="acctadmin"><div class="acctk" style="margin-bottom:8px">🛠 Admin</div><button class="acctbtn" id="acctArch">📐 Architecture &amp; data flow</button><button class="acctbtn" id="acctHealth">💓 Data-source health</button></div>':'')+
+      (isAdmin()?'<div class="acctadmin"><div class="acctk" style="margin-bottom:8px">🛠 Admin</div><button class="acctbtn" id="acctAdmin">🛠 Admin tools &amp; diagnostics →</button></div>':'')+
       '<div class="acctfoot"><button class="acctbtn ghost" id="acctSignOut">Sign out</button></div>'+
       '<div class="acctmsg" id="acctMsg"></div>'+
       '<button class="acctdel" id="acctDelete">Delete my account</button>';
@@ -6083,8 +6133,7 @@ function openAccount(){
     fetch(API_BASE+'/auth/request',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:em})}).then(function(r){return r.json();}).then(function(j){
       if(j&&j.magic_link){ mg.textContent='Signing you in…'; location.href=API_BASE+j.magic_link; } else if(j&&j.sent_to){ mg.innerHTML='📧 Check your email.'; }
     }).catch(function(){ mg.textContent='Try again.'; }); };
-  var ar=document.getElementById('acctArch'); if(ar) ar.onclick=function(){ closeModal(); openDocs(); };
-  var ah=document.getElementById('acctHealth'); if(ah) ah.onclick=openDataHealth;
+  var adm=document.getElementById('acctAdmin'); if(adm) adm.onclick=openAdminDrawer;
   var dsel=document.getElementById('acctDigestMode');
   if(dsel){
     fetch(API_BASE+'/me/digest',{headers:apiHdr()}).then(function(r){return r.ok?r.json():null;}).then(function(j){
@@ -6217,6 +6266,31 @@ function openDataHealth(){
     '<div class="dhgrid">'+rows+'</div>'+
     '<p class="infofoot">Full source-by-source detail lives in <b>The Kitchen Manual</b> → §11 Data APIs.</p></div>';
   var ov=document.getElementById('overlay'); ov.classList.add('open'); ov.setAttribute('aria-hidden','false');
+  document.getElementById('mClose').onclick=closeModal; document.getElementById('mClose').focus();
+}
+// #301 — ONE admin drawer. The admin tools (data-source health, run controls, methodology docs) were
+// scattered across the burger menu (×2 copies), the Account panel and an inline Kitchen section. This is
+// the single home: every other admin entry point now routes here, and each button opens the existing
+// tool modal in place (standard nested-modal pattern). Non-admins never reach it.
+function openAdminDrawer(){
+  if(!isAdmin()) return;
+  LASTFOCUS=document.activeElement;
+  var m=document.getElementById('modal'); m.className='modal';
+  m.innerHTML='<div class="mhead"><button class="mclose" id="mClose" aria-label="Close">✕</button><div class="mtf"><span class="adminbadge">ADMIN</span> Tools &amp; diagnostics</div>'+
+    '<div class="mtop"><div class="msym" style="font-size:22px">🛠 Admin drawer</div></div></div>'+
+    '<div class="mbody"><p class="sec-sub" style="margin-top:0">Everything admin, in one place.</p>'+
+    '<div class="admdrawer">'+
+      '<button class="acctbtn" data-adm="health">💓 Data-source health</button>'+
+      '<button class="acctbtn" data-adm="controls">🎛️ Kitchen controls — trigger a run</button>'+
+      '<button class="acctbtn" data-adm="docs">📖 Kitchen Manual — methodology &amp; data flow</button>'+
+    '</div></div>';
+  var ov=document.getElementById('overlay'); ov.classList.add('open'); ov.setAttribute('aria-hidden','false');
+  m.querySelectorAll('[data-adm]').forEach(function(b){ b.onclick=function(){
+    var k=b.dataset.adm;
+    if(k==='health') openDataHealth();
+    else if(k==='controls') openRunTrigger();
+    else if(k==='docs') openDocs();
+  };});
   document.getElementById('mClose').onclick=closeModal; document.getElementById('mClose').focus();
 }
 function renderAuth(){
@@ -6410,10 +6484,9 @@ function wire(D){
     document.addEventListener('keydown',function(e){ if(e.key==='Escape') closeBM(); });
     bm.querySelectorAll('.bmitem,.bmupd').forEach(function(it){ it.addEventListener('click',closeBM); });
   }
-  var db=document.getElementById('docsBtn'); if(db){ if(isAdmin()){ db.style.display=''; db.onclick=openDocs; } else { db.style.display='none'; } }
+  var adb=document.getElementById('adminBtn'); if(adb){ if(isAdmin()){ adb.style.display=''; adb.onclick=function(){var _bm=document.getElementById('burgerMenu');if(_bm)_bm.setAttribute('hidden','');openAdminDrawer();}; } else { adb.style.display='none'; } }
   var gb=document.getElementById('guideBtn'); if(gb) gb.onclick=openUserGuide;
   var mb=document.getElementById('methodBtn'); if(mb) mb.onclick=openExpertBrief;
-  var hb=document.getElementById('healthBtn'); if(hb){ if(isAdmin()){ hb.style.display=''; hb.onclick=openDataHealth; } else { hb.style.display='none'; } }
   // Unified Favourites bar: one ticker input + market toggle → either ＋Watchlist or 🧠 What to do?
   (function(){ var inp=document.getElementById('uniInput'), au=document.getElementById('uniAu'), us=document.getElementById('uniUs'),
         watch=document.getElementById('uniWatch'), ask=document.getElementById('uniAsk'), reg={r:'au'};
@@ -6459,6 +6532,12 @@ function wire(D){
       var mc=document.getElementById('mClose'); if(mc){mc.onclick=closeModal;mc.focus();}
     }
   }
+  // #295/#310 — the "one move" hero taps through to the full pick card
+  document.querySelectorAll('.onemove').forEach(function(c){
+    function go(){ var rg=c.dataset.region, sym=c.dataset.sym; var region=((LAST.D||{}).regions||[]).filter(function(x){return (x.id||x.region)===rg;})[0]; var p=region&&(region.picks||[]).filter(function(pp){return pp.sym===sym;})[0]; if(p) openModal(p, rg, rg==='au'?'A$':'$'); }
+    c.addEventListener('click',function(e){if(e.target.closest('a'))return;go();});
+    c.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();go();}});
+  });
   document.querySelectorAll('.axhold').forEach(function(c){
     function go(){ openSym(c.dataset.sym, c.dataset.region); }
     c.addEventListener('click',function(e){if(e.target.closest('a'))return;go();});
@@ -6782,8 +6861,7 @@ function renderSimple(D){
           '<button class="bmitem" id="themeBtn2" role="menuitem">🌗 Switch theme</button>'+
           '<button class="bmitem" id="guideBtnS" role="menuitem">📖 User guide</button>'+
           '<button class="bmitem" id="methodBtnS" role="menuitem">🎓 For your advisor</button>'+
-          '<button class="bmitem" id="docsBtnS" role="menuitem" style="display:none">📖 Kitchen Manual</button>'+
-          '<button class="bmitem" id="healthBtnS" role="menuitem" style="display:none">💓 Data-source health</button>'+
+          '<button class="bmitem" id="adminBtnS" role="menuitem" style="display:none">🛠 Admin tools</button>'+
         '</div></div></div>'+
       // #261 (user ask) — Simple is the dumb-simple view: drop the date/next-run line, the AU/US market
       // toggle and the T1/T2/T3 tier pills. Both markets + all tiers now show together in the stacked 3×3s,
@@ -6820,10 +6898,9 @@ function wireSimple(D){
   var luS=document.getElementById('lastUpdS'); if(luS){ if(PULSES&&PULSES.length){ luS.textContent='updated '+timeAgo(PULSES[PULSES.length-1].iso); luS.onclick=goRunSchedule; } else luS.textContent='no runs yet'; }
   var sitS=document.getElementById('signInTopS'); if(sitS){ sitS.textContent=signedIn()?'👤 Account':'👤 Sign in'; sitS.onclick=openAccount; }
   var rbS=document.getElementById('refreshBtnS'); if(rbS){ if(!isAdmin()) rbS.style.display='none'; else rbS.onclick=function(){refreshPrices(rbS);}; }
-  var dbS=document.getElementById('docsBtnS'); if(dbS){ if(isAdmin()){ dbS.style.display=''; dbS.onclick=openDocs; } }
+  var adbS=document.getElementById('adminBtnS'); if(adbS){ if(isAdmin()){ adbS.style.display=''; adbS.onclick=function(){var _bm=document.getElementById('burgerMenuS');if(_bm)_bm.setAttribute('hidden','');openAdminDrawer();}; } }
   var gbS=document.getElementById('guideBtnS'); if(gbS) gbS.onclick=openUserGuide;
   var mbS=document.getElementById('methodBtnS'); if(mbS) mbS.onclick=openExpertBrief;
-  var hbS=document.getElementById('healthBtnS'); if(hbS){ if(isAdmin()){ hbS.style.display=''; hbS.onclick=openDataHealth; } }
   document.querySelectorAll('.stoprail .mkf[data-region]').forEach(function(b){b.onclick=function(){ if(b.dataset.region===MKT)return; MKT=b.dataset.region; try{pushViewState();}catch(e){} renderSimple(D); };});
   // #199 — whole-pot score-threshold slider: show/hide rows client-side (no re-render), persist the level
   var spotThr=document.getElementById('spotThr');
