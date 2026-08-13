@@ -3096,8 +3096,11 @@ function signalRows(p,region,opts){
     var _pw=function(v){ return v>=80?(v+'th — near the top'):(v<=20?(v+'th — near the bottom'):(v+'th pctile')); };
     var _plabs={value:'Value',quality:'Quality',growth:'Growth',momentum:'Momentum'};
     var _pbits=[]; ['value','quality','growth','momentum'].forEach(function(k){ if(pc[k]!=null) _pbits.push(_plabs[k]+' '+pc[k]+'th'); });
-    var ptone=pc.overall>=67?'pos':(pc.overall<=33?'neg':'mix');
-    rows.push({icon:'🏅',label:'Ranks in the pot',tone:ptone,
+    // Deliberately NEUTRAL tone ('mix') so this row does NOT cast a for/against vote in the 🍒 conviction
+    // tally (overallScore counts only pos/neg rows). The percentile is largely DERIVED from the score, so
+    // letting it vote would double-count the engine score into conviction. This keeps #339 purely
+    // informational — it moves neither the 🍊 buy-now score nor the 🍒 conviction.
+    rows.push({icon:'🏅',label:'Ranks in the pot',tone:'mix',
       read:'Overall '+_pw(pc.overall)+' of '+pc.universe_n+' tonight',
       explain:'A self-calibrating read: where this sits versus the other '+(pc.universe_n-1)+' names in tonight’s '+_pmkt+' pot, ranked factor-by-factor — so the score is anchored (is a 60 actually top-decile or middle-of-the-pack for the names we’re weighing tonight?). '+(_pbits.length?_pbits.join(' · ')+'. ':'')+'Scope: tonight’s shortlist only — not a whole-market or sector percentile.'});
   }
