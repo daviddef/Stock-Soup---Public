@@ -3448,6 +3448,17 @@ function holdingsTodayPct(){
     if(!vals.length) return null; return {pct:vals.reduce(function(a,b){return a+b;},0)/vals.length, n:vals.length};
   }catch(e){ return null; }
 }
+// Average last-session move across tonight's SERVED picks (current market) — "how did our calls do the
+// last market day". Each pick's `change` is its last completed session's %, so the mean is a real read.
+function picksLastSessionPct(D){
+  try{ var vals=[];
+    (D.regions||[]).forEach(function(rg){ if(rg.id!==MKT) return; (rg.picks||[]).forEach(function(p){
+      if(!p||p.sym==='NONE'||p.change==null) return;
+      var n=parseFloat(String(p.change).replace(/[^\d.\-]/g,'')); if(isFinite(n)) vals.push(n);
+    }); });
+    if(!vals.length) return null; return {pct:vals.reduce(function(a,b){return a+b;},0)/vals.length, n:vals.length};
+  }catch(e){ return null; }
+}
 // 🔴 "Just in" — the whole-market breaking-news sweep the 10-min pulse produces (latest.breaking). A fresh
 // catalyst on a name we already track, surfaced within ~10 min instead of waiting for the next full cook.
 // Honest by design: it's a keyword/ticker match on public RSS headlines (no LLM in the pulse loop), so it's
@@ -3520,8 +3531,12 @@ function glanceStripHtml(D){
   var ann=glanceAnnCount(D,region);
   if(ann.total)
     tiles.push('<button class="gt" data-glance="announcements" title="Price-sensitive ASX filings tonight"><span class="gt-k">📢 Filings</span><span class="gt-v">'+(ann.today?ann.today+' today':ann.total+' recent')+'</span></button>');
+  // (user ask) "Holdings" → "Today", value is just the % (your owned names, this session).
   var h=holdingsTodayPct();
-  if(h){ var pos=h.pct>=0; tiles.push('<button class="gt" data-glance="holdings" title="Today’s move on the '+h.n+' name'+(h.n===1?'':'s')+' you own"><span class="gt-k">💼 Holdings</span><span class="gt-v '+(pos?'up':'down')+'">'+(pos?'▲':'▼')+' '+Math.abs(h.pct).toFixed(1)+'% today</span></button>'); }
+  if(h){ var pos=h.pct>=0; tiles.push('<button class="gt" data-glance="holdings" title="This session’s move on the '+h.n+' name'+(h.n===1?'':'s')+' you own"><span class="gt-k">💼 Today</span><span class="gt-v '+(pos?'up':'down')+'">'+(pos?'▲':'▼')+' '+Math.abs(h.pct).toFixed(1)+'%</span></button>'); }
+  // (user ask) a separate tile for how OUR served picks did last market session (distinct from holdings).
+  var pp=picksLastSessionPct(D);
+  if(pp){ var ppos=pp.pct>=0; tiles.push('<button class="gt" data-glance="picks" title="Average last-session move across tonight’s '+pp.n+' served pick'+(pp.n===1?'':'s')+'"><span class="gt-k">📊 Picks</span><span class="gt-v '+(ppos?'up':'down')+'">'+(ppos?'▲':'▼')+' '+Math.abs(pp.pct).toFixed(1)+'%</span></button>'); }
   return '<div class="glance" role="group" aria-label="Tonight at a glance">'+tiles.join('')+'</div>';
 }
 // Custom tab icons (line-art, inherit currentColor → dim when idle, broth when active).
