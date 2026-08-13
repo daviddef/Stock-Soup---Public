@@ -76,7 +76,8 @@
   .chef p:last-child{margin-bottom:0}
   /* chef-note collapse (user ask) — the chef intro can run several paragraphs; clamp it to a few lines with
      a soft fade + a "read the full note" toggle so it's punchy by default, never a wall of text. */
-  .chefwrap{position:relative}
+  .chefwrap{position:relative;cursor:pointer}
+  .menuhead>h1.display{cursor:pointer}  /* (user ask) tap the headline or the note to open/collapse the full chef's note */
   .chefwrap:not(.open) .chef{max-height:7.4em;overflow:hidden;-webkit-mask-image:linear-gradient(180deg,#000 60%,transparent);mask-image:linear-gradient(180deg,#000 60%,transparent)}
   .chefmore{margin-top:2px;background:none;border:0;color:var(--broth);font-weight:800;font-size:13px;cursor:pointer;padding:3px 0;letter-spacing:.01em}
   .chefmore:hover{text-decoration:underline}
@@ -4847,13 +4848,17 @@ document.addEventListener('click',function(e){
   if(e.target.closest('.juicebtn')||e.target.closest('.cherrybtn')||e.target.closest('.watchbtn')||e.target.closest('a'))return;
   e.preventDefault(); openMover(w.dataset.wlsym, w.dataset.wlregion);
 });
-// chef-note collapse toggle (user ask — the intro can run several paragraphs).
+// chef-note collapse toggle (user ask — the intro can run several paragraphs). Tapping ANYWHERE on the
+// hero headline or the short-note area opens/collapses the full story — not just the small link. Ticker
+// links (.cheftk / <a>) inside the prose still open their ticker instead of toggling.
 document.addEventListener('click',function(e){
-  var b=e.target.closest('.chefmore'); if(!b)return;
-  var w=b.closest('.chefwrap'); if(!w)return;
+  if(e.target.closest('a,.cheftk')) return;   // let a real link/ticker do its thing
+  var w=e.target.closest('.chefwrap');
+  if(!w){ var h=e.target.closest('.menuhead>h1.display'); if(h) w=h.parentNode.querySelector('.chefwrap'); }
+  if(!w) return;
   var open=w.classList.toggle('open');
-  b.textContent=open?'Show less ▴':'Read the chef’s full note ▾';
-  b.setAttribute('aria-expanded',open?'true':'false');
+  var b=w.querySelector('.chefmore');
+  if(b){ b.textContent=open?'Show less ▴':'Read the chef’s full note ▾'; b.setAttribute('aria-expanded',open?'true':'false'); }
 });
 // #327 — make company mentions in the chef's note tappable. Build a name/ticker → {sym,region} dict from
 // THIS run's own data (picks/candidates/topNews/movers/watchlist), then linkify matches in the chef prose.
