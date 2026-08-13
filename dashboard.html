@@ -6972,17 +6972,27 @@ function openAccount(){
 // #107 — the actual WebSearch keyword sweep run every FULL cycle (discovery net 1), same list every
 // time per stock-watch.md Phase 1B — shown once here rather than repeated per-source, since every
 // news-net source below is searched with this same list, not a different one per site.
+// (#kw-reassess, 13 Aug 2026) — keyword sweep re-tuned to where the app has landed + the signals the model
+// actually rewards. Key change: director trades AND short interest are now STRUCTURED DATA sources
+// (smallcaps.com.au, whole-market) — so the old "director buying" / "high short interest" WEB queries were
+// dropped as redundant, and the budget reinvested in catalysts we have NO feed for: M&A/takeovers (weekend
+// gap-drivers), first-production/commissioning (the pre-position edge that caught the LRV miss), drill
+// results / maiden resource (the biggest ASX small-cap movers), capital raises (a scoring PENALTY worth
+// surfacing early), guidance changes, and biotech FDA/trial catalysts. Aligned to: analyst-revision (rev),
+// PEAD/beats (pead), 52wk-high+volume (hi/vol), news-catalyst (news). Bearish queries feed The Misses/avoid.
 var KEYWORD_SWEEP={
-  'ASX signals':['"ASX" "broker upgrade" OR "price target raised"','"ASX" "contract win" OR "supply agreement" OR "offtake agreement"','"ASX" "record revenue" OR "beat expectations"','"ASX" "52 week high" OR "all time high"','"ASX" "director buying" OR "substantial holder"','"ASX" "trading halt" OR "price sensitive announcement"','"uranium" "demand" OR "contract" OR "spot price"','"ASX defence" OR "ASX defense" "contract" OR "AUKUS"','"ASX" "downgrade" OR "sell rating" OR "earnings miss"'],
-  'Global signals':['"NYSE" OR "NASDAQ" "earnings beat" "above estimate"','"analyst upgrade" "outperform" OR "buy" NASDAQ','"52 week high" NASDAQ OR NYSE','"unusual options activity" "bullish sweep"','"short squeeze" candidate "high short interest"','"government contract" "publicly traded" winner'],
-  'Geopolitical / macro sweep (every run, not optional)':['active conflict escalation OR de-escalation','oil OR major commodity price move','central bank OR interest rate decision','market outlook next week']
+  'ASX — catalyst signals':['"ASX" "broker upgrade" OR "price target raised" OR "initiates coverage"','"ASX" "contract win" OR "offtake agreement" OR "binding" "supply"','"ASX" "record profit" OR "earnings beat" OR "guidance upgrade"','"ASX" "takeover" OR "acquisition" OR "scheme of arrangement" OR "bid"','"ASX" "first production" OR "commissioning" OR "first pour" OR "maiden resource"','"ASX" "high-grade" OR "drill results" OR "significant intercept"','"ASX" "trading halt" OR "capital raising" OR "placement" OR "entitlement offer"','"ASX" "S&P/ASX" "index" "inclusion" OR "rebalance"'],
+  'ASX — theme + bearish':['"uranium" OR "rare earth" OR "lithium" "ASX" price OR contract OR offtake','"ASX defence" OR AUKUS "contract" OR "award"','"ASX" "downgrade" OR "profit warning" OR "guidance cut" OR "earnings miss"'],
+  'Global — catalyst signals':['"NASDAQ" OR "NYSE" "earnings beat" OR "guidance raised" "above estimate"','"analyst upgrade" "outperform" OR "buy" NASDAQ OR NYSE','"acquisition" OR "to acquire" OR "merger" "NASDAQ" OR "NYSE"','"FDA approval" OR "phase 3" OR "breakthrough therapy" biotech','"short squeeze" "high short interest" OR "unusual options activity"','"government contract" OR "defense contract" award "publicly traded"'],
+  'Geopolitical / macro sweep (every run, not optional)':['active conflict escalation OR de-escalation','oil OR copper OR gold OR uranium price move','central bank OR "interest rate" OR CPI decision','market outlook next week']
 };
 function keywordSweepHtml(){
+  var n=0; Object.keys(KEYWORD_SWEEP).forEach(function(g){n+=KEYWORD_SWEEP[g].length;});
   var groups=Object.keys(KEYWORD_SWEEP).map(function(g){
     return '<div class="dhkwgrp"><b>'+esc(g)+'</b><div class="dhkwlist">'+KEYWORD_SWEEP[g].map(function(q){return '<code class="dhkw">'+esc(q)+'</code>';}).join('')+'</div></div>';
   }).join('');
-  return '<div class="dhkw-block"><h4 style="margin:0 0 6px">🔎 Keyword sweep (discovery net 1 — same list every run)</h4>'+
-    '<p class="sec-sub" style="margin-top:0">Signal words only, never ticker names — tickers only ever appear in results, not queries. Each is combined with a recency filter (yesterday/today). This exact list runs every FULL cycle.</p>'+groups+'</div>';
+  return '<div class="dhkw-block"><h4 style="margin:0 0 6px">🔎 Keyword sweep — discovery net 1 ('+n+' queries)</h4>'+
+    '<p class="sec-sub" style="margin-top:0">Signal words only, never ticker names — tickers only ever appear in results, not queries. Each is combined with a recency filter (yesterday/today). The run prioritises the catalyst groups first; the macro sweep runs every FULL cycle without exception. <b>Re-tuned 13 Aug 2026</b> — director trades &amp; short interest moved to structured data feeds, so those searches were replaced with M&amp;A / first-production / drill-results / capital-raise / biotech catalysts we have no data source for.</p>'+groups+'</div>';
 }
 // Admin: which upstream data sources are actually live, degraded, or blocked right now — maintained
 // by hand as gaps are found (EODHD's calendar/fundamentals plans, Yahoo's throttle, etc.), not pinged
@@ -7104,8 +7114,8 @@ function openDataHealth(){
     '<div class="mtop"><div class="msym" style="font-size:22px">💓 Data-source health</div></div></div>'+
     '<div class="mbody"><p class="sec-sub" style="margin-top:0">Every source we\'ve tried — live, degraded, blocked, or never wired in — maintained by hand as gaps are found, not a live ping (no keys in the browser).</p>'+
     sourceStatsHtml()+
-    keywordSweepHtml()+
     '<div class="dhgrid">'+rows+'</div>'+
+    keywordSweepHtml()+   // (user ask) keyword sweep moved to the BOTTOM of the page
     '<p class="infofoot">Full source-by-source detail lives in <b>The Kitchen Manual</b> → §11 Data APIs.</p></div>';
   var ov=document.getElementById('overlay'); ov.classList.add('open'); ov.setAttribute('aria-hidden','false');
   document.getElementById('mClose').onclick=closeModal; document.getElementById('mClose').focus();
