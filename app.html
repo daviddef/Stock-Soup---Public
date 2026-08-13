@@ -4793,7 +4793,12 @@ function openModal(p,region,cur){
       // ladder (one chart carries the trend + the whole plan). The 1w/1m/1y range sliders are KEPT (user
       // ask) as the where-in-its-range context beneath it.
       '<div class="viz"><h4>📊 The chart — price &amp; your levels</h4>'+
-        (p.spark?levelChartSVG(p.spark,{stop:_nStop,entry:_nEntry,target:_nTarget,now:_nNow},cur):'<div class="rsimeta">No price history to chart yet.</div>')+'</div>'+
+        // #335 — a freshly-published pick has no `spark` until the first ~10-min pulse enriches it; in that
+        // window the levels chart used to read "No price history." Fall back to the SAME lazy-fetched intraday
+        // chart the next-best/candidate cards use (live /intraday fetch + the "served" marker), so a just-served
+        // pick still charts instead of showing a dead-end message.
+        (p.spark?levelChartSVG(p.spark,{stop:_nStop,entry:_nEntry,target:_nTarget,now:_nNow},cur)
+               :servedChartSlot(p.sym,region,cur,(function(){try{return pickServedISO(p.sym,region);}catch(e){return null;}})()))+'</div>'+
       rangesHtml+
       '<div class="viz">'+
         posSizeHtml(p,cur)+
@@ -4835,6 +4840,7 @@ function openModal(p,region,cur){
     el.addEventListener('click',go); el.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();go(e);}});
   });
   syncWatchButtons();
+  try{ hydrateMissCharts(m); }catch(e){}   // #335 — hydrate the lazy intraday fallback chart (spark-less fresh picks)
   var ov=document.getElementById('overlay');
   ov.classList.add('open');ov.setAttribute('aria-hidden','false');
   document.getElementById('mClose').focus();
