@@ -1596,6 +1596,15 @@
   .potlensbtn:hover{border-color:var(--broth)}
   .potlensbtn.on{color:var(--ink);border-color:var(--broth);background:color-mix(in srgb,var(--broth) 16%,transparent)}
   .potlensbtn:focus-visible{outline:2px solid var(--broth);outline-offset:2px}
+  /* #299 — Market context chip sub-nav */
+  .mctx-nav{display:flex;flex-wrap:wrap;gap:7px;margin:10px 0 16px}
+  .mctxbtn{font-family:var(--font);font-size:13px;font-weight:800;color:var(--muted);background:var(--surface-2);border:1px solid var(--line);border-radius:999px;padding:7px 14px;cursor:pointer;transition:all .12s}
+  .mctxbtn:hover{border-color:var(--broth);color:var(--ink)}
+  .mctxbtn.on{color:#fff;background:var(--broth);border-color:var(--broth)}
+  .mctxbtn:focus-visible{outline:2px solid var(--broth);outline-offset:2px}
+  .mctx-panel[hidden]{display:none}
+  .mctx-panel>section{margin-top:0}
+  .mctx-panel>section .sec-head{margin-top:0}
   .potthr-ctl b{color:var(--ink);min-width:34px;text-align:center} .potthr-ctl input[type=range]{flex:1;max-width:260px;accent-color:var(--broth)}
   .potthr-none{color:var(--broth);font-weight:700}
   .spot-list{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
@@ -1987,6 +1996,7 @@ var LAST=null, LASTFOCUS=null;
 var TIER='type1';   // #152 — selected model tier: type1 (production, default) / type2 (whole-market quant) / type3 (per-indicator leaderboards)
 var POTLENS='timing';   // #273 — Full Pot ranking lens: 'timing' (🍊 buy-now) or 'conviction' (🍒 overall). Flips sort + heat-band grouping so you see the same shortlist ranked either way, no duplicate grids.
 var POTVIEW='bands';    // #296 — Full Pot layout: 'bands' (grouped by heat) or 'board' (flat 1..N leaderboard). One surface, two skins — retires the old separate "Stock Pot Top 20".
+var MCTX='news';        // #299 — which "Market context" panel is showing (news/world/commodities/movers/upcoming/bargains). One tabbed section replaces 6 stacked ones; remembered across re-renders.
 // #152 — the ONE place that resolves "which picks array is this region actually showing right now."
 // Global (not nested in render()) because click handlers outside render() (openFromEl, ruCard, etc.)
 // need the exact same resolution to correctly index into whichever array built the card the user
@@ -3429,6 +3439,38 @@ function openPead(){
     el.addEventListener('keydown',function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); go(); } });
   });
 }
+// #299 — "Market context" — ONE tabbed section replacing six stacked ones (news · world & sectors ·
+// commodities · movers · coming-up · bargains). Only the selected panel shows; MCTX remembers the choice.
+// Each panel reuses the existing builders verbatim (topNewsHtml/topMoversHtml/upcomingHtml + the geo/
+// sector/commodity `lines()` blocks) — nothing was rewritten, just folded behind a chip nav.
+function marketContextHtml(D, bargainCards){
+  var geoSec = '<p class="sec-sub">What\'s moving the pot, and which kitchens are hot vs which to skip.</p>'+
+    '<div class="cols"><div class="stack"><div class="eyebrow">🌍 Geopolitics</div>'+lines(D.geo,'title','geo')+'</div>'+
+    '<div class="stack"><div class="eyebrow">🍳 Sectors — buy vs skip</div>'+lines(D.sectors,'title','sectors')+sectorRotationHtml(D)+'</div></div>';
+  var commodSec = '<p class="sec-sub">No jargon. Just: worth a look, emerging (🔥), or leave it.</p>'+
+    (function(){ var items=D.commodities||[], n=items.length, third=Math.ceil(n/3);
+      var a=items.slice(0,third), b=items.slice(third,third*2), c=items.slice(third*2);
+      return '<div class="cols3"><div class="stack">'+lines(a,'name','commodities',0)+'</div>'+
+        '<div class="stack">'+lines(b,'name','commodities',third)+'</div>'+
+        '<div class="stack">'+lines(c,'name','commodities',third*2)+'</div></div>'; })();
+  var tabs=[
+    ['news','📰 News', topNewsHtml(D)],
+    ['world','🌍 World &amp; sectors', geoSec],
+    ['commodities','🛢️ Commodities', commodSec],
+    ['movers','🔥 Movers', topMoversHtml(D)],
+    ['upcoming','📅 Coming up', upcomingHtml(D)]
+  ];
+  if(bargainCards) tabs.push(['bargains','🛍️ Bargains',
+    '<p class="sec-sub">Genuinely cheap right now — oversold, not in freefall, and nothing actively wrong that we can see. <b>Tap any for the full read.</b></p><div class="pot">'+bargainCards+'</div>']);
+  tabs=tabs.filter(function(t){ return String(t[2]||'').trim()!==''; });   // drop a chip whose panel has no content this run
+  if(!tabs.length) return '';
+  if(!tabs.some(function(t){return t[0]===MCTX;})) MCTX=tabs[0][0];        // keep MCTX pointing at a real tab
+  var nav=tabs.map(function(t){return '<button class="mctxbtn'+(t[0]===MCTX?' on':'')+'" data-mctx="'+t[0]+'" role="tab" aria-selected="'+(t[0]===MCTX)+'">'+t[1]+'</button>';}).join('');
+  var panels=tabs.map(function(t){return '<div class="mctx-panel" data-panel="'+t[0]+'"'+(t[0]===MCTX?'':' hidden')+'>'+t[2]+'</div>';}).join('');
+  return '<section id="mktctx"><div class="sec-head"><h2 class="display"><span class="k">04</span> Market context</h2></div>'+
+    '<p class="sec-sub">The backdrop behind tonight\'s picks — news, sectors, commodities, movers and what\'s coming up. Tap a chip.</p>'+
+    '<div class="mctx-nav" role="tablist">'+nav+'</div>'+panels+'</section>';
+}
 function actionsHtml(D){
   // #181 — standardised action cards: every card shares one template (verb badge · subject · 🍊 score
   // chip · one-line why), 3-across, each tapping to its real detail. The 🍊 chip is looked up from the
@@ -3898,27 +3940,9 @@ function render(D,H){
       '<p class="sec-sub" style="margin-top:4px">It’s time to eat — enough of the mood, here’s what’s worth <b>acting on</b> right now.</p>'+
       actionsHtml(D)+'</section>'+
     // Change-environment retired — its trajectory + "ready to buy" now live inside each pick card (miniTraj + buyat + rangeBar).
-    topNewsHtml(D)+
-    '<section><div class="sec-head"><h2 class="display"><span class="k">03</span> The world &amp; the sectors</h2>'+infoBtn('world')+'</div>'+
-      '<p class="sec-sub">What\'s moving the pot, and which kitchens are hot vs which to skip.</p>'+
-      '<div class="cols"><div class="stack"><div class="eyebrow">🌍 Geopolitics</div>'+lines(D.geo,'title','geo')+'</div>'+
-      '<div class="stack"><div class="eyebrow">🍳 Sectors — buy vs skip</div>'+lines(D.sectors,'title','sectors')+sectorRotationHtml(D)+'</div></div>'+
-      '</section>'+
-    '<section><div class="sec-head"><h2 class="display"><span class="k">04</span> Commodities — simple</h2>'+infoBtn('commodities')+'</div>'+
-      '<p class="sec-sub">No jargon. Just: worth a look, emerging (🔥), or leave it.</p>'+
-      // #131 (9 Aug 2026, user ask) — 3 abreast instead of 2, own grid class (.cols3) so this doesn't
-      // also widen Geopolitics/Sectors above (still 2-up, deliberately — commodities just has more items).
-      (function(){
-        var items=D.commodities||[], n=items.length, third=Math.ceil(n/3);
-        var a=items.slice(0,third), b=items.slice(third,third*2), c=items.slice(third*2);
-        return '<div class="cols3"><div class="stack">'+lines(a,'name','commodities',0)+'</div>'+
-          '<div class="stack">'+lines(b,'name','commodities',third)+'</div>'+
-          '<div class="stack">'+lines(c,'name','commodities',third*2)+'</div></div>';
-      })()+'</section>'+
-    (bargainCards?'<section class="bargainsec"><div class="sec-head"><h2 class="display">🛍️ Bargain Alert!</h2></div>'+
-      '<p class="sec-sub">Genuinely cheap right now — oversold, not in freefall, and nothing actively wrong that we can see. <b>Tap any for the full read.</b></p>'+
-      '<div class="pot">'+bargainCards+'</div></section>':'')+
-    '<section id="fullpot"><div class="sec-head"><h2 class="display"><span class="k">05</span> The full pot</h2>'+infoBtn('fullpot')+'</div>'+
+    // #299 — News, World & sectors, Commodities and Bargains are no longer stacked here; they're panels
+    // inside the single "04 Market context" section below the Full Pot (see marketContextHtml).
+    '<section id="fullpot"><div class="sec-head"><h2 class="display"><span class="k">03</span> The full pot</h2>'+infoBtn('fullpot')+'</div>'+
       '<p class="sec-sub">Every '+(MKT==='au'?'🇦🇺 Australian':'🇺🇸 US')+' candidate the scan shortlisted tonight — <b>'+_potN+' names</b>, ranked by '+(POTLENS==='conviction'?'🍒 <b>overall conviction</b>':'🍊 <b>buy-now timing</b>')+'. Showing the <b>top 20</b>; the rest are one tap away. <b>Tap any for the full read.</b></p>'+
       // #273 — lens toggle: rank the SAME shortlist by 🍊 timing (buy-now) or 🍒 conviction (overall). One grid,
       // flip the lens — no duplicate orange/cherry grids. Re-renders in place (applyView) preserving scroll.
@@ -3936,8 +3960,7 @@ function render(D,H){
       (_potHid>0?'<button class="potmore'+(_potMain?'':' potmore-lead')+'" id="potMore" data-n="'+_potHid+'" aria-expanded="false">➖ '+_potHid+' more below the top 20 ▾</button>'+
         '<div id="potLose" hidden>'+_potHidden+'</div>':'')+
       '</section>'+
-    upcomingHtml(D)+
-    topMoversHtml(D)+
+    marketContextHtml(D, bargainCards)+   // #299 — one tabbed section: news · world · commodities · movers · coming-up · bargains
     // hourly-runs list removed from the menu — it lives (unified) in Inside the Kitchen's run schedule
   '</div>'+
 
@@ -7118,6 +7141,14 @@ function wire(D){
   document.querySelectorAll('.potlensbtn[data-potview]').forEach(function(b){ b.onclick=function(){   // #296
     if(b.dataset.potview===POTVIEW) return; POTVIEW=b.dataset.potview;
     var sc=window.pageYOffset; applyView(); window.scrollTo(0,sc);
+  };});
+  // #299 — Market context chip nav: swap the visible panel IN PLACE (no full re-render, preserves scroll).
+  // MCTX is remembered so a pulse re-render keeps the panel you were reading.
+  document.querySelectorAll('.mctxbtn[data-mctx]').forEach(function(b){ b.onclick=function(){
+    var id=b.dataset.mctx, sec=b.closest('#mktctx'); if(!sec||id===MCTX) return; MCTX=id;
+    sec.querySelectorAll('.mctxbtn').forEach(function(x){ var on=x.dataset.mctx===id; x.classList.toggle('on',on); x.setAttribute('aria-selected',on?'true':'false'); });
+    sec.querySelectorAll('.mctx-panel').forEach(function(p){ if(p.dataset.panel===id) p.removeAttribute('hidden'); else p.setAttribute('hidden',''); });
+    try{ hydrateMissCharts(); }catch(e){}   // lazy mini-charts (movers/misses) hydrate once their panel is visible
   };});
   var rm=document.getElementById('runMore'), rr=document.getElementById('runRest');
   if(rm&&rr){ var rrN=rr.children.length; rm.onclick=function(){ var open=rr.hasAttribute('hidden'); if(open)rr.removeAttribute('hidden'); else rr.setAttribute('hidden',''); rm.setAttribute('aria-expanded',open?'true':'false'); rm.innerHTML=(open?'▴ Hide older runs':'➖ '+rrN+' older runs ▾'); }; }
