@@ -135,11 +135,29 @@
     go.disabled=true; msg.className='msg'; msg.textContent='Firing up your table…';
     fetch(API_BASE+'/auth/request',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:email})})
       .then(function(r){return r.json();}).then(function(j){
-        if(j&&j.magic_link){ msg.textContent='Seating you now… 🍜'; location.href=API_BASE+j.magic_link; }
-        else if(j&&j.sent_to){ msg.innerHTML='📧 <b>Check your email</b> — we slid a one-tap sign-in link over to '+j.sent_to+'.'; go.disabled=false; }
+        if(j&&j.magic_link){ msg.textContent='Seating you now… 🍜'; if(j.poll) startPoll(j.poll); location.href=API_BASE+j.magic_link; }
+        else if(j&&j.sent_to){
+          msg.innerHTML='📧 <b>Check your email</b> — tap the one-tap link we sent to '+j.sent_to+'.<br><small>Keep this screen open — we’ll seat you here automatically. 🍜</small>';
+          if(j.poll){ startPoll(j.poll); } else { go.disabled=false; }
+        }
         else { msg.className='msg err'; msg.textContent='The kitchen dropped a plate — try again?'; go.disabled=false; }
       }).catch(function(){ msg.className='msg err'; msg.textContent='Couldn\'t reach the kitchen — try again?'; go.disabled=false; });
   });
+  // iOS Home-Screen PWA fix: the emailed link opens in Safari (a different storage context), so we can't
+  // rely on the redirect landing back in the PWA. Instead poll the backend from THIS context — the moment
+  // the link is verified anywhere, we get the session and store it in the PWA's own storage.
+  var _pollIv=null;
+  function startPoll(id){
+    if(_pollIv) clearInterval(_pollIv);
+    var tries=0;
+    _pollIv=setInterval(function(){
+      if(++tries>120){ clearInterval(_pollIv); return; }   // ~6 min, then stop
+      fetch(API_BASE+'/auth/poll?id='+encodeURIComponent(id)).then(function(r){return r.json();}).then(function(j){
+        if(j&&j.status==='ready'&&j.session){ clearInterval(_pollIv); try{localStorage.setItem(SKEY,j.session);}catch(e){} msg.textContent='Seating you now… 🍜'; location.replace(appUrl()); }
+        else if(j&&(j.status==='expired'||j.status==='invalid')){ clearInterval(_pollIv); go.disabled=false; }
+      }).catch(function(){});
+    }, 3000);
+  }
 </script>
 </body>
 </html>
