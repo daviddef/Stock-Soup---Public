@@ -1074,6 +1074,18 @@
   .gmc-px{font-size:13.5px;font-weight:700;margin-top:3px}
   .gmc-chips{margin-top:8px}
   .gmc-go{margin-top:8px;font-size:11.5px;font-weight:800;color:var(--broth)}
+  /* (user ask) 💼 Today / 📊 Picks contribution breakdown — the exact names behind the average % */
+  .cbavg{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:11px 13px;background:var(--surface);border:1px solid var(--line);border-radius:12px;margin-bottom:10px}
+  .cbavg-k{font-weight:800;font-size:13px}
+  .cbavg-v{font-weight:900;font-size:21px;font-variant-numeric:tabular-nums}
+  .cbavg-n{color:var(--muted);font-size:12px;margin-left:auto}
+  .cblist{display:flex;flex-direction:column;gap:6px}
+  .cbrow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 13px;background:var(--surface);border:1px solid var(--line);border-radius:11px;cursor:pointer;transition:border-color .12s}
+  .cbrow:hover{border-color:var(--broth)}
+  .cbsym{font-weight:800;font-size:15px;display:flex;flex-direction:column;gap:1px}
+  .cbnm{font-weight:600;font-size:11.5px;color:var(--muted)}
+  .cbpct{font-weight:900;font-size:15px;font-variant-numeric:tabular-nums}
+  .cbfoot{font-size:12px;color:var(--muted);margin:12px 2px 2px}
   .mvchip{flex:0 0 auto} .mvchip .juicebtn{font-size:10.5px;padding:1px 6px}
   .mvchips{display:flex;flex-wrap:wrap;gap:5px;margin:0 0 5px}  /* score chips on their own row, wrap if tight (#277) */
   .movertop{display:flex;align-items:center;gap:6px;margin-bottom:2px}
@@ -3511,20 +3523,21 @@ function glanceAnnCount(D,region){
 // today's average move across the names the (signed-in) user flags as OWNED, current market. Null if none.
 function holdingsTodayPct(){
   try{ var D=(LAST&&LAST.D)||{}; var rows=wlBuildRows(D).filter(function(r){return r.w.own && (r.w.region||'au')===MKT;});
-    var vals=[]; rows.forEach(function(r){ var m=String(r.change||'').match(/-?\d+(\.\d+)?/); if(!m)return;
-      var v=Math.abs(parseFloat(m[0])); if(!isFinite(v))return; vals.push(r.up===false?-v:v); });
-    if(!vals.length) return null; return {pct:vals.reduce(function(a,b){return a+b;},0)/vals.length, n:vals.length};
+    var vals=[], items=[]; rows.forEach(function(r){ var m=String(r.change||'').match(/-?\d+(\.\d+)?/); if(!m)return;
+      var v=Math.abs(parseFloat(m[0])); if(!isFinite(v))return; var sv=(r.up===false?-v:v); vals.push(sv);
+      items.push({sym:r.w.sym, region:(r.w.region||'au'), pct:sv, name:r.name||''}); });
+    if(!vals.length) return null; return {pct:vals.reduce(function(a,b){return a+b;},0)/vals.length, n:vals.length, items:items};
   }catch(e){ return null; }
 }
 // Average last-session move across tonight's SERVED picks (current market) — "how did our calls do the
 // last market day". Each pick's `change` is its last completed session's %, so the mean is a real read.
 function picksLastSessionPct(D){
-  try{ var vals=[];
+  try{ var vals=[], items=[];
     (D.regions||[]).forEach(function(rg){ if(rg.id!==MKT) return; (rg.picks||[]).forEach(function(p){
       if(!p||p.sym==='NONE'||p.change==null) return;
-      var n=parseFloat(String(p.change).replace(/[^\d.\-]/g,'')); if(isFinite(n)) vals.push(n);
+      var n=parseFloat(String(p.change).replace(/[^\d.\-]/g,'')); if(isFinite(n)){ vals.push(n); items.push({sym:p.sym, region:MKT, pct:n, name:p.name||''}); }
     }); });
-    if(!vals.length) return null; return {pct:vals.reduce(function(a,b){return a+b;},0)/vals.length, n:vals.length};
+    if(!vals.length) return null; return {pct:vals.reduce(function(a,b){return a+b;},0)/vals.length, n:vals.length, items:items};
   }catch(e){ return null; }
 }
 // 🔴 "Just in" — the whole-market breaking-news sweep the 10-min pulse produces (latest.breaking). A fresh
@@ -3672,6 +3685,29 @@ function openGlanceList(title, entries){
     if(e.target.closest('.juicebtn,.cherrybtn,a')) return;   // let the score chips / links do their own thing
     try{ openTicker(b.dataset.sym,b.dataset.region); }catch(err){} };
   });
+}
+// (user ask) the 💼 Today / 📊 Picks glance tiles show an AVERAGE %. Tapping one now opens the EXACT names
+// behind that average — each with its own move — instead of jumping to a long, unrelated tab/list. `res` is
+// the {pct, n, items:[{sym,region,pct,name}]} shape holdingsTodayPct()/picksLastSessionPct() now return.
+function openContribBreakdown(title, sub, res){
+  if(!res||!res.items||!res.items.length) return;
+  var items=res.items.slice().sort(function(a,b){return b.pct-a.pct;});
+  var avg=res.pct, apos=avg>=0;
+  var rows=items.map(function(it){ var pos=it.pct>=0;
+    return '<div class="cbrow" role="button" tabindex="0" data-sym="'+esc(it.sym)+'" data-region="'+esc(it.region)+'" aria-label="Open '+esc(it.sym)+'">'+
+      '<span class="cbsym">'+esc(it.sym)+(it.name?'<span class="cbnm">'+esc(it.name)+'</span>':'')+'</span>'+
+      '<span class="cbpct '+(pos?'up':'down')+'">'+(pos?'▲':'▼')+' '+Math.abs(it.pct).toFixed(1)+'%</span></div>';
+  }).join('');
+  var m=document.getElementById('modal'); m.className='modal';
+  m.innerHTML='<div class="mhead"><button class="mclose" id="mClose" aria-label="Close">✕</button><div class="mtf">'+esc(title)+'</div></div>'+
+    '<div class="mbody">'+
+    '<div class="cbavg"><span class="cbavg-k">'+esc(sub)+'</span><span class="cbavg-v '+(apos?'up':'down')+'">'+(apos?'▲':'▼')+' '+Math.abs(avg).toFixed(1)+'%</span><span class="cbavg-n">average of '+res.n+' name'+(res.n===1?'':'s')+'</span></div>'+
+    '<div class="cblist">'+rows+'</div>'+
+    '<p class="cbfoot">Each name’s last completed-session move — the simple average of these is the tile figure. Tap any row for its full read.</p>'+
+    '</div>';
+  var ov=document.getElementById('overlay'); ov.classList.add('open'); ov.setAttribute('aria-hidden','false');
+  var cl=document.getElementById('mClose'); if(cl){ cl.onclick=closeModal; cl.focus(); }
+  m.querySelectorAll('.cbrow[data-sym]').forEach(function(b){ b.onclick=function(){ try{ openMover(b.dataset.sym,b.dataset.region); }catch(e){ try{ openTicker(b.dataset.sym,b.dataset.region); }catch(e2){} } }; });
 }
 // Custom tab icons (line-art, inherit currentColor → dim when idle, broth when active).
 var TABICONS={
@@ -7897,8 +7933,8 @@ function wire(D){
     else if(g==='conviction'){ var cs=_syms(); if(cs.length) openGlanceList('🍒 Highest conviction', cs); else { try{ POTLENS='conviction'; applyView(); }catch(e){} var f=document.getElementById('fullpot'); if(f) f.scrollIntoView({behavior:'smooth',block:'start'}); } }
     else if(g==='sector'){ var se=_syms(); if(se.length) openGlanceList('🍳 Sectors to buy — the leaders', se); else gotoCtx('world'); }
     else if(g==='commodity'){ var ce=_syms(); if(ce.length) openGlanceList('🛢️ Commodities to buy — the leaders', ce); else gotoCtx('commodities'); }
-    else if(g==='picks'){ var m=document.querySelector('#tab-menu .menu'); if(m) m.scrollIntoView({behavior:'smooth',block:'start'}); }
-    else if(g==='holdings'){ try{ switchTab('faves'); }catch(e){} }
+    else if(g==='picks'){ var pr=picksLastSessionPct((LAST&&LAST.D)||{}); if(pr&&pr.items&&pr.items.length){ openContribBreakdown('📊 Tonight’s picks — last session', 'Picks average', pr); } else { var m=document.querySelector('#tab-menu .menu'); if(m) m.scrollIntoView({behavior:'smooth',block:'start'}); } }
+    else if(g==='holdings'){ var hr=holdingsTodayPct(); if(hr&&hr.items&&hr.items.length){ openContribBreakdown('💼 What you own — this session', 'Holdings average', hr); } else { try{ switchTab('faves'); }catch(e){} } }
     else { gotoCtx({announcements:'announcements'}[g]||'news'); }
   }; });
   autoScrollGlance();   // (user ask) gently auto-rotate the header pills so you see them all without scrolling
