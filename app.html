@@ -313,6 +313,10 @@
   .mktcap.mc-open,.mktcap.mc-opening{color:var(--buy)} .mktcap.mc-closing{color:var(--hold)} .mktcap.mc-closed{color:var(--dont)}
   .toprail{display:flex;gap:12px;align-items:center}
   .burgerwrap{position:relative}
+  /* #hero (user ask, 13 Aug) — burger pinned to the hero's top-right corner, out of the filter row.
+     Reserve room on the brandrow so the desktop tier row doesn't slide under it. */
+  .heroburg{position:absolute;top:clamp(11px,1.5vw,16px);right:clamp(11px,1.5vw,16px);z-index:6}
+  .brandrow{padding-right:48px}
   .burger{width:38px;height:38px;border-radius:11px;border:1.5px solid var(--line);background:var(--surface-2);color:var(--ink);font-size:18px;line-height:1;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;padding:0}
   .burger:hover{border-color:var(--broth)}
   /* #174 (10 Aug 2026, user ask) — a round Full/Simple toggle icon next to the burger, surfacing the
@@ -4271,7 +4275,8 @@ function render(D,H){
   '<header class="hero"><div class="brandrow"><div class="hleft"><div class="brand"><span class="hpot"><span class="hsteam"><i></i><i></i><i></i></span><span class="hpotbowl">🍲</span></span> The&nbsp;Stock&nbsp;Soup</div>'+mktBarHtml(D)+'</div>'+   // #hero — one compact row: brand + flags (left), tiers + toggles (right); no more tall two-row card
     '<div class="toprail">'+tierBarHtml()+
       '<button class="vtog" id="viewTog" title="You’re in Full view — tap to switch to Simple" aria-label="Currently Full view, tap to switch to Simple"><span class="vti">📋</span>Full<span class="vtsw">⇄</span></button>'+
-      '<div class="burgerwrap"><button class="burger" id="burgerBtn" aria-label="Menu" aria-haspopup="true" aria-expanded="false" aria-controls="burgerMenu">☰</button>'+
+    '</div></div>'+   // close .toprail + .brandrow — the burger now lives in the hero's top-right corner (user ask, 13 Aug), freeing the filter row (T1/T2/T3 · ⓘ · Full) to sit on its own line
+      '<div class="burgerwrap heroburg"><button class="burger" id="burgerBtn" aria-label="Menu" aria-haspopup="true" aria-expanded="false" aria-controls="burgerMenu">☰</button>'+
         '<div class="burgermenu" id="burgerMenu" role="menu" hidden>'+
           '<div class="bmhead"><span class="live"><span class="pulse"></span>LIVE</span><button class="bmupd" id="lastUpd">updated…</button></div>'+
           (isAdmin()?'<div class="bmadmin" title="You are signed in as the admin account"><span class="adminbadge">ADMIN</span> signed in as admin</div>':'')+
@@ -4285,7 +4290,7 @@ function render(D,H){
           '<button class="bmitem" id="learnBtn" role="menuitem">📚 Learn — how it works</button>'+
           '<button class="bmitem" id="adminBtn" role="menuitem" style="display:none">🛠 Admin tools</button>'+
         '</div></div>'+
-    '</div></div></header>'+   // #hero — flags + tiers moved up into the single brandrow; the separate .toprow is gone
+    '</header>'+   // #hero — .toprail + .brandrow are closed above; the heroburg burgerwrap sits absolute in the hero's top-right corner
 
   // ===== TAB BAR =====
   '<nav class="tabbar" id="tabbar" role="tablist" aria-label="Sections">'+
@@ -7743,16 +7748,25 @@ function hydrateMissCharts(root){
       // right edge (e.g. served near a US close → the market's been shut since), there IS nothing after —
       // so relabel the section honestly and don't show an empty "since" %. Self-heals once it next trades.
       var atEdge=(markIdx!=null && markIdx>=vals.length-2);
+      // #294 follow-up (user confusion, 13 Aug): "was it just served or served at 6am?" The old atEdge
+      // branch ALWAYS said "just served" whenever the serve marker sat at the chart's right edge — but
+      // that edge case is usually a pick served hours ago into a session that's since CLOSED (e.g. a US
+      // pick served at the 06:05 AEST run, market then shut until ~23:30), so "just served" was flatly
+      // wrong and contradicted the "served 6:00am" time right next to it. Fix: decide "just served" from
+      // the REAL elapsed time since the serve (checkTs), not from the marker's chart position. If it's
+      // genuinely recent → "just served"; otherwise say "no moves since" (market's been shut).
+      var serveAgeMin=(checkTs!=null)?(Date.now()-checkTs)/60000:null;
+      var justNow=(serveAgeMin!=null && serveAgeMin<150);   // < ~2.5h = genuinely just served
       if(mlab==='served'){
         var box=slot.closest('.cardtrend'), hdr=box&&box.querySelector('.mrlbl');
-        if(hdr) hdr.textContent=atEdge?'the session we served into':'since we served it';
+        if(hdr) hdr.textContent=atEdge?(justNow?'just served — no session yet':'the run that served it'):'since we served it';
       }
       if(markIdx!=null){
         var mpct=(markIdx/(vals.length-1))*100, tx=(mpct<15)?'0':(mpct>85)?'-100%':'-50%';
         var since='';
         if(mlab==='served' && !atEdge){ var sv=vals[markIdx], nv=vals[vals.length-1];   // growth/fall since the serve
           if(sv){ var sp=(nv-sv)/sv*100; since=' · <span class="mchk-since '+(sp>=0?'up':'down')+'">'+(sp>=0?'+':'')+sp.toFixed(1)+'%</span>'; } }
-        else if(mlab==='served' && atEdge){ since=' · <span class="mchk-since" style="color:var(--muted)">just served</span>'; }
+        else if(mlab==='served' && atEdge){ since=' · <span class="mchk-since" style="color:var(--muted)">'+(justNow?'just served':'no moves since')+'</span>'; }
         flagLbl='<div class="misschart-flag" style="left:'+mpct.toFixed(1)+'%;transform:translateX('+tx+')">'+mlab+' '+_timeHM(times[markIdx])+since+'</div>';
       }
       slot.innerHTML='<div class="misschart-wrap">'+missSparkSVG(vals,markIdx)+flagLbl+'</div>'+
