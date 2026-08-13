@@ -45,8 +45,9 @@
      padding — they don't, they use .tabhead) but right that .hero itself was too generous for what
      it actually contains on every tab, not just the light ones. */
   .hero{background:radial-gradient(120% 140% at 100% 0%, rgba(255,107,26,.16), transparent 55%),var(--surface);
-    border:1px solid var(--line);border-radius:20px;padding:clamp(14px,2.4vw,26px);position:relative;overflow:hidden}
+    border:1px solid var(--line);border-radius:20px;padding:clamp(11px,1.5vw,16px);position:relative;overflow:hidden}
   .brandrow{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}
+  .hleft{display:flex;align-items:center;gap:12px;flex-wrap:wrap;min-width:0}
   .brand{display:flex;align-items:center;gap:10px;font-family:var(--disp);font-style:italic;font-weight:800;font-size:21px;letter-spacing:-.01em}
   .hpot{position:relative;display:inline-flex;font-size:24px;line-height:1;animation:hbob 4.2s ease-in-out infinite;transform-origin:50% 90%}
   .hpotbowl{filter:drop-shadow(0 4px 6px rgba(225,77,11,.3))}
@@ -3904,8 +3905,8 @@ function render(D,H){
   var trail=trailSrc.map(function(t){var jump=(t.jump?' <a class="trailjump" href="#'+esc(t.jump)+'">'+esc(t.jumpLabel||'see the list →')+'</a>':'');return '<div class="step"><span class="n">'+esc(t.n)+'</span><div class="st-txt">'+t.text+jump+'<small>'+esc(t.note)+'</small></div></div>';}).join('');
 
   document.getElementById('app').innerHTML=
-  '<header class="hero"><div class="brandrow"><div class="brand"><span class="hpot"><span class="hsteam"><i></i><i></i><i></i></span><span class="hpotbowl">🍲</span></span> The&nbsp;Stock&nbsp;Soup</div>'+
-    '<div class="toprail">'+
+  '<header class="hero"><div class="brandrow"><div class="hleft"><div class="brand"><span class="hpot"><span class="hsteam"><i></i><i></i><i></i></span><span class="hpotbowl">🍲</span></span> The&nbsp;Stock&nbsp;Soup</div>'+mktBarHtml(D)+'</div>'+   // #hero — one compact row: brand + flags (left), tiers + toggles (right); no more tall two-row card
+    '<div class="toprail">'+tierBarHtml()+
       '<button class="viewtoggle" id="viewToggle" title="Switch to Simple view" aria-label="Switch to Simple view">😋</button>'+
       '<div class="burgerwrap"><button class="burger" id="burgerBtn" aria-label="Menu" aria-haspopup="true" aria-expanded="false" aria-controls="burgerMenu">☰</button>'+
         '<div class="burgermenu" id="burgerMenu" role="menu" hidden>'+
@@ -3921,8 +3922,7 @@ function render(D,H){
           '<button class="bmitem" id="learnBtn" role="menuitem">📚 Learn — how it works</button>'+
           '<button class="bmitem" id="adminBtn" role="menuitem" style="display:none">🛠 Admin tools</button>'+
         '</div></div>'+
-    '</div></div>'+
-    '<div class="toprow">'+mktBarHtml(D)+tierBarHtml()+'</div></header>'+
+    '</div></div></header>'+   // #hero — flags + tiers moved up into the single brandrow; the separate .toprow is gone
 
   // ===== TAB BAR =====
   '<nav class="tabbar" id="tabbar" role="tablist" aria-label="Sections">'+
