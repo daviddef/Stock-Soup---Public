@@ -131,20 +131,26 @@
   .glance{display:flex;gap:8px;margin:2px 0 16px;overflow-x:auto;scrollbar-width:none;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch;padding-bottom:2px;animation:omReveal .5s ease both}
   .glance::-webkit-scrollbar{display:none}
   @media(prefers-reduced-motion:reduce){.glance{animation:none}}
-  .gt{flex:0 0 auto;scroll-snap-align:start;display:flex;flex-direction:column;gap:3px;align-items:flex-start;text-align:left;
-    background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:8px 12px;cursor:pointer;
-    font-family:var(--font);transition:border-color .15s,transform .12s;min-width:92px;max-width:100%}
-  .gt:hover{border-color:var(--broth);transform:translateY(-1px)}
-  .gt:active{transform:scale(.98)}
+  /* content CENTERED (user ask); playful tinted tiles */
+  .gt{flex:0 0 auto;scroll-snap-align:start;display:flex;flex-direction:column;gap:4px;align-items:center;text-align:center;justify-content:center;
+    background:var(--surface-2);border:1px solid var(--line);border-radius:15px;padding:9px 14px;cursor:pointer;
+    font-family:var(--font);transition:border-color .15s,transform .14s cubic-bezier(.34,1.5,.6,1),box-shadow .15s;min-width:96px;max-width:100%}
+  .gt:hover{border-color:var(--broth);transform:translateY(-2px) scale(1.02);box-shadow:0 8px 18px -10px rgba(255,107,26,.5)}
+  .gt:active{transform:scale(.97)}
   .gt:focus-visible{outline:2px solid var(--broth);outline-offset:2px}
   .gt-k{font-size:9.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
-  .gt-v{font-size:14px;font-weight:900;color:var(--ink);display:flex;align-items:center;gap:5px;min-width:0;max-width:100%}
+  .gt-v{font-size:14px;font-weight:900;color:var(--ink);display:flex;align-items:center;justify-content:center;gap:5px;min-width:0;max-width:100%}
   .gt-v.up{color:var(--buy)} .gt-v.down{color:var(--dont)}
   .gt-sub{font-size:11px;color:var(--broth);font-weight:800}
   .gt-dot{width:8px;height:8px;border-radius:50%;display:inline-block;flex:0 0 auto}
+  .gt-pulse{animation:gtdot 1.5s ease-in-out infinite}
+  @keyframes gtdot{0%,100%{transform:scale(1);box-shadow:0 0 0 0 currentColor;opacity:1}50%{transform:scale(1.25);opacity:.7}}
+  @media(prefers-reduced-motion:reduce){.gt-pulse{animation:none}}
   .gt-clip{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
   .gt-med{max-width:150px} .gt-wide{min-width:170px;max-width:260px}
   .gt-risk{background:var(--surface)}
+  .gt-fun-orange{background:linear-gradient(160deg,rgba(255,107,26,.13),var(--surface-2))}
+  .gt-fun-cherry{background:linear-gradient(160deg,rgba(214,40,60,.11),var(--surface-2))}
   .metastrip{display:flex;flex-wrap:wrap;gap:8px;margin-top:20px}
   .chip{font-size:12px;font-weight:700;padding:6px 11px;border-radius:999px;border:1px solid var(--line);
     background:var(--surface-2);display:inline-flex;align-items:center;gap:6px;white-space:nowrap;color:var(--ink)}
@@ -588,7 +594,8 @@
   @media(prefers-reduced-motion:reduce){.onerib{animation:none;transform:rotate(-2deg)}}
   /* baseline a11y (roadmap #now) — a visible keyboard focus ring on every remaining tappable card type */
   .tab:focus-visible,.axcard:focus-visible,.wcard:focus-visible,.tscard:focus-visible,.movercard:focus-visible,.card-sugg:focus-visible,.spot-row:focus-visible,.tmx-vcell:focus-visible,.wlstat-chip:focus-visible{outline:2px solid var(--broth);outline-offset:2px}
-  .card .tf{display:flex;align-items:center;justify-content:space-between}
+  .card .tf{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px}
+  .card .tf .name{display:inline-flex;align-items:center;flex-wrap:wrap;gap:5px}
   .tf .name{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);font-weight:800}
   .verdict{font-size:12px;font-weight:900;padding:5px 11px;border-radius:8px;letter-spacing:.04em;text-transform:uppercase}
   .v-buy{background:rgba(35,194,103,.16);color:var(--buy);border:1px solid rgba(35,194,103,.4)}
@@ -1350,7 +1357,7 @@
   .watchbtn.on{background:var(--broth)!important;border-color:var(--broth)!important;color:#fff!important}
   .cardwatch{background:var(--surface);border:1px solid var(--line);color:var(--ink);font-size:12px;padding:5px 12px;border-radius:999px;margin-left:auto;flex:0 0 auto}
   .cardwatch:hover{border-color:var(--broth);color:var(--broth)}
-  .tf-r{display:flex;align-items:center;gap:8px}
+  .tf-r{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
   .iconwatch{width:24px;height:24px;border-radius:50%;border:1.5px solid var(--line);background:var(--surface-2);color:var(--muted);font-size:16px;font-weight:800;line-height:1;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;padding:0;flex:0 0 auto;transition:border-color .12s,color .12s,background .12s}
   .iconwatch:hover{border-color:var(--broth);color:var(--broth)}
   .iconwatch.on{background:var(--broth);border-color:var(--broth);color:#fff}
@@ -3381,17 +3388,27 @@ function glanceStripHtml(D){
   var region=MKT, tiles=[];
   var r=D.risk||{}, lvl=(r.level!=null)?+r.level:50;
   var rw=lvl>=67?{w:'Risk-on',c:'#1fb862'}:lvl>=34?{w:'Steady',c:'#f2a33d'}:{w:'Risk-off',c:'#ff4d4d'};
-  tiles.push('<button class="gt gt-risk" data-glance="risk" title="Tonight’s market read — tap for the full meter"><span class="gt-k">Market</span><span class="gt-v"><span class="gt-dot" style="background:'+rw.c+'"></span>'+rw.w+'</span></button>');
+  tiles.push('<button class="gt gt-risk" data-glance="risk" title="Tonight’s market read — tap for the full meter"><span class="gt-k">Market</span><span class="gt-v"><span class="gt-dot gt-pulse" style="background:'+rw.c+'"></span>'+rw.w+'</span></button>');
   var rg=(D.regions||[]).filter(function(x){return (x.id||x.region)===region;})[0];
   var picks=rg?(rg.picks||[]).filter(function(p){return p&&p.sym&&p.sym!=='NONE'&&p.score&&p.score.buy_now!=null;}):[];
   var om=picks.slice().sort(function(a,b){return b.score.buy_now-a.score.buy_now;})[0];
   if(om&&(om.score.buy_now||0)>=45)
-    tiles.push('<button class="gt" data-glance="onemove" data-sym="'+esc(om.sym)+'" data-region="'+esc(region)+'" title="Tonight’s single best move"><span class="gt-k">🎯 One move</span><span class="gt-v">'+esc(om.sym)+' <span class="gt-sub">'+om.score.buy_now+'🍊</span></span></button>');
-  if(picks.length)
-    tiles.push('<button class="gt" data-glance="picks" title="Tonight’s served picks"><span class="gt-k">🍲 Tonight</span><span class="gt-v">'+picks.length+' served</span></button>');
+    tiles.push('<button class="gt gt-fun-orange" data-glance="onemove" data-sym="'+esc(om.sym)+'" data-region="'+esc(region)+'" title="Tonight’s single best move"><span class="gt-k">🎯 One move</span><span class="gt-v">'+esc(om.sym)+' <span class="gt-sub">'+om.score.buy_now+'🍊</span></span></button>');
+  // Tonight — the actual served pick tickers (user ask: "just put the tickers in there")
+  if(picks.length){ var _pt=picks.map(function(p){return esc(p.sym);}).slice(0,3).join(' · ');
+    tiles.push('<button class="gt gt-med" data-glance="picks" title="Tonight’s served picks"><span class="gt-k">🍲 Tonight</span><span class="gt-v"><span class="gt-clip">'+_pt+'</span></span></button>'); }
+  // Conviction — the next 3 tickers by 🍒 conviction from the pot, beyond the served picks (user ask)
+  (function(){ var served={}; picks.forEach(function(p){served[p.sym]=1;});
+    var pool=(D.candidates||[]).filter(function(c){return (c.region||'us')===region&&c.sym&&c.sym!=='NONE'&&!served[c.sym]&&c.score&&c.score.buy_now!=null;})
+      .sort(function(a,b){return b.score.buy_now-a.score.buy_now;}).slice(0,12);
+    var scored=pool.map(function(c){ var ov=0; try{ov=(overallScore(c.score.buy_now,signalRows(c,region))||{}).score||0;}catch(e){} return {sym:c.sym,ov:ov}; })
+      .sort(function(a,b){return b.ov-a.ov;}).slice(0,3);
+    if(scored.length){ var _ct=scored.map(function(x){return esc(x.sym);}).join(' · ');
+      tiles.push('<button class="gt gt-med gt-fun-cherry" data-glance="conviction" title="Highest 🍒 conviction beyond tonight’s served picks"><span class="gt-k">🍒 Conviction</span><span class="gt-v"><span class="gt-clip">'+_ct+'</span></span></button>'); } })();
+  // Top story — just the ticker (user ask: "too long, just show AGL"); full headline in the tooltip
   var news=(D.topNews||[]).filter(function(n){return !n.region||n.region===region;})[0];
   if(news&&news.headline)
-    tiles.push('<button class="gt gt-wide" data-glance="news" title="Tonight’s top story"><span class="gt-k">📰 Top story</span><span class="gt-v"><span class="gt-clip">'+esc((news.sym?news.sym+': ':'')+news.headline)+'</span></span></button>');
+    tiles.push('<button class="gt" data-glance="news" title="'+esc(news.headline)+'"><span class="gt-k">📰 Top story</span><span class="gt-v">'+(news.sym?esc(news.sym):'Macro')+'</span></button>');
   // show EVERY buy-rated leader, not just the first (user caught HGO shown but CAH — also Buy — dropped).
   // Dedupe across the two tiles: Copper is BOTH a sector and a commodity (same leader HGO), so a sym already
   // in the sector tile is excluded from the commodity tile — no ticker appears twice (user caught HGO ×2).
@@ -4054,7 +4071,7 @@ function render(D,H){
       // #hero — the orient banner is replaced by the lean "at a glance" metric strip (user ask): risk · one
       // move · picks · top story · buy sector/commodity · filings · your holdings, each tapping to its detail.
       glanceStripHtml(D)+
-      '<h1 class="display">Two pots on the boil:<br><span class="hot">'+esc(hdl(D,'a'))+'</span> &amp; <span class="hot">'+esc(hdl(D,'b'))+'</span>.</h1>'+
+      '<h1 class="display">Two pots on the boil: <span class="hot">'+esc(hdl(D,'a'))+'</span> &amp; <span class="hot">'+esc(hdl(D,'b'))+'</span>.</h1>'+
       // chef's framing sits directly under the headline (collapsed). The standalone "Tonight's one move" card
       // was removed (user ask) — it duplicated the pick it points at + the glance tile; the #1 move is now a
       // 🥇 ribbon on its actual pick card in the grid below, and the glance strip's One-move tile jumps to it.
@@ -7338,6 +7355,7 @@ function wire(D){
     if(g==='risk'){ try{ openMarketRead(); }catch(e){} }
     else if(g==='onemove'){ try{ openTicker(b.dataset.sym,b.dataset.region); }catch(e){} }
     else if(g==='picks'){ var m=document.querySelector('#tab-menu .menu'); if(m) m.scrollIntoView({behavior:'smooth',block:'start'}); }
+    else if(g==='conviction'){ try{ POTLENS='conviction'; applyView(); }catch(e){} var f=document.getElementById('fullpot'); if(f) f.scrollIntoView({behavior:'smooth',block:'start'}); }
     else if(g==='holdings'){ try{ switchTab('faves'); }catch(e){} }
     else { gotoCtx({news:'news',sector:'world',commodity:'commodities',announcements:'announcements'}[g]||'news'); }
   }; });
