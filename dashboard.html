@@ -3446,7 +3446,7 @@ function glanceStripHtml(D){
   if(ann.total)
     tiles.push('<button class="gt" data-glance="announcements" title="Price-sensitive ASX filings tonight"><span class="gt-k">📢 Filings</span><span class="gt-v">'+(ann.today?ann.today+' today':ann.total+' recent')+'</span></button>');
   var h=holdingsTodayPct();
-  if(h){ var pos=h.pct>=0; tiles.push('<button class="gt" data-glance="holdings" title="Today’s move on the '+h.n+' name'+(h.n===1?'':'s')+' you own"><span class="gt-k">💼 Your holdings</span><span class="gt-v '+(pos?'up':'down')+'">'+(pos?'▲':'▼')+' '+Math.abs(h.pct).toFixed(1)+'% today</span></button>'); }
+  if(h){ var pos=h.pct>=0; tiles.push('<button class="gt" data-glance="holdings" title="Today’s move on the '+h.n+' name'+(h.n===1?'':'s')+' you own"><span class="gt-k">💼 Holdings</span><span class="gt-v '+(pos?'up':'down')+'">'+(pos?'▲':'▼')+' '+Math.abs(h.pct).toFixed(1)+'% today</span></button>'); }
   return '<div class="glance" role="group" aria-label="Tonight at a glance">'+tiles.join('')+'</div>';
 }
 // Custom tab icons (line-art, inherit currentColor → dim when idle, broth when active).
