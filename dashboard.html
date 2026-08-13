@@ -1008,6 +1008,12 @@
   .uppulse{display:inline-block;animation:uppulse 1.8s ease-in-out infinite}
   @keyframes uppulse{0%,100%{opacity:1}50%{opacity:.45}}
   @media (prefers-reduced-motion: reduce){.uppulse{animation:none}}
+  /* card-face 📢 announcement flag — small pill, tinted by directional tone */
+  .annflag{display:inline-flex;align-items:center;font-size:10px;font-weight:800;padding:1px 6px;border-radius:999px;line-height:1.6;vertical-align:middle;border:1px solid transparent;white-space:nowrap}
+  .annflag.af-bull{background:rgba(35,194,103,.16);color:var(--buy);border-color:rgba(35,194,103,.4)}
+  .annflag.af-bear{background:rgba(255,77,77,.16);color:var(--dont);border-color:rgba(255,77,77,.4)}
+  .annflag.af-neu{background:var(--surface-2);color:var(--muted);border-color:var(--line)}
+  .name .annflag{margin-left:6px}
   .annrow{border-radius:10px;padding:9px 12px;margin-bottom:6px;border:1px solid var(--line);background:var(--surface);border-left:3px solid var(--faint)}
   .annrow.ann-bull{border-left-color:var(--buy);background:rgba(35,194,103,.09)}
   .annrow.ann-bear{border-left-color:var(--dont);background:rgba(255,77,77,.09)}
@@ -3484,6 +3490,7 @@ function marketContextHtml(D, bargainCards, lines){   // `lines` is a render-loc
         '<div class="stack">'+lines(c,'name','commodities',third*2)+'</div></div>'; })();
   var tabs=[
     ['news','📰 News', topNewsHtml(D)],
+    ['announcements','📢 Announcements', announcementsPanelHtml(D)],
     ['world','🌍 World &amp; sectors', geoSec],
     ['commodities','🛢️ Commodities', commodSec],
     ['movers','🔥 Movers', topMoversHtml(D)],
@@ -3720,7 +3727,7 @@ function render(D,H){
       var newPill=isNew?' <span class="cnew">NEW</span>':(prevSet?' <span class="ckept">✓ kept</span>':'');
       var replNote=repl?'<div class="crepl">↳ replaced <b>'+esc(repl)+'</b> from the last menu</div>':'';
       return '<div class="pickcol"><article class="card" tabindex="0" role="button" data-region="'+rg.id+'" data-idx="'+idx+'" aria-label="Details for '+esc(p.sym)+'">'+
-        '<div class="tf"><span class="name">'+tfBW(p.tf)+newPill+'</span><span class="tf-r">'+
+        '<div class="tf"><span class="name">'+tfBW(p.tf)+newPill+annFlag(p)+'</span><span class="tf-r">'+
           /* #orange-top (user ask) — the 🍊 score chip now leads the header, next to the + watch button,
              instead of only appearing lower by the score bar. Same chip/behaviour: tap → the full breakdown
              (juice modal) when we have the detail, else a plain 🍊 score badge. */
@@ -3866,7 +3873,7 @@ function render(D,H){
     var _ov=(c.score&&c.score.buy_now!=null)?(overallScore(c.score.buy_now,_crows)||{}).score:0;   // #270 — cherry score for the OR-filter
     var rankBadge=rank?'<span class="pmc-rank">'+rank+'</span>':'';   // #211 — Stock Pot Top 20 is a numbered leaderboard
     return '<div class="potcard h-'+esc(c.heat)+(rank?' ranked':'')+'" data-ci="'+i+'" data-score="'+_bn+'" data-cherry="'+(_ov||0)+'" role="button" tabindex="0" aria-label="Details for '+esc(c.sym)+'">'+
-      '<div class="pmc-top">'+rankBadge+(c.heat==='cold'?'<span class="ph no">⛔</span>':'<span class="ph"></span>')+'<b class="pmc-sym">'+esc(c.sym)+'</b>'+shortChip+'<span class="pmc-flag">'+(c.region==='au'?'AU':'US')+'</span>'+
+      '<div class="pmc-top">'+rankBadge+(c.heat==='cold'?'<span class="ph no">⛔</span>':'<span class="ph"></span>')+'<b class="pmc-sym">'+esc(c.sym)+'</b>'+annFlag(c)+shortChip+'<span class="pmc-flag">'+(c.region==='au'?'AU':'US')+'</span>'+
         '<button class="watchbtn iconwatch pmc-watch" data-sym="'+esc(c.sym)+'" data-region="'+esc(c.region||'us')+'"'+(c.name?' data-name="'+esc(c.name)+'"':'')+' aria-pressed="false" title="Add to watchlist">☆</button></div>'+
       (c.name?'<div class="pmc-name">'+esc(c.name)+'</div>':'')+
       '<div class="pmc-px">'+(c.price?'<span class="pmc-price">'+esc(cleanPrice(c.price))+'</span>':'')+chg+'</div>'+
@@ -4092,6 +4099,43 @@ function announcementsHtml(items){
       '<div class="annwhy">'+esc(why)+'</div>'+dr+'</div>';
   }).join('');
   return '<div class="viz"><h4>📢 Key announcements</h4>'+rows+'</div>';
+}
+// (user ask) small card-face flag: a 📢 badge when a ticker has fresh price-sensitive ASX filings, tinted
+// by the strongest directional tone, so you know to open the card before tapping. ASX-only (US has none).
+function annFlag(obj){
+  var a=(obj&&obj.announcements)||[]; if(!a.length) return '';
+  var bear=false,bull=false; a.forEach(function(x){ if(x.tone==='bearish')bear=true; else if(x.tone==='bullish')bull=true; });
+  var cls=bear?'af-bear':(bull?'af-bull':'af-neu');
+  return '<span class="annflag '+cls+'" title="'+a.length+' key ASX announcement'+(a.length===1?'':'s')+' — tap the card to read">📢'+(a.length>1?'&nbsp;'+a.length:'')+'</span>';
+}
+// (user ask) market-wide roll-up of every price-sensitive ASX filing across tonight's picks + Full-Pot
+// candidates → ONE dated, tone-coloured feed (the "News"-style consolidation of the per-card announcements).
+// Returns '' when there's nothing (US view), so the Market-context tab filter drops the chip automatically.
+function announcementsPanelHtml(D){
+  var seen={}, items=[];
+  function take(o){ if(!o||(o.region||'us')!==MKT||o.sym==='NONE') return; (o.announcements||[]).forEach(function(a){
+    if(!a||!a.headline) return; var k=(o.sym||'')+'|'+(a.headline||'')+'|'+(a.date||''); if(seen[k]) return; seen[k]=1;
+    items.push({sym:o.sym,name:o.name,headline:a.headline,date:a.date,tone:a.tone,why:a.why,link:a.link,deepReadQuery:a.deepReadQuery,_o:o}); }); }
+  (D.regions||[]).forEach(function(rg){ (rg.picks||[]).forEach(take); });
+  (D.candidates||[]).forEach(take);
+  if(!items.length) return '';
+  items.sort(function(a,b){ return String(b.date||'').localeCompare(String(a.date||'')); });
+  var TONE={bullish:{ic:'📈',cls:'ann-bull'},bearish:{ic:'📉',cls:'ann-bear'},neutral:{ic:'➖',cls:'ann-neu'}};
+  function row(a){
+    var t=TONE[a.tone]||TONE.neutral;
+    var why=((a.tone==='neutral'||!a.tone)&&annDeeper(a.headline))||a.why||'';
+    var label='<b>'+esc(a.sym)+'</b> — '+esc(a.headline||'');
+    var head=a.link?'<a class="annhead" href="'+esc(a.link)+'" target="_blank" rel="noopener">'+label+' ↗</a>':'<span class="annhead">'+label+'</span>';
+    var chip=(a._o&&a._o.score)?'<span class="annchip">'+dualChip(a._o.score,a._o.sym,a._o.name,signalRows(a._o,MKT))+'</span>':'';
+    var dr=a.deepReadQuery?'<a class="anndr" href="https://news.google.com/search?q='+encodeURIComponent(a.deepReadQuery)+'" target="_blank" rel="noopener" title="Search the news coverage for the real figures">🔎 Read the coverage ↗</a>':'';
+    return '<div class="annrow '+t.cls+'"><div class="anntop"><span class="annic">'+t.ic+'</span>'+head+chip+(a.date?'<span class="anndate">'+esc(String(a.date).slice(0,10))+'</span>':'')+'</div>'+
+      '<div class="annwhy">'+esc(why)+'</div>'+dr+'</div>';
+  }
+  var top=items.slice(0,9), rest=items.slice(9,30);
+  var out='<div class="nt3grid">'+top.map(row).join('')+'</div>';
+  if(rest.length) out+='<details class="newsmore"><summary>Show '+rest.length+' more →</summary><div class="nt3grid" style="margin-top:10px">'+rest.map(row).join('')+'</div></details>';
+  return '<section id="annfeed"><div class="sec-head"><h2 class="display">📢 Key ASX announcements</h2></div>'+
+    '<p class="sec-sub">Every price-sensitive filing across tonight\'s ASX names — newest first, tinted by likely direction. ASX only.</p>'+out+'</section>';
 }
 var SCORE_FLAB={pead:"Earnings",rev:"Analysts",hi:"Trend/High",news:"Catalyst",vol:"Volume",ins:"Insider"};
 // #215 follow-up (user: "what exactly is Trend/High, Catalyst vs a signal, and Volume — summarise each
