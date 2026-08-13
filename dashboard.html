@@ -1941,7 +1941,11 @@
   .altspark svg{width:100%;height:100%}
   .dhgrid{display:flex;flex-direction:column;gap:8px}
   .dhcat{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--broth);margin:14px 0 2px}
-  .dhchips{display:flex;flex-wrap:wrap;gap:6px;margin:2px 0 14px}
+  .dhchips{display:flex;flex-wrap:wrap;gap:6px;margin:2px 0 14px;align-items:center}
+  .dhchips-lbl{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin-right:2px}
+  .dhrunchips{padding-bottom:10px;border-bottom:1px dashed var(--line)}
+  .ri-dhbtn{margin-top:14px;width:100%;background:var(--surface-2);border:1px solid var(--broth);color:var(--broth);font-family:var(--font);font-weight:800;font-size:13px;padding:10px 14px;border-radius:11px;cursor:pointer;transition:.14s}
+  .ri-dhbtn:hover{background:var(--broth);color:#1a0f06}
   .dhchip{font-size:12px;font-weight:800;padding:5px 11px;border-radius:999px;border:1px solid var(--line);background:var(--surface-2);color:var(--muted);cursor:pointer;transition:.12s}
   .dhchip:hover{border-color:var(--broth);color:var(--ink)}
   .dhchip.on{background:var(--broth);color:#1a0f06;border-color:var(--broth)}
@@ -5465,7 +5469,9 @@ function openRunInfo(kind,ts){
   m.innerHTML='<div class="mhead"><button class="mclose" id="mClose" aria-label="Close">✕</button><div class="mtf">'+info.ic+' What this run does</div>'+
     '<div class="mtop"><div class="msym" style="font-size:19px">'+esc(info.title)+'</div></div><span class="mverd v-hold">'+esc(info.tag)+'</span></div>'+
     '<div class="mbody"><ul class="ri-list">'+info.includes.map(function(x){return '<li>'+x+'</li>';}).join('')+'</ul>'+
-    '<p class="ri-note">'+info.note+'</p>'+_sessionCtx(ts)+'</div>';
+    '<p class="ri-note">'+info.note+'</p>'+_sessionCtx(ts)+
+    (isAdmin()&&dhRunForKind(kind)?'<button class="ri-dhbtn" id="riDhBtn" type="button">🔌 See the data sources this run uses →</button>':'')+'</div>';
+  var _rdb=document.getElementById('riDhBtn'); if(_rdb) _rdb.onclick=function(){ openDataHealth(dhRunForKind(kind)); };
   document.getElementById('mClose').onclick=closeModal;
   var ov=document.getElementById('overlay'); ov.classList.add('open'); ov.setAttribute('aria-hidden','false');
   document.getElementById('mClose').focus();
@@ -7015,6 +7021,7 @@ var DATA_HEALTH=[
   {cat:'Priced APIs — keyed',name:'Alpha Vantage',use:'Movers / earnings calendar (daily-cache only)',status:'ok',note:'25 calls/day cap — cached, not called live per-request.',url:'https://www.alphavantage.co/documentation/',urlLabel:'API docs',checked:'2026-08-06'},
   {cat:'Priced APIs — keyed',name:'Mediastack',use:'AU business news + keyword sweep (daily-cache only)',status:'ok',note:'100 calls/month cap — cached.',url:'https://mediastack.com/documentation',urlLabel:'API docs',checked:'2026-08-06'},
   {cat:'Priced APIs — keyed',name:'Twelve Data',use:'Usage/quota checks (daily-cache only)',status:'ok',note:'800 credits/month cap — cached.',url:'https://twelvedata.com/docs',urlLabel:'API docs',checked:'2026-08-06'},
+  {cat:'Watchlist / holdings sync',key:'etoro-watchlist',name:'eToro watchlist sync',use:"David's eToro watchlist → the app's shared watchlist (scored every run, appears in Favourites)",status:'ok',note:'The daily job (run-etoro-watchlists.sh) that publishes the eToro watchlist tickers to the public repo so the app can read + score them. Fixed 13 Aug 2026 — it was crashing in ~7s every day on the wrong python (missing the requests library); now runs and publishes cleanly. NOTE: this is the WATCHLIST feed only — the separate eToro public API (live positions / real holdings) is auth-blocked, see that entry below.',url:'https://www.etoro.com/',urlLabel:'eToro',checked:'2026-08-13'},
   {cat:'Priced APIs — keyed',name:'eToro public API',use:'Holdings import (attempted #47/#69)',status:'blocked',note:'The moment both x-api-key + x-user-key are sent together, the request hangs indefinitely (45s+, no response) — reproduced with two different key pairs. Individually, each header alone gets an instant 401, so this is their auth backend specifically, not a client timeout or a bad key. Manual paste import queued instead (#67).',url:'https://api-portal.etoro.com/',urlLabel:'API docs',checked:'2026-08-07'},
   {cat:'Priced APIs — keyed',name:'Moomoo OpenAPI',use:'Investigated as a possible quotes/execution source',status:'blocked',note:'No ASX coverage (HK/US/China A-shares/Singapore/Malaysia/Japan/crypto only) and requires a locally-running OpenD gateway + funded account — same architectural mismatch as eToro. Not recommended (#94).',url:'https://openapi.moomoo.com/moomoo-api-doc/en/intro/intro.html',urlLabel:'API docs',checked:'2026-08-08'},
   {cat:'Priced APIs — keyed',name:'Massive (proxy layer)',use:'Considered as a residential-proxy layer to unblock 403/rate-limited discovery sources (#191)',status:'untested',note:'Researched 10 Aug 2026: it is a residential-proxy network, not a data API — it would front our fetches to get past Cloudflare-style blocks (marketindex, shorted, asx.com.au SPA, Yahoo IP throttling). Not yet configured (the key must live in .claude/settings.json env, never in code) and needs a real "is the proxy worth the cost/complexity vs the WebSearch-scoped fallbacks we already use" decision before wiring in.',url:'https://www.joinmassive.com/',urlLabel:'site',checked:'2026-08-10'},
@@ -7104,36 +7111,55 @@ function dhWhenHtml(s){
     return '<div class="dhchecked">🟢 Used '+esc(rel||String(iso).slice(0,16).replace('T',' '))+' · live stamp</div>'; }
   return s.checked?'<div class="dhchecked">Verified '+esc(s.checked)+' <span class="muted">(manual)</span></div>':'';
 }
-var DH_FILTER=null;   // Data-source Health status filter (null = default view; a status; 'dropped'; or 'all')
+var DH_FILTER=null;      // Data-source Health status filter (null = default view; a status; 'dropped'; or 'all')
+var DH_RUNFILTER=null;   // run-type filter (null = all runs; 'T1' | 'T2/3' | 'pulse' | 'eToro')
 // (user ask, 13 Aug 2026) which runs each source CATEGORY actually feeds. T1 = the nightly menu run,
-// T2/3 = the whole-market scans, ↻ = the 10-min re-price pulse, trial = not wired (candidate only).
-function dhRunTags(cat){
-  var t = /Priced APIs/.test(cat) ? ['T1 menu','T2/3 scan','↻ pulse']
-        : /Keyless/.test(cat) ? ['T1 menu','T2/3 scan']
-        : /Earnings|dividend/.test(cat) ? ['T1 menu']
-        : /Discovery net 1 — news/.test(cat) ? ['T1 menu']
-        : /Discovery net 4/.test(cat) ? ['T1 menu']
-        : /untested/.test(cat) ? ['trial only']
-        : [];   // dropped / dead → not in any run
-  return t.length ? t.map(function(x){return '<span class="dhrun">'+esc(x)+'</span>';}).join('')
+// T2/3 = the whole-market scans, ↻ = the 10-min re-price pulse, eToro = the daily watchlist sync.
+function dhRunList(cat){
+  if(/Priced APIs/.test(cat)) return [{k:'T1',l:'T1 menu'},{k:'T2/3',l:'T2/3 scan'},{k:'pulse',l:'↻ pulse'}];
+  if(/Keyless/.test(cat)) return [{k:'T1',l:'T1 menu'},{k:'T2/3',l:'T2/3 scan'}];
+  if(/Watchlist|holdings/i.test(cat)) return [{k:'eToro',l:'🥣 eToro sync'}];
+  if(/Earnings|dividend|Discovery net 1 — news|Discovery net 4/.test(cat)) return [{k:'T1',l:'T1 menu'}];
+  if(/untested/.test(cat)) return [{k:'trial',l:'trial only'}];
+  return [];   // dropped / dead → not in any run
+}
+function dhRunTags(cat){ var l=dhRunList(cat);
+  return l.length ? l.map(function(x){return '<span class="dhrun">'+esc(x.l)+'</span>';}).join('')
                   : '<span class="dhrun dhrun-off">not in any run</span>';
 }
+// map a run-schedule row's kind → the Data-source Health run-filter token (user ask: click a run → its sources)
+function dhRunForKind(k){ k=(k||'').toLowerCase();
+  if(/menu/.test(k)) return 'T1';
+  if(/scan/.test(k)) return 'T2/3';
+  if(/reprice|pulse/.test(k)) return 'pulse';
+  if(/watch|etoro/.test(k)) return 'eToro';
+  return null; }
 // hidden by default (user ask #3): anything blocked, plus the deliberately-parked dropped/dead categories.
 function dhDefaultHidden(s){ return s.status==='blocked' || /dropped|dead/i.test(s.cat); }
-function openDataHealth(){
+function openDataHealth(runFilter){
+  if(runFilter!==undefined) DH_RUNFILTER=runFilter||null;   // opened pre-filtered from a run row (user ask)
   var ic={ok:'🟢',degraded:'🟡',blocked:'🔴',untested:'⚪'}, lbl={ok:'Live',degraded:'Degraded',blocked:'Blocked',untested:'Untested'};
+  function inRun(s){ return dhRunList(s.cat).some(function(x){return x.k===DH_RUNFILTER;}); }
   // status counts for the filter chips (user ask #2)
   var cnt={ok:0,degraded:0,blocked:0,untested:0,dropped:0};
   DATA_HEALTH.forEach(function(s){ if(cnt[s.status]!=null)cnt[s.status]++; if(/dropped|dead/i.test(s.cat))cnt.dropped++; });
-  // which sources are visible given the current filter (DH_FILTER: null=default view, or a status, or 'all')
+  // visible = passes the STATUS filter AND (if a run is picked) the RUN-TYPE filter.
   function visible(s){
-    if(DH_FILTER==='all') return true;
-    if(DH_FILTER==='dropped') return /dropped|dead/i.test(s.cat);
-    if(DH_FILTER) return s.status===DH_FILTER;   // a specific status chip
-    return !dhDefaultHidden(s);                  // default: hide blocked + dropped/dead
+    var passStatus = DH_FILTER==='all' ? true
+      : DH_FILTER==='dropped' ? /dropped|dead/i.test(s.cat)
+      : DH_FILTER ? s.status===DH_FILTER
+      : !dhDefaultHidden(s);
+    if(!passStatus) return false;
+    return DH_RUNFILTER ? inRun(s) : true;
   }
   var chip=function(key,emoji,label,n){ var on=(DH_FILTER===key)||(key==='default'&&!DH_FILTER);
     return '<button class="dhchip'+(on?' on':'')+'" data-dhf="'+key+'">'+emoji+' <b>'+n+'</b> '+label+'</button>'; };
+  // RUN-TYPE filter row (user ask): show only the sources a given run actually uses.
+  var RUNS=[['T1','🍳 T1 menu'],['T2/3','🔬 T2/3 scan'],['pulse','↻ Pulse'],['eToro','🥣 eToro sync']];
+  var runCount=function(k){ return DATA_HEALTH.filter(function(s){return dhRunList(s.cat).some(function(x){return x.k===k;});}).length; };
+  var runchips='<div class="dhchips dhrunchips"><span class="dhchips-lbl">Run:</span>'+
+    '<button class="dhchip'+(!DH_RUNFILTER?' on':'')+'" data-dhrun="">All runs</button>'+
+    RUNS.map(function(r){ return '<button class="dhchip'+(DH_RUNFILTER===r[0]?' on':'')+'" data-dhrun="'+r[0]+'">'+r[1]+' <b>'+runCount(r[0])+'</b></button>'; }).join('')+'</div>';
   var chips='<div class="dhchips">'+
     chip('default','🟢','shown',cnt.ok+cnt.degraded+cnt.untested)+
     chip('ok','🟢','Live',cnt.ok)+chip('degraded','🟡','Degraded',cnt.degraded)+
@@ -7155,13 +7181,16 @@ function openDataHealth(){
   var m=document.getElementById('modal'); m.className='modal';
   m.innerHTML='<div class="mhead"><button class="mclose" id="mClose" aria-label="Close">✕</button><div class="mtf">🛠 Admin</div>'+
     '<div class="mtop"><div class="msym" style="font-size:22px">💓 Data-source health</div></div></div>'+
-    '<div class="mbody"><p class="sec-sub" style="margin-top:0">Every source we\'ve tried. Tap a chip to filter; <b>Blocked</b> + <b>Dropped</b> are hidden by default. Each category shows which runs use it (T1 menu · T2/3 scan · ↻ pulse). "Used Xh ago" is a real per-run stamp; "Verified" is a manual check.</p>'+
+    '<div class="mbody"><p class="sec-sub" style="margin-top:0">Every source we\'ve tried. Filter by <b>run type</b> or <b>status</b>; <b>Blocked</b> + <b>Dropped</b> are hidden by default. Each category shows which runs use it. "Used Xh ago" is a real per-run stamp; "Verified" is a manual check.</p>'+
+    runchips+
     chips+
+    (DH_RUNFILTER?'<p class="sec-sub" style="margin:-4px 0 10px;color:var(--broth)"><b>Filtered to the '+esc((RUNS.filter(function(r){return r[0]===DH_RUNFILTER;})[0]||['',DH_RUNFILTER])[1])+'</b> run — the sources it actually uses.</p>':'')+
     sourceStatsHtml()+
     '<div class="dhgrid">'+rows+'</div>'+
     keywordSweepHtml()+   // (user ask) keyword sweep moved to the BOTTOM of the page
     '<p class="infofoot">Full source-by-source detail lives in <b>The Kitchen Manual</b> → §11 Data APIs.</p></div>';
   m.querySelectorAll('.dhchip[data-dhf]').forEach(function(b){ b.onclick=function(){ var k=b.dataset.dhf; DH_FILTER=(k==='default')?null:k; openDataHealth(); }; });
+  m.querySelectorAll('.dhchip[data-dhrun]').forEach(function(b){ b.onclick=function(){ DH_RUNFILTER=b.dataset.dhrun||null; openDataHealth(); }; });
   var ov=document.getElementById('overlay'); ov.classList.add('open'); ov.setAttribute('aria-hidden','false');
   document.getElementById('mClose').onclick=closeModal; document.getElementById('mClose').focus();
 }
