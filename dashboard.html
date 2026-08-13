@@ -300,14 +300,13 @@
      view switch that was buried in the burger menu. Same 38px footprint as the burger, round. */
   .viewtoggle{width:38px;height:38px;border-radius:50%;border:1.5px solid var(--line);background:var(--surface-2);font-size:17px;line-height:1;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;padding:0;margin-right:7px}
   .viewtoggle:hover{border-color:var(--broth)}
-  /* (user ask) the lone 😋/📋 icon read as a mystery button — replace with a labelled two-option switch
-     that shows BOTH modes and highlights the active one, so it's clear-as-day what you're in + can pick. */
-  .vseg{display:inline-flex;align-items:center;border:1.5px solid var(--line);border-radius:999px;background:var(--surface-2);overflow:hidden;margin-right:7px;flex:0 0 auto}
-  .vseg button{border:0;background:none;font-family:inherit;font-size:12px;font-weight:800;letter-spacing:.01em;color:var(--muted);padding:7px 12px;cursor:pointer;line-height:1;display:inline-flex;align-items:center;gap:4px;white-space:nowrap;transition:background .12s,color .12s}
-  .vseg button .vsi{font-size:13px}
-  .vseg button[aria-selected="true"]{background:var(--broth);color:#fff}
-  .vseg button[aria-selected="false"]:hover{color:var(--ink)}
-  @media(max-width:400px){ .vseg button{padding:7px 10px;font-size:11.5px} }
+  /* (user ask) a SINGLE compact toggle instead of a two-option switch (which clipped off-screen on mobile).
+     Shows the CURRENT view + a ⇄ swap glyph so it reads as a toggle; tapping flips Simple⇄Full. */
+  .vtog{display:inline-flex;align-items:center;gap:5px;border:1.5px solid var(--line);border-radius:999px;background:var(--surface-2);color:var(--ink);font-family:inherit;font-weight:800;font-size:12.5px;line-height:1;padding:7px 12px;margin-right:7px;cursor:pointer;white-space:nowrap;flex:0 0 auto;transition:border-color .12s}
+  .vtog:hover{border-color:var(--broth)}
+  .vtog .vti{font-size:14px}
+  .vtog .vtsw{font-size:12px;color:var(--muted);margin-left:1px}
+  @media(max-width:380px){ .vtog{padding:7px 10px;font-size:12px} }
   .burgermenu{position:fixed;z-index:200;background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:7px;min-width:214px;max-width:calc(100vw - 24px);display:flex;flex-direction:column;gap:1px}
   .burgermenu[hidden]{display:none}
   .bmhead{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:5px 9px 9px;border-bottom:1px solid var(--line);margin-bottom:4px}
@@ -1027,6 +1026,8 @@
   .brkstrip{margin:0 0 16px;border:1px solid rgba(214,38,59,.28);border-radius:13px;overflow:hidden;background:rgba(214,38,59,.045)}
   .brkhdr{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 12px;font-weight:800;letter-spacing:.02em;color:#d6263b;background:rgba(214,38,59,.09);font-size:13px}
   .brkhdr .brksub{font-weight:600;letter-spacing:0;color:var(--muted);font-size:11px}
+  .brkx{margin-left:auto;flex:0 0 auto;background:none;border:0;color:#d6263b;font-size:13px;font-weight:800;cursor:pointer;padding:3px 7px;border-radius:8px;line-height:1;opacity:.75}
+  .brkx:hover{opacity:1;background:rgba(214,38,59,.14)}
   .brkdot{width:8px;height:8px;border-radius:50%;background:#d6263b;box-shadow:0 0 0 0 rgba(214,38,59,.5);animation:brkpulse 2s infinite}
   @keyframes brkpulse{0%{box-shadow:0 0 0 0 rgba(214,38,59,.5)}70%{box-shadow:0 0 0 7px rgba(214,38,59,0)}100%{box-shadow:0 0 0 0 rgba(214,38,59,0)}}
   @media(prefers-reduced-motion:reduce){.brkdot{animation:none}}
@@ -3459,6 +3460,11 @@ function breakingHtml(D){
     try{ return (Date.now()-new Date(it.at).getTime()) < 12*3600*1000; }catch(e){ return false; }
   }).slice(0,5);
   if(!items.length) return '';
+  // (user ask) dismissible — hide the CURRENT batch once dismissed, but a genuinely NEW set of breaking
+  // headlines (different signature) re-surfaces, since that's the whole point of a breaking alert.
+  var sig=(b.stamp||'')+'|'+MKT+'|'+items.map(function(it){return it.sym;}).join(',');
+  var dismissed=''; try{ dismissed=localStorage.getItem('soup_brk_dismiss')||''; }catch(e){}
+  if(sig && sig===dismissed) return '';
   var rows=items.map(function(it){
     var ago=timeAgo(it.at), url=it.url||'';
     var head=url?('<a href="'+esc(url)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()">'+esc(it.headline)+'</a>'):esc(it.headline);
@@ -3468,8 +3474,9 @@ function breakingHtml(D){
              '<span class="brkmeta">'+esc(it.source||'')+(ago?' · '+esc(ago):'')+'</span>'+
            '</button>';
   }).join('');
-  return '<div class="brkstrip">'+
-    '<div class="brkhdr"><span class="brkdot"></span>Just in <span class="brksub">fresh headlines on names we track — full read at the next cook</span></div>'+
+  return '<div class="brkstrip" data-sig="'+esc(sig)+'">'+
+    '<div class="brkhdr"><span class="brkdot"></span>Just in <span class="brksub">fresh headlines on names we track — full read at the next cook</span>'+
+      '<button class="brkx" id="brkDismiss" type="button" aria-label="Dismiss these headlines" title="Dismiss">✕</button></div>'+
     rows+'</div>';
 }
 // (user ask) the lean "at a glance" metric strip that REPLACES the old orient banner — the 3-second read of
@@ -4156,10 +4163,7 @@ function render(D,H){
   document.getElementById('app').innerHTML=
   '<header class="hero"><div class="brandrow"><div class="hleft"><div class="brand"><span class="hpot"><span class="hsteam"><i></i><i></i><i></i></span><span class="hpotbowl">🍲</span></span> The&nbsp;Stock&nbsp;Soup</div>'+mktBarHtml(D)+'</div>'+   // #hero — one compact row: brand + flags (left), tiers + toggles (right); no more tall two-row card
     '<div class="toprail">'+tierBarHtml()+
-      '<div class="vseg" role="tablist" aria-label="View mode">'+
-        '<button id="vSimple" role="tab" aria-selected="false" title="Simple one-page view"><span class="vsi">😋</span>Simple</button>'+
-        '<button id="vFull" role="tab" aria-selected="true" title="Full detailed view"><span class="vsi">📋</span>Full</button>'+
-      '</div>'+
+      '<button class="vtog" id="viewTog" title="You’re in Full view — tap to switch to Simple" aria-label="Currently Full view, tap to switch to Simple"><span class="vti">📋</span>Full<span class="vtsw">⇄</span></button>'+
       '<div class="burgerwrap"><button class="burger" id="burgerBtn" aria-label="Menu" aria-haspopup="true" aria-expanded="false" aria-controls="burgerMenu">☰</button>'+
         '<div class="burgermenu" id="burgerMenu" role="menu" hidden>'+
           '<div class="bmhead"><span class="live"><span class="pulse"></span>LIVE</span><button class="bmupd" id="lastUpd">updated…</button></div>'+
@@ -7615,7 +7619,7 @@ function wire(D){
     root.setAttribute('data-theme',cur==='dark'?'light':'dark');
   });
   var vb=document.getElementById('viewBtn'); if(vb) vb.onclick=function(){setView('simple');};
-  var vSimple=document.getElementById('vSimple'); if(vSimple) vSimple.onclick=function(){setView('simple');};   // labelled Simple|Full switch — Simple segment
+  var viewTog=document.getElementById('viewTog'); if(viewTog) viewTog.onclick=function(){setView('simple');};   // single Simple⇄Full toggle (Full view → tap goes Simple)
   var rb=document.getElementById('refreshBtn'); if(rb){ if(!isAdmin()){ rb.style.display='none'; } else { rb.onclick=function(){refreshPrices(rb);}; } }
   var rfb=document.getElementById('refreshFullBtn'); if(rfb){ if(!isAdmin()){ rfb.style.display='none'; } else { rfb.onclick=function(){var _bm=document.getElementById('burgerMenu');if(_bm)_bm.setAttribute('hidden','');openRunTrigger();}; } }
   var stb=document.getElementById('shareTabBtn'); if(stb) stb.onclick=shareCurrentTab;
@@ -7694,6 +7698,7 @@ function wire(D){
   // row opens the ticker's full read; the headline link inside stops propagation so it opens the source.
   document.querySelectorAll('.brkrow[data-sym]').forEach(function(b){ b.onclick=function(){
     try{ openMover(b.dataset.sym, b.dataset.region); }catch(e){} }; });
+  var bx=document.getElementById('brkDismiss'); if(bx) bx.onclick=function(e){ e.stopPropagation(); var s=bx.closest('.brkstrip'); if(s){ try{ localStorage.setItem('soup_brk_dismiss', s.dataset.sig||''); }catch(e){} s.remove(); } };
   var rm=document.getElementById('runMore'), rr=document.getElementById('runRest');
   if(rm&&rr){ var rrN=rr.children.length; rm.onclick=function(){ var open=rr.hasAttribute('hidden'); if(open)rr.removeAttribute('hidden'); else rr.setAttribute('hidden',''); rm.setAttribute('aria-expanded',open?'true':'false'); rm.innerHTML=(open?'▴ Hide older runs':'➖ '+rrN+' older runs ▾'); }; }
   var kh=document.getElementById('kitchenHealthBtn'); if(kh) kh.onclick=openDataHealth;
@@ -8279,10 +8284,7 @@ function renderSimple(D){
         '<button data-mkt="au" class="'+(region==='au'?'on':'')+'" role="tab" aria-selected="'+(region==='au')+'">🇦🇺</button>'+
         '<button data-mkt="us" class="'+(region==='us'?'on':'')+'" role="tab" aria-selected="'+(region==='us')+'">🇺🇸</button>'+
       '</div>'+
-      '<div class="vseg" role="tablist" aria-label="View mode">'+
-        '<button id="vSimpleS" role="tab" aria-selected="true" title="Simple one-page view"><span class="vsi">😋</span>Simple</button>'+
-        '<button id="vFullS" role="tab" aria-selected="false" title="Full detailed view"><span class="vsi">📋</span>Full</button>'+
-      '</div>'+
+      '<button class="vtog" id="viewTogS" title="You’re in Simple view — tap to switch to Full" aria-label="Currently Simple view, tap to switch to Full"><span class="vti">😋</span>Simple<span class="vtsw">⇄</span></button>'+
       '<div class="burgerwrap"><button class="s2ico burger" id="burgerBtnS" aria-label="Menu" aria-haspopup="true" aria-expanded="false" aria-controls="burgerMenuS">☰</button>'+
         '<div class="burgermenu" id="burgerMenuS" role="menu" hidden>'+
           '<div class="bmhead"><span class="live"><span class="pulse"></span>LIVE</span><button class="bmupd" id="lastUpdS">updated…</button></div>'+
@@ -8306,7 +8308,7 @@ function renderSimple(D){
 function wireSimple(D){
   var root=document.documentElement;
   var t=document.getElementById('themeBtn2'); if(t) t.onclick=function(){var c=root.getAttribute('data-theme')||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');root.setAttribute('data-theme',c==='dark'?'light':'dark');};
-  ['viewFull','vFullS','viewFull3'].forEach(function(id){var b=document.getElementById(id);if(b) b.onclick=function(){setView('full');};});
+  ['viewFull','viewTogS','viewFull3'].forEach(function(id){var b=document.getElementById(id);if(b) b.onclick=function(){setView('full');};});
   var bg=document.getElementById('burgerBtnS'), bm=document.getElementById('burgerMenuS');
   if(bg&&bm){ var closeBM=function(){ bm.setAttribute('hidden',''); bg.setAttribute('aria-expanded','false'); };
     bg.onclick=function(e){ e.stopPropagation(); if(bm.hasAttribute('hidden')){ var rc=bg.getBoundingClientRect(); bm.style.top=(rc.bottom+8)+'px'; bm.style.right=Math.max(10,(window.innerWidth-rc.right))+'px'; bm.removeAttribute('hidden'); bg.setAttribute('aria-expanded','true'); } else closeBM(); };
