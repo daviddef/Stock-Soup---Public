@@ -181,6 +181,39 @@
   .glance.led .gt-v.up{color:#37e07a;text-shadow:0 0 8px rgba(55,224,122,.55)}
   .glance.led .gt-v.down{color:#ff5a5a;text-shadow:0 0 8px rgba(255,90,90,.5)}
   .glance.led .gt-sub{color:#ff8a3d;text-shadow:0 0 6px rgba(255,138,61,.5)}
+  /* ── live horizontal EXCHANGE-TAPE ticker (replaces the LED board + pills) — a committed dark phosphor
+     "screen", full-width & responsive: 3 rows crawl in alternating directions/speeds, pause on hover/touch ── */
+  .tickerwrap.ticklive{display:flex;flex-direction:column;gap:6px;width:100%;margin:2px 0 16px;padding:7px;
+    background:#0b0d10;border:1px solid #23262c;border-radius:14px;overflow:hidden;position:relative;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.04)}
+  .tickerwrap.ticklive::after{content:"";position:absolute;inset:0;pointer-events:none;border-radius:14px;
+    background:repeating-linear-gradient(0deg,rgba(0,0,0,.16) 0 1px,transparent 1px 3px);opacity:.5;mix-blend-mode:multiply}
+  .tkrow{position:relative;overflow:hidden;height:38px;display:flex;align-items:center;z-index:1;
+    background:linear-gradient(180deg,#15191e,#0f1216);border:1px solid #23272e;border-radius:9px}
+  .tkrow::before{content:"";position:absolute;inset:0;pointer-events:none;z-index:3;
+    background:linear-gradient(90deg,#10141a 0%,transparent 6%,transparent 94%,#10141a 100%)}
+  .tkinner{display:inline-flex;align-items:center;white-space:nowrap;will-change:transform;animation:tkL var(--dur,44s) linear infinite}
+  .tk-right .tkinner{animation-name:tkR}
+  .tkrow:hover .tkinner,.tkrow:active .tkinner{animation-play-state:paused}
+  @keyframes tkL{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+  @keyframes tkR{from{transform:translateX(-50%)}to{transform:translateX(0)}}
+  .tksep{color:#5a4a2e;padding:0 12px;font-size:11px;flex:0 0 auto}
+  /* the classic-pill tiles (.gt) rendered inline inside the tape */
+  .ticklive .gt{flex:0 0 auto;flex-direction:row;align-items:baseline;gap:6px;min-width:0;max-width:none;
+    background:transparent;border:0;box-shadow:none;padding:0 4px;height:auto;text-align:left;scroll-snap-align:none;white-space:nowrap;cursor:pointer}
+  .ticklive .gt-k{font-size:10px;font-weight:700;letter-spacing:.05em;color:#c98a34;text-shadow:0 0 6px rgba(242,163,61,.4);text-transform:uppercase}
+  .ticklive .gt-v{font-size:14px;font-weight:800;color:#ffe6bd;text-shadow:0 0 6px rgba(255,196,110,.3);flex-direction:row;justify-content:flex-start}
+  .ticklive .gt-v.up{color:#37e07a;text-shadow:0 0 7px rgba(55,224,122,.5)} .ticklive .gt-v.down{color:#ff5a5a;text-shadow:0 0 7px rgba(255,90,90,.45)}
+  .ticklive .gt-sub{color:#f2a33d;text-shadow:0 0 6px rgba(242,163,61,.5)} .ticklive .gt-clip{max-width:none;overflow:visible}
+  .ticklive .gt-dot{width:7px;height:7px;border-radius:50%;display:inline-block;margin-right:4px}
+  /* pure ticker crawl items (picks + movers) */
+  .tkitem{display:inline-flex;align-items:baseline;gap:6px;padding:0 5px;cursor:pointer;flex:0 0 auto;
+    font-family:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,monospace}
+  .tksym{font-size:14px;font-weight:700;color:#ffe6bd;text-shadow:0 0 6px rgba(255,196,110,.3);letter-spacing:.02em}
+  .tkscore{font-size:12.5px;font-weight:700;color:#f2a33d;text-shadow:0 0 6px rgba(242,163,61,.45)}
+  .tkchg{font-size:12.5px;font-weight:700;font-variant-numeric:tabular-nums}
+  .tkchg.up{color:#37e07a;text-shadow:0 0 7px rgba(55,224,122,.5)} .tkchg.down{color:#ff5a5a;text-shadow:0 0 7px rgba(255,90,90,.45)}
+  @media(prefers-reduced-motion:reduce){ .tkinner{animation:none} .tkrow{overflow-x:auto} }
   .glance.led .gt-med,.glance.led .gt-wide{min-width:0;max-width:none}
   .glance.led .gt-clip{max-width:52vw}
   @media(prefers-reduced-motion:reduce){.glance.led{overflow-y:auto}}
@@ -3621,17 +3654,26 @@ function glanceStripHtml(D){
   // (user ask) a separate tile for how OUR served picks did last market session (distinct from holdings).
   var pp=picksLastSessionPct(D);
   if(pp){ var ppos=pp.pct>=0; tiles.push('<button class="gt" data-glance="picks" title="Average last-session move across tonight’s '+pp.n+' served pick'+(pp.n===1?'':'s')+'"><span class="gt-k">📊 Picks</span><span class="gt-v '+(ppos?'up':'down')+'">'+(ppos?'▲':'▼')+' '+Math.abs(pp.pct).toFixed(1)+'%</span></button>'); }
-  // (user ask, 14 Aug) — show BOTH the new ticker-board look AND the classic horizontal pills together,
-  // so the difference is visible side-by-side and a call can be made. Same `.gt` tiles in both; the click
-  // wiring (querySelectorAll('.gt[data-glance]')) covers every copy, and autoScrollGlance only rolls the
-  // FIRST `.glance.led`, so the pills copy stays a plain static scroll strip. Once decided, drop one block.
-  var _t=tiles.join('');
-  return '<div class="glancecmp">'+
-    '<div class="gcapt">🔴 Ticker board</div>'+
-    '<div class="glance led" role="group" aria-label="Tonight at a glance — ticker board">'+_t+'</div>'+
-    '<div class="gcapt">💊 Classic pills</div>'+
-    '<div class="glance" role="group" aria-label="Tonight at a glance — pills">'+_t+'</div>'+
-  '</div>';
+  // (user ask, 14 Aug) — a live horizontal EXCHANGE-TAPE ticker, replacing the LED board + pills A/B.
+  // Rows 1-2 carry the labelled pill-chips (all the classic-pill content: market, picks, conviction, news,
+  // announcements, sectors, commodities, holdings…); row 3 is a pure ticker crawl of the served picks
+  // (SYM 🍊score move) + the day's top movers (SYM ▲/▼%). Alternating directions + speeds; pure-CSS scroll
+  // (no JS interval); pause on hover/touch; responsive full-width (phone → PC). Every item is tappable —
+  // .gt tiles via the existing .gt[data-glance] handler, crawl items via the .tkitem handler (both in wire()).
+  var crawl=[];
+  picks.forEach(function(p){ var chg=(p.change!=null)?fmtChg(p.change):''; var up=(p.up!==false);
+    crawl.push('<span class="tkitem" data-sym="'+esc(p.sym)+'" data-region="'+esc(region)+'"><span class="tksym">'+esc(p.sym)+'</span><span class="tkscore">'+p.score.buy_now+'🍊</span>'+(chg?'<span class="tkchg '+(up?'up':'down')+'">'+(up?'▲':'▼')+String(chg).replace(/^[+\-\s]*/,'')+'</span>':'')+'</span>'); });
+  var tm=(D.topMovers&&D.topMovers[region])||{};
+  (tm.gainers||[]).slice(0,5).concat((tm.losers||[]).slice(0,5)).forEach(function(m){
+    if(!m||!m.sym) return; var cp=(m.change_pct!=null)?m.change_pct:m.pct; if(cp==null||!isFinite(+cp)) return; var up=+cp>=0;
+    crawl.push('<span class="tkitem" data-sym="'+esc(m.sym)+'" data-region="'+esc(region)+'"><span class="tksym">'+esc(m.sym)+'</span><span class="tkchg '+(up?'up':'down')+'">'+(up?'▲':'▼')+Math.abs(+cp).toFixed(1)+'%</span></span>'); });
+  var half=Math.ceil(tiles.length/2), sep='<span class="tksep">•</span>';
+  function tkrow(inner, dir, dur){ if(!inner) return ''; return '<div class="tkrow tk-'+dir+'" style="--dur:'+dur+'"><div class="tkinner">'+inner+sep+inner+sep+'</div></div>'; }
+  var rows=[ tkrow(tiles.slice(0,half).join(sep),'left','46s'),
+             tkrow(tiles.slice(half).join(sep),'right','58s'),
+             tkrow(crawl.join(sep),'left','34s') ].filter(Boolean).join('');
+  if(!rows) return '';
+  return '<div class="tickerwrap ticklive" role="group" aria-label="Tonight at a glance — live ticker">'+rows+'</div>';
 }
 // (user ask) LED ticker board — roll the 3 visible rows VERTICALLY (random top/bottom) instead of a long
 // horizontal scroll. Discrete one-row steps every ~3.6s with a pause between, so a row is static (tappable)
@@ -8021,7 +8063,11 @@ function wire(D){
     else if(g==='holdings'){ var hr=holdingsTodayPct(); if(hr&&hr.items&&hr.items.length){ openContribBreakdown('💼 What you own — this session', 'Holdings average', hr); } else { try{ switchTab('faves'); }catch(e){} } }
     else { gotoCtx({announcements:'announcements'}[g]||'news'); }
   }; });
-  autoScrollGlance();   // (user ask) gently auto-rotate the header pills so you see them all without scrolling
+  // live-ticker crawl items (individual picks + movers) → open the real per-ticker read (pick/candidate card,
+  // else the "what would you do?" analyst read). The row pauses on hover/touch so a moving item is tappable.
+  document.querySelectorAll('.tkitem[data-sym]').forEach(function(b){ b.onclick=function(){
+    try{ openMover(b.dataset.sym, b.dataset.region); }catch(e){ try{ openTicker(b.dataset.sym, b.dataset.region); }catch(e2){} } }; });
+  autoScrollGlance();   // no-op now (the LED board is gone; the ticker is pure-CSS) — kept so wire()'s call resolves
   // 🔴 "Just in" breaking rows — static page content, so wire here in wire()'s one-time pass. Tapping the
   // row opens the ticker's full read; the headline link inside stops propagation so it opens the source.
   document.querySelectorAll('.brkrow[data-sym]').forEach(function(b){ b.onclick=function(){
