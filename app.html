@@ -2952,6 +2952,17 @@ function signalRows(p,region,opts){
       explain:'The tone of recent news coverage — separate from the chart, this is what people are actually saying.',
       diagram:newsTop3Html(p.news_top3)});
   }
+  // (13 Aug 2026) ASX director/insider trades from smallcaps.com.au — the company's OWN officers buying or
+  // selling with their own cash (distinct from the 🐋 outside "smart money"). Directors buying is a classic
+  // confidence tell; heavy selling is a caution. Fills the ASX gap (US had SEC EDGAR Form 4 only).
+  var dtr=p&&p.directorTrades;
+  if(dtr&&(dtr.buyers||dtr.sellers)){
+    var dtone=(dtr.buyers||0)>(dtr.sellers||0)?'pos':((dtr.sellers||0)>(dtr.buyers||0)?'neg':'mix');
+    var dnet=dtr.net_value||0, dnetTxt=dnet?(' · net '+(dnet>=0?'+':'−')+'$'+Math.abs(Math.round(dnet)).toLocaleString()):'';
+    rows.push({icon:'🏛️',label:'Director trades',tone:dtone,
+      read:(dtr.buyers||0)+' buy · '+(dtr.sellers||0)+' sell'+dnetTxt,
+      explain:'Recent on-market trades by the company’s OWN directors and officers. Directors buying with their own money is a classic insider-confidence signal; heavy selling is a caution. '+(dtr.buyers||0)+' bought, '+(dtr.sellers||0)+' sold recently. Source: ASX director-transaction filings via smallcaps.com.au.'});
+  }
   // #253 (11 Aug 2026) — RETAIL BUZZ: how much the Reddit crowd is suddenly talking about this (mention
   // velocity via ApeWisdom, keyless). US names only (Reddit's crowd is US) — ASX names carry no p.retail.
   // Deliberately weighted small: a surge can front-run a volume/squeeze move, but it's also a crowd-top tell.
@@ -6993,6 +7004,9 @@ var DATA_HEALTH=[
   {cat:'Keyless fallbacks',name:'SEC EDGAR (keyless)',use:'US insider — Form 4 open-market buys/sells — + 8-K catalyst freshness (#223)',status:'ok',note:'Tested 10 Aug 2026: free + keyless (needs a descriptive User-Agent header, ~10 req/s). data.sec.gov/submissions gives recent filings incl. Form 4 + 8-K; efts.sec.gov full-text search finds 8-K catalysts (1073 real hits for "offtake agreement"). Wired into signals.enrich() as the US insider fallback (fills the gap when Finnhub has nothing) and always adds edgar_8k_days. Parses the RAW form4.xml (strips the XSL-view prefix), counts distinct open-market P/S owners only — RSU/option codes (M/F/A) are correctly ignored. signals_edgar.py.',url:'https://www.sec.gov/search-filings/edgar-application-programming-interfaces',urlLabel:'API docs',checked:'2026-08-10'},
   {cat:'Keyless fallbacks',name:'FINRA Consolidated Short Interest (keyless)',use:'US short-interest days-to-cover + its rate of change → the short_interest_trend scoring nudge (#148)',status:'ok',note:'Free + keyless (the old $FINRA_TOKEN gate was a phantom requirement). Uses real POST-body compareFilters (a GET querystring silently returns an UNFILTERED first record — a query for AAPL once returned Agilent 2020 data). Bi-monthly cycle + ~2wk publish lag, so "today" never has data — _finra_latest_settlement_date() probes candidate dates against a known-liquid ticker until one hits, cached per-process. signals.short_signal().',url:'https://developer.finra.org/',urlLabel:'API docs',checked:'2026-08-10'},
   {cat:'Keyless fallbacks',name:'Google News RSS (keyless)',use:'PRIMARY per-ticker news freshness for ASX names (news_line tries this first for AU, before EODHD)',status:'ok',note:'Free, keyless, no account — news.google.com/rss/search. Dramatically fresher than EODHD\'s per-ticker feed for ASX (CQR went from "nothing since June 2025" to a real Aug-8 article; thin small-caps return 1-3-day-old coverage). Query = "{name}" {sym} ASX. Caveat: Google\'s RSS carries a personal-use-only notice — treated as a good-faith personal/family-use call (#124). signals.google_news().',url:'https://news.google.com/',urlLabel:'site',checked:'2026-08-09'},
+  {cat:'Keyless fallbacks',name:'smallcaps.com.au — director trades',key:'smallcaps-director',use:'ASX director/insider trades (buy/sell + $value) → fills the ASX director-trade gap (we only had US via SEC EDGAR). Attached to AU candidates as directorTrades.',status:'ok',note:'Scouted + verified 13 Aug 2026: static-HTML table, plain-Python fetchable (HTTP 200, no JS shell). Buy/sell direction read from the value cell class. Daily-cached. signals_smallcaps.director_trades(). Good-faith personal-use call (data as signals, not republishing).',url:'https://smallcaps.com.au/director-transactions',urlLabel:'director trades',checked:'2026-08-13'},
+  {cat:'Keyless fallbacks',name:'smallcaps.com.au — shorted stocks',key:'smallcaps-shorted',use:'Most-shorted ASX names (ASIC data, ~1wk lag) → short % of issued, attached to AU candidates as shortSmallcaps.',status:'ok',note:'Verified 13 Aug 2026: static-HTML table, plain-Python fetchable. short% computed HERE (short_interest ÷ total_issue) — their own "Short %" column is mis-scaled ×100 (DRO shows 1546% for a real 15.5%). Daily-cached. signals_smallcaps.shorted_stocks().',url:'https://smallcaps.com.au/shorted-stocks',urlLabel:'shorted stocks',checked:'2026-08-13'},
+  {cat:'Keyless fallbacks',name:'Stockhead sector RSS feeds',key:'stockhead-feeds',use:'Sharper sector-specific ASX news than the single homepage feed — /resources/feed/ (+ /health, /tech, /energy, /just-in). Fetched by the news/macro net each FULL run.',status:'ok',note:'Verified 13 Aug 2026: /resources/feed/ is a real, current, dated RSS. Added to the agent-driven news net source list alongside Stockhead/Fool. Agent-fetched (semantic parse), not a pure-script capability.',url:'https://stockhead.com.au/resources/feed/',urlLabel:'resources feed',checked:'2026-08-13'},
   {cat:'Keyless fallbacks',name:'TIKR',use:'Considered as a fundamentals/estimates source (#190)',status:'blocked',note:'No free/keyless public REST API — it is a paid data platform. Not usable for a keyless pipeline. Not pursued.',url:'https://www.tikr.com/',urlLabel:'site',checked:'2026-08-10'},
   {cat:'Keyless fallbacks',name:'ASX announcements feed (Markit)',use:'Post-report ASX catalysts (price-sensitive announcements), per-ticker only',status:'ok',note:"No per-article URL field — links out to the ticker's ASX announcements page instead.",url:'https://www.asx.com.au/markets/trade-our-cash-market/announcements',urlLabel:'ASX announcements',checked:'2026-08-07'},
   {cat:'Keyless fallbacks',name:"ASX official market-wide announcements",use:'Considered as a way to catch halts/price-sensitive news on names we haven’t discovered yet',status:'blocked',note:'API endpoint: 404, path no longer exists. The human-facing page (asx.com.au/markets/trade-our-cash-market/announcements) was re-checked 8 Aug 2026 too — it\'s a JS-rendered SPA shell with no static data, the real feed loads client-side via a call WebFetch can\'t execute. Not wired in either way.',url:'https://www.asx.com.au/markets/trade-our-cash-market/announcements',urlLabel:'announcements page',checked:'2026-08-08'},
@@ -7060,6 +7074,18 @@ function sourceStatsHtml(){
   return '<div class="dhkw-block"><h4 style="margin:0 0 6px">📈 Source contribution over time (#93)</h4>'+
     '<p class="sec-sub" style="margin-top:0">Real, accumulated per-net stats since this was wired in — '+esc(ss.history&&ss.history.length?ss.history.length+' run(s) tracked':'first run')+'. Not retroactive; older runs had no source tag to tally.</p>'+rows+'</div>';
 }
+// (#src-health, 13 Aug 2026) — a REAL per-run "last used" stamp when the pipeline recorded one
+// (latest.sourceHealth[key], written by source_health.py); falls back to the static manual verification
+// date. Answers "why hasn't this been checked in 5 days?" — a stamped source shows its true last use.
+function dhWhenHtml(s){
+  var sh=(LAST.D&&LAST.D.sourceHealth)||{};
+  var iso=s.key&&sh[s.key];
+  if(iso){ var t=Date.parse(iso); var rel='';
+    if(isFinite(t)){ var mins=Math.max(0,Math.round((Date.now()-t)/60000));
+      rel = mins<60?(mins+'m ago') : mins<1440?(Math.round(mins/60)+'h ago') : (Math.round(mins/1440)+'d ago'); }
+    return '<div class="dhchecked">🟢 Used '+esc(rel||String(iso).slice(0,16).replace('T',' '))+' · live stamp</div>'; }
+  return s.checked?'<div class="dhchecked">Verified '+esc(s.checked)+' <span class="muted">(manual)</span></div>':'';
+}
 function openDataHealth(){
   var ic={ok:'🟢',degraded:'🟡',blocked:'🔴',untested:'⚪'}, lbl={ok:'Live',degraded:'Degraded',blocked:'Blocked',untested:'Untested'};
   var cats=[]; DATA_HEALTH.forEach(function(s){ if(cats.indexOf(s.cat)<0) cats.push(s.cat); });
@@ -7068,7 +7094,7 @@ function openDataHealth(){
       return '<div class="dhrow dh-'+s.status+'"><div class="dhtop"><span class="dhic">'+ic[s.status]+'</span><b class="dhname">'+esc(s.name)+'</b><span class="dhstat">'+lbl[s.status]+'</span></div>'+
         '<div class="dhuse">'+esc(s.use)+'</div>'+(s.note?'<div class="dhnote">'+esc(s.note)+'</div>':'')+
         (s.url?'<a class="dhlink" href="'+esc(s.url)+'" target="_blank" rel="noopener">🔗 '+(s.urlLabel?esc(s.urlLabel):'site / docs')+' ↗</a>':'')+
-        (s.checked?'<div class="dhchecked">Last checked '+esc(s.checked)+'</div>':'')+'</div>';
+        dhWhenHtml(s)+'</div>';
     }).join('');
     return '<div class="dhcat">'+esc(cat)+'</div>'+(DH_CATDESC[cat]?'<div class="dhcatdesc">'+esc(DH_CATDESC[cat])+'</div>':'')+items;
   }).join('');
