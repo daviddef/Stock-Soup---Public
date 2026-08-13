@@ -8245,10 +8245,13 @@ function onboardingScenes(){
     '<p class="rev d2">This <b>Simple</b> view tells tonight’s move as a story. Tap <b>📋</b> anytime for the <b>Full</b> view — the whole kitchen: every pick, the sectors, the scorecard and more.</p>'+
   '</section>'+
   '<section class="s2scene s2end">'+
-    '<div class="s2eye rev">That’s the tour</div>'+
-    '<h2 class="rev d1" style="font-style:normal">Tonight’s picks<br>are waiting.</h2>'+
-    '<div class="s2btns rev d2"><button class="s2btn primary ob-start" type="button">Start cooking →</button></div>'+
-    '<p class="s2foot rev d3">Not financial advice — a friendly kitchen guide. The call is always yours.</p>'+
+    '<div class="s2eye rev">That’s the tour — your call</div>'+
+    '<h2 class="rev d1" style="font-style:normal">Where do you<br>want to start?</h2>'+
+    '<div class="s2btns rev d2">'+
+      '<button class="s2btn primary ob-start" data-view="simple" type="button">😋 Keep it simple</button>'+
+      '<button class="s2btn ghost ob-start" data-view="full" type="button">📋 Show me everything</button>'+
+    '</div>'+
+    '<p class="s2foot rev d3">Switch anytime with the 😋 Simple / 📋 Full toggle up top. Not financial advice — a friendly kitchen guide.</p>'+
   '</section>';
 }
 function openOnboarding(){
@@ -8262,7 +8265,7 @@ function openOnboarding(){
   var prog=document.getElementById('obProg');
   el.onscroll=function(){ var mx=el.scrollHeight-el.clientHeight; if(prog) prog.style.width=(mx>0?(el.scrollTop/mx*100):0).toFixed(1)+'%'; };
   var cb=document.getElementById('obClose'); if(cb) cb.onclick=closeOnboarding;
-  el.querySelectorAll('.ob-start').forEach(function(b){ b.onclick=closeOnboarding; });
+  el.querySelectorAll('.ob-start').forEach(function(b){ b.onclick=function(){ var v=b.dataset.view; if(v){ try{ setView(v); }catch(e){} } closeOnboarding(); }; });
 }
 function closeOnboarding(){ var el=document.getElementById('onboard'); if(el){ el.classList.remove('open'); el.innerHTML=''; } document.body.style.overflow=''; }
 function maybeOnboard(){ if(window._obTried) return; window._obTried=1; try{ if(localStorage.getItem('soup_onboarded')) return; }catch(e){ return; } setTimeout(function(){ try{ openOnboarding(); }catch(e){} }, 800); }
