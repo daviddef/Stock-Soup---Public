@@ -1609,11 +1609,21 @@
   .potlensbtn.on{color:var(--ink);border-color:var(--broth);background:color-mix(in srgb,var(--broth) 16%,transparent)}
   .potlensbtn:focus-visible{outline:2px solid var(--broth);outline-offset:2px}
   /* #299 — Market context chip sub-nav */
-  .mctx-nav{display:flex;flex-wrap:wrap;gap:7px;margin:10px 0 16px}
-  .mctxbtn{font-family:var(--font);font-size:13px;font-weight:800;color:var(--muted);background:var(--surface-2);border:1px solid var(--line);border-radius:999px;padding:7px 14px;cursor:pointer;transition:all .12s}
-  .mctxbtn:hover{border-color:var(--broth);color:var(--ink)}
-  .mctxbtn.on{color:#fff;background:var(--broth);border-color:var(--broth)}
+  /* #299 — Market-context sub-nav: same underline tab-bar language as the main nav (.tabbtn),
+     one non-wrapping row that scrolls + snaps sideways so switching never reflows/jumps. */
+  .mctx-nav{display:flex;flex-wrap:nowrap;gap:2px;margin:12px 0 18px;overflow-x:auto;scrollbar-width:none;
+    border-bottom:2px solid var(--line);scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch}
+  .mctx-nav::-webkit-scrollbar{display:none}
+  .mctxbtn{flex:0 0 auto;scroll-snap-align:center;position:relative;font-family:var(--font);font-size:13px;font-weight:900;
+    text-transform:uppercase;letter-spacing:.03em;color:var(--muted);background:none;border:0;border-radius:0;
+    padding:9px 15px 12px;cursor:pointer;white-space:nowrap;transition:color .15s,transform .12s}
+  .mctxbtn:hover{color:var(--ink)}
+  .mctxbtn:active{transform:scale(.96)}
+  .mctxbtn.on{color:var(--broth)}
+  .mctxbtn.on::after{content:"";position:absolute;left:12%;right:12%;bottom:-2px;height:3.5px;border-radius:3px;
+    background:linear-gradient(90deg,var(--broth),#ffb347);box-shadow:0 0 12px rgba(255,107,26,.6)}
   .mctxbtn:focus-visible{outline:2px solid var(--broth);outline-offset:2px}
+  .mctx-panel:not([hidden]){animation:omReveal .22s ease both}
   .mctx-panel[hidden]{display:none}
   .mctx-panel>section{margin-top:0}
   .mctx-panel>section .sec-head{margin-top:0}
@@ -7164,6 +7174,7 @@ function wire(D){
     var id=b.dataset.mctx, sec=b.closest('#mktctx'); if(!sec||id===MCTX) return; MCTX=id;
     sec.querySelectorAll('.mctxbtn').forEach(function(x){ var on=x.dataset.mctx===id; x.classList.toggle('on',on); x.setAttribute('aria-selected',on?'true':'false'); });
     sec.querySelectorAll('.mctx-panel').forEach(function(p){ if(p.dataset.panel===id) p.removeAttribute('hidden'); else p.setAttribute('hidden',''); });
+    try{ b.scrollIntoView({behavior:'smooth',inline:'center',block:'nearest'}); }catch(e){}   // snap the active chip toward centre (feels like the main tab bar)
     try{ hydrateMissCharts(); }catch(e){}   // lazy mini-charts (movers/misses) hydrate once their panel is visible
   };});
   var rm=document.getElementById('runMore'), rr=document.getElementById('runRest');
