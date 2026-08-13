@@ -1143,7 +1143,8 @@
   .callplan .plk.g{color:var(--buy)} .callplan .plk.r{color:var(--dont)}
   .callplan .pldot{color:var(--faint);margin:0 7px}
   .callwhy{font-size:14.5px;line-height:1.5;color:var(--ink);margin:11px 0 0}
-  .mplain{font-size:14.5px;line-height:1.62;color:var(--ink);margin:13px 2px 2px;text-wrap:pretty}  /* #330 — full company blurb in the overlay */
+  .mplain{font-size:14.5px;line-height:1.55;color:var(--ink);margin:2px 2px 0;text-wrap:pretty}  /* #330 — full company blurb in the overlay */
+  .lvlchart{max-height:230px}  /* safety cap so the levels chart never balloons on an ultra-wide modal */
   .msigs>summary{cursor:pointer;font-size:15px;font-weight:800;color:var(--ink);margin-top:20px;list-style:none}  /* #329 — collapse the duplicate signal wall */
   .msigs>summary::-webkit-details-marker{display:none}
   .msigs>summary::before{content:'▸ ';color:var(--broth)}
@@ -1736,7 +1737,7 @@
   .mverd{display:inline-block;margin-top:12px;font-size:12px;font-weight:900;padding:6px 12px;border-radius:9px;text-transform:uppercase;letter-spacing:.04em}
   button.mverd{border:0;font-family:var(--font);cursor:pointer}
   button.mverd .chipi{opacity:.7;margin-left:2px}
-  .mbody{padding:20px 22px 24px;display:flex;flex-direction:column;gap:18px}
+  .mbody{padding:16px 20px 20px;display:flex;flex-direction:column;gap:12px}
   .viz{background:var(--surface-2);border:1px solid var(--line);border-radius:14px;padding:16px}
   /* #323 P1 — de-shout every overlay section header at once: sentence-case, not ALL-CAPS. One rule, whole app. */
   .viz h4{font-size:13px;letter-spacing:0;text-transform:none;color:var(--muted);font-weight:750;margin-bottom:14px}
@@ -2110,7 +2111,7 @@ function sparkSVG(vals){
 // levels — common on a stock sitting in its buy zone — don't stack). Self-contained SVG, CSS-var colours.
 function levelChartSVG(vals, o, cur){
   if(!vals||vals.length<2) return '';
-  var W=320,H=156, pad=10, gutter=66, plotW=W-gutter, plotH=H-pad*2;
+  var W=320,H=124, pad=9, gutter=66, plotW=W-gutter, plotH=H-pad*2;
   var nStop=numLevel(o.stop), nEnt=numLevel(o.entry), nTgt=numLevel(o.target), nNow=numLevel(o.now);
   var lo=Math.min.apply(null,vals), hi=Math.max.apply(null,vals);
   [nStop,nEnt,nTgt,nNow].forEach(function(v){ if(isFinite(v)){ lo=Math.min(lo,v); hi=Math.max(hi,v); } });
