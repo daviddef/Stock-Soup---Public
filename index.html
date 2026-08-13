@@ -3,6 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Cache-Control" content="no-cache, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
 <title>Stock Soup — the kitchen's open</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -112,7 +114,7 @@
 
 <script>
   var API_BASE='https://stocksoup-api.defranceski.workers.dev';
-  var SKEY='soup_session', EKEY='soup_email', APP='dashboard.html';
+  var SKEY='soup_session', EKEY='soup_email', APP='dashboard.html', PKEY='soup_pending_poll';
   // Cache-buster: GitHub Pages serves the app HTML with a 10-min cache, so a repeat visitor could keep
   // getting a stale build for up to 10 minutes after a deploy. Appending a per-minute version to the app
   // URL means the browser treats each minute's load as a fresh resource → new deploys show within ~1 min,
@@ -147,17 +149,33 @@
   // rely on the redirect landing back in the PWA. Instead poll the backend from THIS context — the moment
   // the link is verified anywhere, we get the session and store it in the PWA's own storage.
   var _pollIv=null;
+  function stopPoll(clear){ if(_pollIv){ clearInterval(_pollIv); _pollIv=null; } if(clear){ try{localStorage.removeItem(PKEY);}catch(e){} } }
   function startPoll(id){
-    if(_pollIv) clearInterval(_pollIv);
+    stopPoll(false);
+    try{ localStorage.setItem(PKEY,id); }catch(e){}    // PERSIST the poll id — iOS can EVICT a backgrounded
+    // PWA while you're in Safari tapping the link; on relaunch we resume this poll (see the resume block
+    // below) instead of losing the sign-in even though the session is already sitting ready in the backend.
     var tries=0;
     _pollIv=setInterval(function(){
-      if(++tries>120){ clearInterval(_pollIv); return; }   // ~6 min, then stop
+      if(++tries>200){ stopPoll(true); if(go) go.disabled=false; return; }   // ~10 min, then give up
       fetch(API_BASE+'/auth/poll?id='+encodeURIComponent(id)).then(function(r){return r.json();}).then(function(j){
-        if(j&&j.status==='ready'&&j.session){ clearInterval(_pollIv); try{localStorage.setItem(SKEY,j.session);}catch(e){} msg.textContent='Seating you now… 🍜'; location.replace(appUrl()); }
-        else if(j&&(j.status==='expired'||j.status==='invalid')){ clearInterval(_pollIv); go.disabled=false; }
+        if(j&&j.status==='ready'&&j.session){ stopPoll(true); try{localStorage.setItem(SKEY,j.session);}catch(e){} msg.textContent='Seating you now… 🍜'; location.replace(appUrl()); }
+        else if(j&&(j.status==='expired'||j.status==='invalid')){ stopPoll(true); if(go) go.disabled=false; }
       }).catch(function(){});
     }, 3000);
   }
+  // Resume a pending sign-in if the PWA was relaunched mid-flow (the #1 reason it "hangs on login").
+  (function(){
+    if(sess()) return;                       // already signed in — the top IIFE handled it
+    var pend=''; try{ pend=localStorage.getItem(PKEY)||''; }catch(e){}
+    if(pend){ if(msg){ msg.className='msg'; msg.innerHTML='🍜 <b>Finishing your sign-in…</b><br><small>Tap the link in your email if you haven’t yet.</small>'; } startPoll(pend); }
+  })();
+  // Also re-check the instant you return to the app (iOS throttles background timers) so seating is snappy.
+  document.addEventListener('visibilitychange',function(){
+    if(document.hidden||sess()) return;
+    var pend=''; try{ pend=localStorage.getItem(PKEY)||''; }catch(e){}
+    if(pend && !_pollIv) startPoll(pend);
+  });
 </script>
 </body>
 </html>
