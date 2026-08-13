@@ -5323,7 +5323,8 @@ var INFO={
     '<li>☀️ <b>~12:00 AEST</b> — a midday check while the ASX trades.</li>'+
     '<li>🌆 <b>~16:00 AEST</b> — late-arvo re-scan, catches ASX-close and pre-US-evening moves.</li>'+
     '<li>🇺🇸 <b>~22:45 AEST</b> — before the US opens (9:30am New York).</li></ul>'+
-    '<h4>⏱️ Minor runs — a re-price</h4><p>Every 10 minutes during AU awake hours we re-price the current 6 picks + your watchlist and read the change — <i>same menu, fresh numbers</i>. These fill <b>Tonight\'s hourly runs</b> and the change-environment chart. They don\'t pick new stocks.</p>'+
+    '<h4>⏱️ Minor runs — a re-price</h4><p>Every 10 minutes while the AU or US market is awake we re-price the current 6 picks + every Full-Pot candidate + your watchlist + the T2/T3 tier picks, and read the change — <i>same menu, fresh numbers</i>. They don\'t pick new stocks.</p>'+
+    '<p>These are quiet by design — they don\'t log a big "cooking" row like a major does. But the <b>Run schedule</b> header now shows a live tally: <b>N re-prices today</b>, any that <b>failed</b> (in red), and a <span style="color:var(--gain,#2ecc71);font-weight:700">✓ live</span> / <span style="color:var(--warn,#d9a441);font-weight:700">⏸ paused</span> (nothing in 20 min — normal overnight) / <span style="color:var(--loss,#e05555);font-weight:700">✗ last failed</span> freshness read. So you can always see it running — <i>and especially if it isn\'t</i>.</p>'+
     '<p class="infofoot">So: <b>majors</b> change <i>what\'s on the menu</i> (4×/day, market-open-timed); <b>minors</b> keep <i>the prices</i> live (~10 min). The time up top is the next run — tap it any time to see this.</p>'},
   menu:{icon:'🍽️',title:'Tonight\'s Menu',body:
     '<p>The <b>6 picks</b> this run — <b>3 Australian + 3 international</b>, in three time horizons:</p>'+
@@ -5771,6 +5772,35 @@ function upcomingRunsHtml(){
       (estTxt?'<div class="rlest">⏳ takes '+esc(estTxt)+fin+' · <span class="ri-hint">tap for what\'s included</span></div>':'')+'</div>';
   }).join('')+'</div>';
 }
+// #336 (user ask, 13 Aug 2026) — the 10-min re-price pulse runs silently; user wanted it VISIBLE in the
+// kitchen with a real "ran / failed" tally: "I'd prefer I see it run and especially if it doesn't succeed …
+// even if it was just a counter of how many today either way indication of running or failing." pulse.py
+// now records bundle.pulseRuns {date, ok, fail, lastStatus, lastAt, lastErr} — `ok` bumps on every
+// successful write, `fail` bumps on a crash via its own tiny CAS write (before this a crashed pulse wrote
+// nothing, so failures were invisible). This renders that as a live status line: count today, any failures
+// in red, and a ✓ live / ⏸ paused / ✗ last failed freshness read.
+function pulseStatusHtml(){
+  var pr=(typeof PULSERUNS!=='undefined')?PULSERUNS:null;
+  var _tdy=null; try{_tdy=new Date().toLocaleDateString('en-CA',{timeZone:'Australia/Sydney'});}catch(e){}
+  var _pl=(typeof PULSES!=='undefined'&&PULSES)?PULSES:[];
+  // today's successful count still comes from PULSES (capped history) when pulseRuns is absent (old bundle)
+  var okFromHist=_pl.filter(function(p){ if(!p||!p.iso)return false; try{return new Date(p.iso).toLocaleDateString('en-CA',{timeZone:'Australia/Sydney'})===_tdy;}catch(e){return false;} }).length;
+  var freshIso=_pl.length?_pl[_pl.length-1].iso:null;
+  var ok=okFromHist, fail=0, lastStatus='ok', lastAt=freshIso, lastErr='';
+  if(pr&&pr.date===_tdy){ ok=(pr.ok!=null?pr.ok:okFromHist); fail=pr.fail||0; lastStatus=pr.lastStatus||'ok'; lastAt=pr.lastAt||freshIso; lastErr=pr.lastErr||''; }
+  if(!ok&&!fail&&!lastAt) return '';
+  var agoMin=lastAt?Math.round((Date.now()-new Date(lastAt).getTime())/60000):null;
+  var agoTxt=agoMin==null?'':(agoMin<1?'just now':agoMin<60?agoMin+'m ago':Math.floor(agoMin/60)+'h ago');
+  var stale=agoMin!=null&&agoMin>20;   // a pulse should land every ~10 min while a market's awake
+  var mark, col;
+  if(lastStatus==='fail'){ mark='✗ last failed'; col='var(--loss,#e05555)'; }
+  else if(stale){ mark='⏸ paused'; col='var(--warn,#d9a441)'; }
+  else { mark='✓ live'; col='var(--gain,#2ecc71)'; }
+  var bits=['<b>'+ok+'</b> re-price'+(ok===1?'':'s')+' today'];
+  if(fail) bits.push('<b style="color:var(--loss,#e05555)">'+fail+' failed</b>');
+  var tail='<span style="color:'+col+';font-weight:700">'+mark+'</span>'+(agoTxt?' · '+agoTxt:'');
+  return '<span class="pulsestat" title="'+esc(lastErr||('last re-price '+(agoTxt||'—')))+'">'+bits.join(' · ')+' · '+tail+'</span>';
+}
 function runLogHtml(){
   var H=(LAST&&LAST.H)||{}, hh='font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--broth);font-weight:800;margin:18px 0 4px';
   // #272 (user ask) — show the T2/T3 tickers the scan actually chose. They live in latest.modelTiers, and
@@ -5928,8 +5958,8 @@ function runLogHtml(){
   // #245 — today's re-price count folded in here (the last remaining Engine-Room stat card was removed).
   var _tdy=null; try{_tdy=new Date().toLocaleDateString('en-CA',{timeZone:'Australia/Sydney'});}catch(e){}
   var _pl=(typeof PULSES!=='undefined'&&PULSES)?PULSES:[];
-  var _rpToday=_pl.filter(function(pu){ if(!pu||!pu.iso)return false; try{return new Date(pu.iso).toLocaleDateString('en-CA',{timeZone:'Australia/Sydney'})===_tdy;}catch(e){return false;} }).length;
-  return '<h4 style="'+hh+'">Every run — newest first'+(_rpToday?' <span style="color:var(--muted);font-weight:600;text-transform:none;letter-spacing:0">· '+_rpToday+' re-prices today</span>':'')+'</h4>'+
+  var _ps=pulseStatusHtml();
+  return '<h4 style="'+hh+'">Every run — newest first'+(_ps?' <span style="color:var(--muted);font-weight:600;text-transform:none;letter-spacing:0">· '+_ps+'</span>':'')+'</h4>'+
     '<p style="font-size:12px;color:var(--muted);margin:0 0 8px"><b style="color:var(--broth)">Menu</b> = a full re-cook (six new picks, timed ~30&nbsp;min before an open). <b>Re-price</b> = same picks, fresh numbers each hour. The tinted rows up top are <b>scheduled next</b>, not yet run.</p>'+
     '<div class="runlog">'+upcomingRunsHtml()+(body||'<p class="muted">No runs yet.</p>')+rest+'</div>';
 }
@@ -8007,7 +8037,7 @@ document.addEventListener('keydown',function(e){if(e.key==='Escape')closeModal()
 document.getElementById('overlay').addEventListener('click',function(e){if(e.target&&e.target.id==='mClose')closeModal();});
 
 /* ---- View mode: simple (mobile default) vs full, with toggle ---- */
-var VIEW = null, SREGION = 'au', PULSES = null, TRACK = null, MKT = 'au', OUTCOMES = null, TAB = null, RUNNING = null, RUNLOG = [], WL_FILTER = 'all';
+var VIEW = null, SREGION = 'au', PULSES = null, TRACK = null, MKT = 'au', OUTCOMES = null, TAB = null, RUNNING = null, RUNLOG = [], WL_FILTER = 'all', PULSERUNS = null;
 var SIMPLE_POT_THR = 50;   // #199 — the Simple-view whole-pot score threshold (persists across re-renders)
 var FULL_POT_THR = 50;     // #231 — the Full-view Full Pot score threshold. Default 50+ (user ask 11 Aug 2026):
                            // open filtered to the worthwhile names (Buy/Watch), not the whole Pass-band tail. Matches Simple's 50.
@@ -8477,6 +8507,7 @@ function refreshPrices(btn){
     loadGated(function(b){
       var d=b&&b.latest, h=b&&b.menuHistory;
       if(b&&b.pulseHistory&&b.pulseHistory.pulses&&b.pulseHistory.pulses.length>1) PULSES=b.pulseHistory.pulses;
+      if(b&&b.pulseRuns) PULSERUNS=b.pulseRuns;
       if(b&&b.trackRecord&&b.trackRecord.record) TRACK=b.trackRecord;
       if(b&&b.outcomes&&b.outcomes.outcomes) OUTCOMES=b.outcomes;
       RUNNING=(b&&b.running)||null; RUNLOG=(b&&b.runLog)||[]; watchRun();
@@ -8554,6 +8585,7 @@ function applyBundle(b){
   if(!b) return false;
   var d=b.latest, h=b.menuHistory, pu=b.pulseHistory, tr=b.trackRecord, oc=b.outcomes;
   if(pu&&pu.pulses&&pu.pulses.length>1) PULSES=pu.pulses;
+  if(b.pulseRuns) PULSERUNS=b.pulseRuns;
   if(tr&&tr.record) TRACK=tr;
   if(oc&&oc.outcomes) OUTCOMES=oc;
   RUNNING=b.running||null; RUNLOG=b.runLog||[];
