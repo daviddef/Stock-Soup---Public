@@ -1005,6 +1005,20 @@
   @media (max-width:640px){.movergrid{grid-template-columns:1fr 1fr}}
   .movercard{cursor:pointer;background:var(--surface);border:1px solid var(--line);border-radius:11px;padding:9px 10px;transition:border-color .12s,transform .05s}
   .movercard:hover{border-color:var(--broth)} .movercard:active{transform:scale(.98)}
+  /* 🔴 "Just in" breaking-news strip — fresh headlines on tracked names, produced by the 10-min pulse */
+  .brkstrip{margin:0 0 16px;border:1px solid rgba(214,38,59,.28);border-radius:13px;overflow:hidden;background:rgba(214,38,59,.045)}
+  .brkhdr{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 12px;font-weight:800;letter-spacing:.02em;color:#d6263b;background:rgba(214,38,59,.09);font-size:13px}
+  .brkhdr .brksub{font-weight:600;letter-spacing:0;color:var(--muted);font-size:11px}
+  .brkdot{width:8px;height:8px;border-radius:50%;background:#d6263b;box-shadow:0 0 0 0 rgba(214,38,59,.5);animation:brkpulse 2s infinite}
+  @keyframes brkpulse{0%{box-shadow:0 0 0 0 rgba(214,38,59,.5)}70%{box-shadow:0 0 0 7px rgba(214,38,59,0)}100%{box-shadow:0 0 0 0 rgba(214,38,59,0)}}
+  @media(prefers-reduced-motion:reduce){.brkdot{animation:none}}
+  .brkrow{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;width:100%;text-align:left;cursor:pointer;background:none;border:0;border-top:1px solid rgba(214,38,59,.14);padding:9px 12px;color:var(--ink)}
+  .brkrow:first-of-type{border-top:0}
+  .brkrow:hover{background:rgba(214,38,59,.06)} .brkrow:active{transform:scale(.995)}
+  .brksym{grid-row:1/3;align-self:center;font-weight:800;font-size:12px;color:#d6263b;background:rgba(214,38,59,.12);border-radius:7px;padding:3px 8px;white-space:nowrap}
+  .brkhead{font-weight:650;font-size:13.5px;line-height:1.3}
+  .brkhead a{color:var(--ink);text-decoration:none;border-bottom:1px solid var(--line)} .brkhead a:hover{border-color:var(--broth)}
+  .brkmeta{font-size:11px;color:var(--muted)}
   .mvchip{flex:0 0 auto} .mvchip .juicebtn{font-size:10.5px;padding:1px 6px}
   .mvchips{display:flex;flex-wrap:wrap;gap:5px;margin:0 0 5px}  /* score chips on their own row, wrap if tight (#277) */
   .movertop{display:flex;align-items:center;gap:6px;margin-bottom:2px}
@@ -3404,6 +3418,31 @@ function holdingsTodayPct(){
     if(!vals.length) return null; return {pct:vals.reduce(function(a,b){return a+b;},0)/vals.length, n:vals.length};
   }catch(e){ return null; }
 }
+// 🔴 "Just in" — the whole-market breaking-news sweep the 10-min pulse produces (latest.breaking). A fresh
+// catalyst on a name we already track, surfaced within ~10 min instead of waiting for the next full cook.
+// Honest by design: it's a keyword/ticker match on public RSS headlines (no LLM in the pulse loop), so it's
+// framed as "fresh headline — full read at next cook", not a re-scored verdict. Market-filtered; only shows
+// items from the last ~12h; tapping opens the ticker's real read. Renders '' when there's nothing fresh.
+function breakingHtml(D){
+  var b=D.breaking||{}, items=(b.items||[]).filter(function(it){
+    if((it.region||'')!==MKT) return false;
+    if(!it.at) return false;
+    try{ return (Date.now()-new Date(it.at).getTime()) < 12*3600*1000; }catch(e){ return false; }
+  }).slice(0,5);
+  if(!items.length) return '';
+  var rows=items.map(function(it){
+    var ago=timeAgo(it.at), url=it.url||'';
+    var head=url?('<a href="'+esc(url)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()">'+esc(it.headline)+'</a>'):esc(it.headline);
+    return '<button class="brkrow" data-sym="'+esc(it.sym)+'" data-region="'+esc(it.region)+'" title="Tap for '+esc(it.sym)+'’s full read">'+
+             '<span class="brksym">'+esc(it.sym)+'</span>'+
+             '<span class="brkhead">'+head+'</span>'+
+             '<span class="brkmeta">'+esc(it.source||'')+(ago?' · '+esc(ago):'')+'</span>'+
+           '</button>';
+  }).join('');
+  return '<div class="brkstrip">'+
+    '<div class="brkhdr"><span class="brkdot"></span>Just in <span class="brksub">fresh headlines on names we track — full read at the next cook</span></div>'+
+    rows+'</div>';
+}
 // (user ask) the lean "at a glance" metric strip that REPLACES the old orient banner — the 3-second read of
 // tonight, each tile tapping to its detail. Horizontal scroll + snap (same idiom as the ctx tabs). Every tile
 // is honest: it only renders when it has a real number, so the strip never shows an empty/zero stat.
@@ -4119,6 +4158,7 @@ function render(D,H){
       // #hero — the orient banner is replaced by the lean "at a glance" metric strip (user ask): risk · one
       // move · picks · top story · buy sector/commodity · filings · your holdings, each tapping to its detail.
       glanceStripHtml(D)+
+      breakingHtml(D)+
       '<h1 class="display">Two pots on the boil: <span class="hot">'+esc(hdl(D,'a'))+'</span> &amp; <span class="hot">'+esc(hdl(D,'b'))+'</span>.</h1>'+
       // chef's framing sits directly under the headline (collapsed). The standalone "Tonight's one move" card
       // was removed (user ask) — it duplicated the pick it points at + the glance tile; the #1 move is now a
@@ -7500,6 +7540,10 @@ function wire(D){
     else if(g==='holdings'){ try{ switchTab('faves'); }catch(e){} }
     else { gotoCtx({news:'news',sector:'world',commodity:'commodities',announcements:'announcements'}[g]||'news'); }
   }; });
+  // 🔴 "Just in" breaking rows — static page content, so wire here in wire()'s one-time pass. Tapping the
+  // row opens the ticker's full read; the headline link inside stops propagation so it opens the source.
+  document.querySelectorAll('.brkrow[data-sym]').forEach(function(b){ b.onclick=function(){
+    try{ openMover(b.dataset.sym, b.dataset.region); }catch(e){} }; });
   var rm=document.getElementById('runMore'), rr=document.getElementById('runRest');
   if(rm&&rr){ var rrN=rr.children.length; rm.onclick=function(){ var open=rr.hasAttribute('hidden'); if(open)rr.removeAttribute('hidden'); else rr.setAttribute('hidden',''); rm.setAttribute('aria-expanded',open?'true':'false'); rm.innerHTML=(open?'▴ Hide older runs':'➖ '+rrN+' older runs ▾'); }; }
   var kh=document.getElementById('kitchenHealthBtn'); if(kh) kh.onclick=openDataHealth;
