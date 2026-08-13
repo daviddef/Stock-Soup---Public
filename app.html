@@ -3545,6 +3545,26 @@ function glanceStripHtml(D){
   if(pp){ var ppos=pp.pct>=0; tiles.push('<button class="gt" data-glance="picks" title="Average last-session move across tonight’s '+pp.n+' served pick'+(pp.n===1?'':'s')+'"><span class="gt-k">📊 Picks</span><span class="gt-v '+(ppos?'up':'down')+'">'+(ppos?'▲':'▼')+' '+Math.abs(pp.pct).toFixed(1)+'%</span></button>'); }
   return '<div class="glance" role="group" aria-label="Tonight at a glance">'+tiles.join('')+'</div>';
 }
+// (user ask) gently auto-rotate the header glance pills so you can see them all without scrolling. Slow
+// ping-pong drift; pauses the moment you touch/scroll it (so tapping a tile is never fought), and while the
+// tab is hidden. Honours prefers-reduced-motion. One interval, cleared+restarted on each re-render.
+var _glanceIv=null;
+function autoScrollGlance(){
+  if(_glanceIv){ clearInterval(_glanceIv); _glanceIv=null; }
+  var g=document.querySelector('#tab-menu .glance'); if(!g) return;
+  if(window.matchMedia && window.matchMedia('(prefers-reduced-motion:reduce)').matches) return;
+  var dir=1, pauseUntil=0;
+  ['pointerdown','touchstart','wheel'].forEach(function(ev){ g.addEventListener(ev,function(){ pauseUntil=Date.now()+4000; },{passive:true}); });
+  _glanceIv=setInterval(function(){
+    if(document.hidden || !g.offsetParent) return;                     // hidden tab / offscreen → idle
+    if(g.scrollWidth <= g.clientWidth+4) return;                       // everything already fits
+    if(Date.now() < pauseUntil) return;                               // recently touched → hold
+    var max=g.scrollWidth-g.clientWidth;
+    g.scrollLeft += dir*0.75;                                          // ~25px/s gentle drift
+    if(g.scrollLeft>=max-0.5){ dir=-1; pauseUntil=Date.now()+1600; }   // bounce at the ends with a beat
+    else if(g.scrollLeft<=0.5){ dir=1; pauseUntil=Date.now()+1600; }
+  }, 30);
+}
 // Custom tab icons (line-art, inherit currentColor → dim when idle, broth when active).
 var TABICONS={
   menu:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 11.5h17a8.5 8.5 0 0 1-17 0Z"/><path d="M2.5 11.5h19"/><path d="M9 4.4c.7.9-.5 1.5 0 2.4M13 4c.7.9-.5 1.5 0 2.4"/></svg>',
@@ -7623,12 +7643,20 @@ function hydrateMissCharts(root){
       // extends right (transform none), near the right edge it extends left (translateX(-100%)), else centred.
       // A whole-integer left% also sat a touch off the line — use one decimal so label + line agree.
       var flagLbl='';
+      // "since we served it" only makes sense if there's data AFTER the serve. When the serve sits at the
+      // right edge (e.g. served near a US close → the market's been shut since), there IS nothing after —
+      // so relabel the section honestly and don't show an empty "since" %. Self-heals once it next trades.
+      var atEdge=(markIdx!=null && markIdx>=vals.length-2);
+      if(mlab==='served'){
+        var box=slot.closest('.cardtrend'), hdr=box&&box.querySelector('.mrlbl');
+        if(hdr) hdr.textContent=atEdge?'the session we served into':'since we served it';
+      }
       if(markIdx!=null){
         var mpct=(markIdx/(vals.length-1))*100, tx=(mpct<15)?'0':(mpct>85)?'-100%':'-50%';
-        // (user ask) growth/fall since the serve time = now vs the served price (the marker's value)
         var since='';
-        if(mlab==='served'){ var sv=vals[markIdx], nv=vals[vals.length-1];
+        if(mlab==='served' && !atEdge){ var sv=vals[markIdx], nv=vals[vals.length-1];   // growth/fall since the serve
           if(sv){ var sp=(nv-sv)/sv*100; since=' · <span class="mchk-since '+(sp>=0?'up':'down')+'">'+(sp>=0?'+':'')+sp.toFixed(1)+'%</span>'; } }
+        else if(mlab==='served' && atEdge){ since=' · <span class="mchk-since" style="color:var(--muted)">just served</span>'; }
         flagLbl='<div class="misschart-flag" style="left:'+mpct.toFixed(1)+'%;transform:translateX('+tx+')">'+mlab+' '+_timeHM(times[markIdx])+since+'</div>';
       }
       slot.innerHTML='<div class="misschart-wrap">'+missSparkSVG(vals,markIdx)+flagLbl+'</div>'+
@@ -7720,6 +7748,7 @@ function wire(D){
     else if(g==='holdings'){ try{ switchTab('faves'); }catch(e){} }
     else { gotoCtx({news:'news',sector:'world',commodity:'commodities',announcements:'announcements'}[g]||'news'); }
   }; });
+  autoScrollGlance();   // (user ask) gently auto-rotate the header pills so you see them all without scrolling
   // 🔴 "Just in" breaking rows — static page content, so wire here in wire()'s one-time pass. Tapping the
   // row opens the ticker's full read; the headline link inside stops propagation so it opens the source.
   document.querySelectorAll('.brkrow[data-sym]').forEach(function(b){ b.onclick=function(){
