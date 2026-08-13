@@ -125,6 +125,25 @@
   .mb-risk-go{color:var(--broth);font-weight:700}
   .mb-risk:focus-visible{outline:2px solid var(--broth);outline-offset:2px}
   @media(max-width:520px){ .mbrief{flex-wrap:wrap} .mbrief .mb-txt{flex:1 1 100%} }
+  /* (user ask) "at a glance" metric strip — replaces the orient banner. Horizontal scroll + snap; each tile
+     taps to its detail. Reuses the ctx-tab scroll idiom so it feels native on mobile. */
+  .glance{display:flex;gap:8px;margin:2px 0 16px;overflow-x:auto;scrollbar-width:none;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch;padding-bottom:2px;animation:omReveal .5s ease both}
+  .glance::-webkit-scrollbar{display:none}
+  @media(prefers-reduced-motion:reduce){.glance{animation:none}}
+  .gt{flex:0 0 auto;scroll-snap-align:start;display:flex;flex-direction:column;gap:3px;align-items:flex-start;text-align:left;
+    background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:8px 12px;cursor:pointer;
+    font-family:var(--font);transition:border-color .15s,transform .12s;min-width:92px;max-width:100%}
+  .gt:hover{border-color:var(--broth);transform:translateY(-1px)}
+  .gt:active{transform:scale(.98)}
+  .gt:focus-visible{outline:2px solid var(--broth);outline-offset:2px}
+  .gt-k{font-size:9.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
+  .gt-v{font-size:14px;font-weight:900;color:var(--ink);display:flex;align-items:center;gap:5px;min-width:0;max-width:100%}
+  .gt-v.up{color:var(--buy)} .gt-v.down{color:var(--dont)}
+  .gt-sub{font-size:11px;color:var(--broth);font-weight:800}
+  .gt-dot{width:8px;height:8px;border-radius:50%;display:inline-block;flex:0 0 auto}
+  .gt-clip{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+  .gt-med{max-width:150px} .gt-wide{min-width:170px;max-width:260px}
+  .gt-risk{background:var(--surface)}
   .metastrip{display:flex;flex-wrap:wrap;gap:8px;margin-top:20px}
   .chip{font-size:12px;font-weight:700;padding:6px 11px;border-radius:999px;border:1px solid var(--line);
     background:var(--surface-2);display:inline-flex;align-items:center;gap:6px;white-space:nowrap;color:var(--ink)}
@@ -555,6 +574,14 @@
     box-shadow:var(--shadow);transition:transform .18s ease,border-color .18s ease;cursor:pointer}
   .card:hover{transform:translateY(-4px);border-color:var(--broth)}
   .card:focus-visible{outline:2px solid var(--broth);outline-offset:3px}
+  /* (user ask) the #1 move is now a ribboned pick card, not a duplicate hero card. Orange-glow border + a
+     gentle breathing pulse draw the eye; the ribbon banner names it. */
+  .card-one{border-color:var(--broth);box-shadow:0 0 0 1px var(--broth),0 10px 30px -8px rgba(255,107,26,.5);animation:onePulse 2.6s ease-in-out infinite}
+  @keyframes onePulse{0%,100%{box-shadow:0 0 0 1px var(--broth),0 8px 22px -10px rgba(255,107,26,.35)}50%{box-shadow:0 0 0 1px var(--broth),0 12px 34px -6px rgba(255,107,26,.7)}}
+  @media(prefers-reduced-motion:reduce){.card-one{animation:none}}
+  .onerib{align-self:flex-start;display:inline-flex;align-items:center;gap:5px;font-family:var(--font);font-weight:900;font-size:11px;
+    letter-spacing:.06em;text-transform:uppercase;color:#1a0f06;background:linear-gradient(90deg,var(--broth),#ffb347);
+    padding:4px 12px;border-radius:999px;margin:-2px 0 2px;box-shadow:0 3px 10px -3px rgba(255,107,26,.6)}
   /* baseline a11y (roadmap #now) — a visible keyboard focus ring on every remaining tappable card type */
   .tab:focus-visible,.axcard:focus-visible,.wcard:focus-visible,.tscard:focus-visible,.movercard:focus-visible,.card-sugg:focus-visible,.spot-row:focus-visible,.tmx-vcell:focus-visible,.wlstat-chip:focus-visible{outline:2px solid var(--broth);outline-offset:2px}
   .card .tf{display:flex;align-items:center;justify-content:space-between}
@@ -3324,6 +3351,53 @@ function morningBriefHtml(D){
     '<button class="mb-risk tappable" id="riskMeterBtn" type="button" title="Tonight’s market read — tap for the full meter" aria-label="Tonight’s market read"><span class="mb-risk-dot" style="background:'+rw.c+'"></span>'+rw.w+' <span class="mb-risk-go">↗</span></button>'+
     '<span class="schedi">i</span></div>';
 }
+// jump to a Market-context panel from a glance tile: activate the panel (if the chip exists this market) + scroll to it.
+function gotoCtx(id){ var b=document.querySelector('.mctxbtn[data-mctx="'+id+'"]'); if(b) b.click(); var s=document.getElementById('mktctx'); if(s) s.scrollIntoView({behavior:'smooth',block:'start'}); }
+// count price-sensitive ASX filings across tonight's picks + candidates (current market) — total + today's.
+function glanceAnnCount(D,region){
+  var today=new Date().toISOString().slice(0,10), seen={}, total=0, tod=0;
+  function take(o){ if(!o||(o.region||'us')!==region||o.sym==='NONE')return; (o.announcements||[]).forEach(function(a){ if(!a||!a.headline)return;
+    var k=(o.sym||'')+'|'+a.headline+'|'+(a.date||''); if(seen[k])return; seen[k]=1; total++; if(String(a.date||'').slice(0,10)===today)tod++; }); }
+  (D.regions||[]).forEach(function(rg){(rg.picks||[]).forEach(take);}); (D.candidates||[]).forEach(take);
+  return {total:total,today:tod};
+}
+// today's average move across the names the (signed-in) user flags as OWNED, current market. Null if none.
+function holdingsTodayPct(){
+  try{ var D=(LAST&&LAST.D)||{}; var rows=wlBuildRows(D).filter(function(r){return r.w.own && (r.w.region||'au')===MKT;});
+    var vals=[]; rows.forEach(function(r){ var m=String(r.change||'').match(/-?\d+(\.\d+)?/); if(!m)return;
+      var v=Math.abs(parseFloat(m[0])); if(!isFinite(v))return; vals.push(r.up===false?-v:v); });
+    if(!vals.length) return null; return {pct:vals.reduce(function(a,b){return a+b;},0)/vals.length, n:vals.length};
+  }catch(e){ return null; }
+}
+// (user ask) the lean "at a glance" metric strip that REPLACES the old orient banner — the 3-second read of
+// tonight, each tile tapping to its detail. Horizontal scroll + snap (same idiom as the ctx tabs). Every tile
+// is honest: it only renders when it has a real number, so the strip never shows an empty/zero stat.
+function glanceStripHtml(D){
+  var region=MKT, tiles=[];
+  var r=D.risk||{}, lvl=(r.level!=null)?+r.level:50;
+  var rw=lvl>=67?{w:'Risk-on',c:'#1fb862'}:lvl>=34?{w:'Steady',c:'#f2a33d'}:{w:'Risk-off',c:'#ff4d4d'};
+  tiles.push('<button class="gt gt-risk" data-glance="risk" title="Tonight’s market read — tap for the full meter"><span class="gt-k">Market</span><span class="gt-v"><span class="gt-dot" style="background:'+rw.c+'"></span>'+rw.w+'</span></button>');
+  var rg=(D.regions||[]).filter(function(x){return (x.id||x.region)===region;})[0];
+  var picks=rg?(rg.picks||[]).filter(function(p){return p&&p.sym&&p.sym!=='NONE'&&p.score&&p.score.buy_now!=null;}):[];
+  var om=picks.slice().sort(function(a,b){return b.score.buy_now-a.score.buy_now;})[0];
+  if(om&&(om.score.buy_now||0)>=45)
+    tiles.push('<button class="gt" data-glance="onemove" data-sym="'+esc(om.sym)+'" data-region="'+esc(region)+'" title="Tonight’s single best move"><span class="gt-k">🎯 One move</span><span class="gt-v">'+esc(om.sym)+' <span class="gt-sub">'+om.score.buy_now+'🍊</span></span></button>');
+  if(picks.length)
+    tiles.push('<button class="gt" data-glance="picks" title="Tonight’s served picks"><span class="gt-k">🍲 Tonight</span><span class="gt-v">'+picks.length+' served</span></button>');
+  var news=(D.topNews||[]).filter(function(n){return !n.region||n.region===region;})[0];
+  if(news&&news.headline)
+    tiles.push('<button class="gt gt-wide" data-glance="news" title="Tonight’s top story"><span class="gt-k">📰 Top story</span><span class="gt-v"><span class="gt-clip">'+esc((news.sym?news.sym+': ':'')+news.headline)+'</span></span></button>');
+  var sec=(D.sectors||[]).filter(function(s){return /buy/i.test(s.tag||'');})[0];
+  if(sec){ var sl=(sec.leader&&sec.leader.sym)?sec.leader.sym:''; tiles.push('<button class="gt gt-med" data-glance="sector" title="Hot sector to buy"><span class="gt-k">🍳 Buy sector</span><span class="gt-v"><span class="gt-clip">'+esc(sl||sec.title||sec.name||'')+'</span></span></button>'); }
+  var com=(D.commodities||[]).filter(function(c){return /buy|emerg/i.test(c.tag||'');})[0];
+  if(com){ var cl=(com.leader&&com.leader.sym)?com.leader.sym:''; tiles.push('<button class="gt gt-med" data-glance="commodity" title="Hot commodity to buy"><span class="gt-k">🛢️ Commodity</span><span class="gt-v"><span class="gt-clip">'+esc(com.name||com.title||'')+(cl?' · '+esc(cl):'')+'</span></span></button>'); }
+  var ann=glanceAnnCount(D,region);
+  if(ann.total)
+    tiles.push('<button class="gt" data-glance="announcements" title="Price-sensitive ASX filings tonight"><span class="gt-k">📢 Filings</span><span class="gt-v">'+(ann.today?ann.today+' today':ann.total+' recent')+'</span></button>');
+  var h=holdingsTodayPct();
+  if(h){ var pos=h.pct>=0; tiles.push('<button class="gt" data-glance="holdings" title="Today’s move on the '+h.n+' name'+(h.n===1?'':'s')+' you own"><span class="gt-k">💼 Your holdings</span><span class="gt-v '+(pos?'up':'down')+'">'+(pos?'▲':'▼')+' '+Math.abs(h.pct).toFixed(1)+'% today</span></button>'); }
+  return '<div class="glance" role="group" aria-label="Tonight at a glance">'+tiles.join('')+'</div>';
+}
 // Custom tab icons (line-art, inherit currentColor → dim when idle, broth when active).
 var TABICONS={
   menu:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 11.5h17a8.5 8.5 0 0 1-17 0Z"/><path d="M2.5 11.5h19"/><path d="M9 4.4c.7.9-.5 1.5 0 2.4M13 4c.7.9-.5 1.5 0 2.4"/></svg>',
@@ -3692,6 +3766,11 @@ function render(D,H){
     var _suggPool=(D.candidates||[]).filter(function(c){ return (c.region||rg.id)===rg.id && c.sym && c.sym!=='NONE' && !_servedNow[c.sym] && c.score && (c.score.buy_now||0)>=40; })
       .sort(function(a,b){ return (b.score.buy_now||0)-(a.score.buy_now||0); });
     var _suggIdx=0;
+    // (user ask) the standalone "Tonight's one move" card was duplicating the pick it points at (and the glance
+    // tile). Instead, ribbon the actual pick card that IS the one move — the top scorer shown here (≥45).
+    var _one=rgPicks.filter(function(p){return p&&p.sym&&p.sym!=='NONE'&&p.score&&p.score.buy_now!=null;})
+      .slice().sort(function(a,b){return b.score.buy_now-a.score.buy_now;})[0];
+    var _1sym=(_one&&(_one.score.buy_now||0)>=45)?_one.sym:null;
     var cards=rgPicks.map(function(p,idx){
       // #131 (9 Aug 2026, user ask) — a "no pick this run" placeholder was rendering the FULL card
       // template: a live ✓Watch button (watching a ticker called "NONE"), a "Track this pick" buyat
@@ -3726,7 +3805,9 @@ function render(D,H){
       var repl=isNew?(dropped[newPicks.indexOf(p.sym)]||null):null;
       var newPill=isNew?' <span class="cnew">NEW</span>':(prevSet?' <span class="ckept">✓ kept</span>':'');
       var replNote=repl?'<div class="crepl">↳ replaced <b>'+esc(repl)+'</b> from the last menu</div>':'';
-      return '<div class="pickcol"><article class="card" tabindex="0" role="button" data-region="'+rg.id+'" data-idx="'+idx+'" aria-label="Details for '+esc(p.sym)+'">'+
+      var _isOne=(p.sym===_1sym);
+      return '<div class="pickcol"><article class="card'+(_isOne?' card-one':'')+'" tabindex="0" role="button" data-region="'+rg.id+'" data-idx="'+idx+'" aria-label="Details for '+esc(p.sym)+(_isOne?' — tonight’s #1 move':'')+'">'+
+        (_isOne?'<div class="onerib">🥇 Tonight’s #1 move</div>':'')+
         '<div class="tf"><span class="name">'+tfBW(p.tf)+newPill+annFlag(p)+'</span><span class="tf-r">'+
           /* #orange-top (user ask) — the 🍊 score chip now leads the header, next to the + watch button,
              instead of only appearing lower by the score bar. Same chip/behaviour: tap → the full breakdown
@@ -3959,14 +4040,14 @@ function render(D,H){
   // ===== 🍲 TONIGHT'S MENU =====
   '<div class="tabview active" id="tab-menu">'+
     '<div class="tabhead menuhead">'+
-      // #hero reorder — answer first: orient line → headline → THE ONE MOVE → chef colour → compact risk.
-      morningBriefHtml(D)+
+      // #hero — the orient banner is replaced by the lean "at a glance" metric strip (user ask): risk · one
+      // move · picks · top story · buy sector/commodity · filings · your holdings, each tapping to its detail.
+      glanceStripHtml(D)+
       '<h1 class="display">Two pots on the boil:<br><span class="hot">'+esc(hdl(D,'a'))+'</span> &amp; <span class="hot">'+esc(hdl(D,'b'))+'</span>.</h1>'+
-      // chef's framing sits directly under the headline (collapsed), then the actionable One Move card below it (user ask)
+      // chef's framing sits directly under the headline (collapsed). The standalone "Tonight's one move" card
+      // was removed (user ask) — it duplicated the pick it points at + the glance tile; the #1 move is now a
+      // 🥇 ribbon on its actual pick card in the grid below, and the glance strip's One-move tile jumps to it.
       '<div class="chefwrap"><div class="chef">'+chefFor(D)+'</div><button class="chefmore" aria-expanded="false">Read the chef’s full note ▾</button></div>'+
-      oneMoveHtml(D)+   // #1 — the actionable answer, directly under the chef's colour
-      // #hero — the risk read is now a chip inside the orient banner (morningBriefHtml); the full gradient
-      // meter + factor breakdown lives in the market-read overlay it opens (openMarketRead), so nothing's lost.
       '<div class="sec-head" style="margin:22px 0 3px"><h2 class="display"><span class="k">01</span> Serving today in '+(MKT==='us'?'the U.S.':'Australia')+'</h2>'+infoBtn('menu')+'</div>'+
       '<p class="sec-sub" style="margin:0 0 10px">Three time horizons — '+tfB('Day')+' a quick feed · '+tfB('Week')+' a few days · '+tfB('Long')+' slow-cooked. Tap a card for the full serve; tap a name for Yahoo.</p>'+concentrationHtml(D)+tierToggleHtml+menus+convictionStripHtml(D)+
     '</div>'+
@@ -7229,6 +7310,15 @@ function wire(D){
     try{ var nv=b.parentNode; nv.scrollTo({left:b.offsetLeft-(nv.clientWidth-b.clientWidth)/2,behavior:'smooth'}); }catch(e){}   // centre the active chip by scrolling the NAV only — never the page (so tapping never hijacks vertical scroll)
     try{ hydrateMissCharts(); }catch(e){}   // lazy mini-charts (movers/misses) hydrate once their panel is visible
   };});
+  // (user ask) glance-strip tiles → their detail. Re-bound each render (the strip is rebuilt every render).
+  document.querySelectorAll('.gt[data-glance]').forEach(function(b){ b.onclick=function(){
+    var g=b.dataset.glance;
+    if(g==='risk'){ try{ openMarketRead(); }catch(e){} }
+    else if(g==='onemove'){ try{ openTicker(b.dataset.sym,b.dataset.region); }catch(e){} }
+    else if(g==='picks'){ var m=document.querySelector('#tab-menu .menu'); if(m) m.scrollIntoView({behavior:'smooth',block:'start'}); }
+    else if(g==='holdings'){ try{ switchTab('faves'); }catch(e){} }
+    else { gotoCtx({news:'news',sector:'world',commodity:'commodities',announcements:'announcements'}[g]||'news'); }
+  }; });
   var rm=document.getElementById('runMore'), rr=document.getElementById('runRest');
   if(rm&&rr){ var rrN=rr.children.length; rm.onclick=function(){ var open=rr.hasAttribute('hidden'); if(open)rr.removeAttribute('hidden'); else rr.setAttribute('hidden',''); rm.setAttribute('aria-expanded',open?'true':'false'); rm.innerHTML=(open?'▴ Hide older runs':'➖ '+rrN+' older runs ▾'); }; }
   var kh=document.getElementById('kitchenHealthBtn'); if(kh) kh.onclick=openDataHealth;
