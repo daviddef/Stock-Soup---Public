@@ -3086,6 +3086,21 @@ function signalRows(p,region,opts){
       explain:'Is this a good business at a fair price? Blends how CHEAP it is (value '+(fd.value_score!=null?fd.value_score:'–')+'/100), how PROFITABLE & healthy (quality '+(fd.quality_score!=null?fd.quality_score:'–')+'/100), and GROWTH ('+(fd.growth_score!=null?fd.growth_score:'–')+'/100). '+((fd.why&&fd.why.length)?'Real numbers: '+esc(fd.why.join(' · '))+'.':'')+deep+' Source: company financials via Yahoo.',
       diagram:fundBarsHtml(fd)});
   }
+  // #339 (14 Aug 2026) — cross-sectional PERCENTILE ranking vs tonight's pot (per market). A self-calibrating
+  // companion to the absolute score: is a "60" actually top-decile or middle-of-the-pack among the names
+  // we're weighing tonight? Honestly labelled "vs tonight's pot (N)" — NOT a whole-market/sector percentile
+  // (that's the #339 follow-up, which needs a whole-market fundamentals snapshot). Computed in score-pot.py.
+  var pc=p&&p.percentiles;
+  if(pc&&pc.overall!=null){
+    var _pmkt=(region==='au'?'ASX':'US');
+    var _pw=function(v){ return v>=80?(v+'th — near the top'):(v<=20?(v+'th — near the bottom'):(v+'th pctile')); };
+    var _plabs={value:'Value',quality:'Quality',growth:'Growth',momentum:'Momentum'};
+    var _pbits=[]; ['value','quality','growth','momentum'].forEach(function(k){ if(pc[k]!=null) _pbits.push(_plabs[k]+' '+pc[k]+'th'); });
+    var ptone=pc.overall>=67?'pos':(pc.overall<=33?'neg':'mix');
+    rows.push({icon:'🏅',label:'Ranks in the pot',tone:ptone,
+      read:'Overall '+_pw(pc.overall)+' of '+pc.universe_n+' tonight',
+      explain:'A self-calibrating read: where this sits versus the other '+(pc.universe_n-1)+' names in tonight’s '+_pmkt+' pot, ranked factor-by-factor — so the score is anchored (is a 60 actually top-decile or middle-of-the-pack for the names we’re weighing tonight?). '+(_pbits.length?_pbits.join(' · ')+'. ':'')+'Scope: tonight’s shortlist only — not a whole-market or sector percentile.'});
+  }
   // #283 (12 Aug 2026) — OPTIONS FLOW: what the options market is paying to bet on. Put/call ratio + a flag
   // for unusually heavy flow. A different, often-earlier tell than the equity tape. US-only (thin ASX coverage).
   var of=p&&p.options_flow;
