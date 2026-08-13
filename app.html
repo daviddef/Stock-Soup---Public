@@ -117,12 +117,13 @@
   .mbrief:hover .schedi{border-color:var(--broth);color:var(--broth)}
   /* #hero (#3) — smaller display headline so the picks come up sooner (brand survives at this size) */
   .menuhead h1{font-size:clamp(28px,6vw,52px);margin:12px 0 8px}
-  /* #hero (#4) — compact risk "weather" pill (replaces the full gradient meter in the hero) */
-  .riskpill{display:inline-flex;align-items:center;gap:8px;background:var(--surface-2);border:1px solid var(--line);border-radius:999px;padding:8px 15px;font-size:14px;font-weight:800;color:var(--ink);cursor:pointer;font-family:inherit;margin:2px 0 4px;transition:border-color .12s}
-  .riskpill:hover{border-color:var(--broth)}
-  .riskpill-dot{width:10px;height:10px;border-radius:50%;flex:0 0 auto}
-  .riskpill-go{font-size:11.5px;font-weight:700;color:var(--broth);margin-left:2px}
-  .riskpill:focus-visible{outline:2px solid var(--broth);outline-offset:2px}
+  /* #hero — the risk "weather" is a chip INSIDE the orient banner; the full gradient meter opens on tap */
+  .mb-risk{flex:0 0 auto;display:inline-flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:4px 11px;font-size:12.5px;font-weight:800;color:var(--ink);cursor:pointer;font-family:inherit;transition:border-color .12s}
+  .mb-risk:hover{border-color:var(--broth)}
+  .mb-risk-dot{width:9px;height:9px;border-radius:50%;flex:0 0 auto}
+  .mb-risk-go{color:var(--broth);font-weight:700}
+  .mb-risk:focus-visible{outline:2px solid var(--broth);outline-offset:2px}
+  @media(max-width:520px){ .mbrief{flex-wrap:wrap} .mbrief .mb-txt{flex:1 1 100%} }
   .metastrip{display:flex;flex-wrap:wrap;gap:8px;margin-top:20px}
   .chip{font-size:12px;font-weight:700;padding:6px 11px;border-radius:999px;border:1px solid var(--line);
     background:var(--surface-2);display:inline-flex;align-items:center;gap:6px;white-space:nowrap;color:var(--ink)}
@@ -3291,8 +3292,13 @@ function morningBriefHtml(D){
   var greet=(function(){var h=new Date().getHours();return h<12?'Good morning':h<18?'Good afternoon':'Good evening';})();
   var ms=marketStatus(MKT);
   var when=esc(stampNoWeekday(D.stamp))+(D.next?' · next ~'+esc(D.next):'');
+  // #hero — the market "weather" read now lives INSIDE this one strip as a chip (user ask): the strip taps
+  // to the run schedule; the risk chip is its own button → the full market read (stopPropagation in wire()).
+  var r=D.risk||{}, lvl=(r.level!=null)?+r.level:50;
+  var rw=lvl>=67?{w:'Risk-on',c:'#1fb862'}:lvl>=34?{w:'Steady',c:'#f2a33d'}:{w:'Risk-off',c:'#ff4d4d'};
   return '<div class="mbrief schedlink" id="mbrief" role="button" tabindex="0" title="Run schedule — the target window, tap for the full timeline">'+
     '<span class="mb-txt">☀️ <b>'+greet+'.</b> '+esc(ms.txt)+' · '+when+'</span>'+
+    '<button class="mb-risk tappable" id="riskMeterBtn" type="button" title="Tonight’s market read — tap for the full meter" aria-label="Tonight’s market read"><span class="mb-risk-dot" style="background:'+rw.c+'"></span>'+rw.w+' <span class="mb-risk-go">↗</span></button>'+
     '<span class="schedi">i</span></div>';
 }
 // Custom tab icons (line-art, inherit currentColor → dim when idle, broth when active).
@@ -3934,14 +3940,9 @@ function render(D,H){
       '<h1 class="display">Two pots on the boil:<br><span class="hot">'+esc(hdl(D,'a'))+'</span> &amp; <span class="hot">'+esc(hdl(D,'b'))+'</span>.</h1>'+
       oneMoveHtml(D)+   // #1 — the actionable answer, promoted directly under the headline (was below the meter)
       '<div class="chefwrap"><div class="chef">'+chefFor(D)+'</div><button class="chefmore" aria-expanded="false">Read the chef’s full note ▾</button></div>'+
-      // #4 — the market "weather" as a compact tappable pill (was the full gradient meter + 6 factor chips).
-      // Tapping opens the full read + factor breakdown (openMarketRead, #197). #needle is gone → placeNeedle no-ops.
-      (function(){var lvl=(r&&r.level!=null)?+r.level:50;
-        var rw=lvl>=67?{e:'🟢',w:'Risk-on — send it'}:lvl>=34?{e:'⚪',w:'Steady — no strong lean'}:{e:'🔴',w:'Risk-off — hide the cash'};
-        var dot=lvl>=67?'#1fb862':lvl>=34?'#f2a33d':'#ff4d4d';
-        return '<button class="riskpill tappable" id="riskMeterBtn" type="button" title="Tonight’s market read — tap for the full meter" aria-label="Open tonight’s market read">'+
-          '<span class="riskpill-dot" style="background:'+dot+'"></span>'+rw.e+' <b>'+esc(rw.w)+'</b><span class="riskpill-go">the market read ↗</span></button>';})()+
-      '<div class="sec-head" style="margin:26px 0 3px"><h2 class="display"><span class="k">01</span> Serving today in '+(MKT==='us'?'the U.S.':'Australia')+'</h2>'+infoBtn('menu')+'</div>'+
+      // #hero — the risk read is now a chip inside the orient banner (morningBriefHtml); the full gradient
+      // meter + factor breakdown lives in the market-read overlay it opens (openMarketRead), so nothing's lost.
+      '<div class="sec-head" style="margin:22px 0 3px"><h2 class="display"><span class="k">01</span> Serving today in '+(MKT==='us'?'the U.S.':'Australia')+'</h2>'+infoBtn('menu')+'</div>'+
       '<p class="sec-sub" style="margin:0 0 10px">Three time horizons — '+tfB('Day')+' a quick feed · '+tfB('Week')+' a few days · '+tfB('Long')+' slow-cooked. Tap a card for the full serve; tap a name for Yahoo.</p>'+concentrationHtml(D)+tierToggleHtml+menus+convictionStripHtml(D)+
     '</div>'+
     '<section><div class="sec-head"><h2 class="display"><span class="k">02</span> Take your seat, time for Action</h2>'+infoBtn('actions')+'</div>'+
@@ -5938,8 +5939,15 @@ function openMarketRead(){
   }
   var hl=marketHeadline(r,hotTagsList);
   var rows=marketContextRows(r,hotTagsList,hotTagTarget);
+  // #hero — the full risk "weather" meter (gradient track + needle + the 5 factor markers + legend) now
+  // lives HERE, in the overlay, since the hero shows only the compact chip. Nothing was deleted — the
+  // chart moved. Needle position is set after the modal renders (placeNeedle on the fresh #needle).
+  var _fm=riskFactorMarks(r), _lvl=(r.level!=null)?r.level:50;
+  var meterHtml='<div class="meter" style="margin:2px 0 16px"><div class="track"><div class="needle" id="needle"></div>'+_fm.marks+'</div>'+
+    '<div class="lbls"><span>🔴 Hide the cash</span><span>⚪ Steady</span><span>🟢 Send it</span></div>'+_fm.leg+'</div>';
   _mchipModal(hl.icon,'Market context','Tonight’s read',
-    '<p class="mtake" style="border:0;padding:0 0 10px">'+esc(hl.text)+'</p>'+marketRowsHtml(rows));
+    meterHtml+'<p class="mtake" style="border:0;padding:0 0 10px">'+esc(hl.text)+'</p>'+marketRowsHtml(rows));
+  try{ requestAnimationFrame(function(){ placeNeedle('needle',_lvl); }); }catch(e){ try{ placeNeedle('needle',_lvl); }catch(_){} }
   var mb=document.querySelector('#modal .mbody');
   if(mb){
     mb.querySelectorAll('[data-mchip]').forEach(function(el){ el.onclick=function(){ openMarketChip(el.dataset.mchip); }; el.onkeydown=function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); openMarketChip(el.dataset.mchip); } }; });
@@ -7198,7 +7206,7 @@ function wire(D){
   wireInfo();
   wireThemes();
   var mkh=document.getElementById('mktHeadlineBtn'); if(mkh) mkh.onclick=openMarketRead;
-  var rmb=document.getElementById('riskMeterBtn'); if(rmb){ rmb.onclick=openMarketRead; rmb.onkeydown=function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); openMarketRead(); } }; }   // #197 — tap the risk meter → tonight's read
+  var rmb=document.getElementById('riskMeterBtn'); if(rmb){ rmb.onclick=function(e){ if(e)e.stopPropagation(); openMarketRead(); }; rmb.onkeydown=function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); e.stopPropagation(); openMarketRead(); } }; }   // #197/#hero — the risk chip opens the market read; stopPropagation so it doesn't also fire the banner's run-schedule tap
   var tabs=document.querySelectorAll('.mkf[data-region], .tab[data-region]');
   tabs.forEach(function(t){t.addEventListener('click',function(){ setMkt(t.dataset.region); });});
   bindTierPills();   // #152 tier pills now live in the header (tierBarHtml), same as the market filter
