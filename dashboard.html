@@ -3631,10 +3631,12 @@ function glanceStripHtml(D){
       .sort(function(a,b){return b.ov-a.ov;}).slice(0,3);
     if(scored.length){ var _ct=scored.map(function(x){return esc(x.sym);}).join(' · ');
       tiles.push('<button class="gt gt-med gt-fun-cherry" data-glance="conviction" data-syms="'+esc(scored.map(function(x){return x.sym;}).join(','))+'" data-region="'+esc(region)+'" title="Highest 🍒 conviction beyond tonight’s served picks — tap to see them"><span class="gt-k">🍒 Conviction</span><span class="gt-v"><span class="gt-clip">'+_ct+'</span></span></button>'); } })();
-  // Top story — just the ticker (user ask: "too long, just show AGL"); full headline in the tooltip
-  var news=(D.topNews||[]).filter(function(n){return !n.region||n.region===region;})[0];
-  if(news&&news.headline)
-    tiles.push('<button class="gt" data-glance="news"'+(news.sym?' data-sym="'+esc(news.sym)+'" data-region="'+esc(region)+'"':'')+' title="'+esc(news.headline)+'"><span class="gt-k">📰 Top story</span><span class="gt-v">'+(news.sym?esc(news.sym):'Macro')+'</span></button>');
+  // News — the latest 2, short &amp; sharp (user ask). Full headline in the tooltip; tap opens the ticker.
+  (D.topNews||[]).filter(function(n){return (!n.region||n.region===region)&&n.headline;}).slice(0,2).forEach(function(n){
+    var h=String(n.headline); if(h.length>46) h=h.slice(0,44)+'…';
+    var tc=(n.tone==='bull'||n.tone==='pos')?' up':((n.tone==='bear'||n.tone==='neg')?' down':'');
+    tiles.push('<button class="gt" data-glance="news"'+(n.sym?' data-sym="'+esc(n.sym)+'" data-region="'+esc(region)+'"':'')+' title="'+esc(n.headline)+'"><span class="gt-k">📰 '+(n.sym?esc(n.sym):'News')+'</span><span class="gt-v'+tc+'">'+esc(h)+'</span></button>');
+  });
   // show EVERY buy-rated leader, not just the first (user caught HGO shown but CAH — also Buy — dropped).
   // Dedupe across the two tiles: Copper is BOTH a sector and a commodity (same leader HGO), so a sym already
   // in the sector tile is excluded from the commodity tile — no ticker appears twice (user caught HGO ×2).
@@ -3645,9 +3647,19 @@ function glanceStripHtml(D){
   var buyCom=[]; (D.commodities||[]).forEach(function(c){ if(/buy|emerg/i.test(c.tag||'')&&c.leader&&c.leader.sym&&!_seen[c.leader.sym]){ _seen[c.leader.sym]=1; buyCom.push(c.leader.sym); } });
   if(buyCom.length){ var cShown=buyCom.slice(0,2).map(esc).join(' · ')+(buyCom.length>2?' +'+(buyCom.length-2):'');
     tiles.push('<button class="gt gt-med" data-glance="commodity" data-syms="'+esc(buyCom.join(','))+'" data-region="'+esc(region)+'" title="'+buyCom.length+' commodit'+(buyCom.length===1?'y':'ies')+' rated Buy — tap for the leaders"><span class="gt-k">🛢️ Buy commodit'+(buyCom.length>1?'ies':'y')+'</span><span class="gt-v"><span class="gt-clip">'+cShown+'</span></span></button>'); }
-  var ann=glanceAnnCount(D,region);
-  if(ann.total)
-    tiles.push('<button class="gt" data-glance="announcements" title="Price-sensitive ASX filings tonight"><span class="gt-k">📢 Filings</span><span class="gt-v">'+(ann.today?ann.today+' today':ann.total+' recent')+'</span></button>');
+  // Announcements — the latest 2 across tonight's picks + pot, short &amp; sharp (the plain-English "why").
+  // Tone-coloured (bullish green / bearish red); tap opens the ticker's card (which carries the full filing).
+  (function(){
+    var pool=picks.concat((D.candidates||[]).filter(function(c){return (c.region||'us')===region;}));
+    var out=[], seen={};
+    pool.forEach(function(o){ (o.announcements||[]).forEach(function(a){ if(!a||!(a.why||a.headline))return; var k=o.sym+'|'+(a.why||a.headline); if(seen[k])return; seen[k]=1; out.push({sym:o.sym, date:a.date||'', txt:a.why||a.headline, tone:a.tone}); }); });
+    out.sort(function(a,b){return String(b.date).localeCompare(String(a.date));});
+    out.slice(0,2).forEach(function(a){
+      var w=String(a.txt); if(w.length>44) w=w.slice(0,42)+'…';
+      var tc=(a.tone==='bullish'||a.tone==='bull')?' up':((a.tone==='bearish'||a.tone==='bear')?' down':'');
+      tiles.push('<button class="gt" data-glance="news" data-sym="'+esc(a.sym)+'" data-region="'+esc(region)+'" title="'+esc(a.txt)+'"><span class="gt-k">📢 '+esc(a.sym)+'</span><span class="gt-v'+tc+'">'+esc(w)+'</span></button>');
+    });
+  })();
   // (user ask) "Holdings" → "Today", value is just the % (your owned names, this session).
   var h=holdingsTodayPct();
   if(h){ var pos=h.pct>=0; tiles.push('<button class="gt" data-glance="holdings" title="This session’s move on the '+h.n+' name'+(h.n===1?'':'s')+' you own"><span class="gt-k">💼 Today</span><span class="gt-v '+(pos?'up':'down')+'">'+(pos?'▲':'▼')+' '+Math.abs(h.pct).toFixed(1)+'%</span></button>'); }
@@ -4446,10 +4458,7 @@ function render(D,H){
       // flip the lens — no duplicate orange/cherry grids. Re-renders in place (applyView) preserving scroll.
       '<div class="potlens-ctl"><span class="pll-lbl">Rank by</span>'+
         '<button class="potlensbtn'+(POTLENS==='timing'?' on':'')+'" data-lens="timing" aria-pressed="'+(POTLENS==='timing')+'">🍊 Timing</button>'+
-        '<button class="potlensbtn'+(POTLENS==='conviction'?' on':'')+'" data-lens="conviction" aria-pressed="'+(POTLENS==='conviction')+'">🍒 Conviction</button>'+
-        '<span class="pll-lbl pll-sep">View</span>'+
-        '<button class="potlensbtn'+(POTVIEW==='bands'?' on':'')+'" data-potview="bands" aria-pressed="'+(POTVIEW==='bands')+'">🔥 Bands</button>'+
-        '<button class="potlensbtn'+(POTVIEW==='board'?' on':'')+'" data-potview="board" aria-pressed="'+(POTVIEW==='board')+'">🏆 Leaderboard</button></div>'+
+        '<button class="potlensbtn'+(POTLENS==='conviction'?' on':'')+'" data-lens="conviction" aria-pressed="'+(POTLENS==='conviction')+'">🍒 Conviction</button></div>'+
       // #231 — same score-threshold slider as the Simple view's whole-pot (#199): drag to hide the weaker
       // names client-side, no re-render. Filters every potcard by its model score; a band group whose cards
       // all fall below the line hides its header too.
