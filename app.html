@@ -138,6 +138,10 @@
   @media(max-width:520px){ .mbrief{flex-wrap:wrap} .mbrief .mb-txt{flex:1 1 100%} }
   /* (user ask) "at a glance" metric strip — replaces the orient banner. Horizontal scroll + snap; each tile
      taps to its detail. Reuses the ctx-tab scroll idiom so it feels native on mobile. */
+  /* (user ask, 14 Aug) — temporary A/B: ticker-board vs classic pills stacked with a small caption each. */
+  .glancecmp{display:flex;flex-direction:column;gap:2px;margin-bottom:12px}
+  .gcapt{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);font-weight:700;margin:6px 0 3px}
+  .glancecmp .glance{margin:0}
   .glance{display:flex;gap:8px;margin:2px 0 16px;overflow-x:auto;scrollbar-width:none;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch;padding-bottom:2px;animation:omReveal .5s ease both}
   .glance::-webkit-scrollbar{display:none}
   @media(prefers-reduced-motion:reduce){.glance{animation:none}}
@@ -3577,7 +3581,17 @@ function glanceStripHtml(D){
   // (user ask) a separate tile for how OUR served picks did last market session (distinct from holdings).
   var pp=picksLastSessionPct(D);
   if(pp){ var ppos=pp.pct>=0; tiles.push('<button class="gt" data-glance="picks" title="Average last-session move across tonight’s '+pp.n+' served pick'+(pp.n===1?'':'s')+'"><span class="gt-k">📊 Picks</span><span class="gt-v '+(ppos?'up':'down')+'">'+(ppos?'▲':'▼')+' '+Math.abs(pp.pct).toFixed(1)+'%</span></button>'); }
-  return '<div class="glance led" role="group" aria-label="Tonight at a glance">'+tiles.join('')+'</div>';
+  // (user ask, 14 Aug) — show BOTH the new ticker-board look AND the classic horizontal pills together,
+  // so the difference is visible side-by-side and a call can be made. Same `.gt` tiles in both; the click
+  // wiring (querySelectorAll('.gt[data-glance]')) covers every copy, and autoScrollGlance only rolls the
+  // FIRST `.glance.led`, so the pills copy stays a plain static scroll strip. Once decided, drop one block.
+  var _t=tiles.join('');
+  return '<div class="glancecmp">'+
+    '<div class="gcapt">🔴 Ticker board</div>'+
+    '<div class="glance led" role="group" aria-label="Tonight at a glance — ticker board">'+_t+'</div>'+
+    '<div class="gcapt">💊 Classic pills</div>'+
+    '<div class="glance" role="group" aria-label="Tonight at a glance — pills">'+_t+'</div>'+
+  '</div>';
 }
 // (user ask) LED ticker board — roll the 3 visible rows VERTICALLY (random top/bottom) instead of a long
 // horizontal scroll. Discrete one-row steps every ~3.6s with a pause between, so a row is static (tappable)
