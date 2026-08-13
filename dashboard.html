@@ -3081,9 +3081,15 @@ function signalRows(p,region,opts){
   if(fd&&fd.composite!=null){
     var _ct=fd.composite, ftone=_ct>=60?'pos':(_ct<40?'neg':'mix');
     var deep=(fd.fscore!=null)?(' Piotroski F-score '+fd.fscore+'/9'+(fd.altman_zone?(', Altman-Z '+fd.altman_z+' ('+esc(fd.altman_zone)+' zone)'):'')+(fd.roic!=null?(', ROIC '+Math.round(fd.roic*100)+'%'):'')+'.'):'';
+    // #338 — earnings-quality forensics (only present once the deep statement layer has run, score ≥ 45).
+    var forx=[];
+    if(fd.gross_profitability!=null) forx.push('Gross profitability '+fd.gross_profitability+(fd.gross_profitability>=0.33?' (strong)':(fd.gross_profitability<0.10?' (weak)':''))+' — Novy-Marx, the most robust quality factor (gross profit ÷ assets)');
+    if(fd.accruals_ratio!=null) forx.push('Accruals '+fd.accruals_ratio+(fd.accruals_ratio>0.10?' ⚠️ high — earnings leaning on non-cash items (Sloan red flag)':' — earnings backed by real cash'));
+    if(fd.beneish_m!=null) forx.push('Beneish M '+fd.beneish_m+(fd.beneish_m>-1.78?' ⚠️ above −1.78 — statistically flags possible earnings manipulation':' — below −1.78, no manipulation flag'));
+    var forxTxt=forx.length?(' Forensics: '+forx.join('; ')+'.'):'';
     rows.push({icon:'📊',label:'Fundamentals',tone:ftone,
       read:esc(fd.verdict)+' · '+fd.composite+'/100',
-      explain:'Is this a good business at a fair price? Blends how CHEAP it is (value '+(fd.value_score!=null?fd.value_score:'–')+'/100), how PROFITABLE & healthy (quality '+(fd.quality_score!=null?fd.quality_score:'–')+'/100), and GROWTH ('+(fd.growth_score!=null?fd.growth_score:'–')+'/100). '+((fd.why&&fd.why.length)?'Real numbers: '+esc(fd.why.join(' · '))+'.':'')+deep+' Source: company financials via Yahoo.',
+      explain:'Is this a good business at a fair price? Blends how CHEAP it is (value '+(fd.value_score!=null?fd.value_score:'–')+'/100), how PROFITABLE & healthy (quality '+(fd.quality_score!=null?fd.quality_score:'–')+'/100), and GROWTH ('+(fd.growth_score!=null?fd.growth_score:'–')+'/100). '+((fd.why&&fd.why.length)?'Real numbers: '+esc(fd.why.join(' · '))+'.':'')+deep+forxTxt+' Source: company financials via Yahoo.',
       diagram:fundBarsHtml(fd)});
   }
   // #339 (14 Aug 2026) — cross-sectional PERCENTILE ranking vs tonight's pot (per market). A self-calibrating
