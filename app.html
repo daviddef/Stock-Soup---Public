@@ -2311,6 +2311,17 @@ function money(cur,n){n=numLevel(n);return cur+(!isFinite(n)?'—':(Math.abs(n%1
 // for penny stocks — the watchlist already stores e.g. "A$0.03" this way); strings pass through as-is
 // since they're already formatted upstream (e.g. runner-up cards).
 function cleanPrice(p){return typeof p==='number'?p.toFixed(2):p;}
+// Normalise a change value to a clean percentage — at most 2 decimals. The pulse writes "-4.8%" already,
+// but a run-authored candidate can land a raw float like "-4.801324503311259" (real, user-caught in the
+// Full Pot). Extract the number, round to ≤2dp, re-append %. Non-numeric values pass through escaped.
+function fmtChg(v){
+  if(v==null||v==='') return '';
+  var m=String(v).match(/-?\d+(\.\d+)?/);
+  if(!m) return esc(String(v));
+  var n=parseFloat(m[0]);
+  if(!isFinite(n)) return esc(String(v));
+  return (n>0?'+':'')+(+n.toFixed(2))+'%';
+}
 // Strip the redundant weekday token + year + AEST from a "Sat 8 Aug 2026 · 18:17 AEST" style stamp,
 // for single-moment displays ("today" is already implied) — the multi-day run log keeps weekday since
 // it spans different days and needs the disambiguation.
@@ -3627,7 +3638,7 @@ function openPead(){
     var reg=c.region||st.region||'us', cur=reg==='au'?'A$':'$';
     var pead=Math.round(((((c.score||{}).detail||{}).contrib||{}).pead)||0);
     // cleanPrice already carries the currency symbol — don't prepend cur (that made "$$87.47").
-    var px=c.price?'<span class="pd-px">'+esc(cleanPrice(c.price))+(c.change?' <span class="'+(c.up?'up':'down')+'">'+(c.up?'▲':'▼')+esc(c.change)+'</span>':'')+'</span>':'';
+    var px=c.price?'<span class="pd-px">'+esc(cleanPrice(c.price))+(c.change?' <span class="'+(c.up?'up':'down')+'">'+(c.up?'▲':'▼')+fmtChg(c.change)+'</span>':'')+'</span>':'';
     var chips=(c.score&&c.score.buy_now!=null)?dualChip(c.score,c.sym,c.name,signalRows(c,reg)):'';
     var spk=(c.spark&&c.spark.length>2)?'<div class="pd-spark">'+sparkSVG(c.spark.slice(-30))+'</div>':'';
     var rng=rangeBarsHtml(c,cur);   // #292 (user ask) — the week/month/year low→high 'where it sits' sliders
@@ -4061,7 +4072,7 @@ function render(D,H){
     : '<div class="panel"><h3>Tonight\'s hourly runs</h3><p class="panelsub">Hourly pulses will appear here as they run.</p></div>';
   function potCard(c,i,rank){
     var spk=(c.spark&&c.spark.length>2)?sparkSVG(c.spark.slice(-30)):'';
-    var chg=c.change?'<span class="pmc-chg '+(c.up?'up':'down')+'">'+(c.up?'▲':'▼')+' '+esc(c.change)+'</span>':'';
+    var chg=c.change?'<span class="pmc-chg '+(c.up?'up':'down')+'">'+(c.up?'▲':'▼')+' '+fmtChg(c.change)+'</span>':'';
     var shortChip=(c.short!=null&&c.short>=4)?'<span class="pmc-short">🩳 '+c.short+'%</span>':'';
     var _crows=signalRows(c,c.region||'us');
     var jc=dualChip(c.score,c.sym,c.name,_crows);   // #173/#186 🍊 + #266 🍒 → #298 leading-score pref
@@ -5271,7 +5282,7 @@ function wlCard(c){
   var reg=c.region||'us';
   var rows=signalRows(c,reg);
   var jc=dualChip(c.score,c.sym,c.name,rows);   // #298 — leading-score pref (was juice+cherry pair)
-  var chg=c.change?'<span class="pmc-chg '+(c.up?'up':'down')+'">'+(c.up?'▲':'▼')+' '+esc(c.change)+'</span>':'';
+  var chg=c.change?'<span class="pmc-chg '+(c.up?'up':'down')+'">'+(c.up?'▲':'▼')+' '+fmtChg(c.change)+'</span>':'';
   var spk=(c.spark&&c.spark.length>2)?'<div class="pmc-spark">'+sparkSVG(c.spark.slice(-30))+'</div>':'';
   var verd=(c.score&&c.score.verdict)?'<span class="wic vd '+(/get in|buy/i.test(c.score.verdict)?'v-buy':/late|wait|skip/i.test(c.score.verdict)?'v-dont':'v-hold')+'">'+esc(c.score.verdict)+'</span>':'';
   return '<div class="wrow wcard wlcard" data-wlsym="'+esc(c.sym)+'" data-wlregion="'+esc(reg)+'" role="button" tabindex="0" aria-label="Details for '+esc(c.sym)+'">'+
@@ -6050,7 +6061,7 @@ function openCandidate(idx){
     mShareBtn('sym/'+c.region+'/'+encodeURIComponent(c.sym),c.sym)+
     '<div class="mtf">🍲 Full-pot candidate · '+(c.region==='au'?'🇦🇺 ASX':'🇺🇸 US')+'</div>'+
     '<div class="mtop"><div><div class="msym">'+esc(c.sym)+'</div><div class="mco">'+esc(c.name||c.sym)+'</div></div>'+
-      '<div class="mpx"><div class="mp mono">'+esc(c.price!=null?cleanPrice(c.price):'—')+'</div>'+(c.change?'<div class="mono '+(c.up?'up':'down')+'" style="font-weight:700;font-size:13px">'+(c.up?'▲':'▼')+' '+esc(c.change)+'</div>':'')+'</div></div>'+
+      '<div class="mpx"><div class="mp mono">'+esc(c.price!=null?cleanPrice(c.price):'—')+'</div>'+(c.change?'<div class="mono '+(c.up?'up':'down')+'" style="font-weight:700;font-size:13px">'+(c.up?'▲':'▼')+' '+fmtChg(c.change)+'</div>':'')+'</div></div>'+
     '<span class="mverd '+vc+'">'+esc(HEAT[c.heat]||c.heat)+'</span></div>'+
     '<div class="mbody">'+
       ccallHtml+
