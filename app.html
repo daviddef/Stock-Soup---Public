@@ -419,6 +419,12 @@
   .docpage{height:100%;overflow-y:auto;-webkit-overflow-scrolling:touch}
   .docpage .dpwrap{max-width:760px;margin:0 auto;padding:26px 20px 90px}
   .docpage .dplede{font-size:16px;color:var(--muted);line-height:1.6;margin:0 0 8px}
+  /* #300 — beginner→expert depth toggle at the top of the unified Learn guide */
+  .docpage .lrnseg{display:inline-flex;gap:4px;background:var(--surface-2);border:1px solid var(--line);border-radius:999px;padding:4px;margin:0 0 16px}
+  .docpage .lrnbtn{font-size:13px;font-weight:800;color:var(--muted);background:none;border:0;border-radius:999px;padding:6px 14px;cursor:pointer;font-family:inherit}
+  .docpage .lrnbtn.on{background:var(--broth);color:#fff}
+  .docpage .lrnbtn:not(.on):hover{color:var(--ink)}
+  .docpage .lrnbtn.lrndeep{color:var(--broth)}
   .docpage .dptoc{display:flex;flex-wrap:wrap;gap:7px;margin:16px 0 8px}
   .docpage .dptoc a{font-size:12px;font-weight:700;color:var(--broth);background:var(--surface-2);border:1px solid var(--line);border-radius:999px;padding:4px 11px;text-decoration:none}
   .docpage .dptoc a:hover{border-color:var(--broth)}
@@ -3858,8 +3864,7 @@ function render(D,H){
           '<button class="bmitem" id="viewBtn" role="menuitem">😋 Simple view</button>'+
           '<button class="bmitem" id="themeBtn" role="menuitem">🌗 Switch theme</button>'+
           '<button class="bmitem" id="tourBtn" role="menuitem">👋 Take the tour</button>'+
-          '<button class="bmitem" id="guideBtn" role="menuitem">📖 User guide</button>'+
-          '<button class="bmitem" id="methodBtn" role="menuitem">🎓 For your advisor</button>'+
+          '<button class="bmitem" id="learnBtn" role="menuitem">📚 Learn — how it works</button>'+
           '<button class="bmitem" id="adminBtn" role="menuitem" style="display:none">🛠 Admin tools</button>'+
         '</div></div>'+
     '</div></div>'+
@@ -6133,9 +6138,9 @@ function openDocPage(hash, titleHtml, bodyHtml){
 }
 function toc(items){ return '<div class="dptoc">'+items.map(function(i){return '<a href="#'+i[0]+'">'+i[1]+'</a>';}).join('')+'</div>'; }
 
-// ---- The User Guide (plain English, no sources/methods) ----
-function openUserGuide(){
-  var b=''+
+// ---- The User Guide (plain English, no sources/methods) — the SIMPLE depth of the unified Learn (#300) ----
+function _guideSimpleBody(){
+  return ''+
    '<p class="dplede">A friendly walkthrough of what The Stock Soup does and how to read it — no jargon, no black box. It’s a nightly <b>menu of stock ideas</b> for the Australian and US markets, each one scored out of 100 and graded openly afterwards.</p>'+
    toc([['g-funnel','How we narrow it down'],['g-types','The 3 Types'],['g-time','Day / Week / Month'],['g-score','The 🍊 score'],['g-signals','The signals'],['g-risk','The risk meter'],['g-honest','Keeping honest'],['g-use','Using it']])+
    '<section id="g-funnel"><h2><span class="dpn">1</span>How we narrow it down</h2>'+
@@ -6179,12 +6184,11 @@ function openUserGuide(){
      '<li><b>Simple vs Full view</b> — the 📋 toggle swaps between the dumbed-down one-pager and the full detail.</li>'+
      '<li><b>Run Schedule</b> — see when the kitchen last cooked and what’s coming up next.</li></ul></section>'+
    '<div class="dpfoot">This is an information tool, not financial advice, and not a recommendation to buy or sell anything. Scores are one model’s read of public price data — always do your own research. 🍲</div>';
-  openDocPage('/guide','📖 The User Guide',b);
 }
 
-// ---- The Advisor / expert methodology brief (technical; describe sources by category, not vendor) ----
-function openExpertBrief(){
-  var b=''+
+// ---- The Advisor / expert methodology brief — the DETAILED depth of the unified Learn (#300) ----
+function _guideDetailedBody(){
+  return ''+
    '<p class="dplede">A short methodology brief for someone who reads markets for a living. The Stock Soup is a systematic, evidence-weighted screen-and-score engine across ASX + US equities, with an open accountability loop. Sources are described by category, not vendor.</p>'+
    toc([['m-model','The scoring model'],['m-guard','Guardrails'],['m-nudge','Layered nudges'],['m-tiers','The three tiers'],['m-disc','Discovery'],['m-time','Timeframe routing'],['m-risk','Risk framework'],['m-acct','Accountability & learning'],['m-cad','Cadence & limits']])+
    '<section id="m-model"><h2><span class="dpn">1</span>The scoring model</h2>'+
@@ -6215,8 +6219,34 @@ function openExpertBrief(){
      '<li>ASX fundamental / analyst / earnings-surprise coverage is thinner than US and is being widened.</li>'+
      '<li>Binary events (e.g. clinical read-outs) are irreducibly unpredictable and are deliberately not chased.</li></ul></section>'+
    '<div class="dpfoot">Data is sourced across categories — a live read of news, market movers and analyst actions; regulatory filings; exchange short-interest; and central-bank macro series — deliberately described by category rather than by vendor. This is a personal, systematic research tool. Not financial advice, not a solicitation, no performance guarantee. 🍲</div>';
-  openDocPage('/method','🎓 Methodology brief',b);
 }
+
+// #300 — ONE unified "Learn" guide with a beginner→expert depth toggle, replacing the two separate
+// burger entries (User guide + For your advisor). Simple = the plain-English guide, Detailed = the
+// methodology brief; Deep opens the admin-gated Kitchen Manual (a separate KV doc, admin-only). No
+// content was rewritten — both existing bodies are reused verbatim as the two depths.
+function openLearn(depth){
+  depth = (depth==='detailed'||depth==='simple') ? depth : 'simple';
+  var admin=false; try{ admin=isAdmin(); }catch(e){}
+  var seg='<div class="lrnseg" role="tablist">'+
+    '<button class="lrnbtn'+(depth==='simple'?' on':'')+'" data-depth="simple" role="tab" aria-selected="'+(depth==='simple')+'">📖 Simple</button>'+
+    '<button class="lrnbtn'+(depth==='detailed'?' on':'')+'" data-depth="detailed" role="tab" aria-selected="'+(depth==='detailed')+'">🎓 Detailed</button>'+
+    (admin?'<button class="lrnbtn lrndeep" data-depth="deep" role="tab">🔧 Deep · admin</button>':'')+
+  '</div>';
+  var body = depth==='detailed' ? _guideDetailedBody() : _guideSimpleBody();
+  var hash = depth==='detailed' ? '/method' : '/guide';
+  var title = '📚 Learn — '+(depth==='detailed'?'the methodology':'how it works');
+  openDocPage(hash, title, seg+body);
+  var ov=document.getElementById('docsOverlay');
+  if(ov) ov.querySelectorAll('.lrnbtn').forEach(function(bn){ bn.onclick=function(){
+    var d=bn.dataset.depth;
+    if(d==='deep'){ try{ openDocs(); }catch(e){} return; }   // the admin Kitchen Manual (separate, gated KV doc)
+    openLearn(d);
+  };});
+}
+// Back-compat aliases so existing callers + the #/guide and #/method deep-links still resolve.
+function openUserGuide(){ openLearn('simple'); }
+function openExpertBrief(){ openLearn('detailed'); }
 function openDocs(section){
   // openDocs is wired as a bare `el.onclick=openDocs` in a couple of places (not a wrapped call),
   // so the browser's click event would land here as `section` — guard so only a real string counts.
@@ -7108,9 +7138,8 @@ function wire(D){
     bm.querySelectorAll('.bmitem,.bmupd').forEach(function(it){ it.addEventListener('click',closeBM); });
   }
   var adb=document.getElementById('adminBtn'); if(adb){ if(isAdmin()){ adb.style.display=''; adb.onclick=function(){var _bm=document.getElementById('burgerMenu');if(_bm)_bm.setAttribute('hidden','');openAdminDrawer();}; } else { adb.style.display='none'; } }
-  var gb=document.getElementById('guideBtn'); if(gb) gb.onclick=openUserGuide;
+  var lb=document.getElementById('learnBtn'); if(lb) lb.onclick=function(){openLearn('simple');};   // #300 unified Learn
   var tbFull=document.getElementById('tourBtn'); if(tbFull) tbFull.onclick=openOnboarding;
-  var mb=document.getElementById('methodBtn'); if(mb) mb.onclick=openExpertBrief;
   // Unified Favourites bar: one ticker input + market toggle → either ＋Watchlist or 🧠 What to do?
   (function(){ var inp=document.getElementById('uniInput'), au=document.getElementById('uniAu'), us=document.getElementById('uniUs'),
         watch=document.getElementById('uniWatch'), ask=document.getElementById('uniAsk'), reg={r:'au'};
@@ -7682,8 +7711,7 @@ function renderSimple(D){
           '<button class="bmitem" id="viewFull" role="menuitem">📋 Full view</button>'+
           '<button class="bmitem" id="themeBtn2" role="menuitem">🌗 Switch theme</button>'+
           '<button class="bmitem" id="tourBtnS" role="menuitem">👋 Take the tour</button>'+
-          '<button class="bmitem" id="guideBtnS" role="menuitem">📖 User guide</button>'+
-          '<button class="bmitem" id="methodBtnS" role="menuitem">🎓 For your advisor</button>'+
+          '<button class="bmitem" id="learnBtnS" role="menuitem">📚 Learn — how it works</button>'+
           '<button class="bmitem" id="adminBtnS" role="menuitem" style="display:none">🛠 Admin tools</button>'+
         '</div></div>'+
     '</div>'+
@@ -7707,9 +7735,8 @@ function wireSimple(D){
   var sitS=document.getElementById('signInTopS'); if(sitS){ sitS.textContent=signedIn()?'👤 Account':'👤 Sign in'; sitS.onclick=openAccount; }
   var rbS=document.getElementById('refreshBtnS'); if(rbS){ if(!isAdmin()) rbS.style.display='none'; else rbS.onclick=function(){refreshPrices(rbS);}; }
   var adbS=document.getElementById('adminBtnS'); if(adbS){ if(isAdmin()){ adbS.style.display=''; adbS.onclick=function(){var _bm=document.getElementById('burgerMenuS');if(_bm)_bm.setAttribute('hidden','');openAdminDrawer();}; } }
-  var gbS=document.getElementById('guideBtnS'); if(gbS) gbS.onclick=openUserGuide;
+  var lbS=document.getElementById('learnBtnS'); if(lbS) lbS.onclick=function(){openLearn('simple');};   // #300 unified Learn
   var tbS=document.getElementById('tourBtnS'); if(tbS) tbS.onclick=openOnboarding;
-  var mbS=document.getElementById('methodBtnS'); if(mbS) mbS.onclick=openExpertBrief;
   // market switch → re-render the story for the other market
   document.querySelectorAll('.s2mkt button[data-mkt]').forEach(function(b){ b.onclick=function(){ if(b.dataset.mkt===MKT)return; MKT=b.dataset.mkt; try{pushViewState();}catch(e){} window.scrollTo(0,0); renderSimple(D); }; });
   // scroll progress bar (single listener, replaced each render so it never accumulates)
