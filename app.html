@@ -4366,7 +4366,7 @@ function render(D,H){
       '<div class="unibar"><input id="uniInput" placeholder="Type a ticker… e.g. BHP or PLTR" maxlength="8" aria-label="Ticker (added to the '+(MKT==='au'?'Australian':'US')+' market you’re viewing)">'+
         '<button class="uni-watch" id="uniWatch" title="Add to your '+(MKT==='au'?'🇦🇺 AU':'🇺🇸 US')+' watchlist" aria-label="Add to watchlist">⭐</button>'+
         '<button class="uni-ask" id="uniAsk" title="What would you do? — an instant read" aria-label="Instant read">🧠</button></div>'+
-      '<p class="sec-sub" style="margin-top:9px">Type a ticker, then <b>⭐</b> to track it in the '+(MKT==='au'?'🇦🇺 Australian':'🇺🇸 US')+' market you’re viewing (we remember its ideal-buy and flag it when it hits) — or <b>🧠</b> for an instant read. You can also tap <b>★ Watch</b> on any pick. '+infoBtn('watchlist')+'</p>'+
+      '<p class="sec-sub" style="margin-top:8px">⭐ track · 🧠 instant read '+infoBtn('watchlist')+'</p>'+
       '<div class="wlsummary" id="wlSummary"></div>'+
       '<div class="wlpills" id="wlPills"></div>'+
       '<div class="wlauth" id="wlAuth"></div></section>'+
@@ -5306,7 +5306,8 @@ var INFO={
     '<h4>📦 Your holdings</h4><p>Mark what you own (📦) and this block also says what to <b>do with it</b>: <b>take profit</b> (hit our target), <b>reassess</b> (thesis cooled or a sharp drop), or <b>hold</b> (still on track).</p>'+
     '<p class="infofoot">It re-checks every hour as prices move. Nothing here is a recommendation to trade — it\'s our read; the call is yours.</p>'},
   watchlist:{icon:'⭐',title:'Your Watchlist',body:
-    '<p><b>Your personal shortlist</b> — stocks you want the Chef to keep an eye on. Add any ticker below, or tap <b>＋ Watch</b> on any pick to track it with its ideal-buy price remembered.</p>'+
+    '<p><b>Your personal shortlist</b> — stocks you want the Chef to keep an eye on.</p>'+
+    '<p>Type a ticker, then <b>⭐</b> to track it in the market you’re viewing (we remember its ideal-buy and flag it when it hits) — or <b>🧠</b> for an instant read. You can also tap <b>★ Watch</b> on any pick.</p>'+
     '<h4>What makes it smart</h4><p>For anything we already analyse, each card carries a live read:</p>'+
     '<ul class="infoul"><li><b>🎯 Buy zone</b> — the ideal price to buy: a pullback toward its recent average, or its current price if already cheap.</li>'+
     '<li><b>Target</b> — a realistic upside: its 52-week high, or +12% if it\'s already near it.</li>'+
