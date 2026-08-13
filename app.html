@@ -6623,6 +6623,58 @@ function apiPush(method,path,body){ if(!signedIn())return; try{fetch(API_BASE+pa
 // Price-alert emails now genuinely go out (Gmail SMTP, live since 8 Aug) — this is a real per-user
 // opt-out (#me/alerts), not the cosmetic always-"on" label it used to be.
 function alertsEnabled(){ try{ return localStorage.getItem('soup_alerts_enabled')!=='0'; }catch(e){ return true; } }
+
+// ===== #315 Milestone A — buy-zone crossing alerts (this device) =====
+// Distinct from the server-side email "Price alerts" toggle above: THIS is a browser Notification +
+// haptic buzz the moment one of tonight's picks crosses into its ideal-buy zone (buyState 'in'),
+// detected client-side on each data refresh. Milestone B adds true closed-app web push (service worker
+// + VAPID + backend); this ships the detection + permission + crossing-snapshot plumbing it reuses.
+function notifyOn(){ try{ return localStorage.getItem('soup_notify')==='1'; }catch(e){ return false; } }
+function setNotifyOn(v){ try{ localStorage.setItem('soup_notify', v?'1':'0'); }catch(e){} }
+var BUYSNAP_KEY='soup_buysnap';
+function buySnapGet(){ try{ return JSON.parse(localStorage.getItem(BUYSNAP_KEY)||'{}'); }catch(e){ return {}; } }
+function buySnapSet(o){ try{ localStorage.setItem(BUYSNAP_KEY, JSON.stringify(o)); }catch(e){} }
+// Everything worth a buy-zone alert across BOTH markets (alerts aren't filtered by the current AU/US
+// view): tonight's served picks AND your watchlist names that carry an ideal-buy price + a live price.
+// Picks are added first so a name that's both a pick and watched keeps the pick's fuller data.
+function buyMonitorList(D){
+  var out=[], seen={};
+  function add(sym,region,name,nEntry,nNow,cur){
+    if(!sym||sym==='NONE'||nEntry==null||nNow==null||isNaN(nEntry)||isNaN(nNow)) return;
+    var k=sym+'|'+region; if(seen[k]) return; seen[k]=1;
+    out.push({sym:sym,region:region,name:name||sym,nEntry:nEntry,nNow:nNow,cur:cur||(region==='au'?'A$':'$')});
+  }
+  (D.regions||[]).forEach(function(rg){ (rg.picks||[]).forEach(function(p){ add(p.sym,rg.id,p.name,p.nEntry,p.nNow,rg.cur); }); });
+  // the synced watchlist (defaultWatchlist) carries `entry` (ideal buy) + a live `price` from the pulse.
+  (D.defaultWatchlist||[]).forEach(function(w){ add(w.sym,w.region,w.name,numLevel(w.entry),numLevel(w.price),w.region==='au'?'A$':'$'); });
+  return out;
+}
+// Detect picks that NEWLY crossed into the buy zone since the last snapshot. Requires a real prior
+// non-'in' state → a genuine crossing, never a first-ever-load alert for something already in-zone.
+function checkBuyCrossings(D){
+  if(!D||!D.regions) return;
+  var snap=buySnapGet(), fresh=[], next={};
+  buyMonitorList(D).forEach(function(p){
+    var st=buyState(p), key=p.sym+'|'+p.region; next[key]=st;
+    if(st==='in' && snap[key] && snap[key]!=='in') fresh.push(p);
+  });
+  buySnapSet(next);
+  if(fresh.length) onBuyCrossings(fresh);
+}
+function onBuyCrossings(items){
+  var names=items.map(function(p){return p.sym;}).join(', ');
+  try{ showToast('🎯 Ready to buy — '+names+' just hit its buy zone'); }catch(e){}
+  if(notifyOn() && ('Notification' in window) && Notification.permission==='granted'){
+    items.forEach(function(p){
+      try{
+        var body=(p.name||p.sym)+' hit ~'+p.cur+String(p.nEntry).replace(/^\s*A?\$\s*/i,'')+' — your ideal-buy zone.';
+        var n=new Notification('🎯 Ready to buy: '+p.sym, {body:body, tag:'buy-'+p.sym});
+        n.onclick=function(){ window.focus(); try{ openTicker(p.sym,p.region); }catch(e){} n.close(); };
+      }catch(e){}
+    });
+  }
+  if(navigator.vibrate){ try{ navigator.vibrate([120,60,120]); }catch(e){} }
+}
 function refreshAlertsToggle(){
   if(!signedIn()) return;
   fetch(API_BASE+'/me/alerts',{headers:apiHdr()}).then(function(r){return r.ok?r.json():null;}).then(function(j){
@@ -6998,6 +7050,8 @@ function openAccount(){
     body='<div class="acctrow"><span class="acctk">Signed in</span><span class="acctv">'+esc(email||'—')+(isAdmin()?' <span class="adminbadge">ADMIN</span>':'')+'</span></div>'+
       '<div class="acctrow"><span class="acctk">Sync</span><span class="acctv">✓ across your devices + price alerts</span></div>'+
       '<div class="acctrow"><span class="acctk">Price alerts</span><button class="tabstat wlfbtn on" id="alertsToggleBtn" type="button"><span class="tk">Alerts</span> <b id="alertsToggleState">'+(alertsEnabled()?'on':'off')+'</b></button>'+infoBtn('pricealerts')+'</div>'+
+      '<div class="acctrow"><span class="acctk">🔔 Buy-zone alerts</span><button class="tabstat wlfbtn'+(notifyOn()?' on':'')+'" id="notifyToggleBtn" type="button"><span class="tk">This device</span> <b id="notifyToggleState">'+(notifyOn()?'on':'off')+'</b></button></div>'+
+      '<div class="acctsub">A buzz + notification the moment one of tonight’s picks — or a name on your watchlist — hits its ideal-buy zone. Works while the app is open or backgrounded; add it to your Home Screen for alerts when it’s fully closed.</div>'+
       '<div class="acctrow"><span class="acctk">Appearance</span>'+seg()+'</div>'+
       '<div class="acctrow"><span class="acctk">Run digest email</span><select class="acctsel" id="acctDigestMode">'+
         '<option value="changes">Only when picks change</option><option value="always">Every published run</option><option value="morning">🌅 Morning run only</option><option value="off">Off</option></select></div>'+
@@ -7042,6 +7096,22 @@ function openAccount(){
       apiPush('POST','/me/alerts',{enabled:next});
     };
     refreshAlertsToggle();
+  }
+  // #315 — buy-zone alerts (browser Notification + haptic, this device). Turning ON prompts for
+  // notification permission; the toggle only sticks 'on' once granted (a blocked permission can't fire).
+  var ntb=document.getElementById('notifyToggleBtn');
+  if(ntb){
+    var setNt=function(on){ setNotifyOn(on); ntb.classList.toggle('on', on); var el=document.getElementById('notifyToggleState'); if(el) el.textContent=on?'on':'off'; };
+    ntb.onclick=function(){
+      if(notifyOn()){ setNt(false); return; }
+      if(!('Notification' in window)){ showToast('This browser can’t show notifications'); return; }
+      if(Notification.permission==='granted'){ setNt(true); showToast('🔔 Buy-zone alerts on'); return; }
+      if(Notification.permission==='denied'){ showToast('Notifications are blocked — enable them in your browser/site settings'); return; }
+      Notification.requestPermission().then(function(perm){
+        if(perm==='granted'){ setNt(true); try{ new Notification('🔔 Buy-zone alerts on',{body:'We’ll buzz you the moment a pick or watched name hits its buy zone.'}); }catch(e){} }
+        else { showToast('Notifications not enabled — tap allow to get buy-zone alerts'); }
+      });
+    };
   }
   var so=document.getElementById('acctSignOut'); if(so) so.onclick=function(){ sessSet(''); try{localStorage.removeItem(EKEY);}catch(e){} closeModal(); location.replace('index.html'); };
   var del=document.getElementById('acctDelete'); if(del) del.onclick=function(){
@@ -8290,7 +8360,9 @@ function applyBundle(b){
     // single malformed field (hotTags as a list, 10 Aug 2026) into a blank page with ZERO signal, which
     // is what made it so hard to diagnose. Now it at least screams in the console, and we keep whatever
     // was on screen rather than pretending the load simply "returned nothing".
-    try{ boot(d&&d.regions?d:EMBEDDED, h&&h.menus?h:HIST_EMBED); watchRun(); return true; }
+    try{ boot(d&&d.regions?d:EMBEDDED, h&&h.menus?h:HIST_EMBED); watchRun();
+      try{ checkBuyCrossings(d&&d.regions?d:EMBEDDED); }catch(e){}   // #315 — fire buy-zone alerts on fresh data
+      return true; }
     catch(err){ console.error('applyBundle: render threw — the page could not update with fresh data:', err); return false; }
   }
   return false;
@@ -8309,4 +8381,20 @@ function watchRun(){
 }
 boot(EMBEDDED,HIST_EMBED);
 loadGated(applyBundle);
+// #315 Milestone A — a light steady poll while the tab is VISIBLE, so a buy-zone crossing (and fresh
+// prices) is caught without a manual refresh. Crossing-detection runs every tick on the fresh data; a
+// full re-render only happens when the pulse stamp actually advanced, so it never disrupts your reading.
+// A hidden/closed tab is deliberately NOT polled here — that's Milestone B's web-push job. Also refreshes
+// the moment you return to the tab.
+var _lastPulseStamp=null;
+function alertPollTick(){
+  if(document.hidden) return;
+  loadGated(function(b){ if(!b) return;
+    try{ checkBuyCrossings((b.latest&&b.latest.regions)?b.latest:EMBEDDED); }catch(e){}
+    var ns=(b.latest&&b.latest.pulse&&b.latest.pulse.stamp)||'';
+    if(ns && ns!==_lastPulseStamp){ _lastPulseStamp=ns; var sc=window.pageYOffset; applyBundle(b); window.scrollTo(0,sc); }
+  });
+}
+setInterval(alertPollTick, 120000);
+document.addEventListener('visibilitychange', function(){ if(!document.hidden) alertPollTick(); });
 </script>
