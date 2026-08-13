@@ -521,6 +521,9 @@
   .docpage li b{color:var(--ink)}
   .docpage .dpcard{background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--broth);border-radius:12px;padding:13px 15px;margin:10px 0}
   .docpage .dpcard.g{border-left-color:var(--buy)} .docpage .dpcard.r{border-left-color:var(--dont)}
+  .docpage .gh{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--broth);font-weight:800;margin:16px 0 6px}
+  .docpage .gsig{list-style:none;padding-left:0;margin:4px 0 10px} .docpage .gsig li{margin:7px 0;padding-left:2px;line-height:1.5}
+  .docpage .gmk{display:inline-block;font-size:10px;font-weight:800;letter-spacing:.04em;padding:1px 7px;border-radius:6px;background:var(--surface-2,var(--surface));border:1px solid var(--line);color:var(--muted);margin-left:2px;vertical-align:1px}
   .docpage .dptier{display:grid;grid-template-columns:1fr;gap:10px;margin:12px 0}
   @media(min-width:620px){.docpage .dptier{grid-template-columns:repeat(3,1fr)}}
   .docpage .dpt{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 13px}
@@ -6790,22 +6793,103 @@ function _guideDetailedBody(){
    '<div class="dpfoot">Data is sourced across categories — a live read of news, market movers and analyst actions; regulatory filings; exchange short-interest; and central-bank macro series — deliberately described by category rather than by vendor. This is a personal, systematic research tool. Not financial advice, not a solicitation, no performance guarantee. 🍲</div>';
 }
 
-// #300 — ONE unified "Learn" guide with a beginner→expert depth toggle, replacing the two separate
-// burger entries (User guide + For your advisor). Simple = the plain-English guide, Detailed = the
-// methodology brief; Deep opens the admin-gated Kitchen Manual (a separate KV doc, admin-only). No
-// content was rewritten — both existing bodies are reused verbatim as the two depths.
+// (user ask, 14 Aug) — Simple + Detailed were two near-duplicate user-facing guides covering the same
+// arc at slightly different jargon levels, and NEITHER listed all the signals. Merged into ONE "Guide":
+// the plain-English arc (from Simple) up top, a COMPLETE signal list (both scores + every signal, grouped
+// scored-vs-shown with market tags), and an "Under the hood" section folding in the advisor-grade precision
+// that used to be the separate Detailed brief. Deep · admin (the exhaustive Kitchen Manual) is unchanged.
+function _guideBody(){
+  var mk=function(t){return '<span class="gmk">'+t+'</span>';};   // AU / US / Both tag
+  return ''+
+   '<p class="dplede">What The Stock Soup does and how to read it — no black box. A nightly <b>menu of stock ideas</b> for the ASX and US markets, each scored out of 100 and graded openly afterwards. Approachable at the top, precise at the bottom.</p>'+
+   toc([['g-funnel','How we narrow it down'],['g-types','The 3 Types'],['g-time','Day / Week / Month'],['g-score','The two scores 🍊 🍒'],['g-signals','Every signal'],['g-risk','The risk meter'],['g-honest','Keeping honest'],['g-hood','Under the hood'],['g-use','Using it']])+
+   '<section id="g-funnel"><h2><span class="dpn">1</span>How we narrow it down</h2>'+
+     '<p>There are thousands of listed companies. Every run we cast several <b>nets</b> — fresh news &amp; catalysts, a full sweep of the whole market for chart setups, the earnings calendar, and brand-new listings. Everything caught is then <b>scored by the same model</b>, and only the best few make tonight’s menu.</p>'+
+     '<p class="sub"><b>Nothing is hand-picked.</b> A model ranks every candidate on the same evidence, so a pick earns its place — it isn’t someone’s hunch.</p></section>'+
+   '<section id="g-types"><h2><span class="dpn">2</span>The three “Types”</h2>'+
+     '<p>Every idea belongs to one of three types — think of them as <b>risk profiles</b>, safest to wildest:</p>'+
+     '<div class="dptier">'+
+       '<div class="dpt t1"><h3>🛡️ Type 1 · Catalyst</h3><p>Backed by a real reason <b>today</b> — news, a deal, a result. The most grounded picks.</p></div>'+
+       '<div class="dpt t2"><h3>⚙️ Type 2 · Quant</h3><p>Chart &amp; technical setups the news misses — a whole-market scan for quiet momentum.</p></div>'+
+       '<div class="dpt t3"><h3>🌶️ Type 3 · Widest</h3><p>The boldest, per-indicator leaderboard picks. Highest risk, highest spice.</p></div>'+
+     '</div>'+
+     '<p class="sub">You pick the type with the T1 / T2 / T3 toggle. Same scoring model behind all three — they differ only in how candidates are surfaced.</p></section>'+
+   '<section id="g-time"><h2><span class="dpn">3</span>Day, Week &amp; Month</h2>'+
+     '<ul><li><b>⚡ Day</b> — act around <b>today</b>; only offered when there’s a fresh trigger the price hasn’t already run on.</li>'+
+     '<li><b>📅 Week</b> — the sweet spot: a setup that should play out over about a week.</li>'+
+     '<li><b>📈 Month</b> — a slower, quality-led hold measured in weeks, with tighter guards against buying something already extended.</li></ul></section>'+
+   '<section id="g-score"><h2><span class="dpn">4</span>The two scores — 🍊 timing &amp; 🍒 conviction</h2>'+
+     '<p>Two numbers sit on every card. They answer different questions:</p>'+
+     '<div class="dpcard"><b>🍊 Orange — buy-now / timing (0–100).</b> “Is <i>now</i> a good moment to get in?” The engine score. Bands: <b>Strong Buy-Now / Buy / Watch / Pass</b>. Tap the 🍊 chip for every ingredient behind it.</div>'+
+     '<div class="dpcard g"><b>🍒 Cherry — overall conviction (0–100).</b> “How strongly does <i>everything</i> line up?” It blends the 🍊 score (60%) with how all the signals <i>vote</i> for/against (40%), and shrinks a thin vote toward neutral (a name backed by 2 signals isn’t as sure as one backed by 8 — you’ll see “limited coverage”).</div>'+
+     '<p class="sub"><b>Rule of thumb: 🍊 = <i>when</i>, 🍒 = <i>how sure</i>.</b> A name can have hot timing but cool conviction, or vice-versa.</p></section>'+
+   '<section id="g-signals"><h2><span class="dpn">5</span>Every signal we read</h2>'+
+     '<p>These are all the reads behind the scores. <b>🍊 = moves the buy-now score</b>; <b>“shown” = displayed to inform you but doesn’t move the number.</b> Tap any signal row on a card for its live read + source.</p>'+
+     '<h3 class="gh">What moves the 🍊 score</h3>'+
+     '<ul class="gsig">'+
+     '<li>🍊 <b>Trend &amp; 52-week high</b> — climbing and near its highs, above its averages? '+mk('Both')+'</li>'+
+     '<li>🍊 <b>Volume</b> — real money behind the move vs thin and unconvincing. '+mk('Both')+'</li>'+
+     '<li>🍊 <b>Catalyst / news</b> — a real event (result, deal, upgrade) + the tone of recent news. '+mk('Both')+'</li>'+
+     '<li>🍊 <b>Earnings drift (PEAD)</b> — a stock keeps drifting after a real earnings beat. '+mk('US')+'</li>'+
+     '<li>🍊 <b>Analyst revisions</b> — are brokers upgrading or downgrading. '+mk('Both')+'</li>'+
+     '<li>🍊 <b>Analyst target upside</b> — how far below the consensus price target it trades. '+mk('Both')+'</li>'+
+     '<li>🍊 <b>Fundamentals</b> — a good business at a fair price: value, quality, growth. '+mk('Both')+'</li>'+
+     '<li>🍊 <b>Earnings-quality forensics</b> — gross profitability, accruals, a manipulation screen; protects against blow-ups. '+mk('Both')+'</li>'+
+     '<li>🍊 <b>Trend quality (MACD + ADX)</b> — is the trend actually confirmed and strong. '+mk('Both')+'</li>'+
+     '<li>🍊 <b>Relative strength</b> — beating the market, not just up in a rising tide. '+mk('Both')+'</li>'+
+     '<li>🍊 <b>Money flow</b> — is money quietly accumulating or distributing. '+mk('Both')+'</li>'+
+     '<li>🍊 <b>Bollinger %B &amp; squeeze</b> — stretched, or coiled for a breakout. '+mk('Both')+'</li>'+
+     '<li>🍊 <b>Moving-average confirmation (EMA 20/50)</b> — both short averages agreeing. '+mk('Both')+'</li>'+
+     '<li>🍊 <b>Short-interest trend</b> — is bearish pressure building or covering. '+mk('Both')+'</li>'+
+     '<li>🍊 <b>Insider buying</b> — company officers buying with their own money (clusters count more). '+mk('Both')+'</li>'+
+     '<li>🍊 <b>Retail buzz</b> — a surge in Reddit chatter (front-runs volume, but also a late-stage flag). '+mk('US')+'</li>'+
+     '<li>🍊 <b>Seasonality</b> — small calendar tilt (turn-of-month, best-six-months). A tie-breaker. '+mk('Both')+'</li>'+
+     '<li>🍊 <b>Catalyst-ahead bonus</b> — a known, dated event days away — get in <i>before</i> the move. '+mk('Both')+'</li>'+
+     '<li>🍊 <b>Guards (penalties)</b> — already run up, priced-in, overbought, stale catalyst, capital raise, or too far above its average. '+mk('Both')+'</li>'+
+     '</ul>'+
+     '<h3 class="gh">Shown to inform you (doesn’t move the score)</h3>'+
+     '<ul class="gsig">'+
+     '<li>🏅 <b>Ranks in the pot</b> — where it sits vs the other names in tonight’s pot. '+mk('Both')+'</li>'+
+     '<li>📐 <b>Levels &amp; reward:risk</b> — staged entries, a stop, targets + the reward-to-risk ratio. '+mk('Both')+'</li>'+
+     '<li>📊 <b>RSI &amp; volatility</b> — how hot/stretched it is, and its typical daily swing (for position sizing). '+mk('Both')+'</li>'+
+     '<li>🕐 <b>Intraday VWAP / relative-volume</b> — refreshed on the 10-minute re-price. '+mk('Both')+'</li>'+
+     '<li>🐋 <b>Smart money</b> — which famous investors hold it (13F filings). '+mk('US')+'</li>'+
+     '<li>📊 <b>Earnings-reaction history</b> · <b>options positioning</b> · <b>congress trades</b>. '+mk('US')+'</li>'+
+     '<li>🏛️ <b>Director trades</b> — the company’s own officers buying/selling. '+mk('AU')+'</li>'+
+     '<li>📰 <b>News &amp; plain-English announcements</b> — colour-coded bullish/bearish. '+mk('Both')+'</li>'+
+     '</ul></section>'+
+   '<section id="g-risk"><h2><span class="dpn">6</span>The risk meter</h2>'+
+     '<p>The gradient bar up top is the <b>market’s weather</b> — how much appetite for risk is in the air (🔴 hide the cash → 🟢 send it). It blends several market-wide gauges — implied volatility, crypto, gold, oil, the AUD, and the <b>bond market’s leading credit/curve read</b> (which tends to turn before shares do). Same backdrop for both markets; tap it for the plain-English take. It sets the mood — it doesn’t score an individual stock.</p></section>'+
+   '<section id="g-honest"><h2><span class="dpn">7</span>How we keep ourselves honest</h2>'+
+     '<div class="dpcard g"><b>The scorecard</b> — every past call is graded against the market over its own timeframe. Green = it made money; “beat mkt” = it also did better than the whole market.</div>'+
+     '<div class="dpcard"><b>The post-mortem</b> — after each session we grade the <i>whole</i> shortlist, not just what we served, and show which winners we passed on (and why) and which losers we dodged.</div>'+
+     '<div class="dpcard"><b>The misses</b> — the day’s big movers we didn’t catch, so wins aren’t the only thing you see.</div></section>'+
+   '<section id="g-hood"><h2><span class="dpn">8</span>Under the hood <span class="sub" style="font-weight:600">— for the technically minded</span></h2>'+
+     '<ul><li><b>Weights renormalise per market.</b> When a market has no feed for a factor (e.g. ASX carries no earnings-surprise or US-style analyst-rating feed), that category is dropped and the rest re-weighted — rather than structurally capping the score with a permanent zero.</li>'+
+     '<li><b>Hard-exclude of extended momentum.</b> A name trading too far above its 20-day mean is capped (tighter still for the monthly slot, which eats the full mean-reversion). This came from a backtest where late entries on extended momentum were the worst cohort.</li>'+
+     '<li><b>The credit/curve read is genuinely leading</b> — the bond-market plumbing turns before equities, so it earns its place in the risk composite.</li>'+
+     '<li><b>It learns.</b> Every served pick <i>and</i> the whole scored pot are graded and logged with their feature vectors — feeding a weight-tuning loop and the training set for a forthcoming learn-to-rank model that will <b>blend with, not replace,</b> the rules.</li>'+
+     '<li><b>Honest limits.</b> Signals are end-of-day with ~10-minute re-pricing (no true intraday VWAP yet); ASX fundamental/analyst coverage is thinner than US and is being widened; binary events (e.g. clinical read-outs) are irreducibly unpredictable and deliberately not chased.</li></ul></section>'+
+   '<section id="g-use"><h2><span class="dpn">9</span>Using it day to day</h2>'+
+     '<ul><li><b>Watchlist</b> — tap ⭐ on any card to track it; set your ideal buy price and get a nudge (and a push alert) when it’s reached.</li>'+
+     '<li><b>“What would you do?”</b> — a plain read on any ticker, even one that isn’t in tonight’s menu.</li>'+
+     '<li><b>Simple vs Full view</b> — the toggle swaps between the one-page infographic and the full detail.</li>'+
+     '<li><b>Run Schedule</b> — see when the kitchen last cooked, the live re-price tally, and what’s coming up next.</li></ul></section>'+
+   '<div class="dpfoot">An information tool, not financial advice, and not a recommendation to buy or sell anything. Scores are one model’s read of public price data — always do your own research. 🍲</div>';
+}
+// #300/#274 — ONE unified "Learn": a single 📖 Guide (merged plain-English + methodology + full signal
+// list) and, for admin, the exhaustive Kitchen Manual (a separate gated KV doc). The old Simple/Detailed
+// split is retired — merged into _guideBody() per user ask (14 Aug).
 function openLearn(depth){
-  depth = (depth==='detailed'||depth==='simple') ? depth : 'simple';
   var admin=false; try{ admin=isAdmin(); }catch(e){}
+  // back-compat: old 'simple'/'detailed'/'guide' deep-links all resolve to the single merged Guide.
+  depth = (depth==='deep' && admin) ? 'deep' : 'guide';
+  if(depth==='deep'){ try{ openDocs(); }catch(e){} return; }
   var seg='<div class="lrnseg" role="tablist">'+
-    '<button class="lrnbtn'+(depth==='simple'?' on':'')+'" data-depth="simple" role="tab" aria-selected="'+(depth==='simple')+'">📖 Simple</button>'+
-    '<button class="lrnbtn'+(depth==='detailed'?' on':'')+'" data-depth="detailed" role="tab" aria-selected="'+(depth==='detailed')+'">🎓 Detailed</button>'+
+    '<button class="lrnbtn on" data-depth="guide" role="tab" aria-selected="true">📖 Guide</button>'+
     (admin?'<button class="lrnbtn lrndeep" data-depth="deep" role="tab">🔧 Deep · admin</button>':'')+
   '</div>';
-  var body = depth==='detailed' ? _guideDetailedBody() : _guideSimpleBody();
-  var hash = depth==='detailed' ? '/method' : '/guide';
-  var title = '📚 Learn — '+(depth==='detailed'?'the methodology':'how it works');
-  openDocPage(hash, title, seg+body);
+  openDocPage('/guide', '📚 Learn — how it works', seg+_guideBody());
   var ov=document.getElementById('docsOverlay');
   if(ov) ov.querySelectorAll('.lrnbtn').forEach(function(bn){ bn.onclick=function(){
     var d=bn.dataset.depth;
@@ -6814,8 +6898,8 @@ function openLearn(depth){
   };});
 }
 // Back-compat aliases so existing callers + the #/guide and #/method deep-links still resolve.
-function openUserGuide(){ openLearn('simple'); }
-function openExpertBrief(){ openLearn('detailed'); }
+function openUserGuide(){ openLearn('guide'); }
+function openExpertBrief(){ openLearn('guide'); }
 function openDocs(section){
   // openDocs is wired as a bare `el.onclick=openDocs` in a couple of places (not a wrapped call),
   // so the browser's click event would land here as `section` — guard so only a real string counts.
