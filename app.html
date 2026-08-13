@@ -6685,6 +6685,34 @@ function onBuyCrossings(items){
   }
   if(navigator.vibrate){ try{ navigator.vibrate([120,60,120]); }catch(e){} }
 }
+
+// ===== #315 Milestone B — real web push (service worker + VAPID) =====
+// Closed-app alerts: a subscription lives in the browser + on the Worker; the every-10-min cron sends a
+// payloadless push when a watchlist buy-price hits, and sw.js shows the banner. On iPhone this only works
+// once the app is on the Home Screen (Apple limitation) — handled by the toggle's messaging below.
+var VAPID_PUBLIC='BI7J1BQarNFr504d3BeFlxhn9rFMljJd9aNLMEbTAsHN_J-VfoSDdolpjN2SKu-1vVsW0uc6OAW7wvQZRR1PUVI';
+function urlB64ToU8(s){ var pad='='.repeat((4-s.length%4)%4); var b=(s+pad).replace(/-/g,'+').replace(/_/g,'/'); var raw=atob(b); var out=new Uint8Array(raw.length); for(var i=0;i<raw.length;i++)out[i]=raw.charCodeAt(i); return out; }
+function pushSupported(){ return ('serviceWorker' in navigator) && ('PushManager' in window) && ('Notification' in window); }
+var _swReg=null;
+function ensureSW(){ if(_swReg) return Promise.resolve(_swReg); if(!('serviceWorker' in navigator)) return Promise.reject(new Error('no SW')); return navigator.serviceWorker.register('sw.js').then(function(r){ _swReg=r; return navigator.serviceWorker.ready; }).then(function(r){ _swReg=r; return r; }); }
+function subscribePush(){
+  return ensureSW().then(function(reg){
+    return reg.pushManager.getSubscription().then(function(sub){
+      return sub || reg.pushManager.subscribe({ userVisibleOnly:true, applicationServerKey:urlB64ToU8(VAPID_PUBLIC) });
+    });
+  }).then(function(sub){
+    return fetch(API_BASE+'/push/subscribe',{ method:'POST', headers:apiHdr(), body:JSON.stringify({ subscription: sub.toJSON ? sub.toJSON() : sub }) }).then(function(){ return sub; });
+  });
+}
+function unsubscribePush(){
+  if(!('serviceWorker' in navigator)) return Promise.resolve();
+  return navigator.serviceWorker.getRegistration().then(function(reg){
+    if(!reg) return; return reg.pushManager.getSubscription().then(function(sub){
+      if(!sub) return;
+      return fetch(API_BASE+'/push/unsubscribe',{ method:'POST', headers:apiHdr(), body:JSON.stringify({ endpoint: sub.endpoint }) }).then(function(){ return sub.unsubscribe(); });
+    });
+  }).catch(function(){});
+}
 function refreshAlertsToggle(){
   if(!signedIn()) return;
   fetch(API_BASE+'/me/alerts',{headers:apiHdr()}).then(function(r){return r.ok?r.json():null;}).then(function(j){
@@ -7060,8 +7088,8 @@ function openAccount(){
     body='<div class="acctrow"><span class="acctk">Signed in</span><span class="acctv">'+esc(email||'—')+(isAdmin()?' <span class="adminbadge">ADMIN</span>':'')+'</span></div>'+
       '<div class="acctrow"><span class="acctk">Sync</span><span class="acctv">✓ across your devices + price alerts</span></div>'+
       '<div class="acctrow"><span class="acctk">Price alerts</span><button class="tabstat wlfbtn on" id="alertsToggleBtn" type="button"><span class="tk">Alerts</span> <b id="alertsToggleState">'+(alertsEnabled()?'on':'off')+'</b></button>'+infoBtn('pricealerts')+'</div>'+
-      '<div class="acctrow"><span class="acctk">🔔 Buy-zone alerts</span><button class="tabstat wlfbtn'+(notifyOn()?' on':'')+'" id="notifyToggleBtn" type="button"><span class="tk">This device</span> <b id="notifyToggleState">'+(notifyOn()?'on':'off')+'</b></button></div>'+
-      '<div class="acctsub">A buzz + notification the moment one of tonight’s picks — or a name on your watchlist — hits its ideal-buy zone. Works while the app is open or backgrounded; add it to your Home Screen for alerts when it’s fully closed.</div>'+
+      '<div class="acctrow"><span class="acctk">🔔 Buy-zone alerts</span><span style="display:flex;gap:8px;align-items:center">'+(notifyOn()?'<button class="tabstat wlfbtn" id="notifyTestBtn" type="button" style="font-size:11px"><span class="tk">Send</span> <b>test</b></button>':'')+'<button class="tabstat wlfbtn'+(notifyOn()?' on':'')+'" id="notifyToggleBtn" type="button"><span class="tk">This device</span> <b id="notifyToggleState">'+(notifyOn()?'on':'off')+'</b></button></span></div>'+
+      '<div class="acctsub">A buzz + notification the moment one of tonight’s picks — or a name on your watchlist — hits its ideal-buy zone. On a computer it works while the app is open; on iPhone, add it to your Home Screen first (Share → Add to Home Screen) and it’ll reach you even when the app is closed.</div>'+
       '<div class="acctrow"><span class="acctk">Appearance</span>'+seg()+'</div>'+
       '<div class="acctrow"><span class="acctk">Run digest email</span><select class="acctsel" id="acctDigestMode">'+
         '<option value="changes">Only when picks change</option><option value="always">Every published run</option><option value="morning">🌅 Morning run only</option><option value="off">Off</option></select></div>'+
@@ -7112,8 +7140,18 @@ function openAccount(){
   var ntb=document.getElementById('notifyToggleBtn');
   if(ntb){
     var setNt=function(on){ setNotifyOn(on); ntb.classList.toggle('on', on); var el=document.getElementById('notifyToggleState'); if(el) el.textContent=on?'on':'off'; };
+    // Once permission is granted, prefer REAL web push (survives a closed app); fall back to local-only
+    // Notifications (Milestone A) where push isn't available (works while the app is open).
+    var enable=function(){
+      if(pushSupported()){
+        subscribePush().then(function(){ setNt(true); showToast('🔔 Buy-zone alerts on — sending a test…'); return fetch(API_BASE+'/push/test',{method:'POST',headers:apiHdr()}); })
+          .catch(function(err){ console.warn('push subscribe failed',err); setNt(true); try{ new Notification('🔔 Buy-zone alerts on',{body:'On for this device while the app is open.'}); }catch(e){} });
+      } else {
+        setNt(true); try{ new Notification('🔔 Buy-zone alerts on',{body:'We’ll buzz you the moment a pick or watched name hits its buy zone.'}); }catch(e){}
+      }
+    };
     ntb.onclick=function(){
-      if(notifyOn()){ setNt(false); return; }
+      if(notifyOn()){ setNt(false); unsubscribePush(); showToast('Buy-zone alerts off'); return; }
       if(!('Notification' in window)){
         // iOS Safari only exposes the Notification API to a Home-Screen-installed PWA, never a plain tab.
         var iOS=/iP(hone|ad|od)/.test(navigator.userAgent)||(/Mac/.test(navigator.platform)&&(navigator.maxTouchPoints||0)>1);
@@ -7122,13 +7160,16 @@ function openAccount(){
         else showToast('This browser can’t show notifications');
         return;
       }
-      if(Notification.permission==='granted'){ setNt(true); showToast('🔔 Buy-zone alerts on'); return; }
+      if(Notification.permission==='granted'){ enable(); return; }
       if(Notification.permission==='denied'){ showToast('Notifications are blocked — enable them in your browser/site settings'); return; }
       Notification.requestPermission().then(function(perm){
-        if(perm==='granted'){ setNt(true); try{ new Notification('🔔 Buy-zone alerts on',{body:'We’ll buzz you the moment a pick or watched name hits its buy zone.'}); }catch(e){} }
-        else { showToast('Notifications not enabled — tap allow to get buy-zone alerts'); }
+        if(perm==='granted') enable();
+        else showToast('Notifications not enabled — tap allow to get buy-zone alerts');
       });
     };
+    // A "send a test" affordance once alerts are on — lets you verify on the phone without toggling off/on.
+    var ntt=document.getElementById('notifyTestBtn');
+    if(ntt) ntt.onclick=function(){ fetch(API_BASE+'/push/test',{method:'POST',headers:apiHdr()}).then(function(r){ return r.json(); }).then(function(j){ showToast((j&&j.sent)?'🔔 Test sent — check your notifications':'Test queued (no push device subscribed yet)'); }).catch(function(){ showToast('Could not send test'); }); };
   }
   var so=document.getElementById('acctSignOut'); if(so) so.onclick=function(){ sessSet(''); try{localStorage.removeItem(EKEY);}catch(e){} closeModal(); location.replace('index.html'); };
   var del=document.getElementById('acctDelete'); if(del) del.onclick=function(){
@@ -8414,4 +8455,7 @@ function alertPollTick(){
 }
 setInterval(alertPollTick, 120000);
 document.addEventListener('visibilitychange', function(){ if(!document.hidden) alertPollTick(); });
+// #315 Milestone B — keep the service worker registered for any device that already opted in, so pushes
+// keep arriving after a reload. Safe no-op where SW/push isn't supported. Never prompts on its own.
+if(notifyOn() && ('serviceWorker' in navigator)){ try{ ensureSW(); }catch(e){} }
 </script>
