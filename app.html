@@ -1,8 +1,18 @@
 <meta charset="utf-8">
 <title>The Stock Soup — Tonight's Menu</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta http-equiv="Cache-Control" content="no-cache, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
+<!-- #315 — installable PWA so iPhone can show buy-zone notifications (iOS only exposes the Notification
+     API to a Home-Screen-installed web app, never a plain Safari tab). -->
+<link rel="manifest" href="manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Stock Soup">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#e8833a">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" type="image/png" href="icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,900;1,9..144,800&display=swap" rel="stylesheet">
@@ -7104,7 +7114,14 @@ function openAccount(){
     var setNt=function(on){ setNotifyOn(on); ntb.classList.toggle('on', on); var el=document.getElementById('notifyToggleState'); if(el) el.textContent=on?'on':'off'; };
     ntb.onclick=function(){
       if(notifyOn()){ setNt(false); return; }
-      if(!('Notification' in window)){ showToast('This browser can’t show notifications'); return; }
+      if(!('Notification' in window)){
+        // iOS Safari only exposes the Notification API to a Home-Screen-installed PWA, never a plain tab.
+        var iOS=/iP(hone|ad|od)/.test(navigator.userAgent)||(/Mac/.test(navigator.platform)&&(navigator.maxTouchPoints||0)>1);
+        var standalone=(window.navigator.standalone===true)||(window.matchMedia&&window.matchMedia('(display-mode: standalone)').matches);
+        if(iOS && !standalone) showToast('📲 On iPhone, add Stock Soup to your Home Screen first: tap the Share button → “Add to Home Screen”, then open it from there and turn this on.');
+        else showToast('This browser can’t show notifications');
+        return;
+      }
       if(Notification.permission==='granted'){ setNt(true); showToast('🔔 Buy-zone alerts on'); return; }
       if(Notification.permission==='denied'){ showToast('Notifications are blocked — enable them in your browser/site settings'); return; }
       Notification.requestPermission().then(function(perm){
