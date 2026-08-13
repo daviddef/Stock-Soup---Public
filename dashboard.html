@@ -3361,7 +3361,7 @@ function gotoCtx(id){ var b=document.querySelector('.mctxbtn[data-mctx="'+id+'"]
 // count price-sensitive ASX filings across tonight's picks + candidates (current market) — total + today's.
 function glanceAnnCount(D,region){
   var today=new Date().toISOString().slice(0,10), seen={}, total=0, tod=0;
-  function take(o){ if(!o||(o.region||'us')!==region||o.sym==='NONE')return; (o.announcements||[]).forEach(function(a){ if(!a||!a.headline)return;
+  function take(o){ if(!o||(o.region||'us')!==region||o.sym==='NONE')return; annRecent(o.announcements).forEach(function(a){
     var k=(o.sym||'')+'|'+a.headline+'|'+(a.date||''); if(seen[k])return; seen[k]=1; total++; if(String(a.date||'').slice(0,10)===today)tod++; }); }
   (D.regions||[]).forEach(function(rg){(rg.picks||[]).forEach(take);}); (D.candidates||[]).forEach(take);
   return {total:total,today:tod};
@@ -4194,19 +4194,26 @@ function announcementsHtml(items){
 }
 // (user ask) small card-face flag: a 📢 badge when a ticker has fresh price-sensitive ASX filings, tinted
 // by the strongest directional tone, so you know to open the card before tapping. ASX-only (US has none).
+// recency window for the 📢 flag / glance tile / panel: a "fresh filings" signal must not count month-old
+// routine housekeeping (user caught S32's flag reading "5" on filings that were mostly a month old).
+var ANN_RECENT_DAYS=14;
+function annRecent(list){ var cut=Date.now()-ANN_RECENT_DAYS*86400000;
+  return (list||[]).filter(function(x){ if(!x||!x.headline) return false;
+    var t=Date.parse(String(x.date||'').slice(0,10)+'T00:00:00');
+    return !isFinite(t) ? true : t>=cut; }); }   // keep genuinely undated (rare); drop anything older than the window
 function annFlag(obj){
-  var a=(obj&&obj.announcements)||[]; if(!a.length) return '';
+  var a=annRecent(obj&&obj.announcements); if(!a.length) return '';
   var bear=false,bull=false; a.forEach(function(x){ if(x.tone==='bearish')bear=true; else if(x.tone==='bullish')bull=true; });
   var cls=bear?'af-bear':(bull?'af-bull':'af-neu');
-  return '<span class="annflag '+cls+'" title="'+a.length+' key ASX announcement'+(a.length===1?'':'s')+' — tap the card to read">📢'+(a.length>1?'&nbsp;'+a.length:'')+'</span>';
+  return '<span class="annflag '+cls+'" title="'+a.length+' ASX filing'+(a.length===1?'':'s')+' in the last '+ANN_RECENT_DAYS+' days — tap the card to read">📢'+(a.length>1?'&nbsp;'+a.length:'')+'</span>';
 }
 // (user ask) market-wide roll-up of every price-sensitive ASX filing across tonight's picks + Full-Pot
 // candidates → ONE dated, tone-coloured feed (the "News"-style consolidation of the per-card announcements).
 // Returns '' when there's nothing (US view), so the Market-context tab filter drops the chip automatically.
 function announcementsPanelHtml(D){
   var seen={}, items=[];
-  function take(o){ if(!o||(o.region||'us')!==MKT||o.sym==='NONE') return; (o.announcements||[]).forEach(function(a){
-    if(!a||!a.headline) return; var k=(o.sym||'')+'|'+(a.headline||'')+'|'+(a.date||''); if(seen[k]) return; seen[k]=1;
+  function take(o){ if(!o||(o.region||'us')!==MKT||o.sym==='NONE') return; annRecent(o.announcements).forEach(function(a){
+    var k=(o.sym||'')+'|'+(a.headline||'')+'|'+(a.date||''); if(seen[k]) return; seen[k]=1;
     items.push({sym:o.sym,name:o.name,headline:a.headline,date:a.date,tone:a.tone,why:a.why,link:a.link,deepReadQuery:a.deepReadQuery,_o:o}); }); }
   (D.regions||[]).forEach(function(rg){ (rg.picks||[]).forEach(take); });
   (D.candidates||[]).forEach(take);
