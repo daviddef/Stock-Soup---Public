@@ -1351,7 +1351,9 @@
   .uni-watch{background:var(--broth);color:#1a0f06}
   .uni-ask{background:var(--surface-2);color:var(--ink);border:1px solid var(--line)}
   .uni-ask:hover{border-color:var(--broth);color:var(--broth)} .uni-watch:hover{filter:brightness(1.05)}
-  @media(max-width:560px){ .uni-watch,.uni-ask{flex:1 1 46%;justify-content:center} }
+  /* (user ask) ⭐ / 🧠 are now compact icon buttons that stay inline with the input on ONE row — no more
+     wrapping to a second row (dropped the 46%-width mobile rule), and no market selector (uses the top AU/US). */
+  .uni-watch,.uni-ask{flex:0 0 auto;min-width:52px;justify-content:center;font-size:19px;padding:11px 14px}
   .wladd{background:var(--broth);color:#1a0f06;border:0;font-family:var(--font);font-weight:800;border-radius:10px;padding:0 20px;cursor:pointer;font-size:14px}
   .wlpills{display:flex;flex-direction:column;gap:8px;margin-bottom:16px;min-height:8px}
   .wlpill{display:inline-flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:6px 8px 6px 13px;font-size:13px}
@@ -4361,11 +4363,10 @@ function render(D,H){
     '<section>'+
       '<div class="wlalert" id="wlAlert" role="status" aria-live="polite" style="display:none"></div>'+
       /* #207 — add-ticker bar moved to the top, above the performance summary cards */
-      '<div class="unibar"><input id="uniInput" placeholder="Type a ticker… e.g. BHP or PLTR" maxlength="8" aria-label="Ticker">'+
-        '<span class="wlseg" role="group" aria-label="Market"><button id="uniAu" aria-pressed="true">🇦🇺 AU</button><button id="uniUs" aria-pressed="false">🇺🇸 US</button></span>'+
-        '<button class="uni-watch" id="uniWatch" title="Add to watchlist" aria-label="Add to watchlist">＋</button>'+
-        '<button class="uni-ask" id="uniAsk" title="What would you do? — an instant read">🧠 IDEA</button></div>'+
-      '<p class="sec-sub" style="margin-top:9px">Type a ticker, pick its market, then <b>＋</b> to track it (we remember its ideal-buy and flag it when it hits) — or <b>🧠 IDEA</b> for an instant read. You can also tap <b>＋ Watch</b> on any pick. '+infoBtn('watchlist')+'</p>'+
+      '<div class="unibar"><input id="uniInput" placeholder="Type a ticker… e.g. BHP or PLTR" maxlength="8" aria-label="Ticker (added to the '+(MKT==='au'?'Australian':'US')+' market you’re viewing)">'+
+        '<button class="uni-watch" id="uniWatch" title="Add to your '+(MKT==='au'?'🇦🇺 AU':'🇺🇸 US')+' watchlist" aria-label="Add to watchlist">⭐</button>'+
+        '<button class="uni-ask" id="uniAsk" title="What would you do? — an instant read" aria-label="Instant read">🧠</button></div>'+
+      '<p class="sec-sub" style="margin-top:9px">Type a ticker, then <b>⭐</b> to track it in the '+(MKT==='au'?'🇦🇺 Australian':'🇺🇸 US')+' market you’re viewing (we remember its ideal-buy and flag it when it hits) — or <b>🧠</b> for an instant read. You can also tap <b>★ Watch</b> on any pick. '+infoBtn('watchlist')+'</p>'+
       '<div class="wlsummary" id="wlSummary"></div>'+
       '<div class="wlpills" id="wlPills"></div>'+
       '<div class="wlauth" id="wlAuth"></div></section>'+
@@ -7845,13 +7846,12 @@ function wire(D){
   var lb=document.getElementById('learnBtn'); if(lb) lb.onclick=function(){openLearn('simple');};   // #300 unified Learn
   var tbFull=document.getElementById('tourBtn'); if(tbFull) tbFull.onclick=openOnboarding;
   // Unified Favourites bar: one ticker input + market toggle → either ＋Watchlist or 🧠 What to do?
-  (function(){ var inp=document.getElementById('uniInput'), au=document.getElementById('uniAu'), us=document.getElementById('uniUs'),
-        watch=document.getElementById('uniWatch'), ask=document.getElementById('uniAsk'), reg={r:'au'};
-    function set(r){ reg.r=r; if(au)au.setAttribute('aria-pressed',r==='au'); if(us)us.setAttribute('aria-pressed',r==='us'); }
-    if(au)au.onclick=function(){set('au');}; if(us)us.onclick=function(){set('us');};
+  (function(){ var inp=document.getElementById('uniInput'), watch=document.getElementById('uniWatch'), ask=document.getElementById('uniAsk');
+    // (user ask) no market selector here — a typed ticker is added to whatever market the top AU/US toggle
+    // is on (MKT), since that's already chosen up top. Keeps the box to one row.
     function val(){ return (inp&&inp.value||'').trim().toUpperCase().replace(/[^A-Z0-9.]/g,''); }
-    function doWatch(){ var v=val(); if(!v)return; wlAddItem({sym:v,region:reg.r}); if(inp)inp.value=''; renderWatchlist(); syncWatchButtons(); flashToast('✓ '+v+' added to your watchlist'); }
-    function doAsk(){ var v=val(); if(v) openTicker(v,reg.r); }   // #318 — a typed name that IS a pick/candidate opens its rich card, not the thin read
+    function doWatch(){ var v=val(); if(!v)return; wlAddItem({sym:v,region:MKT}); if(inp)inp.value=''; renderWatchlist(); syncWatchButtons(); flashToast('✓ '+v+' added to your '+(MKT==='au'?'🇦🇺':'🇺🇸')+' watchlist'); }
+    function doAsk(){ var v=val(); if(v) openTicker(v,MKT); }   // #318 — a typed name that IS a pick/candidate opens its rich card, not the thin read
     if(watch)watch.onclick=doWatch; if(ask)ask.onclick=doAsk;
     if(inp)inp.addEventListener('keydown',function(e){ if(e.key==='Enter'){ e.preventDefault(); doWatch(); } });   // Enter = the primary action (add to watchlist)
   })();
