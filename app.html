@@ -419,12 +419,6 @@
   .docpage{height:100%;overflow-y:auto;-webkit-overflow-scrolling:touch}
   .docpage .dpwrap{max-width:760px;margin:0 auto;padding:26px 20px 90px}
   .docpage .dplede{font-size:16px;color:var(--muted);line-height:1.6;margin:0 0 8px}
-  /* #300 — beginner→expert depth toggle at the top of the unified Learn guide */
-  .docpage .lrnseg{display:inline-flex;gap:4px;background:var(--surface-2);border:1px solid var(--line);border-radius:999px;padding:4px;margin:0 0 16px}
-  .docpage .lrnbtn{font-size:13px;font-weight:800;color:var(--muted);background:none;border:0;border-radius:999px;padding:6px 14px;cursor:pointer;font-family:inherit}
-  .docpage .lrnbtn.on{background:var(--broth);color:#fff}
-  .docpage .lrnbtn:not(.on):hover{color:var(--ink)}
-  .docpage .lrnbtn.lrndeep{color:var(--broth)}
   .docpage .dptoc{display:flex;flex-wrap:wrap;gap:7px;margin:16px 0 8px}
   .docpage .dptoc a{font-size:12px;font-weight:700;color:var(--broth);background:var(--surface-2);border:1px solid var(--line);border-radius:999px;padding:4px 11px;text-decoration:none}
   .docpage .dptoc a:hover{border-color:var(--broth)}
@@ -1596,15 +1590,6 @@
   .potlensbtn:hover{border-color:var(--broth)}
   .potlensbtn.on{color:var(--ink);border-color:var(--broth);background:color-mix(in srgb,var(--broth) 16%,transparent)}
   .potlensbtn:focus-visible{outline:2px solid var(--broth);outline-offset:2px}
-  /* #299 — Market context chip sub-nav */
-  .mctx-nav{display:flex;flex-wrap:wrap;gap:7px;margin:10px 0 16px}
-  .mctxbtn{font-family:var(--font);font-size:13px;font-weight:800;color:var(--muted);background:var(--surface-2);border:1px solid var(--line);border-radius:999px;padding:7px 14px;cursor:pointer;transition:all .12s}
-  .mctxbtn:hover{border-color:var(--broth);color:var(--ink)}
-  .mctxbtn.on{color:#fff;background:var(--broth);border-color:var(--broth)}
-  .mctxbtn:focus-visible{outline:2px solid var(--broth);outline-offset:2px}
-  .mctx-panel[hidden]{display:none}
-  .mctx-panel>section{margin-top:0}
-  .mctx-panel>section .sec-head{margin-top:0}
   .potthr-ctl b{color:var(--ink);min-width:34px;text-align:center} .potthr-ctl input[type=range]{flex:1;max-width:260px;accent-color:var(--broth)}
   .potthr-none{color:var(--broth);font-weight:700}
   .spot-list{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
@@ -1996,7 +1981,6 @@ var LAST=null, LASTFOCUS=null;
 var TIER='type1';   // #152 — selected model tier: type1 (production, default) / type2 (whole-market quant) / type3 (per-indicator leaderboards)
 var POTLENS='timing';   // #273 — Full Pot ranking lens: 'timing' (🍊 buy-now) or 'conviction' (🍒 overall). Flips sort + heat-band grouping so you see the same shortlist ranked either way, no duplicate grids.
 var POTVIEW='bands';    // #296 — Full Pot layout: 'bands' (grouped by heat) or 'board' (flat 1..N leaderboard). One surface, two skins — retires the old separate "Stock Pot Top 20".
-var MCTX='news';        // #299 — which "Market context" panel is showing (news/world/commodities/movers/upcoming/bargains). One tabbed section replaces 6 stacked ones; remembered across re-renders.
 // #152 — the ONE place that resolves "which picks array is this region actually showing right now."
 // Global (not nested in render()) because click handlers outside render() (openFromEl, ruCard, etc.)
 // need the exact same resolution to correctly index into whichever array built the card the user
@@ -3439,38 +3423,6 @@ function openPead(){
     el.addEventListener('keydown',function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); go(); } });
   });
 }
-// #299 — "Market context" — ONE tabbed section replacing six stacked ones (news · world & sectors ·
-// commodities · movers · coming-up · bargains). Only the selected panel shows; MCTX remembers the choice.
-// Each panel reuses the existing builders verbatim (topNewsHtml/topMoversHtml/upcomingHtml + the geo/
-// sector/commodity `lines()` blocks) — nothing was rewritten, just folded behind a chip nav.
-function marketContextHtml(D, bargainCards){
-  var geoSec = '<p class="sec-sub">What\'s moving the pot, and which kitchens are hot vs which to skip.</p>'+
-    '<div class="cols"><div class="stack"><div class="eyebrow">🌍 Geopolitics</div>'+lines(D.geo,'title','geo')+'</div>'+
-    '<div class="stack"><div class="eyebrow">🍳 Sectors — buy vs skip</div>'+lines(D.sectors,'title','sectors')+sectorRotationHtml(D)+'</div></div>';
-  var commodSec = '<p class="sec-sub">No jargon. Just: worth a look, emerging (🔥), or leave it.</p>'+
-    (function(){ var items=D.commodities||[], n=items.length, third=Math.ceil(n/3);
-      var a=items.slice(0,third), b=items.slice(third,third*2), c=items.slice(third*2);
-      return '<div class="cols3"><div class="stack">'+lines(a,'name','commodities',0)+'</div>'+
-        '<div class="stack">'+lines(b,'name','commodities',third)+'</div>'+
-        '<div class="stack">'+lines(c,'name','commodities',third*2)+'</div></div>'; })();
-  var tabs=[
-    ['news','📰 News', topNewsHtml(D)],
-    ['world','🌍 World &amp; sectors', geoSec],
-    ['commodities','🛢️ Commodities', commodSec],
-    ['movers','🔥 Movers', topMoversHtml(D)],
-    ['upcoming','📅 Coming up', upcomingHtml(D)]
-  ];
-  if(bargainCards) tabs.push(['bargains','🛍️ Bargains',
-    '<p class="sec-sub">Genuinely cheap right now — oversold, not in freefall, and nothing actively wrong that we can see. <b>Tap any for the full read.</b></p><div class="pot">'+bargainCards+'</div>']);
-  tabs=tabs.filter(function(t){ return String(t[2]||'').trim()!==''; });   // drop a chip whose panel has no content this run
-  if(!tabs.length) return '';
-  if(!tabs.some(function(t){return t[0]===MCTX;})) MCTX=tabs[0][0];        // keep MCTX pointing at a real tab
-  var nav=tabs.map(function(t){return '<button class="mctxbtn'+(t[0]===MCTX?' on':'')+'" data-mctx="'+t[0]+'" role="tab" aria-selected="'+(t[0]===MCTX)+'">'+t[1]+'</button>';}).join('');
-  var panels=tabs.map(function(t){return '<div class="mctx-panel" data-panel="'+t[0]+'"'+(t[0]===MCTX?'':' hidden')+'>'+t[2]+'</div>';}).join('');
-  return '<section id="mktctx"><div class="sec-head"><h2 class="display"><span class="k">04</span> Market context</h2></div>'+
-    '<p class="sec-sub">The backdrop behind tonight\'s picks — news, sectors, commodities, movers and what\'s coming up. Tap a chip.</p>'+
-    '<div class="mctx-nav" role="tablist">'+nav+'</div>'+panels+'</section>';
-}
 function actionsHtml(D){
   // #181 — standardised action cards: every card shares one template (verb badge · subject · 🍊 score
   // chip · one-line why), 3-across, each tapping to its real detail. The 🍊 chip is looked up from the
@@ -3906,7 +3858,8 @@ function render(D,H){
           '<button class="bmitem" id="viewBtn" role="menuitem">😋 Simple view</button>'+
           '<button class="bmitem" id="themeBtn" role="menuitem">🌗 Switch theme</button>'+
           '<button class="bmitem" id="tourBtn" role="menuitem">👋 Take the tour</button>'+
-          '<button class="bmitem" id="learnBtn" role="menuitem">📚 Learn — how it works</button>'+
+          '<button class="bmitem" id="guideBtn" role="menuitem">📖 User guide</button>'+
+          '<button class="bmitem" id="methodBtn" role="menuitem">🎓 For your advisor</button>'+
           '<button class="bmitem" id="adminBtn" role="menuitem" style="display:none">🛠 Admin tools</button>'+
         '</div></div>'+
     '</div></div>'+
@@ -3940,9 +3893,27 @@ function render(D,H){
       '<p class="sec-sub" style="margin-top:4px">It’s time to eat — enough of the mood, here’s what’s worth <b>acting on</b> right now.</p>'+
       actionsHtml(D)+'</section>'+
     // Change-environment retired — its trajectory + "ready to buy" now live inside each pick card (miniTraj + buyat + rangeBar).
-    // #299 — News, World & sectors, Commodities and Bargains are no longer stacked here; they're panels
-    // inside the single "04 Market context" section below the Full Pot (see marketContextHtml).
-    '<section id="fullpot"><div class="sec-head"><h2 class="display"><span class="k">03</span> The full pot</h2>'+infoBtn('fullpot')+'</div>'+
+    topNewsHtml(D)+
+    '<section><div class="sec-head"><h2 class="display"><span class="k">03</span> The world &amp; the sectors</h2>'+infoBtn('world')+'</div>'+
+      '<p class="sec-sub">What\'s moving the pot, and which kitchens are hot vs which to skip.</p>'+
+      '<div class="cols"><div class="stack"><div class="eyebrow">🌍 Geopolitics</div>'+lines(D.geo,'title','geo')+'</div>'+
+      '<div class="stack"><div class="eyebrow">🍳 Sectors — buy vs skip</div>'+lines(D.sectors,'title','sectors')+sectorRotationHtml(D)+'</div></div>'+
+      '</section>'+
+    '<section><div class="sec-head"><h2 class="display"><span class="k">04</span> Commodities — simple</h2>'+infoBtn('commodities')+'</div>'+
+      '<p class="sec-sub">No jargon. Just: worth a look, emerging (🔥), or leave it.</p>'+
+      // #131 (9 Aug 2026, user ask) — 3 abreast instead of 2, own grid class (.cols3) so this doesn't
+      // also widen Geopolitics/Sectors above (still 2-up, deliberately — commodities just has more items).
+      (function(){
+        var items=D.commodities||[], n=items.length, third=Math.ceil(n/3);
+        var a=items.slice(0,third), b=items.slice(third,third*2), c=items.slice(third*2);
+        return '<div class="cols3"><div class="stack">'+lines(a,'name','commodities',0)+'</div>'+
+          '<div class="stack">'+lines(b,'name','commodities',third)+'</div>'+
+          '<div class="stack">'+lines(c,'name','commodities',third*2)+'</div></div>';
+      })()+'</section>'+
+    (bargainCards?'<section class="bargainsec"><div class="sec-head"><h2 class="display">🛍️ Bargain Alert!</h2></div>'+
+      '<p class="sec-sub">Genuinely cheap right now — oversold, not in freefall, and nothing actively wrong that we can see. <b>Tap any for the full read.</b></p>'+
+      '<div class="pot">'+bargainCards+'</div></section>':'')+
+    '<section id="fullpot"><div class="sec-head"><h2 class="display"><span class="k">05</span> The full pot</h2>'+infoBtn('fullpot')+'</div>'+
       '<p class="sec-sub">Every '+(MKT==='au'?'🇦🇺 Australian':'🇺🇸 US')+' candidate the scan shortlisted tonight — <b>'+_potN+' names</b>, ranked by '+(POTLENS==='conviction'?'🍒 <b>overall conviction</b>':'🍊 <b>buy-now timing</b>')+'. Showing the <b>top 20</b>; the rest are one tap away. <b>Tap any for the full read.</b></p>'+
       // #273 — lens toggle: rank the SAME shortlist by 🍊 timing (buy-now) or 🍒 conviction (overall). One grid,
       // flip the lens — no duplicate orange/cherry grids. Re-renders in place (applyView) preserving scroll.
@@ -3960,7 +3931,8 @@ function render(D,H){
       (_potHid>0?'<button class="potmore'+(_potMain?'':' potmore-lead')+'" id="potMore" data-n="'+_potHid+'" aria-expanded="false">➖ '+_potHid+' more below the top 20 ▾</button>'+
         '<div id="potLose" hidden>'+_potHidden+'</div>':'')+
       '</section>'+
-    marketContextHtml(D, bargainCards)+   // #299 — one tabbed section: news · world · commodities · movers · coming-up · bargains
+    upcomingHtml(D)+
+    topMoversHtml(D)+
     // hourly-runs list removed from the menu — it lives (unified) in Inside the Kitchen's run schedule
   '</div>'+
 
@@ -6161,9 +6133,9 @@ function openDocPage(hash, titleHtml, bodyHtml){
 }
 function toc(items){ return '<div class="dptoc">'+items.map(function(i){return '<a href="#'+i[0]+'">'+i[1]+'</a>';}).join('')+'</div>'; }
 
-// ---- The User Guide (plain English, no sources/methods) — the SIMPLE depth of the unified Learn (#300) ----
-function _guideSimpleBody(){
-  return ''+
+// ---- The User Guide (plain English, no sources/methods) ----
+function openUserGuide(){
+  var b=''+
    '<p class="dplede">A friendly walkthrough of what The Stock Soup does and how to read it — no jargon, no black box. It’s a nightly <b>menu of stock ideas</b> for the Australian and US markets, each one scored out of 100 and graded openly afterwards.</p>'+
    toc([['g-funnel','How we narrow it down'],['g-types','The 3 Types'],['g-time','Day / Week / Month'],['g-score','The 🍊 score'],['g-signals','The signals'],['g-risk','The risk meter'],['g-honest','Keeping honest'],['g-use','Using it']])+
    '<section id="g-funnel"><h2><span class="dpn">1</span>How we narrow it down</h2>'+
@@ -6207,11 +6179,12 @@ function _guideSimpleBody(){
      '<li><b>Simple vs Full view</b> — the 📋 toggle swaps between the dumbed-down one-pager and the full detail.</li>'+
      '<li><b>Run Schedule</b> — see when the kitchen last cooked and what’s coming up next.</li></ul></section>'+
    '<div class="dpfoot">This is an information tool, not financial advice, and not a recommendation to buy or sell anything. Scores are one model’s read of public price data — always do your own research. 🍲</div>';
+  openDocPage('/guide','📖 The User Guide',b);
 }
 
-// ---- The Advisor / expert methodology brief — the DETAILED depth of the unified Learn (#300) ----
-function _guideDetailedBody(){
-  return ''+
+// ---- The Advisor / expert methodology brief (technical; describe sources by category, not vendor) ----
+function openExpertBrief(){
+  var b=''+
    '<p class="dplede">A short methodology brief for someone who reads markets for a living. The Stock Soup is a systematic, evidence-weighted screen-and-score engine across ASX + US equities, with an open accountability loop. Sources are described by category, not vendor.</p>'+
    toc([['m-model','The scoring model'],['m-guard','Guardrails'],['m-nudge','Layered nudges'],['m-tiers','The three tiers'],['m-disc','Discovery'],['m-time','Timeframe routing'],['m-risk','Risk framework'],['m-acct','Accountability & learning'],['m-cad','Cadence & limits']])+
    '<section id="m-model"><h2><span class="dpn">1</span>The scoring model</h2>'+
@@ -6242,34 +6215,8 @@ function _guideDetailedBody(){
      '<li>ASX fundamental / analyst / earnings-surprise coverage is thinner than US and is being widened.</li>'+
      '<li>Binary events (e.g. clinical read-outs) are irreducibly unpredictable and are deliberately not chased.</li></ul></section>'+
    '<div class="dpfoot">Data is sourced across categories — a live read of news, market movers and analyst actions; regulatory filings; exchange short-interest; and central-bank macro series — deliberately described by category rather than by vendor. This is a personal, systematic research tool. Not financial advice, not a solicitation, no performance guarantee. 🍲</div>';
+  openDocPage('/method','🎓 Methodology brief',b);
 }
-
-// #300 — ONE unified "Learn" guide with a beginner→expert depth toggle, replacing the two separate
-// burger entries (User guide + For your advisor). Simple = the plain-English guide, Detailed = the
-// methodology brief; Deep opens the admin-gated Kitchen Manual (a separate KV doc, admin-only). No
-// content was rewritten — both existing bodies are reused verbatim as the two depths.
-function openLearn(depth){
-  depth = (depth==='detailed'||depth==='simple') ? depth : 'simple';
-  var admin=false; try{ admin=isAdmin(); }catch(e){}
-  var seg='<div class="lrnseg" role="tablist">'+
-    '<button class="lrnbtn'+(depth==='simple'?' on':'')+'" data-depth="simple" role="tab" aria-selected="'+(depth==='simple')+'">📖 Simple</button>'+
-    '<button class="lrnbtn'+(depth==='detailed'?' on':'')+'" data-depth="detailed" role="tab" aria-selected="'+(depth==='detailed')+'">🎓 Detailed</button>'+
-    (admin?'<button class="lrnbtn lrndeep" data-depth="deep" role="tab">🔧 Deep · admin</button>':'')+
-  '</div>';
-  var body = depth==='detailed' ? _guideDetailedBody() : _guideSimpleBody();
-  var hash = depth==='detailed' ? '/method' : '/guide';
-  var title = '📚 Learn — '+(depth==='detailed'?'the methodology':'how it works');
-  openDocPage(hash, title, seg+body);
-  var ov=document.getElementById('docsOverlay');
-  if(ov) ov.querySelectorAll('.lrnbtn').forEach(function(bn){ bn.onclick=function(){
-    var d=bn.dataset.depth;
-    if(d==='deep'){ try{ openDocs(); }catch(e){} return; }   // the admin Kitchen Manual (separate, gated KV doc)
-    openLearn(d);
-  };});
-}
-// Back-compat aliases so existing callers + the #/guide and #/method deep-links still resolve.
-function openUserGuide(){ openLearn('simple'); }
-function openExpertBrief(){ openLearn('detailed'); }
 function openDocs(section){
   // openDocs is wired as a bare `el.onclick=openDocs` in a couple of places (not a wrapped call),
   // so the browser's click event would land here as `section` — guard so only a real string counts.
@@ -7142,14 +7089,6 @@ function wire(D){
     if(b.dataset.potview===POTVIEW) return; POTVIEW=b.dataset.potview;
     var sc=window.pageYOffset; applyView(); window.scrollTo(0,sc);
   };});
-  // #299 — Market context chip nav: swap the visible panel IN PLACE (no full re-render, preserves scroll).
-  // MCTX is remembered so a pulse re-render keeps the panel you were reading.
-  document.querySelectorAll('.mctxbtn[data-mctx]').forEach(function(b){ b.onclick=function(){
-    var id=b.dataset.mctx, sec=b.closest('#mktctx'); if(!sec||id===MCTX) return; MCTX=id;
-    sec.querySelectorAll('.mctxbtn').forEach(function(x){ var on=x.dataset.mctx===id; x.classList.toggle('on',on); x.setAttribute('aria-selected',on?'true':'false'); });
-    sec.querySelectorAll('.mctx-panel').forEach(function(p){ if(p.dataset.panel===id) p.removeAttribute('hidden'); else p.setAttribute('hidden',''); });
-    try{ hydrateMissCharts(); }catch(e){}   // lazy mini-charts (movers/misses) hydrate once their panel is visible
-  };});
   var rm=document.getElementById('runMore'), rr=document.getElementById('runRest');
   if(rm&&rr){ var rrN=rr.children.length; rm.onclick=function(){ var open=rr.hasAttribute('hidden'); if(open)rr.removeAttribute('hidden'); else rr.setAttribute('hidden',''); rm.setAttribute('aria-expanded',open?'true':'false'); rm.innerHTML=(open?'▴ Hide older runs':'➖ '+rrN+' older runs ▾'); }; }
   var kh=document.getElementById('kitchenHealthBtn'); if(kh) kh.onclick=openDataHealth;
@@ -7169,8 +7108,9 @@ function wire(D){
     bm.querySelectorAll('.bmitem,.bmupd').forEach(function(it){ it.addEventListener('click',closeBM); });
   }
   var adb=document.getElementById('adminBtn'); if(adb){ if(isAdmin()){ adb.style.display=''; adb.onclick=function(){var _bm=document.getElementById('burgerMenu');if(_bm)_bm.setAttribute('hidden','');openAdminDrawer();}; } else { adb.style.display='none'; } }
-  var lb=document.getElementById('learnBtn'); if(lb) lb.onclick=function(){openLearn('simple');};   // #300 unified Learn
+  var gb=document.getElementById('guideBtn'); if(gb) gb.onclick=openUserGuide;
   var tbFull=document.getElementById('tourBtn'); if(tbFull) tbFull.onclick=openOnboarding;
+  var mb=document.getElementById('methodBtn'); if(mb) mb.onclick=openExpertBrief;
   // Unified Favourites bar: one ticker input + market toggle → either ＋Watchlist or 🧠 What to do?
   (function(){ var inp=document.getElementById('uniInput'), au=document.getElementById('uniAu'), us=document.getElementById('uniUs'),
         watch=document.getElementById('uniWatch'), ask=document.getElementById('uniAsk'), reg={r:'au'};
@@ -7742,7 +7682,8 @@ function renderSimple(D){
           '<button class="bmitem" id="viewFull" role="menuitem">📋 Full view</button>'+
           '<button class="bmitem" id="themeBtn2" role="menuitem">🌗 Switch theme</button>'+
           '<button class="bmitem" id="tourBtnS" role="menuitem">👋 Take the tour</button>'+
-          '<button class="bmitem" id="learnBtnS" role="menuitem">📚 Learn — how it works</button>'+
+          '<button class="bmitem" id="guideBtnS" role="menuitem">📖 User guide</button>'+
+          '<button class="bmitem" id="methodBtnS" role="menuitem">🎓 For your advisor</button>'+
           '<button class="bmitem" id="adminBtnS" role="menuitem" style="display:none">🛠 Admin tools</button>'+
         '</div></div>'+
     '</div>'+
@@ -7766,8 +7707,9 @@ function wireSimple(D){
   var sitS=document.getElementById('signInTopS'); if(sitS){ sitS.textContent=signedIn()?'👤 Account':'👤 Sign in'; sitS.onclick=openAccount; }
   var rbS=document.getElementById('refreshBtnS'); if(rbS){ if(!isAdmin()) rbS.style.display='none'; else rbS.onclick=function(){refreshPrices(rbS);}; }
   var adbS=document.getElementById('adminBtnS'); if(adbS){ if(isAdmin()){ adbS.style.display=''; adbS.onclick=function(){var _bm=document.getElementById('burgerMenuS');if(_bm)_bm.setAttribute('hidden','');openAdminDrawer();}; } }
-  var lbS=document.getElementById('learnBtnS'); if(lbS) lbS.onclick=function(){openLearn('simple');};   // #300 unified Learn
+  var gbS=document.getElementById('guideBtnS'); if(gbS) gbS.onclick=openUserGuide;
   var tbS=document.getElementById('tourBtnS'); if(tbS) tbS.onclick=openOnboarding;
+  var mbS=document.getElementById('methodBtnS'); if(mbS) mbS.onclick=openExpertBrief;
   // market switch → re-render the story for the other market
   document.querySelectorAll('.s2mkt button[data-mkt]').forEach(function(b){ b.onclick=function(){ if(b.dataset.mkt===MKT)return; MKT=b.dataset.mkt; try{pushViewState();}catch(e){} window.scrollTo(0,0); renderSimple(D); }; });
   // scroll progress bar (single listener, replaced each render so it never accumulates)
