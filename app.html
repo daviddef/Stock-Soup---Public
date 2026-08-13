@@ -1287,6 +1287,12 @@
   .misschart .spark{width:100%;height:26px;display:block}
   .mchk-line{stroke:var(--broth);stroke-width:1;stroke-dasharray:2,1.6;opacity:.85;vector-effect:non-scaling-stroke}
   .mchk-dot{fill:var(--broth)}
+  /* (user ask) the served-at marker pulses like a live beacon */
+  .mchk-pulse{fill:none;stroke:var(--broth);stroke-width:1.1;transform-box:fill-box;transform-origin:center;animation:mchkpulse 1.9s ease-out infinite;vector-effect:non-scaling-stroke}
+  @keyframes mchkpulse{0%{transform:scale(.5);opacity:.85}70%{transform:scale(2.6);opacity:0}100%{opacity:0}}
+  @media(prefers-reduced-motion:reduce){.mchk-pulse{display:none}}
+  /* (user ask) growth/fall since the serve time, shown at the served label */
+  .mchk-since{font-weight:900} .mchk-since.up{color:var(--buy)} .mchk-since.down{color:var(--dont)}
   .misschart-flag{position:absolute;top:-13px;transform:translateX(-50%);font-size:9px;font-weight:800;color:var(--broth);white-space:nowrap;letter-spacing:.01em}
   .misschart-mm{display:flex;justify-content:space-between;font-size:10px;font-weight:700;color:var(--faint);font-variant-numeric:tabular-nums;margin-top:1px}
   .misschart-mm .misschart-now{color:var(--muted);font-weight:800}
@@ -7584,6 +7590,7 @@ function missSparkSVG(vals,markIdx){
   if(markIdx!=null&&markIdx>=0&&markIdx<xy.length){
     var mp=xy[markIdx];
     mark='<line x1="'+mp[0].toFixed(1)+'" y1="0" x2="'+mp[0].toFixed(1)+'" y2="'+h+'" class="mchk-line"/>'+
+      '<circle cx="'+mp[0].toFixed(1)+'" cy="'+mp[1].toFixed(1)+'" r="2.4" class="mchk-pulse"/>'+
       '<circle cx="'+mp[0].toFixed(1)+'" cy="'+mp[1].toFixed(1)+'" r="2.4" class="mchk-dot"/>';
   }
   return '<svg class="spark '+(up?'up':'down')+'" viewBox="0 0 '+w+' '+h+'" preserveAspectRatio="none" aria-hidden="true">'+
@@ -7618,7 +7625,11 @@ function hydrateMissCharts(root){
       var flagLbl='';
       if(markIdx!=null){
         var mpct=(markIdx/(vals.length-1))*100, tx=(mpct<15)?'0':(mpct>85)?'-100%':'-50%';
-        flagLbl='<div class="misschart-flag" style="left:'+mpct.toFixed(1)+'%;transform:translateX('+tx+')">'+mlab+' '+_timeHM(times[markIdx])+'</div>';
+        // (user ask) growth/fall since the serve time = now vs the served price (the marker's value)
+        var since='';
+        if(mlab==='served'){ var sv=vals[markIdx], nv=vals[vals.length-1];
+          if(sv){ var sp=(nv-sv)/sv*100; since=' · <span class="mchk-since '+(sp>=0?'up':'down')+'">'+(sp>=0?'+':'')+sp.toFixed(1)+'%</span>'; } }
+        flagLbl='<div class="misschart-flag" style="left:'+mpct.toFixed(1)+'%;transform:translateX('+tx+')">'+mlab+' '+_timeHM(times[markIdx])+since+'</div>';
       }
       slot.innerHTML='<div class="misschart-wrap">'+missSparkSVG(vals,markIdx)+flagLbl+'</div>'+
         '<div class="misschart-mm"><span>'+cur+mn.toFixed(2)+'</span><span class="misschart-now">'+rightLbl+'</span><span>'+cur+mx.toFixed(2)+'</span></div>';
