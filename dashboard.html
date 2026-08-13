@@ -3460,10 +3460,23 @@ function tabIcon(k){return '<span class="ti">'+(TABICONS[k]||'')+'</span>';}
 // ── ACTIONS layer: "what do I actually DO tonight?" ─────────────────────────
 // A pick is BUY-ready when the model likes it (verdict isn't wait/late/skip) AND
 // it's at/under the ideal-buy price we've been waiting for (buyState 'in').
+// #294 — post-serve drift gate. The chef's ideal-buy line literally carries a "do NOT chase above X"
+// ceiling; once the live price pushes past it, the easy entry is gone and a "GET IN" would be chasing.
+// Parse that ceiling and compare to the live price (data we already have — no serve-price plumbing needed).
+function chaseCeiling(p){
+  var m=String(p&&p.nEntry||'').match(/chase\s+above[^\d\-]*([\d,]+(?:\.\d+)?)/i);
+  return m?parseFloat(m[1].replace(/,/g,'')):null;
+}
+function pickChasePct(p){   // how far past the no-chase line the price now sits (null if not past / no ceiling)
+  var c=chaseCeiling(p), n=numLevel(p&&p.nNow!=null?p.nNow:(p&&p.price));
+  return (c!=null && isFinite(n) && n>c) ? Math.round((n/c-1)*1000)/10 : null;
+}
+function pickChased(p){ return pickChasePct(p)!=null; }
 function pickAction(p){
   if(p.nEntry==null||p.nNow==null) return 'watch';
   var v=(p.verdict||''), st=buyState(p);
   if(/late|wait|skip|pass|avoid|steer/i.test(v)) return 'wait';
+  if(pickChased(p)) return 'chased';   // ran past the chef's "do not chase above" line — no longer a get-in
   if(st==='in') return 'buy';
   if(st==='close') return 'soon';
   return 'wait';
@@ -3682,6 +3695,18 @@ function actionsHtml(D){
       (why?'<div class="axwhy">'+esc(why)+'</div>':'')+
       (timingLine(p)?'<div class="axfoot">'+timingLine(p)+'</div>':'')+'</div>'});
   });
+  // #294 — RAN PAST: a pick that's pushed above the chef's "do not chase above" line. The easy entry's gone,
+  // so it's a caution (wait for a pullback), NOT a "get in". Ranked just under the at-price buys.
+  var _chasedSet={};
+  (D.regions||[]).forEach(function(rg){ if(rg.id!==MKT) return;
+    (rg.picks||[]).forEach(function(p,idx){ if(p.sym==='NONE'||_readySet[p.sym]||pickAction(p)!=='chased') return;
+      _chasedSet[p.sym]=1;
+      var chip=(p.score?'<span class="axchip">'+dualChip(p.score,p.sym,p.name,signalRows(p,rg.id))+'</span>':''), ex=_axExtras(p.sym,rg.id);
+      var cur=rg.cur||'$', cc=chaseCeiling(p), pct=pickChasePct(p);
+      items.push({r:2.5, h:'<div class="axcard axchase ax-warn" data-region="'+esc(rg.id)+'" data-idx="'+idx+'" role="button" tabindex="0" aria-label="'+esc(p.sym)+' ran past the buy zone">'+
+        '<div class="axtop"><span class="axverb axv-warn">🏃 RAN PAST</span>'+tfBW(p.tf)+'<span class="axsym">'+esc(p.sym)+'</span>'+chip+(p.price?'<span class="axpx mono">'+esc(p.price)+'</span>':'')+ex.wb+'</div>'+ex.chart+
+        '<div class="axwhy">It’s '+(pct!=null?'+'+pct+'% ':'')+'past the ‘don’t chase above '+esc(cur)+cc+'’ line — the easy entry’s gone. Wait for a pullback into the buy zone rather than chasing it up here.</div></div>'});
+    }); });
   // Holdings needing a decision — SELL/take-profit (top rank) or REASSESS
   var owned=[]; try{owned=wlGet().filter(function(w){return w.own;});}catch(e){}
   var pm=wlPriceMap(D);
@@ -3695,7 +3720,7 @@ function actionsHtml(D){
   });
   // Tonight's picks (the tier buys) — GET IN, or ⏳ for a wait-verdict pick (ranked lower)
   (D.regions||[]).forEach(function(rg){ if(rg.id!==MKT) return;
-    (rg.picks||[]).forEach(function(p,idx){ if(p.sym==='NONE'||_readySet[p.sym]) return;
+    (rg.picks||[]).forEach(function(p,idx){ if(p.sym==='NONE'||_readySet[p.sym]||_chasedSet[p.sym]) return;
       var chip=(p.score?'<span class="axchip">'+dualChip(p.score,p.sym,p.name,signalRows(p,rg.id))+'</span>':''), ex=_axExtras(p.sym,rg.id);
       var wait=/wait|late|hold|skip|avoid|pass|don.t|steer/i.test(p.verdict||'');
       items.push({r:wait?6:4, h:'<div class="axcard axtier ax-'+(wait?'warn':'buy')+'" data-region="'+esc(rg.id)+'" data-idx="'+idx+'" role="button" tabindex="0" aria-label="'+esc(p.sym)+'">'+
