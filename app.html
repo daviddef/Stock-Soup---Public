@@ -3391,10 +3391,13 @@ function glanceStripHtml(D){
   if(news&&news.headline)
     tiles.push('<button class="gt gt-wide" data-glance="news" title="Tonight’s top story"><span class="gt-k">📰 Top story</span><span class="gt-v"><span class="gt-clip">'+esc((news.sym?news.sym+': ':'')+news.headline)+'</span></span></button>');
   // show EVERY buy-rated leader, not just the first (user caught HGO shown but CAH — also Buy — dropped).
-  var buySyms=(D.sectors||[]).filter(function(s){return /buy/i.test(s.tag||'')&&s.leader&&s.leader.sym;}).map(function(s){return s.leader.sym;});
+  // Dedupe across the two tiles: Copper is BOTH a sector and a commodity (same leader HGO), so a sym already
+  // in the sector tile is excluded from the commodity tile — no ticker appears twice (user caught HGO ×2).
+  var _seen={};
+  var buySyms=[]; (D.sectors||[]).forEach(function(s){ if(/buy/i.test(s.tag||'')&&s.leader&&s.leader.sym&&!_seen[s.leader.sym]){ _seen[s.leader.sym]=1; buySyms.push(s.leader.sym); } });
   if(buySyms.length){ var sShown=buySyms.slice(0,2).map(esc).join(' · ')+(buySyms.length>2?' +'+(buySyms.length-2):'');
     tiles.push('<button class="gt gt-med" data-glance="sector" title="'+buySyms.length+' sector'+(buySyms.length===1?'':'s')+' rated Buy — tap for all"><span class="gt-k">🍳 Buy sector'+(buySyms.length>1?'s':'')+'</span><span class="gt-v"><span class="gt-clip">'+sShown+'</span></span></button>'); }
-  var buyCom=(D.commodities||[]).filter(function(c){return /buy|emerg/i.test(c.tag||'')&&c.leader&&c.leader.sym;}).map(function(c){return c.leader.sym;});
+  var buyCom=[]; (D.commodities||[]).forEach(function(c){ if(/buy|emerg/i.test(c.tag||'')&&c.leader&&c.leader.sym&&!_seen[c.leader.sym]){ _seen[c.leader.sym]=1; buyCom.push(c.leader.sym); } });
   if(buyCom.length){ var cShown=buyCom.slice(0,2).map(esc).join(' · ')+(buyCom.length>2?' +'+(buyCom.length-2):'');
     tiles.push('<button class="gt gt-med" data-glance="commodity" title="'+buyCom.length+' commodit'+(buyCom.length===1?'y':'ies')+' rated Buy — tap for all"><span class="gt-k">🛢️ Buy commodit'+(buyCom.length>1?'ies':'y')+'</span><span class="gt-v"><span class="gt-clip">'+cShown+'</span></span></button>'); }
   var ann=glanceAnnCount(D,region);
