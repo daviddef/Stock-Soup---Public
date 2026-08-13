@@ -1941,6 +1941,14 @@
   .altspark svg{width:100%;height:100%}
   .dhgrid{display:flex;flex-direction:column;gap:8px}
   .dhcat{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--broth);margin:14px 0 2px}
+  .dhchips{display:flex;flex-wrap:wrap;gap:6px;margin:2px 0 14px}
+  .dhchip{font-size:12px;font-weight:800;padding:5px 11px;border-radius:999px;border:1px solid var(--line);background:var(--surface-2);color:var(--muted);cursor:pointer;transition:.12s}
+  .dhchip:hover{border-color:var(--broth);color:var(--ink)}
+  .dhchip.on{background:var(--broth);color:#1a0f06;border-color:var(--broth)}
+  .dhchip b{font-variant-numeric:tabular-nums}
+  .dhcatruns{display:inline-flex;gap:4px;margin-left:8px;vertical-align:middle}
+  .dhrun{font-size:9.5px;font-weight:800;letter-spacing:.02em;text-transform:uppercase;color:var(--broth);background:rgba(255,107,26,.12);border:1px solid rgba(255,107,26,.28);border-radius:5px;padding:1px 6px}
+  .dhrun.dhrun-off{color:var(--faint);background:var(--surface-2);border-color:var(--line)}
   .dhkw-block{background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:16px}
   .dhkwgrp{margin-top:8px}
   .dhkwgrp b{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
@@ -7096,27 +7104,64 @@ function dhWhenHtml(s){
     return '<div class="dhchecked">🟢 Used '+esc(rel||String(iso).slice(0,16).replace('T',' '))+' · live stamp</div>'; }
   return s.checked?'<div class="dhchecked">Verified '+esc(s.checked)+' <span class="muted">(manual)</span></div>':'';
 }
+var DH_FILTER=null;   // Data-source Health status filter (null = default view; a status; 'dropped'; or 'all')
+// (user ask, 13 Aug 2026) which runs each source CATEGORY actually feeds. T1 = the nightly menu run,
+// T2/3 = the whole-market scans, ↻ = the 10-min re-price pulse, trial = not wired (candidate only).
+function dhRunTags(cat){
+  var t = /Priced APIs/.test(cat) ? ['T1 menu','T2/3 scan','↻ pulse']
+        : /Keyless/.test(cat) ? ['T1 menu','T2/3 scan']
+        : /Earnings|dividend/.test(cat) ? ['T1 menu']
+        : /Discovery net 1 — news/.test(cat) ? ['T1 menu']
+        : /Discovery net 4/.test(cat) ? ['T1 menu']
+        : /untested/.test(cat) ? ['trial only']
+        : [];   // dropped / dead → not in any run
+  return t.length ? t.map(function(x){return '<span class="dhrun">'+esc(x)+'</span>';}).join('')
+                  : '<span class="dhrun dhrun-off">not in any run</span>';
+}
+// hidden by default (user ask #3): anything blocked, plus the deliberately-parked dropped/dead categories.
+function dhDefaultHidden(s){ return s.status==='blocked' || /dropped|dead/i.test(s.cat); }
 function openDataHealth(){
   var ic={ok:'🟢',degraded:'🟡',blocked:'🔴',untested:'⚪'}, lbl={ok:'Live',degraded:'Degraded',blocked:'Blocked',untested:'Untested'};
+  // status counts for the filter chips (user ask #2)
+  var cnt={ok:0,degraded:0,blocked:0,untested:0,dropped:0};
+  DATA_HEALTH.forEach(function(s){ if(cnt[s.status]!=null)cnt[s.status]++; if(/dropped|dead/i.test(s.cat))cnt.dropped++; });
+  // which sources are visible given the current filter (DH_FILTER: null=default view, or a status, or 'all')
+  function visible(s){
+    if(DH_FILTER==='all') return true;
+    if(DH_FILTER==='dropped') return /dropped|dead/i.test(s.cat);
+    if(DH_FILTER) return s.status===DH_FILTER;   // a specific status chip
+    return !dhDefaultHidden(s);                  // default: hide blocked + dropped/dead
+  }
+  var chip=function(key,emoji,label,n){ var on=(DH_FILTER===key)||(key==='default'&&!DH_FILTER);
+    return '<button class="dhchip'+(on?' on':'')+'" data-dhf="'+key+'">'+emoji+' <b>'+n+'</b> '+label+'</button>'; };
+  var chips='<div class="dhchips">'+
+    chip('default','🟢','shown',cnt.ok+cnt.degraded+cnt.untested)+
+    chip('ok','🟢','Live',cnt.ok)+chip('degraded','🟡','Degraded',cnt.degraded)+
+    chip('untested','⚪','Untested',cnt.untested)+chip('blocked','🔴','Blocked',cnt.blocked)+
+    chip('dropped','🗑','Dropped',cnt.dropped)+chip('all','▦','All',DATA_HEALTH.length)+'</div>';
   var cats=[]; DATA_HEALTH.forEach(function(s){ if(cats.indexOf(s.cat)<0) cats.push(s.cat); });
   var rows=cats.map(function(cat){
-    var items=DATA_HEALTH.filter(function(s){return s.cat===cat;}).map(function(s){
+    var vis=DATA_HEALTH.filter(function(s){return s.cat===cat && visible(s);});
+    if(!vis.length) return '';   // hide a category with nothing visible under the current filter
+    var items=vis.map(function(s){
       return '<div class="dhrow dh-'+s.status+'"><div class="dhtop"><span class="dhic">'+ic[s.status]+'</span><b class="dhname">'+esc(s.name)+'</b><span class="dhstat">'+lbl[s.status]+'</span></div>'+
         '<div class="dhuse">'+esc(s.use)+'</div>'+(s.note?'<div class="dhnote">'+esc(s.note)+'</div>':'')+
         (s.url?'<a class="dhlink" href="'+esc(s.url)+'" target="_blank" rel="noopener">🔗 '+(s.urlLabel?esc(s.urlLabel):'site / docs')+' ↗</a>':'')+
         dhWhenHtml(s)+'</div>';
     }).join('');
-    return '<div class="dhcat">'+esc(cat)+'</div>'+(DH_CATDESC[cat]?'<div class="dhcatdesc">'+esc(DH_CATDESC[cat])+'</div>':'')+items;
+    return '<div class="dhcat">'+esc(cat)+'<span class="dhcatruns">'+dhRunTags(cat)+'</span></div>'+(DH_CATDESC[cat]?'<div class="dhcatdesc">'+esc(DH_CATDESC[cat])+'</div>':'')+items;
   }).join('');
   LASTFOCUS=document.activeElement;
   var m=document.getElementById('modal'); m.className='modal';
   m.innerHTML='<div class="mhead"><button class="mclose" id="mClose" aria-label="Close">✕</button><div class="mtf">🛠 Admin</div>'+
     '<div class="mtop"><div class="msym" style="font-size:22px">💓 Data-source health</div></div></div>'+
-    '<div class="mbody"><p class="sec-sub" style="margin-top:0">Every source we\'ve tried — live, degraded, blocked, or never wired in — maintained by hand as gaps are found, not a live ping (no keys in the browser).</p>'+
+    '<div class="mbody"><p class="sec-sub" style="margin-top:0">Every source we\'ve tried. Tap a chip to filter; <b>Blocked</b> + <b>Dropped</b> are hidden by default. Each category shows which runs use it (T1 menu · T2/3 scan · ↻ pulse). "Used Xh ago" is a real per-run stamp; "Verified" is a manual check.</p>'+
+    chips+
     sourceStatsHtml()+
     '<div class="dhgrid">'+rows+'</div>'+
     keywordSweepHtml()+   // (user ask) keyword sweep moved to the BOTTOM of the page
     '<p class="infofoot">Full source-by-source detail lives in <b>The Kitchen Manual</b> → §11 Data APIs.</p></div>';
+  m.querySelectorAll('.dhchip[data-dhf]').forEach(function(b){ b.onclick=function(){ var k=b.dataset.dhf; DH_FILTER=(k==='default')?null:k; openDataHealth(); }; });
   var ov=document.getElementById('overlay'); ov.classList.add('open'); ov.setAttribute('aria-hidden','false');
   document.getElementById('mClose').onclick=closeModal; document.getElementById('mClose').focus();
 }
