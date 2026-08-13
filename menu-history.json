@@ -9,6 +9,20 @@
  },
  "menus": [
   {
+   "stamp": "Fri 14 Aug",
+   "time": "02:48",
+   "au": [
+    "SKY",
+    "CPU",
+    "CQR"
+   ],
+   "us": [
+    "NONE",
+    "SPB",
+    "LMT"
+   ]
+  },
+  {
    "stamp": "Mon 10 Aug",
    "time": "17:14",
    "au": [
