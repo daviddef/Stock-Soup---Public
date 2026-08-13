@@ -113,6 +113,16 @@
   .mb-x{flex:0 0 auto;background:none;border:0;color:var(--muted);font-size:13px;cursor:pointer;padding:2px 5px;border-radius:6px;line-height:1}
   .mb-x:hover{color:var(--ink);background:var(--surface)}
   @media(prefers-reduced-motion:reduce){.mbrief{animation:none}}
+  .mbrief.schedlink{cursor:pointer} .mbrief .schedi{flex:0 0 auto}
+  .mbrief:hover .schedi{border-color:var(--broth);color:var(--broth)}
+  /* #hero (#3) — smaller display headline so the picks come up sooner (brand survives at this size) */
+  .menuhead h1{font-size:clamp(28px,6vw,52px);margin:12px 0 8px}
+  /* #hero (#4) — compact risk "weather" pill (replaces the full gradient meter in the hero) */
+  .riskpill{display:inline-flex;align-items:center;gap:8px;background:var(--surface-2);border:1px solid var(--line);border-radius:999px;padding:8px 15px;font-size:14px;font-weight:800;color:var(--ink);cursor:pointer;font-family:inherit;margin:2px 0 4px;transition:border-color .12s}
+  .riskpill:hover{border-color:var(--broth)}
+  .riskpill-dot{width:10px;height:10px;border-radius:50%;flex:0 0 auto}
+  .riskpill-go{font-size:11.5px;font-weight:700;color:var(--broth);margin-left:2px}
+  .riskpill:focus-visible{outline:2px solid var(--broth);outline-offset:2px}
   .metastrip{display:flex;flex-wrap:wrap;gap:8px;margin-top:20px}
   .chip{font-size:12px;font-weight:700;padding:6px 11px;border-radius:999px;border:1px solid var(--line);
     background:var(--surface-2);display:inline-flex;align-items:center;gap:6px;white-space:nowrap;color:var(--ink)}
@@ -3275,19 +3285,15 @@ function oneMoveHtml(D){
 // Deliberately light (a status strip, not a card) so it complements the bold hero rather than competing.
 // Dismiss hides it for the rest of the calendar day (per-device).
 function morningBriefHtml(D){
-  try{ if(localStorage.getItem('soup_brief_dismiss')===new Date().toISOString().slice(0,10)) return ''; }catch(e){}
-  var region=MKT, ms=marketStatus(region);
-  var rg=(D.regions||[]).filter(function(x){return (x.id||x.region)===region;})[0];
-  var picks=rg?(rg.picks||[]).filter(function(p){return p&&p.sym&&p.sym!=='NONE'&&p.score&&p.score.buy_now!=null;}):[];
-  picks=picks.slice().sort(function(a,b){return b.score.buy_now-a.score.buy_now;});
-  var mv=(picks.length&&picks[0].score.buy_now>=45)?picks[0]:null;
-  var move=mv?('tonight’s move <b>'+esc(mv.sym)+'</b>'+(mv.verdict?' ('+esc(mv.verdict)+')':'')):'nothing standout to act on';
-  var ev=(D.upcomingEarnings||[]).filter(function(e){return !e.error&&(e.region||'us')===region&&e.days_until!=null&&e.days_until<=3;}).length;
-  var evTxt=ev>0?(ev+' result'+(ev>1?'s':'')+' due within 3 days'):'a quiet calendar';
+  // #hero (#2) — the SINGLE orient strip: greeting + live market status + date/next-run, tapping opens the
+  // run schedule (via .schedlink). The old strip's "tonight's move" (now the promoted one-move card below)
+  // and the separate timestamp eyebrow were folded away, so there's ONE thin persistent line, not two.
   var greet=(function(){var h=new Date().getHours();return h<12?'Good morning':h<18?'Good afternoon':'Good evening';})();
-  return '<div class="mbrief" id="mbrief"><span class="mb-ic">☀️</span>'+
-    '<span class="mb-txt"><b>'+greet+'.</b> '+esc(ms.txt)+' · '+move+' · '+evTxt+'.</span>'+
-    '<button class="mb-x" id="mbriefX" type="button" aria-label="Dismiss for today">✕</button></div>';
+  var ms=marketStatus(MKT);
+  var when=esc(stampNoWeekday(D.stamp))+(D.next?' · next ~'+esc(D.next):'');
+  return '<div class="mbrief schedlink" id="mbrief" role="button" tabindex="0" title="Run schedule — the target window, tap for the full timeline">'+
+    '<span class="mb-txt">☀️ <b>'+greet+'.</b> '+esc(ms.txt)+' · '+when+'</span>'+
+    '<span class="schedi">i</span></div>';
 }
 // Custom tab icons (line-art, inherit currentColor → dim when idle, broth when active).
 var TABICONS={
@@ -3923,16 +3929,18 @@ function render(D,H){
   // ===== 🍲 TONIGHT'S MENU =====
   '<div class="tabview active" id="tab-menu">'+
     '<div class="tabhead menuhead">'+
+      // #hero reorder — answer first: orient line → headline → THE ONE MOVE → chef colour → compact risk.
       morningBriefHtml(D)+
-      '<div class="eyebrow schedlink" data-info="schedule" role="button" tabindex="0" title="Major runs are manually triggered — this is the target window, not a guarantee" style="letter-spacing:.06em">'+esc(stampNoWeekday(D.stamp))+(D.next?' · next ~'+esc(D.next):'')+' <span class="schedi">i</span></div>'+
       '<h1 class="display">Two pots on the boil:<br><span class="hot">'+esc(hdl(D,'a'))+'</span> &amp; <span class="hot">'+esc(hdl(D,'b'))+'</span>.</h1>'+
+      oneMoveHtml(D)+   // #1 — the actionable answer, promoted directly under the headline (was below the meter)
       '<div class="chefwrap"><div class="chef">'+chefFor(D)+'</div><button class="chefmore" aria-expanded="false">Read the chef’s full note ▾</button></div>'+
-      /* #risk polish — the standalone "you're OK to take risk…" pill is gone; that read now opens by
-         tapping the risk meter itself (#197), so the pill was redundant. */
-      (function(){var fm=riskFactorMarks(r); return '<div class="meter tappable" id="riskMeterBtn" role="button" tabindex="0" title="Tap for tonight’s market read" aria-label="Open tonight’s market read"><div class="track"><div class="needle" id="needle"></div>'+fm.marks+'</div>'+
-      '<div class="lbls"><span>🔴 Hide the cash</span><span>⚪ Steady</span><span>🟢 Send it</span></div>'+
-      fm.leg+'</div>';})()+
-      oneMoveHtml(D)+
+      // #4 — the market "weather" as a compact tappable pill (was the full gradient meter + 6 factor chips).
+      // Tapping opens the full read + factor breakdown (openMarketRead, #197). #needle is gone → placeNeedle no-ops.
+      (function(){var lvl=(r&&r.level!=null)?+r.level:50;
+        var rw=lvl>=67?{e:'🟢',w:'Risk-on — send it'}:lvl>=34?{e:'⚪',w:'Steady — no strong lean'}:{e:'🔴',w:'Risk-off — hide the cash'};
+        var dot=lvl>=67?'#1fb862':lvl>=34?'#f2a33d':'#ff4d4d';
+        return '<button class="riskpill tappable" id="riskMeterBtn" type="button" title="Tonight’s market read — tap for the full meter" aria-label="Open tonight’s market read">'+
+          '<span class="riskpill-dot" style="background:'+dot+'"></span>'+rw.e+' <b>'+esc(rw.w)+'</b><span class="riskpill-go">the market read ↗</span></button>';})()+
       '<div class="sec-head" style="margin:26px 0 3px"><h2 class="display"><span class="k">01</span> Serving today in '+(MKT==='us'?'the U.S.':'Australia')+'</h2>'+infoBtn('menu')+'</div>'+
       '<p class="sec-sub" style="margin:0 0 10px">Three time horizons — '+tfB('Day')+' a quick feed · '+tfB('Week')+' a few days · '+tfB('Long')+' slow-cooked. Tap a card for the full serve; tap a name for Yahoo.</p>'+concentrationHtml(D)+tierToggleHtml+menus+convictionStripHtml(D)+
     '</div>'+
