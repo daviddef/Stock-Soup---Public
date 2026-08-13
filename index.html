@@ -117,7 +117,9 @@
   // getting a stale build for up to 10 minutes after a deploy. Appending a per-minute version to the app
   // URL means the browser treats each minute's load as a fresh resource → new deploys show within ~1 min,
   // while still caching within any given minute (no re-download of the ~650KB on every navigation).
-  function appUrl(){ return APP+'?v='+Math.floor(Date.now()/60000); }
+  // carry a deep-link hash (e.g. #sym/au/CBA from a price-alert email) THROUGH the index→app redirect,
+  // so the app's applyDeepLink() can open the exact ticker. Drop only the consumed session= hash.
+  function appUrl(){ var h=location.hash||''; if(/session=/.test(h)) h=''; return APP+'?v='+Math.floor(Date.now()/60000)+h; }
   function sess(){try{return localStorage.getItem(SKEY)||'';}catch(e){return'';}}
   (function(){
     var m=(location.hash||'').match(/session=([^&]+)/);

@@ -1614,14 +1614,20 @@
   .mctx-nav{display:flex;flex-wrap:nowrap;gap:2px;margin:12px 0 18px;overflow-x:auto;scrollbar-width:none;
     border-bottom:2px solid var(--line);scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch}
   .mctx-nav::-webkit-scrollbar{display:none}
-  .mctxbtn{flex:0 0 auto;scroll-snap-align:center;position:relative;font-family:var(--font);font-size:13px;font-weight:900;
-    text-transform:uppercase;letter-spacing:.03em;color:var(--muted);background:none;border:0;border-radius:0;
-    padding:9px 15px 12px;cursor:pointer;white-space:nowrap;transition:color .15s,transform .12s}
+  /* icon-above-label, evenly spread across the width — exactly the main nav's .tabbtn feel;
+     flex:1 grows them to fill on wide screens, max-content keeps them from crushing so a narrow
+     screen scrolls instead of squashing. */
+  .mctxbtn{flex:1 1 0;min-width:max-content;scroll-snap-align:center;position:relative;display:flex;flex-direction:column;
+    align-items:center;gap:5px;font-family:var(--font);font-size:12.5px;font-weight:900;text-transform:uppercase;
+    letter-spacing:.03em;line-height:1.12;color:var(--muted);background:none;border:0;border-radius:0;
+    padding:8px 12px 12px;cursor:pointer;white-space:nowrap;transition:color .15s,transform .12s}
+  .mctxbtn .mci{font-size:20px;line-height:1;opacity:.66;transition:opacity .15s,transform .15s}
   .mctxbtn:hover{color:var(--ink)}
   .mctxbtn:active{transform:scale(.96)}
   .mctxbtn.on{color:var(--broth)}
-  .mctxbtn.on::after{content:"";position:absolute;left:12%;right:12%;bottom:-2px;height:3.5px;border-radius:3px;
-    background:linear-gradient(90deg,var(--broth),#ffb347);box-shadow:0 0 12px rgba(255,107,26,.6)}
+  .mctxbtn.on .mci{opacity:1;transform:scale(1.14)}
+  .mctxbtn.on::after{content:"";position:absolute;left:14%;right:14%;bottom:-2px;height:3.5px;border-radius:3px;
+    background:linear-gradient(90deg,var(--broth),#ffb347);box-shadow:0 0 12px rgba(255,107,26,.65)}
   .mctxbtn:focus-visible{outline:2px solid var(--broth);outline-offset:2px}
   .mctx-panel:not([hidden]){animation:omReveal .22s ease both}
   .mctx-panel[hidden]{display:none}
@@ -3488,7 +3494,8 @@ function marketContextHtml(D, bargainCards, lines){   // `lines` is a render-loc
   tabs=tabs.filter(function(t){ return String(t[2]||'').trim()!==''; });   // drop a chip whose panel has no content this run
   if(!tabs.length) return '';
   if(!tabs.some(function(t){return t[0]===MCTX;})) MCTX=tabs[0][0];        // keep MCTX pointing at a real tab
-  var nav=tabs.map(function(t){return '<button class="mctxbtn'+(t[0]===MCTX?' on':'')+'" data-mctx="'+t[0]+'" role="tab" aria-selected="'+(t[0]===MCTX)+'">'+t[1]+'</button>';}).join('');
+  var nav=tabs.map(function(t){ var sp=t[1].indexOf(' '); var ic=sp<0?'':t[1].slice(0,sp), lb=sp<0?t[1]:t[1].slice(sp+1);
+    return '<button class="mctxbtn'+(t[0]===MCTX?' on':'')+'" data-mctx="'+t[0]+'" role="tab" aria-selected="'+(t[0]===MCTX)+'"><span class="mci">'+ic+'</span><span class="mcl">'+lb+'</span></button>';}).join('');
   var panels=tabs.map(function(t){return '<div class="mctx-panel" data-panel="'+t[0]+'"'+(t[0]===MCTX?'':' hidden')+'>'+t[2]+'</div>';}).join('');
   return '<section id="mktctx"><div class="sec-head"><h2 class="display"><span class="k">04</span> Market context</h2></div>'+
     '<p class="sec-sub">The backdrop behind tonight\'s picks — news, sectors, commodities, movers and what\'s coming up. Tap a chip.</p>'+
@@ -3948,8 +3955,9 @@ function render(D,H){
       // #hero reorder — answer first: orient line → headline → THE ONE MOVE → chef colour → compact risk.
       morningBriefHtml(D)+
       '<h1 class="display">Two pots on the boil:<br><span class="hot">'+esc(hdl(D,'a'))+'</span> &amp; <span class="hot">'+esc(hdl(D,'b'))+'</span>.</h1>'+
-      oneMoveHtml(D)+   // #1 — the actionable answer, promoted directly under the headline (was below the meter)
+      // chef's framing sits directly under the headline (collapsed), then the actionable One Move card below it (user ask)
       '<div class="chefwrap"><div class="chef">'+chefFor(D)+'</div><button class="chefmore" aria-expanded="false">Read the chef’s full note ▾</button></div>'+
+      oneMoveHtml(D)+   // #1 — the actionable answer, directly under the chef's colour
       // #hero — the risk read is now a chip inside the orient banner (morningBriefHtml); the full gradient
       // meter + factor breakdown lives in the market-read overlay it opens (openMarketRead), so nothing's lost.
       '<div class="sec-head" style="margin:22px 0 3px"><h2 class="display"><span class="k">01</span> Serving today in '+(MKT==='us'?'the U.S.':'Australia')+'</h2>'+infoBtn('menu')+'</div>'+
@@ -7174,7 +7182,7 @@ function wire(D){
     var id=b.dataset.mctx, sec=b.closest('#mktctx'); if(!sec||id===MCTX) return; MCTX=id;
     sec.querySelectorAll('.mctxbtn').forEach(function(x){ var on=x.dataset.mctx===id; x.classList.toggle('on',on); x.setAttribute('aria-selected',on?'true':'false'); });
     sec.querySelectorAll('.mctx-panel').forEach(function(p){ if(p.dataset.panel===id) p.removeAttribute('hidden'); else p.setAttribute('hidden',''); });
-    try{ b.scrollIntoView({behavior:'smooth',inline:'center',block:'nearest'}); }catch(e){}   // snap the active chip toward centre (feels like the main tab bar)
+    try{ var nv=b.parentNode; nv.scrollTo({left:b.offsetLeft-(nv.clientWidth-b.clientWidth)/2,behavior:'smooth'}); }catch(e){}   // centre the active chip by scrolling the NAV only — never the page (so tapping never hijacks vertical scroll)
     try{ hydrateMissCharts(); }catch(e){}   // lazy mini-charts (movers/misses) hydrate once their panel is visible
   };});
   var rm=document.getElementById('runMore'), rr=document.getElementById('runRest');
