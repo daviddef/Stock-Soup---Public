@@ -579,9 +579,12 @@
   .card-one{border-color:var(--broth);box-shadow:0 0 0 1px var(--broth),0 10px 30px -8px rgba(255,107,26,.5);animation:onePulse 2.6s ease-in-out infinite}
   @keyframes onePulse{0%,100%{box-shadow:0 0 0 1px var(--broth),0 8px 22px -10px rgba(255,107,26,.35)}50%{box-shadow:0 0 0 1px var(--broth),0 12px 34px -6px rgba(255,107,26,.7)}}
   @media(prefers-reduced-motion:reduce){.card-one{animation:none}}
-  .onerib{align-self:flex-start;display:inline-flex;align-items:center;gap:5px;font-family:var(--font);font-weight:900;font-size:11px;
-    letter-spacing:.06em;text-transform:uppercase;color:#1a0f06;background:linear-gradient(90deg,var(--broth),#ffb347);
-    padding:4px 12px;border-radius:999px;margin:-2px 0 2px;box-shadow:0 3px 10px -3px rgba(255,107,26,.6)}
+  /* (user ask) match the sign-in page's "🔒 Reservations only" ribbon — paprika red, slanted, playful wiggle */
+  .onerib{align-self:flex-start;display:inline-flex;align-items:center;gap:6px;font-family:var(--font);font-weight:900;font-size:11px;
+    letter-spacing:.09em;text-transform:uppercase;color:#fff;background:#d6263b;padding:5px 13px;border-radius:999px;
+    margin:-2px 0 7px;transform:rotate(-2deg);box-shadow:0 7px 15px -6px rgba(214,38,59,.6);animation:oneWiggle 3.2s ease-in-out infinite}
+  @keyframes oneWiggle{0%,100%{transform:rotate(-2deg)}50%{transform:rotate(1.5deg)}}
+  @media(prefers-reduced-motion:reduce){.onerib{animation:none;transform:rotate(-2deg)}}
   /* baseline a11y (roadmap #now) — a visible keyboard focus ring on every remaining tappable card type */
   .tab:focus-visible,.axcard:focus-visible,.wcard:focus-visible,.tscard:focus-visible,.movercard:focus-visible,.card-sugg:focus-visible,.spot-row:focus-visible,.tmx-vcell:focus-visible,.wlstat-chip:focus-visible{outline:2px solid var(--broth);outline-offset:2px}
   .card .tf{display:flex;align-items:center;justify-content:space-between}
@@ -3387,10 +3390,13 @@ function glanceStripHtml(D){
   var news=(D.topNews||[]).filter(function(n){return !n.region||n.region===region;})[0];
   if(news&&news.headline)
     tiles.push('<button class="gt gt-wide" data-glance="news" title="Tonight’s top story"><span class="gt-k">📰 Top story</span><span class="gt-v"><span class="gt-clip">'+esc((news.sym?news.sym+': ':'')+news.headline)+'</span></span></button>');
-  var sec=(D.sectors||[]).filter(function(s){return /buy/i.test(s.tag||'');})[0];
-  if(sec){ var sl=(sec.leader&&sec.leader.sym)?sec.leader.sym:''; tiles.push('<button class="gt gt-med" data-glance="sector" title="Hot sector to buy"><span class="gt-k">🍳 Buy sector</span><span class="gt-v"><span class="gt-clip">'+esc(sl||sec.title||sec.name||'')+'</span></span></button>'); }
-  var com=(D.commodities||[]).filter(function(c){return /buy|emerg/i.test(c.tag||'');})[0];
-  if(com){ var cl=(com.leader&&com.leader.sym)?com.leader.sym:''; tiles.push('<button class="gt gt-med" data-glance="commodity" title="Hot commodity to buy"><span class="gt-k">🛢️ Commodity</span><span class="gt-v"><span class="gt-clip">'+esc(com.name||com.title||'')+(cl?' · '+esc(cl):'')+'</span></span></button>'); }
+  // show EVERY buy-rated leader, not just the first (user caught HGO shown but CAH — also Buy — dropped).
+  var buySyms=(D.sectors||[]).filter(function(s){return /buy/i.test(s.tag||'')&&s.leader&&s.leader.sym;}).map(function(s){return s.leader.sym;});
+  if(buySyms.length){ var sShown=buySyms.slice(0,2).map(esc).join(' · ')+(buySyms.length>2?' +'+(buySyms.length-2):'');
+    tiles.push('<button class="gt gt-med" data-glance="sector" title="'+buySyms.length+' sector'+(buySyms.length===1?'':'s')+' rated Buy — tap for all"><span class="gt-k">🍳 Buy sector'+(buySyms.length>1?'s':'')+'</span><span class="gt-v"><span class="gt-clip">'+sShown+'</span></span></button>'); }
+  var buyCom=(D.commodities||[]).filter(function(c){return /buy|emerg/i.test(c.tag||'')&&c.leader&&c.leader.sym;}).map(function(c){return c.leader.sym;});
+  if(buyCom.length){ var cShown=buyCom.slice(0,2).map(esc).join(' · ')+(buyCom.length>2?' +'+(buyCom.length-2):'');
+    tiles.push('<button class="gt gt-med" data-glance="commodity" title="'+buyCom.length+' commodit'+(buyCom.length===1?'y':'ies')+' rated Buy — tap for all"><span class="gt-k">🛢️ Buy commodit'+(buyCom.length>1?'ies':'y')+'</span><span class="gt-v"><span class="gt-clip">'+cShown+'</span></span></button>'); }
   var ann=glanceAnnCount(D,region);
   if(ann.total)
     tiles.push('<button class="gt" data-glance="announcements" title="Price-sensitive ASX filings tonight"><span class="gt-k">📢 Filings</span><span class="gt-v">'+(ann.today?ann.today+' today':ann.total+' recent')+'</span></button>');
