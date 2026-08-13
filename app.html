@@ -300,6 +300,14 @@
      view switch that was buried in the burger menu. Same 38px footprint as the burger, round. */
   .viewtoggle{width:38px;height:38px;border-radius:50%;border:1.5px solid var(--line);background:var(--surface-2);font-size:17px;line-height:1;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;padding:0;margin-right:7px}
   .viewtoggle:hover{border-color:var(--broth)}
+  /* (user ask) the lone 😋/📋 icon read as a mystery button — replace with a labelled two-option switch
+     that shows BOTH modes and highlights the active one, so it's clear-as-day what you're in + can pick. */
+  .vseg{display:inline-flex;align-items:center;border:1.5px solid var(--line);border-radius:999px;background:var(--surface-2);overflow:hidden;margin-right:7px;flex:0 0 auto}
+  .vseg button{border:0;background:none;font-family:inherit;font-size:12px;font-weight:800;letter-spacing:.01em;color:var(--muted);padding:7px 12px;cursor:pointer;line-height:1;display:inline-flex;align-items:center;gap:4px;white-space:nowrap;transition:background .12s,color .12s}
+  .vseg button .vsi{font-size:13px}
+  .vseg button[aria-selected="true"]{background:var(--broth);color:#fff}
+  .vseg button[aria-selected="false"]:hover{color:var(--ink)}
+  @media(max-width:400px){ .vseg button{padding:7px 10px;font-size:11.5px} }
   .burgermenu{position:fixed;z-index:200;background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:7px;min-width:214px;max-width:calc(100vw - 24px);display:flex;flex-direction:column;gap:1px}
   .burgermenu[hidden]{display:none}
   .bmhead{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:5px 9px 9px;border-bottom:1px solid var(--line);margin-bottom:4px}
@@ -4148,7 +4156,10 @@ function render(D,H){
   document.getElementById('app').innerHTML=
   '<header class="hero"><div class="brandrow"><div class="hleft"><div class="brand"><span class="hpot"><span class="hsteam"><i></i><i></i><i></i></span><span class="hpotbowl">🍲</span></span> The&nbsp;Stock&nbsp;Soup</div>'+mktBarHtml(D)+'</div>'+   // #hero — one compact row: brand + flags (left), tiers + toggles (right); no more tall two-row card
     '<div class="toprail">'+tierBarHtml()+
-      '<button class="viewtoggle" id="viewToggle" title="Switch to Simple view" aria-label="Switch to Simple view">😋</button>'+
+      '<div class="vseg" role="tablist" aria-label="View mode">'+
+        '<button id="vSimple" role="tab" aria-selected="false" title="Simple one-page view"><span class="vsi">😋</span>Simple</button>'+
+        '<button id="vFull" role="tab" aria-selected="true" title="Full detailed view"><span class="vsi">📋</span>Full</button>'+
+      '</div>'+
       '<div class="burgerwrap"><button class="burger" id="burgerBtn" aria-label="Menu" aria-haspopup="true" aria-expanded="false" aria-controls="burgerMenu">☰</button>'+
         '<div class="burgermenu" id="burgerMenu" role="menu" hidden>'+
           '<div class="bmhead"><span class="live"><span class="pulse"></span>LIVE</span><button class="bmupd" id="lastUpd">updated…</button></div>'+
@@ -7604,7 +7615,7 @@ function wire(D){
     root.setAttribute('data-theme',cur==='dark'?'light':'dark');
   });
   var vb=document.getElementById('viewBtn'); if(vb) vb.onclick=function(){setView('simple');};
-  var vt=document.getElementById('viewToggle'); if(vt) vt.onclick=function(){setView('simple');};   // #174 round toggle
+  var vSimple=document.getElementById('vSimple'); if(vSimple) vSimple.onclick=function(){setView('simple');};   // labelled Simple|Full switch — Simple segment
   var rb=document.getElementById('refreshBtn'); if(rb){ if(!isAdmin()){ rb.style.display='none'; } else { rb.onclick=function(){refreshPrices(rb);}; } }
   var rfb=document.getElementById('refreshFullBtn'); if(rfb){ if(!isAdmin()){ rfb.style.display='none'; } else { rfb.onclick=function(){var _bm=document.getElementById('burgerMenu');if(_bm)_bm.setAttribute('hidden','');openRunTrigger();}; } }
   var stb=document.getElementById('shareTabBtn'); if(stb) stb.onclick=shareCurrentTab;
@@ -8265,7 +8276,10 @@ function renderSimple(D){
         '<button data-mkt="au" class="'+(region==='au'?'on':'')+'" role="tab" aria-selected="'+(region==='au')+'">🇦🇺</button>'+
         '<button data-mkt="us" class="'+(region==='us'?'on':'')+'" role="tab" aria-selected="'+(region==='us')+'">🇺🇸</button>'+
       '</div>'+
-      '<button class="s2ico" id="viewToggleS" title="Switch to Full view" aria-label="Full view">📋</button>'+
+      '<div class="vseg" role="tablist" aria-label="View mode">'+
+        '<button id="vSimpleS" role="tab" aria-selected="true" title="Simple one-page view"><span class="vsi">😋</span>Simple</button>'+
+        '<button id="vFullS" role="tab" aria-selected="false" title="Full detailed view"><span class="vsi">📋</span>Full</button>'+
+      '</div>'+
       '<div class="burgerwrap"><button class="s2ico burger" id="burgerBtnS" aria-label="Menu" aria-haspopup="true" aria-expanded="false" aria-controls="burgerMenuS">☰</button>'+
         '<div class="burgermenu" id="burgerMenuS" role="menu" hidden>'+
           '<div class="bmhead"><span class="live"><span class="pulse"></span>LIVE</span><button class="bmupd" id="lastUpdS">updated…</button></div>'+
@@ -8289,7 +8303,7 @@ function renderSimple(D){
 function wireSimple(D){
   var root=document.documentElement;
   var t=document.getElementById('themeBtn2'); if(t) t.onclick=function(){var c=root.getAttribute('data-theme')||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');root.setAttribute('data-theme',c==='dark'?'light':'dark');};
-  ['viewFull','viewToggleS','viewFull3'].forEach(function(id){var b=document.getElementById(id);if(b) b.onclick=function(){setView('full');};});
+  ['viewFull','vFullS','viewFull3'].forEach(function(id){var b=document.getElementById(id);if(b) b.onclick=function(){setView('full');};});
   var bg=document.getElementById('burgerBtnS'), bm=document.getElementById('burgerMenuS');
   if(bg&&bm){ var closeBM=function(){ bm.setAttribute('hidden',''); bg.setAttribute('aria-expanded','false'); };
     bg.onclick=function(e){ e.stopPropagation(); if(bm.hasAttribute('hidden')){ var rc=bg.getBoundingClientRect(); bm.style.top=(rc.bottom+8)+'px'; bm.style.right=Math.max(10,(window.innerWidth-rc.right))+'px'; bm.removeAttribute('hidden'); bg.setAttribute('aria-expanded','true'); } else closeBM(); };
