@@ -8135,7 +8135,10 @@ function hydrateMissCharts(root){
   (root||document).querySelectorAll('.misschart[data-hydrate-chart]').forEach(function(slot){
     var sym=slot.dataset.sym, reg=slot.dataset.region, cur=slot.dataset.cur||'', checkTs=slot.dataset.checkTs?+slot.dataset.checkTs:null;
     fetch(API_BASE+'/intraday?sym='+encodeURIComponent(sym)+'&region='+encodeURIComponent(reg)).then(function(r){return r.ok?r.json():null;}).then(function(j){
-      if(!j||!j.closes||j.closes.length<2){ slot.innerHTML=''; return; }
+      // #335 — no intraday data (e.g. a just-served pick before its first re-price, or an ASX name after
+      // hours): render a short honest placeholder, NOT a blank void that reads as "broken". Self-heals the
+      // moment the next ~10-min re-price fills the daily spark / the market reopens.
+      if(!j||!j.closes||j.closes.length<2){ slot.innerHTML='<span class="misschart-load misschart-empty">chart appears after the next re-price</span>'; return; }
       var vals=j.closes, times=j.timestamps||[], mn=Math.min.apply(null,vals), mx=Math.max.apply(null,vals);
       var lastSec=times.length?times[times.length-1]:null;
       var markIdx=null;
