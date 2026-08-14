@@ -696,6 +696,8 @@
   .px .c{font-size:12px;font-weight:700}
   .up{color:var(--buy)} .down{color:var(--dont)} .flat{color:var(--muted)}
   .card .plain{font-size:14px;color:var(--ink);text-wrap:pretty}
+  .plainmore{display:inline;border:0;background:none;padding:0 0 0 2px;margin:0;font:inherit;font-size:12.5px;font-weight:700;color:var(--accent,#e8662a);cursor:pointer;white-space:nowrap}
+  .plainmore:hover{text-decoration:underline}
   .card .lvls{display:flex;gap:6px;font-size:11px;color:var(--muted);border-top:1px dashed var(--line);padding-top:10px;flex-wrap:wrap}
   .lvls b{color:var(--ink)}
   .card .more{font-size:11px;font-weight:800;color:var(--broth);letter-spacing:.02em}
@@ -2209,9 +2211,12 @@ function riskFactorMarks(r){
 function mktBarHtml(D){
   var FLAG={au:'🇦🇺',us:'🇺🇸'}, NM={au:'ASX',us:'US'};
   var st=marketStatus(MKT), other=(MKT==='au')?'us':'au';
-  // short status INSIDE the chip: a countdown ("28m" / "2h5m") when a market is about to flip, else open/closed.
-  var tm=(st.txt||'').match(/(\d+\s*h\s*)?\d+\s*m/);
-  var mini=tm?tm[0].replace(/\s+/g,''):(/open/i.test(st.txt||'')?'open':/clos/i.test(st.txt||'')?'closed':(st.phase||''));
+  // short status INSIDE the chip. Key strictly off st.open (NOT a text /open/ regex — that matched the
+  // "open" INSIDE "US opens tonight" and wrongly showed a closed market as open, real user-caught bug).
+  // Countdown only from a genuine "in …" phrase ("opens in 23m" → "23m", "closes in 4m" → "closes 4m").
+  var cd=(st.txt||'').match(/\bin\s+(\d[\dhms\s]*[hm])/i);
+  var num=cd?cd[1].replace(/\s+/g,''):'';
+  var mini=st.open?(num?'closes '+num:'open'):(num?num:'closed');
   return '<button class="mktog phase-'+st.phase+'" id="mktToggle" data-region="'+other+'" '+
       'aria-label="'+esc(NM[MKT])+' — '+esc(st.txt)+'. Tap to switch to '+esc(NM[other])+'." '+
       'title="'+esc(st.txt)+' · tap for '+esc(NM[other])+'">'+
@@ -2240,7 +2245,7 @@ var TIER_LABEL={type1:'Type 1 · Catalyst-driven',type2:'Type 2 · Whole-market 
 // #152 tier selector as round header pills, same visual family as the market AU/US filter (mktBarHtml).
 // Ordered T1 (safest/catalyst) · T2 (whole-market quant) · T3 (widest/per-indicator) left→right.
 function tierBarHtml(){
-  return '<div class="tkbar"><span class="tksep"></span><div class="tkflags" role="tablist" aria-label="Model tier">'+
+  return '<div class="tkbar"><div class="tkflags" role="tablist" aria-label="Model tier">'+
     ['type1','type2','type3'].map(function(t,i){
       return '<button class="tkf'+(TIER===t?' active':'')+'" data-tier="'+t+'" role="tab" aria-selected="'+(TIER===t)+'" title="'+esc(TIER_LABEL[t])+'">T'+(i+1)+'</button>';
     }).join('')+
@@ -3519,6 +3524,19 @@ function chefLine(D){
 }
 function chefFor(D){ if(D&&D.chefByMkt&&D.chefByMkt[MKT])return D.chefByMkt[MKT]; return chefLine(D); }
 function firstSentence(s){ s=String(s||'').trim(); var m=s.match(/^.*?[.!?](\s|$)/); return (m?m[0]:s).trim(); }
+// Short theme name from a card title for the ticker ("Oil (Brent ~US$89)" → "Oil", "Copper — squeeze" → "Copper").
+function shortTheme(t){ t=String(t||'').split(/\s+[—–-]\s+|\s*\(/)[0].trim(); return t.length>16?t.slice(0,15)+'…':t; }
+// Collapse a long card-face blurb to its first 2 sentences with an inline "more" toggle (full text
+// stays available on the card + always in the detail overlay). Keeps the menu scannable (user ask).
+function plainCollapsed(text){
+  var t=String(text||'').trim(); if(!t) return '';
+  var parts=t.match(/[^.!?]+[.!?]+["')\]]?\s*/g);
+  if(!parts||parts.length<=2) return '<p class="plain">'+esc(t)+'</p>';
+  var head=parts.slice(0,2).join('').trim(), rest=parts.slice(2).join('').trim();
+  if(!rest) return '<p class="plain">'+esc(t)+'</p>';
+  return '<p class="plain">'+esc(head)+'<span class="plainrest" hidden> '+esc(rest)+'</span> '+
+    '<button class="plainmore" type="button" aria-expanded="false">more ›</button></p>';
+}
 // #295/#310 — "Tonight's one move". The whole app in one card: the single most actionable pick RIGHT NOW
 // for the market you're viewing, chosen by the highest buy-now (timing) score among tonight's real picks.
 // Bold, animated (page-load reveal), taps through to the full pick. Falls back to nothing (the chef note +
@@ -3633,6 +3651,22 @@ function glanceStripHtml(D){
   var r=D.risk||{}, lvl=(r.level!=null)?+r.level:50;
   var rw=lvl>=67?{w:'Risk-on',c:'#1fb862'}:lvl>=34?{w:'Steady',c:'#f2a33d'}:{w:'Risk-off',c:'#ff4d4d'};
   tiles.push('<button class="gt gt-risk" data-glance="risk" title="Tonight’s market read — tap for the full meter"><span class="gt-k">Market</span><span class="gt-v"><span class="gt-dot gt-pulse" style="background:'+rw.c+'"></span>'+rw.w+'</span></button>');
+  // Macro market-context tiles — VIX / BTC / Gold / Oil / AUD·USD, the same inputs that drive the risk
+  // meter (user ask). Value + its move; tapping any opens the full risk / market-context read.
+  (function(){
+    var FIC={vix:'😨',btc:'₿',gold:'🥇',oil:'🛢️',audusd:'🇦🇺'};
+    function upof(s){ s=String(s==null?'':s); if(/^\s*-/.test(s))return false; if(/^\s*\+?[\d.]/.test(s))return true; return null; }
+    function tile(k,lbl,val,chg,up){ if(val==null||val==='') return;
+      var tc=(up===true)?' up':(up===false)?' down':'', arrow=(up===true)?'▲':(up===false)?'▼':'';
+      var cs=(chg&&up!=null)?(' '+arrow+String(chg).replace(/^[+\-\s]*/,'').replace(/%$/,'')+'%'):'';
+      tiles.push('<button class="gt" data-glance="risk" title="'+esc(lbl)+' — a market-context input to tonight’s risk read"><span class="gt-k">'+(FIC[k]||'•')+' '+esc(lbl)+'</span><span class="gt-v'+tc+'">'+esc(String(val))+cs+'</span></button>');
+    }
+    if(r.btc!=null) tile('btc','BTC','$'+Math.round(+r.btc).toLocaleString(), r.btcChange, upof(r.btcChange));
+    if(r.gold!=null) tile('gold','Gold', r.gold, r.goldChange, (r.goldUp!=null?!!r.goldUp:upof(r.goldChange)));
+    if(r.oil!=null) tile('oil','Oil', r.oil, r.oilChange, (r.oilUp!=null?!!r.oilUp:upof(r.oilChange)));
+    if(r.audusd!=null) tile('audusd','AUD/USD', (+r.audusd).toFixed(4), r.audusdChange, (r.audusdUp!=null?!!r.audusdUp:upof(r.audusdChange)));
+    if(r.vix!=null) tile('vix','VIX', (+r.vix).toFixed(1), r.vixChange, null); // uncoloured — higher VIX = more fear, so "up" isn't "good"
+  })();
   var rg=(D.regions||[]).filter(function(x){return (x.id||x.region)===region;})[0];
   var picks=rg?(rg.picks||[]).filter(function(p){return p&&p.sym&&p.sym!=='NONE'&&p.score&&p.score.buy_now!=null;}):[];
   var om=picks.slice().sort(function(a,b){return b.score.buy_now-a.score.buy_now;})[0];
@@ -3658,13 +3692,15 @@ function glanceStripHtml(D){
   // show EVERY buy-rated leader, not just the first (user caught HGO shown but CAH — also Buy — dropped).
   // Dedupe across the two tiles: Copper is BOTH a sector and a commodity (same leader HGO), so a sym already
   // in the sector tile is excluded from the commodity tile — no ticker appears twice (user caught HGO ×2).
+  // Show the theme NAME ("Gold", "Copper") not just the leader ticker (user ask). Leader syms still ride
+  // in data-syms so a tap opens the scored leaders. Dedupe by leader sym so nothing appears twice.
   var _seen={};
-  var buySyms=[]; (D.sectors||[]).forEach(function(s){ if(/buy/i.test(s.tag||'')&&s.leader&&s.leader.sym&&!_seen[s.leader.sym]){ _seen[s.leader.sym]=1; buySyms.push(s.leader.sym); } });
-  if(buySyms.length){ var sShown=buySyms.slice(0,2).map(esc).join(' · ')+(buySyms.length>2?' +'+(buySyms.length-2):'');
-    tiles.push('<button class="gt gt-med" data-glance="sector" data-syms="'+esc(buySyms.join(','))+'" data-region="'+esc(region)+'" title="'+buySyms.length+' sector'+(buySyms.length===1?'':'s')+' rated Buy — tap for the leaders"><span class="gt-k">🍳 Buy sector'+(buySyms.length>1?'s':'')+'</span><span class="gt-v"><span class="gt-clip">'+sShown+'</span></span></button>'); }
-  var buyCom=[]; (D.commodities||[]).forEach(function(c){ if(/buy|emerg/i.test(c.tag||'')&&c.leader&&c.leader.sym&&!_seen[c.leader.sym]){ _seen[c.leader.sym]=1; buyCom.push(c.leader.sym); } });
-  if(buyCom.length){ var cShown=buyCom.slice(0,2).map(esc).join(' · ')+(buyCom.length>2?' +'+(buyCom.length-2):'');
-    tiles.push('<button class="gt gt-med" data-glance="commodity" data-syms="'+esc(buyCom.join(','))+'" data-region="'+esc(region)+'" title="'+buyCom.length+' commodit'+(buyCom.length===1?'y':'ies')+' rated Buy — tap for the leaders"><span class="gt-k">🛢️ Buy commodit'+(buyCom.length>1?'ies':'y')+'</span><span class="gt-v"><span class="gt-clip">'+cShown+'</span></span></button>'); }
+  var buySec=[]; (D.sectors||[]).forEach(function(s){ if(/buy/i.test(s.tag||'')&&s.leader&&s.leader.sym&&!_seen[s.leader.sym]){ _seen[s.leader.sym]=1; buySec.push({nm:shortTheme(s.title),sym:s.leader.sym}); } });
+  if(buySec.length){ var sShown=buySec.slice(0,2).map(function(x){return esc(x.nm);}).join(' · ')+(buySec.length>2?' +'+(buySec.length-2):'');
+    tiles.push('<button class="gt gt-med" data-glance="sector" data-syms="'+esc(buySec.map(function(x){return x.sym;}).join(','))+'" data-region="'+esc(region)+'" title="'+buySec.length+' sector'+(buySec.length===1?'':'s')+' rated Buy — tap for the leaders"><span class="gt-k">🍳 Buy sector'+(buySec.length>1?'s':'')+'</span><span class="gt-v"><span class="gt-clip">'+sShown+'</span></span></button>'); }
+  var buyCom=[]; (D.commodities||[]).forEach(function(c){ if(/buy|emerg/i.test(c.tag||'')&&c.leader&&c.leader.sym&&!_seen[c.leader.sym]){ _seen[c.leader.sym]=1; buyCom.push({nm:shortTheme(c.title),sym:c.leader.sym}); } });
+  if(buyCom.length){ var cShown=buyCom.slice(0,2).map(function(x){return esc(x.nm);}).join(' · ')+(buyCom.length>2?' +'+(buyCom.length-2):'');
+    tiles.push('<button class="gt gt-med" data-glance="commodity" data-syms="'+esc(buyCom.map(function(x){return x.sym;}).join(','))+'" data-region="'+esc(region)+'" title="'+buyCom.length+' commodit'+(buyCom.length===1?'y':'ies')+' rated Buy — tap for the leaders"><span class="gt-k">🛢️ Buy commodit'+(buyCom.length>1?'ies':'y')+'</span><span class="gt-v"><span class="gt-clip">'+cShown+'</span></span></button>'); }
   // Announcements — the latest 2 across tonight's picks + pot, short &amp; sharp (the plain-English "why").
   // Tone-coloured (bullish green / bearish red); tap opens the ticker's card (which carries the full filing).
   (function(){
@@ -4232,7 +4268,7 @@ function render(D,H){
         '<div class="buyat'+(p.nEntry?' ba-'+buyState(p):'')+'">'+(p.nEntry?'<span class="bl">🎯 Ideal buy</span> ~'+esc(rg.cur||'$')+esc(String(p.nEntry).replace(/^\s*A?\$\s*/i,''))+buyAction(p):'<span class="bl">Track this pick</span>')+'</div>'+   /* strip a currency already baked into a range-string nEntry so it isn't doubled ("A$A$…") */
         // #dup-orange (user: "2 orange cards") — the 🍊 already sits in the card HEADER (with the 🍒); the
         // sentrow's second juiceChip was a duplicate. Keep only the value/risk chips here.
-        '<p class="plain">'+esc(p.plain)+'</p>'+(function(){var vc=valChip(p),rc=riskTolWarn(p);return (vc||rc)?'<div class="sentrow">'+vc+rc+'</div>':'';})()+'<div class="lvls">'+(p.levels||'')+'</div>'+
+        plainCollapsed(p.plain)+(function(){var vc=valChip(p),rc=riskTolWarn(p);return (vc||rc)?'<div class="sentrow">'+vc+rc+'</div>':'';})()+'<div class="lvls">'+(p.levels||'')+'</div>'+
         /* #214/#212 — the mini-chart is back on the pick card, now as a live intraday view with a
            vertical marker at the moment the confirming run SERVED this pick (the earliest you could
            have acted). The longer 2-month daily trend still lives in the detail modal. */
@@ -5262,6 +5298,15 @@ document.addEventListener('click',function(e){
   var w=e.target.closest('.wlcard'); if(!w)return;
   if(e.target.closest('.juicebtn')||e.target.closest('.cherrybtn')||e.target.closest('.watchbtn')||e.target.closest('a'))return;
   e.preventDefault(); openMover(w.dataset.wlsym, w.dataset.wlregion);
+});
+// Card-face blurb "more ›" — reveal the rest of a collapsed 2-sentence pick blurb (user ask). Stops
+// propagation so expanding text doesn't also open the card overlay.
+document.addEventListener('click',function(e){
+  var b=e.target.closest('.plainmore'); if(!b)return;
+  e.preventDefault(); e.stopPropagation();
+  var p=b.closest('.plain'), rest=p&&p.querySelector('.plainrest');
+  if(rest) rest.hidden=false;
+  b.remove();
 });
 // chef-note collapse toggle (user ask — the intro can run several paragraphs). Tapping ANYWHERE on the
 // hero headline or the short-note area opens/collapses the full story — not just the small link. Ticker
