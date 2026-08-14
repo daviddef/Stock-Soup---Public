@@ -540,6 +540,24 @@
   .docpage .lrnbtn.on{background:var(--broth);color:#fff}
   .docpage .lrnbtn:not(.on):hover{color:var(--ink)}
   .docpage .lrnbtn.lrndeep{color:var(--broth)}
+  /* Guide top row: the depth tabs on the left, a share-as-PDF button on the right (user ask). */
+  .docpage .guidetop{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 16px}
+  .docpage .guidetop .lrnseg{margin:0}
+  .docpage .guidepdf{margin-left:auto;font-size:13px;font-weight:800;color:#fff;background:var(--accent,#e8662a);border:0;border-radius:999px;padding:8px 16px;cursor:pointer;font-family:inherit;white-space:nowrap}
+  .docpage .guidepdf:hover{filter:brightness(1.06)}
+  @media(max-width:420px){ .docpage .guidepdf{margin-left:0;width:100%} }
+  /* Print / Save-as-PDF: hide the whole app, show only the open guide overlay, flattened for paper. */
+  @media print{
+    html,body{background:#fff !important}
+    body>*{display:none !important}
+    #docsOverlay{display:block !important;position:static !important;inset:auto !important;background:#fff !important;height:auto !important}
+    #docsOverlay .docsbar{position:static !important;border:0 !important;padding:0 0 8px !important}
+    #docsOverlay .docsbar .docsclose,#docsOverlay .docsbar .msharebtn,#docsOverlay .guidetop,#docsOverlay .dptoc{display:none !important}
+    #docsOverlay .docsbody{overflow:visible !important;height:auto !important;max-height:none !important;display:block !important}
+    #docsOverlay .docpage{height:auto !important;overflow:visible !important}
+    #docsOverlay .dpt,#docsOverlay .dpcard,#docsOverlay section{break-inside:avoid}
+    #docsOverlay a{color:#000 !important;text-decoration:none !important}
+  }
   .docpage .dptoc{display:flex;flex-wrap:wrap;gap:7px;margin:16px 0 8px}
   .docpage .dptoc a{font-size:12px;font-weight:700;color:var(--broth);background:var(--surface-2);border:1px solid var(--line);border-radius:999px;padding:4px 11px;text-decoration:none}
   .docpage .dptoc a:hover{border-color:var(--broth)}
@@ -7003,10 +7021,10 @@ function openLearn(depth){
   // back-compat: old 'simple'/'detailed'/'guide' deep-links all resolve to the single merged Guide.
   depth = (depth==='deep' && admin) ? 'deep' : 'guide';
   if(depth==='deep'){ try{ openDocs(); }catch(e){} return; }
-  var seg='<div class="lrnseg" role="tablist">'+
+  var seg='<div class="guidetop"><div class="lrnseg" role="tablist">'+
     '<button class="lrnbtn on" data-depth="guide" role="tab" aria-selected="true">📖 Guide</button>'+
     (admin?'<button class="lrnbtn lrndeep" data-depth="deep" role="tab">🔧 Deep · admin</button>':'')+
-  '</div>';
+  '</div><button class="guidepdf" id="guidePdfBtn" type="button" title="Save or share this guide as a PDF">⬇ Save as PDF</button></div>';
   openDocPage('/guide', '📚 Learn — how it works', seg+_guideBody());
   var ov=document.getElementById('docsOverlay');
   if(ov) ov.querySelectorAll('.lrnbtn').forEach(function(bn){ bn.onclick=function(){
@@ -7014,7 +7032,11 @@ function openLearn(depth){
     if(d==='deep'){ try{ openDocs(); }catch(e){} return; }   // the admin Kitchen Manual (separate, gated KV doc)
     openLearn(d);
   };});
+  var pb=ov&&ov.querySelector('#guidePdfBtn'); if(pb) pb.onclick=printGuide;
 }
+// Save/share the Guide as a PDF — the @media print rules flatten the app to just the open guide overlay,
+// so the browser's "Save as PDF" (or the mobile share sheet) exports a clean, branded document.
+function printGuide(){ try{ window.print(); }catch(e){} }
 // Back-compat aliases so existing callers + the #/guide and #/method deep-links still resolve.
 function openUserGuide(){ openLearn('guide'); }
 function openExpertBrief(){ openLearn('guide'); }
