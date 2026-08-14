@@ -843,6 +843,22 @@
   .tkf{width:34px;height:34px;border-radius:50%;border:0;background:var(--surface-2);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:800;line-height:1;padding:0;color:var(--muted);opacity:.55;transition:opacity .15s,transform .15s,background .15s}
   .tkf.active{opacity:1;transform:scale(1.08);background:var(--broth);color:#fff}
   .tierinfo{width:22px;height:22px;border-radius:50%;border:1px solid var(--line);background:var(--surface);color:var(--muted);font-size:11px;font-weight:800;font-style:italic;cursor:pointer;display:inline-flex;align-items:center;justify-content:center}
+  /* #341 — 2-row header: a single AU⇄US toggle chip (open-countdown INSIDE), an icon view-switch, a bigger bowl */
+  .mktog{display:inline-flex;align-items:center;gap:7px;background:var(--surface-2);border:1px solid var(--line);border-radius:999px;padding:3px 11px 3px 3px;cursor:pointer;font-family:inherit;line-height:1.05;transition:border-color .12s;flex:0 0 auto}
+  .mktog:hover{border-color:var(--broth)}
+  .mktog-flag{width:28px;height:28px;border-radius:50%;background:var(--surface);display:inline-flex;align-items:center;justify-content:center;font-size:15px;flex:0 0 auto}
+  .mktog.phase-open .mktog-flag{box-shadow:0 0 0 2px var(--buy)}
+  .mktog.phase-closed .mktog-flag{box-shadow:0 0 0 2px rgba(255,77,77,.5)}
+  .mktog.phase-opening .mktog-flag{box-shadow:0 0 0 2px var(--buy);animation:mkpulseG 1.5s ease-in-out infinite}
+  .mktog.phase-closing .mktog-flag{box-shadow:0 0 0 2px var(--hold);animation:mkpulseO 1.5s ease-in-out infinite}
+  .mktog-txt{display:flex;flex-direction:column;align-items:flex-start}
+  .mktog-nm{font-weight:800;font-size:12.5px;letter-spacing:.01em}
+  .mktog-st{font-size:10.5px;color:var(--muted);font-weight:700}
+  .mktog-alt{font-size:11px;opacity:.5;margin-left:1px;white-space:nowrap}
+  .vtico{width:34px;height:34px;padding:0;border-radius:50%;border:1.5px solid var(--line);background:var(--surface-2);color:var(--muted);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;transition:border-color .12s,color .12s;flex:0 0 auto}
+  .vtico:hover{border-color:var(--broth);color:var(--broth)}
+  .hpot-lg{transform:scale(1.28);transform-origin:left center;margin-right:6px}
+  @media(max-width:400px){ .mktog-alt{display:none} .tkf{width:30px;height:30px;font-size:11.5px} .vtico{width:30px;height:30px} }
   .tiersub{font-size:12px;color:var(--muted);margin:2px 0 10px;font-style:italic}
   .risktolwarn{background:rgba(255,197,61,.14);border:1px solid rgba(255,197,61,.4);color:var(--hold);border-radius:8px;padding:6px 10px;font-size:12px;font-weight:800;margin:0 0 8px}
   /* #224 — compact risk chip (sits in the sentrow next to the 🍊 score), taps to the risk detail modal */
@@ -2186,21 +2202,23 @@ function riskFactorMarks(r){
   var leg='<div class="factorleg">'+F.map(function(f){ return '<span>'+(RISK_FACT_IC[f.k]||'•')+' '+esc(f.label)+' <b>'+f.score+'</b></span>'; }).join('')+'</div>';
   return {marks:marks,leg:leg};
 }
+// #341 — ONE compact AU⇄US toggle chip (was two flag circles + a separate countdown line). The active
+// market's flag sits in a phase-ringed circle, its name + the open/close COUNTDOWN read inside the chip,
+// and tapping flips to the other market (data-region = the OTHER one; the .mktog[data-region] click wiring
+// calls setMkt). Kills a whole header row.
 function mktBarHtml(D){
   var FLAG={au:'🇦🇺',us:'🇺🇸'}, NM={au:'ASX',us:'US'};
-  var statuses={}; (D.regions||[]).forEach(function(rg){statuses[rg.id]=marketStatus(rg.id);});
-  var flags=(D.regions||[]).map(function(rg){
-    var st=statuses[rg.id], on=rg.id===MKT;
-    return '<button class="mkf phase-'+st.phase+(on?' active':'')+'" role="tab" data-region="'+esc(rg.id)+'" aria-selected="'+on+'" aria-label="'+esc(NM[rg.id])+'" title="'+esc(st.txt)+'"><span class="mkff">'+(FLAG[rg.id]||'🏳️')+'</span></button>';
-  }).join('');
-  // The ring colour already shows open/closed per-market — repeating "closed" in the caption is
-  // dead text. What the ring CAN'T show is which market is about to open/close (time-sensitive,
-  // actionable), so prioritise surfacing THAT over just describing whichever tab is selected.
-  // Only show the caption when a market is about to open/close (time-sensitive, the ring can't say
-  // that). Plain open/closed is fully conveyed by the ring colour already — no caption needed then.
-  var urgent=Object.keys(statuses).find(function(k){return statuses[k].phase==='opening'||statuses[k].phase==='closing';});
-  var cap=urgent?'<div class="mktcap mc-'+statuses[urgent].phase+'">'+esc(statuses[urgent].txt)+'</div>':'';
-  return '<div class="mktwrap"><div class="mktflags" role="tablist" aria-label="Filter market">'+flags+'</div>'+cap+'</div>';
+  var st=marketStatus(MKT), other=(MKT==='au')?'us':'au';
+  // short status INSIDE the chip: a countdown ("28m" / "2h5m") when a market is about to flip, else open/closed.
+  var tm=(st.txt||'').match(/(\d+\s*h\s*)?\d+\s*m/);
+  var mini=tm?tm[0].replace(/\s+/g,''):(/open/i.test(st.txt||'')?'open':/clos/i.test(st.txt||'')?'closed':(st.phase||''));
+  return '<button class="mktog phase-'+st.phase+'" id="mktToggle" data-region="'+other+'" '+
+      'aria-label="'+esc(NM[MKT])+' — '+esc(st.txt)+'. Tap to switch to '+esc(NM[other])+'." '+
+      'title="'+esc(st.txt)+' · tap for '+esc(NM[other])+'">'+
+    '<span class="mktog-flag">'+(FLAG[MKT]||'🏳️')+'</span>'+
+    '<span class="mktog-txt"><span class="mktog-nm">'+esc(NM[MKT])+'</span><span class="mktog-st">'+esc(mini)+'</span></span>'+
+    '<span class="mktog-alt">'+(FLAG[other]||'')+' ⇄</span>'+
+  '</button>';
 }
 var LAST=null, LASTFOCUS=null;
 var TIER='type1';   // #152 — selected model tier: type1 (production, default) / type2 (whole-market quant) / type3 (per-indicator leaderboards)
@@ -4403,10 +4421,14 @@ function render(D,H){
   var trail=trailSrc.map(function(t){var jump=(t.jump?' <a class="trailjump" href="#'+esc(t.jump)+'">'+esc(t.jumpLabel||'see the list →')+'</a>':'');return '<div class="step"><span class="n">'+esc(t.n)+'</span><div class="st-txt">'+t.text+jump+'<small>'+esc(t.note)+'</small></div></div>';}).join('');
 
   document.getElementById('app').innerHTML=
-  '<header class="hero"><div class="brandrow"><div class="hleft"><div class="brand"><span class="hpot"><span class="hsteam"><i></i><i></i><i></i></span><span class="hpotbowl">🍲</span></span> The&nbsp;Stock&nbsp;Soup</div>'+mktBarHtml(D)+'</div>'+   // #hero — one compact row: brand + flags (left), tiers + toggles (right); no more tall two-row card
-    '<div class="toprail">'+tierBarHtml()+
-      '<button class="vtog" id="viewTog" title="You’re in Full view — tap to switch to Simple" aria-label="Currently Full view, tap to switch to Simple"><span class="vti">📋</span>Full<span class="vtsw">⇄</span></button>'+
-    '</div></div>'+   // close .toprail + .brandrow — the burger now lives in the hero's top-right corner (user ask, 13 Aug), freeing the filter row (T1/T2/T3 · ⓘ · Full) to sit on its own line
+  // #341 (user ask, 14 Aug) — header shrunk to 2 rows even on mobile. Row 1 = the bigger steaming-bowl mark +
+  // wordmark (+ burger, absolute top-right). Row 2 = [AU⇄US toggle w/ the open-countdown INSIDE it] · [T1·T2·T3
+  // segmented] · [ⓘ] · [grid/list view-switch icon, no word/emoji]. The market bar is now ONE toggle chip
+  // (was two flag circles + a separate countdown line), the view switch is a clean SVG glyph (was 📋 Full ⇄).
+  '<header class="hero"><div class="brandrow"><div class="hleft"><div class="brand"><span class="hpot hpot-lg"><span class="hsteam"><i></i><i></i><i></i></span><span class="hpotbowl">🍲</span></span> The&nbsp;Stock&nbsp;Soup</div></div>'+
+    '<div class="toprail">'+mktBarHtml(D)+tierBarHtml()+
+      '<button class="vtico" id="viewTog" title="You’re in Full view — tap for the Simple one-pager" aria-label="Switch to the Simple view"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="3.5" width="7" height="7" rx="1.6"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.6"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.6"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.6"/></svg></button>'+
+    '</div></div>'+   // close .toprail + .brandrow — the burger sits absolute in the hero's top-right corner
       '<div class="burgerwrap heroburg"><button class="burger" id="burgerBtn" aria-label="Menu" aria-haspopup="true" aria-expanded="false" aria-controls="burgerMenu">☰</button>'+
         '<div class="burgermenu" id="burgerMenu" role="menu" hidden>'+
           '<div class="bmhead"><span class="live"><span class="pulse"></span>LIVE</span><button class="bmupd" id="lastUpd">updated…</button></div>'+
@@ -8122,7 +8144,7 @@ function wire(D){
   wireThemes();
   var mkh=document.getElementById('mktHeadlineBtn'); if(mkh) mkh.onclick=openMarketRead;
   var rmb=document.getElementById('riskMeterBtn'); if(rmb){ rmb.onclick=function(e){ if(e)e.stopPropagation(); openMarketRead(); }; rmb.onkeydown=function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); e.stopPropagation(); openMarketRead(); } }; }   // #197/#hero — the risk chip opens the market read; stopPropagation so it doesn't also fire the banner's run-schedule tap
-  var tabs=document.querySelectorAll('.mkf[data-region], .tab[data-region]');
+  var tabs=document.querySelectorAll('.mkf[data-region], .tab[data-region], .mktog[data-region]');
   tabs.forEach(function(t){t.addEventListener('click',function(){ setMkt(t.dataset.region); });});
   bindTierPills();   // #152 tier pills now live in the header (tierBarHtml), same as the market filter
   function regionOf(id){var a=(D.regions||[]).filter(function(x){return x.id===id;});return a[0];}
