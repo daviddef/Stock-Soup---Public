@@ -2281,7 +2281,7 @@ function bindTierPills(){
     try{pushViewState();}catch(e){}
     var sc=window.pageYOffset; applyView(); window.scrollTo(0,sc);
   };});
-  var tib=document.getElementById('tierInfoBtn'); if(tib) tib.onclick=openTierInfo;
+  var tib=document.getElementById('tierInfoBtn'); if(tib) tib.onclick=function(){ openLearn('guide'); };  // (user ask) → the full guide, which explains tiers + everything else
 }
 var JUICE_CACHE={}, JUICE_SEQ=0;   // #105 — admin-only "real juice" raw-logic detail, keyed by id (avoids embedding large JSON in HTML attrs)
 function yf(sym,region){var s=String(sym).replace(/\*$/,'');if(region==="au")s+=".AX";return "https://finance.yahoo.com/quote/"+encodeURIComponent(s);}
@@ -4156,12 +4156,15 @@ function actionsHtml(D){
       '<div class="axtop"><span class="axverb axv-buy">📈 EARNINGS DRIFT</span><span class="axsym">'+peadList.length+' PEAD play'+(peadList.length===1?'':'s')+'</span><span class="axpx mono" style="color:var(--muted)">PEAD</span></div>'+
       '<div class="axwhy">'+_pt+' beat earnings recently — a beat tends to keep <b>drifting up</b> for days. <b>Tap for all + what PEAD means.</b></div></div>'});
   }
-  // Cooling off — theme/sector pivots (trim signal)
-  (D.themePivots||[]).slice(0,4).forEach(function(pv){
-    var chip=(pv.leader&&pv.leader.sym)?_axChip(pv.leader.sym,MKT):'';
+  // Cooling off — theme/sector pivots (trim signal). Guard against garbage entries: a pivot with no real
+  // theme name (the old "🎯 ?" bug) or no from/to comparison is meaningless — skip it rather than render it.
+  (D.themePivots||[]).filter(function(pv){ var t=(pv&&pv.title||'').trim(); return t && t!=='?' && pv.from && pv.to; })
+    .slice(0,4).forEach(function(pv){
+    var chip=(pv.to&&pv.to.leaderSym)?_axChip(pv.to.leaderSym,MKT):((pv.leader&&pv.leader.sym)?_axChip(pv.leader.sym,MKT):'');
+    var fromTag=(pv.from&&pv.from.tag)||'?', toTag=(pv.to&&pv.to.tag)||'?';
     items.push({r:5, h:'<div class="axcard axpivot ax-sell" data-theme="'+esc(pv.cat)+'" data-title="'+esc(pv.title)+'" role="button" tabindex="0" aria-label="'+esc(pv.title)+' cooling off">'+
       '<div class="axtop"><span class="axverb axv-sell">🔄 COOLING OFF</span><span class="axsym">'+esc(pv.em)+' '+esc(pv.title)+'</span>'+chip+'</div>'+
-      '<div class="axwhy">'+esc(pv.why)+' — was <b>'+esc(pv.from.tag||'?')+'</b>, now <b>'+esc(pv.to.tag||'?')+'</b>.</div></div>'});
+      '<div class="axwhy">'+esc(pv.why)+' — was <b>'+esc(fromTag)+'</b>, now <b>'+esc(toTag)+'</b>.</div></div>'});
   });
   // Coming up — soonest catalysts on names we track
   var _cs={}; (D.regions||[]).forEach(function(rg){(rg.picks||[]).forEach(function(p){if(p.sym!=='NONE')_cs[p.sym]=1;});});
