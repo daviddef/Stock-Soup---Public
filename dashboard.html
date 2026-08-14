@@ -1335,6 +1335,9 @@
   .pmc-top{display:flex;align-items:center;gap:7px}
   .pmc-sym{font-weight:900;font-size:16px}
   .pmc-flag{margin-left:auto;font-size:9px;color:var(--faint);font-weight:700}
+  /* #289 — "⭐ pick" marker: this ticker is already one of tonight's served picks (don't re-analyse it). */
+  .servedtag{display:inline-flex;align-items:center;gap:2px;font-size:9.5px;font-weight:800;color:var(--broth);background:rgba(232,102,42,.12);border:1px solid rgba(232,102,42,.3);border-radius:999px;padding:0 6px;line-height:1.7;white-space:nowrap;letter-spacing:.02em}
+  .movertop .servedtag{margin-left:1px}
   .pmc-watch{width:19px;height:19px;font-size:13px;margin-left:3px}   /* #204 — compact + on Full Pot / Stock Pot cards */
   .cardtrend{margin-top:8px}   /* #214 — restored mini-chart on the pick card */
   .cardtrend .spark{height:38px;margin:2px 0 0}
@@ -2626,6 +2629,14 @@ function pickServedISO(sym,regionId){
   if(!iso){ var D=(LAST&&LAST.D)||{}; iso=D.generated||null; }
   return iso;
 }
+// #289 — is this ticker ALREADY one of tonight's 6 served picks (this market)? A small "⭐ pick" marker on
+// Full-Pot / Top-Movers / next-best cards so a name we've already told you to buy isn't re-analysed as if new.
+function servedPickTf(sym,region){
+  var D=(LAST&&LAST.D)||{}, tf=null;
+  (D.regions||[]).forEach(function(rg){ if(rg.id!==(region||MKT))return; (rg.picks||[]).forEach(function(p){ if(p.sym===sym&&p.sym!=='NONE') tf=p.tf||true; }); });
+  return tf;
+}
+function servedTag(sym,region){ return servedPickTf(sym,region)?'<span class="servedtag" title="One of tonight’s 6 served picks — already on the menu">⭐ pick</span>':''; }
 function hotMoversHtml(D){
   // Live-ish movers between major runs (#83 follow-up): the 10-min re-price pulse now also checks
   // Yahoo's real US gainers/losers (hour-cached, keyless) so a big mover surfaces within ~an hour
@@ -2792,7 +2803,7 @@ function topMoversHtml(D){
     return '<div class="movercard" data-sym="'+esc(m.sym)+'" data-region="'+esc(MKT)+'" role="button" tabindex="0" aria-label="'+esc(m.sym)+' details">'+
       // row 1: ticker + change% + watch(+). The two score chips (dualChip) go on their OWN row below —
       // on a half-width mover card all four in one row overflowed the right edge (user-caught, #277).
-      '<div class="movertop"><span class="upsym">'+esc(m.sym)+'</span><span class="'+(m.change_pct>=0?'up':'down')+' mvchg" style="font-weight:800;font-size:12.5px">'+(m.change_pct>=0?'▲':'▼')+' '+Math.abs(m.change_pct)+'%</span>'+
+      '<div class="movertop"><span class="upsym">'+esc(m.sym)+'</span>'+servedTag(m.sym,MKT)+'<span class="'+(m.change_pct>=0?'up':'down')+' mvchg" style="font-weight:800;font-size:12.5px">'+(m.change_pct>=0?'▲':'▼')+' '+Math.abs(m.change_pct)+'%</span>'+
       '<button class="watchbtn iconwatch" data-sym="'+esc(m.sym)+'" data-region="'+esc(MKT)+'" style="width:19px;height:19px;font-size:13px" aria-pressed="false" title="Add to watchlist">☆</button></div>'+
       (chip?'<div class="mvchips">'+chip+'</div>':'')+
       '<div class="upwhen">'+esc(cur)+esc(m.price)+(m.volume?' · vol '+esc(m.volume):'')+'</div>'+
@@ -4534,7 +4545,7 @@ function render(D,H){
     var _ov=(c.score&&c.score.buy_now!=null)?(overallScore(c.score.buy_now,_crows)||{}).score:0;   // #270 — cherry score for the OR-filter
     var rankBadge=rank?'<span class="pmc-rank">'+rank+'</span>':'';   // #211 — Stock Pot Top 20 is a numbered leaderboard
     return '<div class="potcard h-'+esc(c.heat)+(rank?' ranked':'')+'" data-ci="'+i+'" data-score="'+_bn+'" data-cherry="'+(_ov||0)+'" role="button" tabindex="0" aria-label="Details for '+esc(c.sym)+'">'+
-      '<div class="pmc-top">'+rankBadge+(c.heat==='cold'?'<span class="ph no">⛔</span>':'<span class="ph"></span>')+'<b class="pmc-sym">'+esc(c.sym)+'</b>'+annFlag(c)+shortChip+'<span class="pmc-flag">'+(c.region==='au'?'AU':'US')+'</span>'+
+      '<div class="pmc-top">'+rankBadge+(c.heat==='cold'?'<span class="ph no">⛔</span>':'<span class="ph"></span>')+'<b class="pmc-sym">'+esc(c.sym)+'</b>'+servedTag(c.sym,c.region)+annFlag(c)+shortChip+'<span class="pmc-flag">'+(c.region==='au'?'AU':'US')+'</span>'+
         '<button class="watchbtn iconwatch pmc-watch" data-sym="'+esc(c.sym)+'" data-region="'+esc(c.region||'us')+'"'+(c.name?' data-name="'+esc(c.name)+'"':'')+' aria-pressed="false" title="Add to watchlist">☆</button></div>'+
       (c.name?'<div class="pmc-name">'+esc(c.name)+'</div>':'')+
       '<div class="pmc-px">'+(c.price?'<span class="pmc-price">'+esc(cleanPrice(c.price))+'</span>':'')+chg+'</div>'+
