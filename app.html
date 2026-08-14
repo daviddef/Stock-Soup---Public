@@ -213,7 +213,11 @@
   .tkscore{font-size:12.5px;font-weight:700;color:#f2a33d;text-shadow:0 0 6px rgba(242,163,61,.45)}
   .tkchg{font-size:12.5px;font-weight:700;font-variant-numeric:tabular-nums}
   .tkchg.up{color:#37e07a;text-shadow:0 0 7px rgba(55,224,122,.5)} .tkchg.down{color:#ff5a5a;text-shadow:0 0 7px rgba(255,90,90,.45)}
-  @media(prefers-reduced-motion:reduce){ .tkinner{animation:none} .tkrow{overflow-x:auto} }
+  /* flash-on-change: a ticker item flickers red when its value is new/changed since the last pulse.
+     The class is present only on a fresh element, so the keyframe plays once on insert (no JS timer). */
+  @keyframes tkflash{ 0%{background:rgba(255,77,77,.55);box-shadow:0 0 0 2px rgba(255,77,77,.6),0 0 12px rgba(255,77,77,.5)} 12%{background:rgba(255,77,77,.15)} 24%{background:rgba(255,77,77,.5)} 100%{background:transparent;box-shadow:0 0 0 2px transparent,0 0 0 transparent} }
+  .tkfresh{ animation:tkflash 1.8s ease-out 1; border-radius:7px; }
+  @media(prefers-reduced-motion:reduce){ .tkinner{animation:none} .tkrow{overflow-x:auto} .tkfresh{animation:none;box-shadow:0 0 0 2px rgba(255,77,77,.6);border-radius:7px} }
   .glance.led .gt-med,.glance.led .gt-wide{min-width:0;max-width:none}
   .glance.led .gt-clip{max-width:52vw}
   @media(prefers-reduced-motion:reduce){.glance.led{overflow-y:auto}}
@@ -3668,7 +3672,24 @@ function breakingHtml(D){
 // (user ask) the lean "at a glance" metric strip that REPLACES the old orient banner — the 3-second read of
 // tonight, each tile tapping to its detail. Horizontal scroll + snap (same idiom as the ctx tabs). Every tile
 // is honest: it only renders when it has a real number, so the strip never shows an empty/zero stat.
+// Ticker flash-on-change (user ask): a ticker item briefly flickers red when its value is new or has
+// moved since the LAST pulse (a fresh news headline, or a price/percent that ticked). Cross-render diff
+// against a persisted cache — exactly how an exchange tape flashes. Gated on the pulse stamp so a
+// same-pulse re-render (a market toggle, a duplicate build) only re-seeds and never flashes spuriously.
+var TKR_PREV = {}; try{ TKR_PREV = window.__tkrPrev = (window.__tkrPrev||{}); }catch(e){}
+var _tkStamp = null, _tkFlashOn = false;
+function tkFreshBegin(stamp){
+  _tkFlashOn = (!!stamp && _tkStamp !== null && stamp !== _tkStamp);
+  if(stamp) _tkStamp = stamp;
+}
+function tkFresh(key, val){
+  val = String(val==null?'':val);
+  var changed = _tkFlashOn && Object.prototype.hasOwnProperty.call(TKR_PREV, key) && TKR_PREV[key] !== val;
+  TKR_PREV[key] = val;
+  return changed ? ' tkfresh' : '';
+}
 function glanceStripHtml(D){
+  tkFreshBegin((D&&D.pulse&&D.pulse.stamp)||'');
   var region=MKT, tiles=[];
   var r=D.risk||{}, lvl=(r.level!=null)?+r.level:50;
   var rw=lvl>=67?{w:'Risk-on',c:'#1fb862'}:lvl>=34?{w:'Steady',c:'#f2a33d'}:{w:'Risk-off',c:'#ff4d4d'};
@@ -3709,7 +3730,7 @@ function glanceStripHtml(D){
   (D.topNews||[]).filter(function(n){return (!n.region||n.region===region)&&n.headline;}).slice(0,2).forEach(function(n){
     var h=String(n.headline); if(h.length>46) h=h.slice(0,44)+'…';
     var tc=(n.tone==='bull'||n.tone==='pos')?' up':((n.tone==='bear'||n.tone==='neg')?' down':'');
-    tiles.push('<button class="gt" data-glance="news"'+(n.sym?' data-sym="'+esc(n.sym)+'" data-region="'+esc(region)+'"':'')+' title="'+esc(n.headline)+'"><span class="gt-k">📰 '+(n.sym?esc(n.sym):'News')+'</span><span class="gt-v'+tc+'">'+esc(h)+'</span></button>');
+    tiles.push('<button class="gt'+tkFresh('nw:'+region+':'+(n.sym||'macro'), String(n.headline))+'" data-glance="news"'+(n.sym?' data-sym="'+esc(n.sym)+'" data-region="'+esc(region)+'"':'')+' title="'+esc(n.headline)+'"><span class="gt-k">📰 '+(n.sym?esc(n.sym):'News')+'</span><span class="gt-v'+tc+'">'+esc(h)+'</span></button>');
   });
   // show EVERY buy-rated leader, not just the first (user caught HGO shown but CAH — also Buy — dropped).
   // Dedupe across the two tiles: Copper is BOTH a sector and a commodity (same leader HGO), so a sym already
@@ -3733,7 +3754,7 @@ function glanceStripHtml(D){
     out.slice(0,2).forEach(function(a){
       var w=String(a.txt); if(w.length>44) w=w.slice(0,42)+'…';
       var tc=(a.tone==='bullish'||a.tone==='bull')?' up':((a.tone==='bearish'||a.tone==='bear')?' down':'');
-      tiles.push('<button class="gt" data-glance="news" data-sym="'+esc(a.sym)+'" data-region="'+esc(region)+'" title="'+esc(a.txt)+'"><span class="gt-k">📢 '+esc(a.sym)+'</span><span class="gt-v'+tc+'">'+esc(w)+'</span></button>');
+      tiles.push('<button class="gt'+tkFresh('an:'+region+':'+a.sym, String(a.txt))+'" data-glance="news" data-sym="'+esc(a.sym)+'" data-region="'+esc(region)+'" title="'+esc(a.txt)+'"><span class="gt-k">📢 '+esc(a.sym)+'</span><span class="gt-v'+tc+'">'+esc(w)+'</span></button>');
     });
   })();
   // (user ask) "Holdings" → "Today", value is just the % (your owned names, this session).
@@ -3750,11 +3771,11 @@ function glanceStripHtml(D){
   // .gt tiles via the existing .gt[data-glance] handler, crawl items via the .tkitem handler (both in wire()).
   var crawl=[];
   picks.forEach(function(p){ var chg=(p.change!=null)?fmtChg(p.change):''; var up=(p.up!==false);
-    crawl.push('<span class="tkitem" data-sym="'+esc(p.sym)+'" data-region="'+esc(region)+'"><span class="tksym">'+esc(p.sym)+'</span><span class="tkscore">'+p.score.buy_now+'🍊</span>'+(chg?'<span class="tkchg '+(up?'up':'down')+'">'+(up?'▲':'▼')+String(chg).replace(/^[+\-\s]*/,'')+'</span>':'')+'</span>'); });
+    crawl.push('<span class="tkitem'+tkFresh('pk:'+region+':'+p.sym, chg+'|'+p.score.buy_now)+'" data-sym="'+esc(p.sym)+'" data-region="'+esc(region)+'"><span class="tksym">'+esc(p.sym)+'</span><span class="tkscore">'+p.score.buy_now+'🍊</span>'+(chg?'<span class="tkchg '+(up?'up':'down')+'">'+(up?'▲':'▼')+String(chg).replace(/^[+\-\s]*/,'')+'</span>':'')+'</span>'); });
   var tm=(D.topMovers&&D.topMovers[region])||{};
   (tm.gainers||[]).slice(0,5).concat((tm.losers||[]).slice(0,5)).forEach(function(m){
     if(!m||!m.sym) return; var cp=(m.change_pct!=null)?m.change_pct:m.pct; if(cp==null||!isFinite(+cp)) return; var up=+cp>=0;
-    crawl.push('<span class="tkitem" data-sym="'+esc(m.sym)+'" data-region="'+esc(region)+'"><span class="tksym">'+esc(m.sym)+'</span><span class="tkchg '+(up?'up':'down')+'">'+(up?'▲':'▼')+Math.abs(+cp).toFixed(1)+'%</span></span>'); });
+    crawl.push('<span class="tkitem'+tkFresh('mv:'+region+':'+m.sym, (+cp).toFixed(1))+'" data-sym="'+esc(m.sym)+'" data-region="'+esc(region)+'"><span class="tksym">'+esc(m.sym)+'</span><span class="tkchg '+(up?'up':'down')+'">'+(up?'▲':'▼')+Math.abs(+cp).toFixed(1)+'%</span></span>'); });
   var half=Math.ceil(tiles.length/2), sep='<span class="tksep">•</span>';
   function tkrow(inner, dir, dur){ if(!inner) return ''; return '<div class="tkrow tk-'+dir+'" style="--dur:'+dur+'"><div class="tkinner">'+inner+sep+inner+sep+'</div></div>'; }
   var rows=[ tkrow(tiles.slice(0,half).join(sep),'left','46s'),
