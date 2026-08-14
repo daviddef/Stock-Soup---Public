@@ -2212,7 +2212,7 @@ function marketStatus(region){
 }
 // #174 — the 5 risk-appetite indicators as markers on the risk line + an emoji/score legend, from
 // the per-factor sub-scores pulse.py now publishes (r.factors). Degrades to '' when absent (old data).
-var RISK_FACT_IC={vix:'😨',btc:'₿',gold:'🥇',oil:'🛢️',audusd:'🇦🇺',credit:'🏦'};
+var RISK_FACT_IC={vix:'😨',btc:'₿',gold:'🥇',oil:'🛢️',audusd:'🇦🇺',credit:'🏦',breadth:'📊'};
 function riskFactorMarks(r){
   var F=(r&&r.factors)||[]; F=F.filter(function(f){return f&&f.score!=null;});
   if(!F.length) return {marks:'',leg:''};
