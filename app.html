@@ -420,6 +420,20 @@
      whole; margin-bottom (not gap) does the vertical spacing that columns need. */
   .axgrid{column-count:3;column-gap:10px}
   @media(max-width:760px){.axgrid{column-count:1}}
+  /* (user ask) grouped, collapsible action buckets — a short scannable list of "do these" instead of a
+     wall of cards. Collapsed groups take minimal room; the act-now groups (Get in / Trim) open by default. */
+  .axgrouped{display:flex;flex-direction:column;gap:8px}
+  .axgroup{border:1px solid var(--line);border-radius:13px;background:var(--surface);overflow:hidden}
+  .axgroup>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:9px;padding:12px 14px;user-select:none}
+  .axgroup>summary::-webkit-details-marker{display:none}
+  .axgsum .axgic{font-size:15px;line-height:1}
+  .axgsum .axglabel{font-size:14.5px;font-weight:800;color:var(--ink)}
+  .axgsum .axgcount{font-size:11.5px;font-weight:800;color:var(--muted);background:var(--surface-2);border:1px solid var(--line);border-radius:999px;padding:1px 8px;min-width:20px;text-align:center}
+  .axgsum .axgchev{margin-left:auto;color:var(--muted);font-size:12px;transition:transform .18s ease}
+  .axgroup[open]>summary .axgchev{transform:rotate(180deg)}
+  .axgroup>summary:hover{background:var(--surface-2)}
+  .axgroup>.axgrid{padding:2px 12px 12px}
+  @media(prefers-reduced-motion:reduce){ .axgsum .axgchev{transition:none} }
   .axcard{background:linear-gradient(180deg,rgba(35,194,103,.11),transparent 72%),var(--surface);border:1px solid rgba(35,194,103,.34);border-left:3px solid var(--buy);border-radius:13px;padding:13px 15px;cursor:pointer;transition:border-color .12s,transform .05s;break-inside:avoid;-webkit-column-break-inside:avoid;margin-bottom:10px;display:inline-block;width:100%;box-sizing:border-box}
   .axcard:hover{border-color:var(--buy)} .axcard:active{transform:scale(.995)}
   /* #292 PEAD overlay */
@@ -4103,7 +4117,7 @@ function actionsHtml(D){
   var _readySet={};
   ready.slice(0,3).forEach(function(it){ _readySet[it.p.sym]=1;
     var p=it.p, cur=it.rg.cur||'$', why=(p.catalysts&&p.catalysts[0])||p.news||'', chip=(p.score?'<span class="axchip">'+dualChip(p.score,p.sym,p.name,signalRows(p,it.rg.id))+'</span>':''), ex=_axExtras(p.sym,it.rg.id);
-    items.push({r:2, h:'<div class="axcard" data-region="'+esc(it.rg.id)+'" data-idx="'+it.idx+'" role="button" tabindex="0" aria-label="Buy '+esc(p.sym)+'">'+
+    items.push({r:2, b:'getin', h:'<div class="axcard" data-region="'+esc(it.rg.id)+'" data-idx="'+it.idx+'" role="button" tabindex="0" aria-label="Buy '+esc(p.sym)+'">'+
       '<div class="axtop"><span class="axverb axv-buy">🟢 BUY TARGET</span>'+tfBW(p.tf)+'<span class="axsym">'+esc(p.sym)+'</span>'+chip+'<span class="axpx mono">'+esc(p.price)+'</span>'+ex.wb+'</div>'+ex.chart+
       '<div class="axprice">✓ At your price — ideal buy ~'+esc(cur)+esc(p.nEntry)+'</div>'+
       (why?'<div class="axwhy">'+esc(why)+'</div>':'')+
@@ -4117,7 +4131,7 @@ function actionsHtml(D){
       _chasedSet[p.sym]=1;
       var chip=(p.score?'<span class="axchip">'+dualChip(p.score,p.sym,p.name,signalRows(p,rg.id))+'</span>':''), ex=_axExtras(p.sym,rg.id);
       var cur=rg.cur||'$', cc=chaseCeiling(p), pct=pickChasePct(p);
-      items.push({r:2.5, h:'<div class="axcard axchase ax-warn" data-region="'+esc(rg.id)+'" data-idx="'+idx+'" role="button" tabindex="0" aria-label="'+esc(p.sym)+' ran past the buy zone">'+
+      items.push({r:2.5, b:'wait', h:'<div class="axcard axchase ax-warn" data-region="'+esc(rg.id)+'" data-idx="'+idx+'" role="button" tabindex="0" aria-label="'+esc(p.sym)+' ran past the buy zone">'+
         '<div class="axtop"><span class="axverb axv-warn">🏃 RAN PAST</span>'+tfBW(p.tf)+'<span class="axsym">'+esc(p.sym)+'</span>'+chip+(p.price?'<span class="axpx mono">'+esc(p.price)+'</span>':'')+ex.wb+'</div>'+ex.chart+
         '<div class="axwhy">It’s '+(pct!=null?'+'+pct+'% ':'')+'past the ‘don’t chase above '+esc(cur)+cc+'’ line — the easy entry’s gone. Wait for a pullback into the buy zone rather than chasing it up here.</div></div>'});
     }); });
@@ -4128,7 +4142,7 @@ function actionsHtml(D){
   var ownCount=owned.length;
   acts.slice(0,8).forEach(function(x){
     var w=x.w, a=x.a, pi=pm[w.sym+'|'+w.region]||{}, ic=a.cls==='sell'?'🎯':'⚠️', chip=_axChip(w.sym,w.region), ex=_axExtras(w.sym,w.region);
-    items.push({r:a.cls==='sell'?1:3, h:'<div class="axcard axhold ax-'+a.cls+'" data-sym="'+esc(w.sym)+'" data-region="'+esc(w.region)+'" role="button" tabindex="0" aria-label="'+esc(a.verb)+' '+esc(w.sym)+'">'+
+    items.push({r:a.cls==='sell'?1:3, b:'trim', h:'<div class="axcard axhold ax-'+a.cls+'" data-sym="'+esc(w.sym)+'" data-region="'+esc(w.region)+'" role="button" tabindex="0" aria-label="'+esc(a.verb)+' '+esc(w.sym)+'">'+
       '<div class="axtop"><span class="axverb axv-'+a.cls+'">'+ic+' '+esc(a.verb)+'</span><span class="axsym">'+esc(w.sym)+'</span>'+chip+(pi.price!=null?'<span class="axpx mono">'+esc(pi.cur||'$')+pi.price+(pi.change?' <span class="'+(pi.up?'up':'down')+'">'+(pi.up?'▲':'▼')+esc(pi.change)+'</span>':'')+'</span>':'')+ex.wb+'</div>'+ex.chart+
       '<div class="axwhy">'+esc(a.why)+'</div></div>'});
   });
@@ -4137,7 +4151,7 @@ function actionsHtml(D){
     (rg.picks||[]).forEach(function(p,idx){ if(p.sym==='NONE'||_readySet[p.sym]||_chasedSet[p.sym]) return;
       var chip=(p.score?'<span class="axchip">'+dualChip(p.score,p.sym,p.name,signalRows(p,rg.id))+'</span>':''), ex=_axExtras(p.sym,rg.id);
       var wait=/wait|late|hold|skip|avoid|pass|don.t|steer/i.test(p.verdict||'');
-      items.push({r:wait?6:4, h:'<div class="axcard axtier ax-'+(wait?'warn':'buy')+'" data-region="'+esc(rg.id)+'" data-idx="'+idx+'" role="button" tabindex="0" aria-label="'+esc(p.sym)+'">'+
+      items.push({r:wait?6:4, b:wait?'wait':'getin', h:'<div class="axcard axtier ax-'+(wait?'warn':'buy')+'" data-region="'+esc(rg.id)+'" data-idx="'+idx+'" role="button" tabindex="0" aria-label="'+esc(p.sym)+'">'+
         '<div class="axtop"><span class="axverb '+(wait?'axv-warn':'axv-buy')+'">'+(wait?'⏳':'🟢')+' '+esc((p.verdict||'GET IN').toUpperCase())+'</span>'+tfBW(p.tf)+'<span class="axsym">'+esc(p.sym)+'</span>'+chip+(p.price?'<span class="axpx mono">'+esc(p.price)+'</span>':'')+ex.wb+'</div>'+ex.chart+
         '<div class="axwhy">'+esc(p.plain||(p.catalysts&&p.catalysts[0])||p.news||'')+'</div></div>'});
     }); });
@@ -4152,7 +4166,7 @@ function actionsHtml(D){
   PEAD_STATE={list:peadList.slice(0,6), region:MKT};
   if(peadList.length>=2){
     var _pt=peadList.slice(0,3).map(function(c){return '<b>'+esc(c.sym)+'</b>';}).join(' · ');
-    items.push({r:4.5, h:'<div class="axcard axpead ax-buy" role="button" tabindex="0" aria-label="PEAD earnings-drift plays to watch">'+
+    items.push({r:4.5, b:'getin', h:'<div class="axcard axpead ax-buy" role="button" tabindex="0" aria-label="PEAD earnings-drift plays to watch">'+
       '<div class="axtop"><span class="axverb axv-buy">📈 EARNINGS DRIFT</span><span class="axsym">'+peadList.length+' PEAD play'+(peadList.length===1?'':'s')+'</span><span class="axpx mono" style="color:var(--muted)">PEAD</span></div>'+
       '<div class="axwhy">'+_pt+' beat earnings recently — a beat tends to keep <b>drifting up</b> for days. <b>Tap for all + what PEAD means.</b></div></div>'});
   }
@@ -4162,7 +4176,7 @@ function actionsHtml(D){
     .slice(0,4).forEach(function(pv){
     var chip=(pv.to&&pv.to.leaderSym)?_axChip(pv.to.leaderSym,MKT):((pv.leader&&pv.leader.sym)?_axChip(pv.leader.sym,MKT):'');
     var fromTag=(pv.from&&pv.from.tag)||'?', toTag=(pv.to&&pv.to.tag)||'?';
-    items.push({r:5, h:'<div class="axcard axpivot ax-sell" data-theme="'+esc(pv.cat)+'" data-title="'+esc(pv.title)+'" role="button" tabindex="0" aria-label="'+esc(pv.title)+' cooling off">'+
+    items.push({r:5, b:'trim', h:'<div class="axcard axpivot ax-sell" data-theme="'+esc(pv.cat)+'" data-title="'+esc(pv.title)+'" role="button" tabindex="0" aria-label="'+esc(pv.title)+' cooling off">'+
       '<div class="axtop"><span class="axverb axv-sell">🔄 COOLING OFF</span><span class="axsym">'+esc(pv.em)+' '+esc(pv.title)+'</span>'+chip+'</div>'+
       '<div class="axwhy">'+esc(pv.why)+' — was <b>'+esc(fromTag)+'</b>, now <b>'+esc(toTag)+'</b>.</div></div>'});
   });
@@ -4174,7 +4188,7 @@ function actionsHtml(D){
   (D.upcomingEarnings||[]).forEach(function(e){ if(!e.error&&(e.region||'us')===MKT&&_trk(e.sym)&&e.days_until!=null) upc.push({sym:e.sym,region:e.region||MKT,days:e.days_until,ic:'📊',what:e.sym+' reports',why:'Result can swing the price 5–20% same-day — decide before it prints.'}); });
   ((( D.upcomingDividends||{}).items)||[]).forEach(function(d){ if((d.region||'au')===MKT&&_trk(d.sym)&&d.days_until!=null) upc.push({sym:d.sym,region:d.region||MKT,days:d.days_until,ic:'💰',what:d.sym+' goes ex-dividend',why:'Own it the day before to get the payout; buy on/after and you miss this round.'}); });
   upc.sort(function(a,b){return a.days-b.days;}); upc.slice(0,3).forEach(function(u){ var chip=_axChip(u.sym,u.region), ex=_axExtras(u.sym,u.region);
-    items.push({r:7, h:'<div class="axcard axcoming ax-warn" data-up-sym="'+esc(u.sym)+'" data-up-region="'+esc(u.region)+'" role="button" tabindex="0" aria-label="Coming up: '+esc(u.sym)+'">'+
+    items.push({r:7, b:'coming', h:'<div class="axcard axcoming ax-warn" data-up-sym="'+esc(u.sym)+'" data-up-region="'+esc(u.region)+'" role="button" tabindex="0" aria-label="Coming up: '+esc(u.sym)+'">'+
       '<div class="axtop"><span class="axverb axv-warn">'+u.ic+' COMING UP</span><span class="axsym">'+esc(u.sym)+'</span>'+chip+'<span class="axpx mono">'+_when(u.days)+'</span>'+ex.wb+'</div>'+ex.chart+
       '<div class="axwhy">'+esc(u.what)+' — '+esc(u.why)+'</div></div>'});
   });
@@ -4183,13 +4197,30 @@ function actionsHtml(D){
   (D.topNews||[]).filter(function(n){return !n.sym||(n.region||MKT)===MKT;}).slice(0,4).forEach(function(n){ var sym=n.sym, chip=(sym?_axChip(sym,n.region||MKT):''), ex=(sym?_axExtras(sym,n.region||MKT):{spk:'',wb:'',price:'',chart:''});
     var vcls=n.tone==='bullish'?'buy':n.tone==='bearish'?'sell':'warn';
     var head=n.url?'<a href="'+esc(n.url)+'" target="_blank" rel="noopener">'+esc(n.headline||'')+'</a>':esc(n.headline||'');
-    items.push({r:8, h:'<div class="axcard axread ax-'+vcls+'"'+(sym?' data-up-sym="'+esc(sym)+'" data-up-region="'+esc(n.region||MKT)+'"':'')+' role="button" tabindex="0" aria-label="Read: '+esc(n.headline||'')+'">'+
+    items.push({r:8, b:'read', h:'<div class="axcard axread ax-'+vcls+'"'+(sym?' data-up-sym="'+esc(sym)+'" data-up-region="'+esc(n.region||MKT)+'"':'')+' role="button" tabindex="0" aria-label="Read: '+esc(n.headline||'')+'">'+
       '<div class="axtop"><span class="axverb axv-'+vcls+'">📰 READ</span>'+(sym?'<span class="axsym">'+esc(sym)+'</span>':'<span class="axsym" style="font-size:13px;color:var(--muted)">Macro</span>')+chip+ex.price+ex.wb+'</div>'+ex.chart+
       '<div class="axwhy">'+head+(n.why?' — '+esc(n.why):'')+'</div></div>'});
   });
   items.sort(function(a,b){return a.r-b.r;});
   if(!items.length) return '<div class="actions"><div class="axnone">No green lights this second — nothing’s dropped to its buy price yet. That’s fine; patience is the edge. Tap <b>📦 I own it</b> on anything you hold and we’ll surface it here when there’s a real move to make. 🍲</div></div>';
-  return '<div class="actions"><div class="axgrid">'+items.map(function(x){return x.h;}).join('')+'</div></div>';
+  // (user ask) group the flat card list into a few verb buckets, each collapsible — so it's a short
+  // scannable list of "do these", not a wall of cards. Collapsed groups take LESS room than the old flat
+  // grid (answers the #181 "too much real estate" objection), and the two act-now groups open by default.
+  var BUCKETS=[
+    {k:'getin', ic:'🟢', label:'Get in',            open:true},
+    {k:'trim',  ic:'🔴', label:'Trim / take profit', open:true},
+    {k:'wait',  ic:'⏳', label:'Wait / watch',        open:false},
+    {k:'coming',ic:'📅', label:'Coming up',           open:false},
+    {k:'read',  ic:'📰', label:'Read these',          open:false}
+  ];
+  var groups=BUCKETS.map(function(bk){
+    var mine=items.filter(function(x){return (x.b||'read')===bk.k;});
+    if(!mine.length) return '';
+    return '<details class="axgroup"'+(bk.open?' open':'')+'><summary class="axgsum"><span class="axgic">'+bk.ic+'</span>'+
+      '<span class="axglabel">'+bk.label+'</span><span class="axgcount">'+mine.length+'</span><span class="axgchev">▾</span></summary>'+
+      '<div class="axgrid">'+mine.map(function(x){return x.h;}).join('')+'</div></details>';
+  }).filter(Boolean).join('');
+  return '<div class="actions axgrouped">'+groups+'</div>';
 }
 
 // #143 (user ask, scoped 9 Aug 2026): "how easily can we build a bargain alert — cheap, no real
