@@ -76,7 +76,7 @@
   @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(35,194,103,.55)}70%{box-shadow:0 0 0 8px rgba(35,194,103,0)}100%{box-shadow:0 0 0 0 rgba(35,194,103,0)}}
   .hero h1,.menuhead h1{font-size:clamp(34px,7vw,68px);margin:14px 0 6px}
   .hero h1 .hot,.menuhead h1 .hot{color:var(--broth)}
-  .chef{font-size:clamp(15px,2.2vw,19px);color:var(--muted);max-width:60ch;text-wrap:pretty}
+  .chef{font-size:clamp(15px,2.2vw,19px);color:var(--muted);max-width:100%;text-wrap:pretty}  /* fill the width (user ask); the OPEN long note goes 2-col below for readable line lengths */
   .chef b{color:var(--ink)}
   .cheftk{color:var(--broth);font-weight:700;text-decoration:none;border-bottom:1px dotted var(--broth);cursor:pointer}  /* #327 — tappable ticker in chef prose */
   .cheftk:hover{border-bottom-style:solid}
@@ -2345,12 +2345,17 @@ function sparkSVG(vals){
 // levels — common on a stock sitting in its buy zone — don't stack). Self-contained SVG, CSS-var colours.
 function levelChartSVG(vals, o, cur){
   if(!vals||vals.length<2) return '';
-  var W=320,H=124, pad=9, gutter=66, plotW=W-gutter, plotH=H-pad*2;
+  // #chart-legibility (user ask) — a bit taller to fit a start→now x-axis under the plot; vertical time
+  // gridlines + a baseline make "where does this start / where is it now" readable; High/Low reference
+  // lines (o.range, used by the leaner candidate chart) show the window's price range at a glance.
+  var W=320,H=136, pad=9, gutter=66, xax=12, plotW=W-gutter, plotH=H-pad*2-xax;
   var nStop=numLevel(o.stop), nEnt=numLevel(o.entry), nTgt=numLevel(o.target), nNow=numLevel(o.now);
-  var lo=Math.min.apply(null,vals), hi=Math.max.apply(null,vals);
+  var sLo=Math.min.apply(null,vals), sHi=Math.max.apply(null,vals);            // the price series' own high/low
+  var lo=sLo, hi=sHi;
   [nStop,nEnt,nTgt,nNow].forEach(function(v){ if(isFinite(v)){ lo=Math.min(lo,v); hi=Math.max(hi,v); } });
   var rng=(hi-lo)||1; lo-=rng*0.06; hi+=rng*0.06; rng=(hi-lo)||1;
   function yy(v){ return pad + (1-(v-lo)/rng)*plotH; }
+  var baseY=pad+plotH;
   var pts=vals.map(function(v,i){ return ((i/(vals.length-1))*plotW).toFixed(1)+','+yy(v).toFixed(1); });
   var up=vals[vals.length-1]>=vals[0], poly=pts.join(' '), last=pts[pts.length-1].split(',');
   var levels=[];
@@ -2358,14 +2363,25 @@ function levelChartSVG(vals, o, cur){
   if(isFinite(nEnt)) levels.push({v:nEnt,c:'var(--broth)',lab:'Buy '+money(cur,nEnt)});
   if(isFinite(nNow)) levels.push({v:nNow,c:'var(--ink)',lab:'Now '+money(cur,nNow),now:true});
   if(isFinite(nStop)) levels.push({v:nStop,c:'var(--dont)',lab:'Stop '+money(cur,nStop)});
+  if(o.range){   // the leaner candidate chart: frame it with the visible window's High & Low
+    levels.push({v:sHi,c:'var(--muted)',lab:'High '+money(cur,sHi),soft:true});
+    levels.push({v:sLo,c:'var(--muted)',lab:'Low '+money(cur,sLo),soft:true});
+  }
   levels.forEach(function(L){ L.y=yy(L.v); L.ly=L.y; });
   var sorted=levels.slice().sort(function(a,b){return a.ly-b.ly;});
-  for(var i=1;i<sorted.length;i++){ if(sorted[i].ly-sorted[i-1].ly<13) sorted[i].ly=sorted[i-1].ly+13; }
-  var lines=levels.map(function(L){ return '<line x1="0" y1="'+L.y.toFixed(1)+'" x2="'+plotW+'" y2="'+L.y.toFixed(1)+'" stroke="'+L.c+'" stroke-width="1"'+(L.now?'':' stroke-dasharray="3 3"')+' opacity="'+(L.now?'0.85':'0.5')+'"/>'; }).join('');
-  var labs=sorted.map(function(L){ return '<text x="'+(plotW+5)+'" y="'+(L.ly+3).toFixed(1)+'" fill="'+L.c+'" font-size="9.5" font-weight="800">'+esc(L.lab)+'</text>'; }).join('');
-  return '<svg class="lvlchart '+(up?'up':'down')+'" viewBox="0 0 '+W+' '+H+'" width="100%" role="img" aria-label="Price with entry, stop and target levels">'+
-    '<polygon points="0,'+(H-pad)+' '+poly+' '+plotW+','+(H-pad)+'" fill="'+(up?'rgba(35,194,103,.10)':'rgba(255,77,77,.10)')+'" stroke="none"/>'+
-    lines+
+  for(var i=1;i<sorted.length;i++){ if(sorted[i].ly-sorted[i-1].ly<12) sorted[i].ly=sorted[i-1].ly+12; }
+  var lines=levels.map(function(L){ return '<line x1="0" y1="'+L.y.toFixed(1)+'" x2="'+plotW+'" y2="'+L.y.toFixed(1)+'" stroke="'+L.c+'" stroke-width="1"'+(L.now?'':' stroke-dasharray="3 3"')+' opacity="'+(L.now?'0.85':(L.soft?'0.32':'0.5'))+'"/>'; }).join('');
+  var labs=sorted.map(function(L){ return '<text x="'+(plotW+5)+'" y="'+(L.ly+3).toFixed(1)+'" fill="'+L.c+'" font-size="9.5" font-weight="'+(L.soft?'600':'800')+'">'+esc(L.lab)+'</text>'; }).join('');
+  // vertical time gridlines (quarters of the window) + a baseline + start/now labels underneath
+  var vgrid='';
+  [0.25,0.5,0.75].forEach(function(g){ var x=(g*plotW).toFixed(1); vgrid+='<line x1="'+x+'" y1="'+pad+'" x2="'+x+'" y2="'+baseY.toFixed(1)+'" stroke="var(--line)" stroke-width="0.6" opacity="0.45"/>'; });
+  var axis='<line x1="0" y1="'+baseY.toFixed(1)+'" x2="'+plotW+'" y2="'+baseY.toFixed(1)+'" stroke="var(--line)" stroke-width="0.8"/>'+
+    '<text x="0" y="'+(H-2)+'" fill="var(--faint)" font-size="8.5" font-weight="700">start '+esc(money(cur,vals[0]))+'</text>'+
+    '<text x="'+plotW+'" y="'+(H-2)+'" fill="var(--faint)" font-size="8.5" font-weight="700" text-anchor="end">now →</text>';
+  return '<svg class="lvlchart '+(up?'up':'down')+'" viewBox="0 0 '+W+' '+H+'" width="100%" role="img" aria-label="Price chart with high, low and reference levels over the window">'+
+    vgrid+
+    '<polygon points="0,'+baseY.toFixed(1)+' '+poly+' '+plotW+','+baseY.toFixed(1)+'" fill="'+(up?'rgba(35,194,103,.10)':'rgba(255,77,77,.10)')+'" stroke="none"/>'+
+    lines+axis+
     '<polyline points="'+poly+'" fill="none" stroke="'+(up?'var(--buy)':'var(--dont)')+'" stroke-width="1.7"/>'+
     '<circle cx="'+last[0]+'" cy="'+last[1]+'" r="2.8" fill="'+(up?'var(--buy)':'var(--dont)')+'"/>'+
     labs+
@@ -4288,6 +4304,7 @@ function actionsHtml(D){
     function card(c,verb,why){ var reg=c.region||'us', chip=(c.score&&c.score.buy_now!=null)?'<span class="axchip">'+dualChip(c.score,c.sym,c.name,signalRows(c,reg))+'</span>':'';
       return '<div class="axcard axcand ax-buy" data-sym="'+esc(c.sym)+'" data-region="'+esc(reg)+'" role="button" tabindex="0" aria-label="'+esc(c.sym)+'">'+
         '<div class="axtop"><span class="axverb axv-buy">'+verb+'</span><span class="axsym">'+esc(c.sym)+'</span>'+chip+(c.price?'<span class="axpx mono">'+esc(cleanPrice(c.price))+'</span>':'')+'</div>'+
+        (c.name?'<div class="axname">'+esc(c.name)+'</div>':'')+
         '<div class="axwhy">'+why+'</div></div>'; }
     // 🍃 Room to run — calm RSI, lower half of its YEAR range, reclaimed its 20-day average (a base forming),
     // nothing actively wrong. A constructive entry that hasn't run away — the alternative to a hot momentum name.
@@ -6619,7 +6636,7 @@ function openCandidate(idx){
       ccallHtml+
       // #323 P3 — candidate gets the SAME unified chart as picks (with just the Now line — a candidate has
       // no served stop/target). Keeps the 1w/1m/1y range sliders below, matching the pick card.
-      ((c.spark&&c.spark.length>2)?'<div class="viz"><h4>📊 The chart</h4>'+levelChartSVG(c.spark,{now:numLevel(c.nNow!=null?c.nNow:c.price)},cCur)+'</div>':'')+
+      ((c.spark&&c.spark.length>2)?'<div class="viz"><h4>📊 The chart — where it sits in its range</h4>'+levelChartSVG(c.spark,{now:numLevel(c.nNow!=null?c.nNow:c.price),range:true},cCur)+'</div>':'')+
       cRanges+
       cRsiBlock+
       '<div class="mnews">🔎 <span class="lead">How we picked it up:</span> '+esc(c.note||'a signal in tonight\'s scan')+'<div class="mfound">'+(c.foundVia?esc(c.foundVia):'Caught by our wide-net scan — live news, market movers and analyst actions — then priced &amp; scored into the pot.')+'</div></div>'+
