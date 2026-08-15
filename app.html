@@ -4276,6 +4276,32 @@ function actionsHtml(D){
         '<div class="axannlist">'+rows+'</div></div>'});
     }
   })();
+  // (user ask) CHEAPER ALTERNATIVES — the momentum model rewards names near their highs, so the genuinely
+  // cheap / low-in-range names score lower and never reach the picks. Surface them as their own action
+  // buckets so there's always a "not-extended" option. Built from the scored pot, excluding served picks.
+  (function(){
+    var _served={}; (D.regions||[]).forEach(function(rg){ if(rg.id!==MKT)return; (rg.picks||[]).forEach(function(p){ if(p.sym&&p.sym!=='NONE')_served[p.sym]=1; }); });
+    var pot=(D.candidates||[]).filter(function(c){ return (c.region||'us')===MKT && c.sym && c.sym!=='NONE' && !_served[c.sym] && c.score && c.score.buy_now!=null; });
+    function harsh(c){ var pd=((c.score||{}).detail||{}).penalty_detail||[]; return pd.some(function(p){return /capital.raise|insider|stale|priced.in/i.test((p.k||'')+' '+(p.why||''));}); }
+    function hardex(c){ return ((c.score||{}).detail||{}).hard_excluded; }
+    function yp(c){ var r=(c.ranges&&c.ranges['1y'])||{}; return r.pos; }
+    function card(c,verb,why){ var reg=c.region||'us', chip=(c.score&&c.score.buy_now!=null)?'<span class="axchip">'+dualChip(c.score,c.sym,c.name,signalRows(c,reg))+'</span>':'';
+      return '<div class="axcard axcand ax-buy" data-sym="'+esc(c.sym)+'" data-region="'+esc(reg)+'" role="button" tabindex="0" aria-label="'+esc(c.sym)+'">'+
+        '<div class="axtop"><span class="axverb axv-buy">'+verb+'</span><span class="axsym">'+esc(c.sym)+'</span>'+chip+(c.price?'<span class="axpx mono">'+esc(cleanPrice(c.price))+'</span>':'')+'</div>'+
+        '<div class="axwhy">'+why+'</div></div>'; }
+    // 🍃 Room to run — calm RSI, lower half of its YEAR range, reclaimed its 20-day average (a base forming),
+    // nothing actively wrong. A constructive entry that hasn't run away — the alternative to a hot momentum name.
+    pot.filter(function(c){ var p=yp(c); return c.rsi!=null&&c.rsi>=30&&c.rsi<=58 && p!=null&&p<=0.5 && (c.ema&&c.ema.above_ema20) && !harsh(c)&&!hardex(c) && c.score.buy_now>=35; })
+      .sort(function(a,b){return b.score.buy_now-a.score.buy_now;}).slice(0,5).forEach(function(c){
+        var pc=Math.round((yp(c)||0)*100);
+        items.push({r:3.6, b:'room', h:card(c,'🍃 ROOM TO RUN','Cheaper alternative — RSI <b>'+Math.round(c.rsi)+'</b>, only <b>'+pc+'% up its year range</b>, and it\'s reclaimed its 20-day average (a base forming). Model '+c.score.buy_now+'/100 — not chasing a hot name.')}); });
+    // 💎 Bargains — beaten down near its year low, nothing actively wrong (no capital raise / insider selling /
+    // stale-or-priced-in catalyst, news not negative, not hard-excluded). Deeper value, higher risk.
+    pot.filter(function(c){ var p=yp(c); return c.rsi!=null&&c.rsi<=42 && p!=null&&p<=0.25 && !harsh(c)&&!hardex(c) && !(c.news_sentiment!=null&&c.news_sentiment<-0.1); })
+      .sort(function(a,b){return (a.rsi||99)-(b.rsi||99);}).slice(0,5).forEach(function(c){
+        var pc=Math.round((yp(c)||0)*100);
+        items.push({r:3.7, b:'bargain', h:card(c,'💎 BARGAIN','Beaten down — RSI <b>'+Math.round(c.rsi)+'</b>, near its year low ('+pc+'% up the range), nothing actively wrong that we can see. A value entry — higher risk, do your own read.')}); });
+  })();
   items.sort(function(a,b){return a.r-b.r;});
   if(!items.length) return '<div class="actions"><div class="axnone">No green lights this second — nothing’s dropped to its buy price yet. That’s fine; patience is the edge. Tap <b>📦 I own it</b> on anything you hold and we’ll surface it here when there’s a real move to make. 🍲</div></div>';
   // (user ask, v3) — the Actions section IS a row of ~5 compact SUMMARY cards, one per verb group:
@@ -4286,6 +4312,8 @@ function actionsHtml(D){
   var BUCKETS=[
     {k:'getin', ic:'🟢', label:'Get in',            verb:'to get in'},
     {k:'themes',ic:'🛒', label:'Themes to buy',      verb:'to buy'},
+    {k:'room',  ic:'🍃', label:'Room to run',        verb:'not extended'},
+    {k:'bargain',ic:'💎',label:'Bargains',           verb:'beaten down'},
     {k:'trim',  ic:'🔴', label:'Trim / take profit', verb:'to trim'},
     {k:'wait',  ic:'⏳', label:'Wait / watch',        verb:'to watch'},
     {k:'coming',ic:'📅', label:'Coming up',           verb:'coming up'},
@@ -8414,6 +8442,12 @@ function wire(D){
   // 🛒 Themes-to-buy action cards → the full theme read (openTheme by src+idx).
   document.querySelectorAll('.axtheme[data-theme-src]').forEach(function(c){
     function go(){ openTheme(c.dataset.themeSrc,+c.dataset.themeIdx); }
+    c.addEventListener('click',function(e){if(e.target.closest('a,button'))return;go();});
+    c.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();go();}});
+  });
+  // 🍃 Room-to-run / 💎 Bargain candidate action cards → the ticker's full read (openMover).
+  document.querySelectorAll('.axcand[data-sym]').forEach(function(c){
+    function go(){ openMover(c.dataset.sym,c.dataset.region); }
     c.addEventListener('click',function(e){if(e.target.closest('a,button'))return;go();});
     c.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();go();}});
   });
