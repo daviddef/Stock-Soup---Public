@@ -420,17 +420,29 @@
      whole; margin-bottom (not gap) does the vertical spacing that columns need. */
   .axgrid{column-count:3;column-gap:10px}
   @media(max-width:760px){.axgrid{column-count:1}}
-  /* (user ask v2) ONE grid that fills the width — cards flow 3-across, grouped only by a thin full-width
-     label between types. No bordered per-bucket containers (those wasted the right half of the screen). */
-  .axwrap{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px 12px;align-items:start}
-  @media(max-width:900px){ .axwrap{grid-template-columns:repeat(2,minmax(0,1fr))} }
-  @media(max-width:600px){ .axwrap{grid-template-columns:1fr} }
-  .axwrap>.axcard{margin-bottom:0;display:block;width:auto}   /* grid item, not masonry inline-block */
-  .axghead{grid-column:1/-1;display:flex;align-items:center;gap:8px;margin:8px 0 -2px;padding-bottom:5px;border-bottom:1px solid var(--line)}
-  .axghead:first-child{margin-top:0}
-  .axghead .axgic{font-size:14px;line-height:1}
-  .axghead .axglabel{font-size:12.5px;font-weight:900;color:var(--ink);text-transform:uppercase;letter-spacing:.04em}
-  .axghead .axgcount{font-size:11px;font-weight:800;color:var(--muted);background:var(--surface-2);border:1px solid var(--line);border-radius:999px;padding:0 7px}
+  /* (user ask v3) Actions = a row of ~5 compact SUMMARY tiles (one per verb group). Tap a tile → its detail
+     cards expand below in a width-filling grid. Default = just the tile row: one scannable line, no waste. */
+  .axsumgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:9px}
+  @media(max-width:560px){ .axsumgrid{grid-template-columns:repeat(2,minmax(0,1fr))} }
+  .axsum-card{text-align:left;cursor:pointer;border:1px solid var(--line);border-left:3px solid var(--muted);border-radius:12px;background:var(--surface);padding:11px 12px;display:flex;flex-direction:column;gap:4px;transition:transform .1s,border-color .12s,background .12s;font-family:inherit;min-width:0}
+  .axsum-card:hover{transform:translateY(-2px)}
+  .axsum-card[aria-expanded="true"]{background:var(--surface-2)}
+  .axsum-top{display:flex;align-items:center;gap:6px;min-width:0}
+  .axsum-ic{font-size:14px;line-height:1;flex:0 0 auto}
+  .axsum-lbl{font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:.03em;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .axsum-n{margin-left:auto;font-size:11px;font-weight:800;color:var(--muted);background:var(--surface-2);border:1px solid var(--line);border-radius:999px;padding:0 7px;flex:0 0 auto}
+  .axsum-big{font-size:14px;font-weight:800;color:var(--ink)}
+  .axsum-prev{font-size:11.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-variant-numeric:tabular-nums}
+  .axsum-card[aria-expanded="true"] .axsum-n{background:var(--broth);color:#fff;border-color:transparent}
+  /* per-group accent colour on the left rail + the count pill */
+  .axs-getin{border-left-color:var(--buy)} .axs-themes{border-left-color:#1fb862}
+  .axs-trim{border-left-color:#ff5a5a} .axs-wait{border-left-color:#f2a33d}
+  .axs-coming{border-left-color:#f2a33d} .axs-read{border-left-color:var(--muted)}
+  .axdetail{margin-top:11px}
+  .axdetail .axwrap{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px 12px;align-items:start}
+  @media(max-width:900px){ .axdetail .axwrap{grid-template-columns:repeat(2,minmax(0,1fr))} }
+  @media(max-width:600px){ .axdetail .axwrap{grid-template-columns:1fr} }
+  .axdetail .axcard{margin-bottom:0;display:block;width:auto}
   .axcard{background:linear-gradient(180deg,rgba(35,194,103,.11),transparent 72%),var(--surface);border:1px solid rgba(35,194,103,.34);border-left:3px solid var(--buy);border-radius:13px;padding:13px 15px;cursor:pointer;transition:border-color .12s,transform .05s;break-inside:avoid;-webkit-column-break-inside:avoid;margin-bottom:10px;display:inline-block;width:100%;box-sizing:border-box}
   .axcard:hover{border-color:var(--buy)} .axcard:active{transform:scale(.995)}
   /* #292 PEAD overlay */
@@ -4266,26 +4278,34 @@ function actionsHtml(D){
   })();
   items.sort(function(a,b){return a.r-b.r;});
   if(!items.length) return '<div class="actions"><div class="axnone">No green lights this second — nothing’s dropped to its buy price yet. That’s fine; patience is the edge. Tap <b>📦 I own it</b> on anything you hold and we’ll surface it here when there’s a real move to make. 🍲</div></div>';
-  // (user ask, v2) — ONE section, ONE grid that FILLS the width (cards flow 3-across), with just a thin
-  // full-width label between types. The old version put each bucket in its own bordered container, so a
-  // group of 1-2 cards only filled one column and wasted the right half of the screen. Now the grouping is
-  // a lightweight divider inside a single grid — grouped, compact, no wasted real estate.
+  // (user ask, v3) — the Actions section IS a row of ~5 compact SUMMARY cards, one per verb group:
+  // "🟢 Get in · 2 · STO · ANZ", "📰 Read these · 5", etc. Tapping a summary card expands its detail
+  // (the full action cards) right below, in a width-filling grid. Default = just the summary row (one
+  // scannable line of tiles), so there's zero wasted real estate and no overwhelm. The detail cards are
+  // rendered (hidden) in the DOM so the existing card wiring works with no re-binding.
   var BUCKETS=[
-    {k:'getin', ic:'🟢', label:'Get in'},
-    {k:'themes',ic:'🛒', label:'Themes to buy'},
-    {k:'trim',  ic:'🔴', label:'Trim / take profit'},
-    {k:'wait',  ic:'⏳', label:'Wait / watch'},
-    {k:'coming',ic:'📅', label:'Coming up'},
-    {k:'read',  ic:'📰', label:'Read these'}
+    {k:'getin', ic:'🟢', label:'Get in',            verb:'to get in'},
+    {k:'themes',ic:'🛒', label:'Themes to buy',      verb:'to buy'},
+    {k:'trim',  ic:'🔴', label:'Trim / take profit', verb:'to trim'},
+    {k:'wait',  ic:'⏳', label:'Wait / watch',        verb:'to watch'},
+    {k:'coming',ic:'📅', label:'Coming up',           verb:'coming up'},
+    {k:'read',  ic:'📰', label:'Read these',          verb:'to read'}
   ];
-  var out='';
+  function _axSubject(h){ var m=String(h).match(/<span class="axsym[^"]*">([\s\S]*?)<\/span>/); return m?m[1].replace(/<[^>]+>/g,'').trim():''; }
+  var tiles='', details='', firstK=null;
   BUCKETS.forEach(function(bk){
     var mine=items.filter(function(x){return (x.b||'read')===bk.k;});
     if(!mine.length) return;
-    out+='<div class="axghead"><span class="axgic">'+bk.ic+'</span><span class="axglabel">'+bk.label+'</span><span class="axgcount">'+mine.length+'</span></div>';
-    out+=mine.map(function(x){return x.h;}).join('');
+    if(!firstK) firstK=bk.k;
+    var subs=mine.map(function(x){return _axSubject(x.h);}).filter(Boolean);
+    var prev=subs.slice(0,3).map(esc).join(' · ')+(subs.length>3?' +'+(subs.length-3):'');
+    tiles+='<button class="axsum-card axs-'+bk.k+'" data-actgrp="'+bk.k+'" aria-expanded="false" aria-label="'+bk.label+' — '+mine.length+' '+(mine.length===1?'item':'items')+'">'+
+      '<div class="axsum-top"><span class="axsum-ic">'+bk.ic+'</span><span class="axsum-lbl">'+esc(bk.label)+'</span><span class="axsum-n">'+mine.length+'</span></div>'+
+      '<div class="axsum-big">'+mine.length+' '+esc(bk.verb)+'</div>'+
+      (prev?'<div class="axsum-prev">'+prev+'</div>':'')+'</button>';
+    details+='<div class="axdetail" data-actgrp-body="'+bk.k+'" hidden><div class="axwrap">'+mine.map(function(x){return x.h;}).join('')+'</div></div>';
   });
-  return '<div class="actions"><div class="axwrap">'+out+'</div></div>';
+  return '<div class="actions"><div class="axsumgrid">'+tiles+'</div>'+details+'</div>';
 }
 
 // #143 (user ask, scoped 9 Aug 2026): "how easily can we build a bargain alert — cheap, no real
@@ -8396,6 +8416,16 @@ function wire(D){
     function go(){ openTheme(c.dataset.themeSrc,+c.dataset.themeIdx); }
     c.addEventListener('click',function(e){if(e.target.closest('a,button'))return;go();});
     c.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();go();}});
+  });
+  // Action SUMMARY tiles → expand that group's detail cards below (accordion; the detail cards are already
+  // in the DOM + wired, so no re-binding). Tapping the open tile collapses it; opening one closes the rest.
+  document.querySelectorAll('.axsum-card[data-actgrp]').forEach(function(t){
+    t.addEventListener('click',function(){
+      var k=t.dataset.actgrp, wasOpen=t.getAttribute('aria-expanded')==='true';
+      document.querySelectorAll('.axsum-card[data-actgrp]').forEach(function(o){o.setAttribute('aria-expanded','false');});
+      document.querySelectorAll('.axdetail[data-actgrp-body]').forEach(function(b){b.hidden=true;});
+      if(!wasOpen){ t.setAttribute('aria-expanded','true'); var body=document.querySelector('.axdetail[data-actgrp-body="'+k+'"]'); if(body) body.hidden=false; }
+    });
   });
   // 📢 Key-announcements card → open the Market backdrop drawer on its Announcements panel + scroll to it.
   document.querySelectorAll('.axcard[data-backdrop]').forEach(function(c){
