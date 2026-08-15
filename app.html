@@ -430,7 +430,7 @@
   .axsum-top{display:flex;align-items:center;gap:6px;min-width:0}
   .axsum-ic{font-size:14px;line-height:1;flex:0 0 auto}
   .axsum-lbl{font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:.03em;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .axsum-n{margin-left:auto;font-size:11px;font-weight:800;color:var(--muted);background:var(--surface-2);border:1px solid var(--line);border-radius:999px;padding:0 7px;flex:0 0 auto}
+  .axsum-n{margin-left:auto;font-size:11px;font-weight:800;color:var(--broth);background:rgba(232,102,42,.12);border:1px solid rgba(232,102,42,.32);border-radius:999px;padding:0 7px;flex:0 0 auto}  /* (user ask) always orange, not just the open tile */
   .axsum-big{font-size:14px;font-weight:800;color:var(--ink)}
   .axsum-prev{font-size:11.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-variant-numeric:tabular-nums}
   .axsum-card[aria-expanded="true"] .axsum-n{background:var(--broth);color:#fff;border-color:transparent}
@@ -4207,6 +4207,26 @@ function actionsHtml(D){
       '<div class="axtop"><span class="axverb axv-'+a.cls+'">'+ic+' '+esc(a.verb)+'</span><span class="axsym">'+esc(w.sym)+'</span>'+chip+(pi.price!=null?'<span class="axpx mono">'+esc(pi.cur||'$')+pi.price+(pi.change?' <span class="'+(pi.up?'up':'down')+'">'+(pi.up?'▲':'▼')+esc(pi.change)+'</span>':'')+'</span>':'')+ex.wb+'</div>'+ex.chart+
       '<div class="axwhy">'+esc(a.why)+'</div></div>'});
   });
+  // (user ask) two more watchlist-driven actions: a name you OWN dropping hard today (reassess), and a
+  // watchlist name you DON'T own that's heating up (review before it runs). Uses the same live price map.
+  (function(){
+    var _flag={}; acts.forEach(function(x){_flag[x.w.sym]=1;});
+    var wl=[]; try{wl=wlGet();}catch(e){}
+    function chgOf(pi){ var n=parseFloat(String(pi.change||'').replace(/[^0-9.]/g,'')); return isFinite(n)?n:null; }
+    function wlcard(w,verb,vcls,why){ var pi=pm[w.sym+'|'+w.region]||{};
+      return '<div class="axcard axcand ax-'+vcls+'" data-sym="'+esc(w.sym)+'" data-region="'+esc(w.region)+'" role="button" tabindex="0" aria-label="'+esc(w.sym)+'">'+
+        '<div class="axtop"><span class="axverb axv-'+vcls+'">'+verb+'</span><span class="axsym">'+esc(w.sym)+'</span>'+_axChip(w.sym,w.region)+(pi.price!=null?'<span class="axpx mono">'+esc((pi.cur||'$')+pi.price)+(pi.change?' <span class="'+(pi.up?'up':'down')+'">'+(pi.up?'▲':'▼')+esc(pi.change)+'</span>':'')+'</span>':'')+'</div>'+
+        '<div class="axwhy">'+why+'</div></div>'; }
+    wl.forEach(function(w){
+      if((w.region||'us')!==MKT) return;
+      var pi=pm[w.sym+'|'+w.region]||{}; var c=chgOf(pi); if(c==null) return;
+      if(w.own && pi.up===false && c>=4 && !_flag[w.sym]){
+        items.push({r:1.5, b:'trim', h:wlcard(w,'🔻 DROPPING','sell','A name you <b>own</b> is down <b>'+c.toFixed(1)+'%</b> today — falling hard. Worth a look: is the thesis still intact, or is it time to trim/cut?')});
+      } else if(!w.own && pi.up===true && c>=4){
+        items.push({r:3.9, b:'review', h:wlcard(w,'📈 HEATING UP','buy','A watchlist name you <b>don\'t own</b> is up <b>'+c.toFixed(1)+'%</b> today — moving without you. Worth a fresh review before it runs.')});
+      }
+    });
+  })();
   // Tonight's picks (the tier buys) — GET IN, or ⏳ for a wait-verdict pick (ranked lower)
   (D.regions||[]).forEach(function(rg){ if(rg.id!==MKT) return;
     (rg.picks||[]).forEach(function(p,idx){ if(p.sym==='NONE'||_readySet[p.sym]||_chasedSet[p.sym]) return;
@@ -4331,6 +4351,7 @@ function actionsHtml(D){
     {k:'themes',ic:'🛒', label:'Themes to buy',      verb:'to buy'},
     {k:'room',  ic:'🍃', label:'Room to run',        verb:'not extended'},
     {k:'bargain',ic:'💎',label:'Bargains',           verb:'beaten down'},
+    {k:'review',ic:'🔎', label:'Review — heating up', verb:'to review'},
     {k:'trim',  ic:'🔴', label:'Trim / take profit', verb:'to trim'},
     {k:'wait',  ic:'⏳', label:'Wait / watch',        verb:'to watch'},
     {k:'coming',ic:'📅', label:'Coming up',           verb:'coming up'},
