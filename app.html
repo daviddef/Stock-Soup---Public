@@ -1253,6 +1253,8 @@
   .annspark{margin:7px 0 2px} .annspark .spark{height:28px;width:100%;display:block}
   .annwhy{font-size:12px;color:var(--muted);margin-top:3px;line-height:1.4}
   .anndr{display:inline-block;font-size:11px;font-weight:800;color:var(--broth);margin-top:6px;cursor:pointer;text-decoration:none}
+  .anndeep{font-size:12px;line-height:1.4;margin-top:6px;padding:7px 9px;border-radius:8px;background:rgba(232,102,42,.08);border:1px solid rgba(232,102,42,.2);color:var(--ink)}
+  .anndeep b{color:var(--broth)}
   .anndr:hover{text-decoration:underline}
   .ecallwrap{margin:6px 0 2px}
   .ecall{display:inline-block;font-size:12.5px;font-weight:700;color:var(--broth);text-decoration:none;background:var(--broth-tint,rgba(255,122,26,.10));border:1px solid var(--line);border-radius:10px;padding:8px 12px}
@@ -4890,9 +4892,13 @@ function announcementsHtml(items){
     // #324 — the deep-read flag was an admin-only to-do marker. Make it a PUBLIC, tappable link that runs
     // the ready-made query against the news, so any user can go a level deeper on a price-sensitive filing
     // right now (the headline feed has no body text — this is the "read the real coverage" escape hatch).
-    var dr=a.deepReadQuery?'<a class="anndr" href="https://news.google.com/search?q='+encodeURIComponent(a.deepReadQuery)+'" target="_blank" rel="noopener" title="Search the news coverage for the real figures">🔎 Read the coverage ↗</a>':'';
+    // #324 — when a run has actually done the deep-read (WebSearch turned up real figures), a.deepRead
+    // holds that summary. Show it prominently for everyone — it's the "what the number actually was" line
+    // a bare headline can't give. Falls back to the tappable coverage-search link when no summary exists yet.
+    var deep=a.deepRead?'<div class="anndeep">🔍 <b>The detail:</b> '+esc(a.deepRead)+'</div>':'';
+    var dr=(!a.deepRead&&a.deepReadQuery)?'<a class="anndr" href="https://news.google.com/search?q='+encodeURIComponent(a.deepReadQuery)+'" target="_blank" rel="noopener" title="Search the news coverage for the real figures">🔎 Read the coverage ↗</a>':'';
     return '<div class="annrow '+t.cls+'"><div class="anntop"><span class="annic">'+t.ic+'</span>'+head+(a.date?'<span class="anndate">'+esc(String(a.date).slice(0,10))+'</span>':'')+'</div>'+
-      '<div class="annwhy">'+esc(why)+'</div>'+dr+'</div>';
+      '<div class="annwhy">'+esc(why)+'</div>'+deep+dr+'</div>';
   }).join('');
   return '<div class="viz"><h4>📢 Key announcements</h4>'+rows+'</div>';
 }
