@@ -3338,8 +3338,29 @@ function signalRows(p,region,opts){
     else if(buyers>0&&!sellers){ itone='pos'; iread=buyers+' insider'+(buyers>1?'s':'')+' bought in 90 days'; }
     else if(sellers>0&&!buyers){ itone='neg'; iread=sellers+' insider'+(sellers>1?'s':'')+' sold in 90 days'; }
     else { itone='mix'; iread=buyers+' bought, '+sellers+' sold in 90 days'; }
+    // #287 $-weighting — a $2M buy is worth far more than a cluster of $5k ones. Append the real net
+    // open-market dollar flow when EDGAR gave us the transaction values.
+    var _usdB=function(v){var a=Math.abs(v);return a>=1e9?('$'+(a/1e9).toFixed(1)+'B'):a>=1e6?('$'+(a/1e6).toFixed(1)+'M'):('$'+Math.round(a/1e3)+'k');};
+    if(ins.netUsd90d!=null&&ins.netUsd90d!==0){ iread+=' · net '+(ins.netUsd90d>0?'+':'−')+_usdB(ins.netUsd90d)+(ins.netUsd90d>0?' bought':' sold'); }
     rows.push({icon:'🧑‍💼',label:'Insider activity',tone:itone,read:iread,
-      explain:'What the company\'s own officers and directors are doing with their own money — real open-market buys/sells only, not routine transfers or grants. Several insiders buying together in a short window is a stronger tell than any one of them acting alone.'});
+      explain:'What the company\'s own officers and directors are doing with their own money — real open-market buys/sells only, not routine transfers or grants. Several insiders buying together in a short window is a stronger tell than any one of them acting alone.'+(ins.netUsd90d!=null?' Dollar-weighted: '+_usdB(ins.buyUsd90d||0)+' bought vs '+_usdB(ins.sellUsd90d||0)+' sold over 90 days (net '+(ins.netUsd90d>0?'+':'−')+_usdB(ins.netUsd90d)+') — a big-dollar purchase is a far stronger conviction signal than a raw count of tiny ones. Source: SEC EDGAR Form 4 transaction values.':'')});
+  }
+  // #287 — activist / passive 5%+ stake filings (SC 13D / SC 13G, US EDGAR). A fresh 13D means an investor
+  // just crossed 5% WITH intent to influence the company (activist) — one of the most market-moving catalysts
+  // there is. A 13G is the passive-holder version (index funds etc.). Amendments (a change to an existing
+  // position) are noted but weighted lower than a brand-new filing.
+  var act=p&&p.activist;
+  if(act&&(act.d13Days!=null||act.g13Days!=null)){
+    if(act.d13Days!=null){
+      var fresh=act.d13Days<=30&&!act.d13Amend;
+      rows.push({icon:'🎯',label:'Activist stake',tone:fresh?'pos':'mix',
+        read:(act.d13Amend?'13D amended ':'Activist filed 13D ')+act.d13Days+'d ago'+(fresh?' — fresh 5%+ stake':''),
+        explain:'A Schedule 13D is filed within 10 days of an investor crossing 5% ownership WITH intent to influence the company — the classic activist catalyst (board seats, strategic change, a push for a sale). '+(act.d13Amend?'This is an amendment to an existing position (a change in stake), not a brand-new filing.':'This is a brand-new filing — a fresh activist position.')+' Source: SEC EDGAR SC 13D'+(act.d13Date?' ('+esc(act.d13Date)+')':'')+'.'});
+    } else if(act.g13Days!=null&&act.g13Days<=60){
+      rows.push({icon:'🏦',label:'Big holder',tone:'mix',
+        read:(act.g13Amend?'13G amended ':'Passive 5%+ holder filed ')+act.g13Days+'d ago',
+        explain:'A Schedule 13G is filed by a passive investor (index funds, large asset managers) who has crossed 5% ownership with NO intent to control the company. It signals significant institutional ownership but, unlike a 13D, no activist agenda. Source: SEC EDGAR SC 13G'+(act.g13Date?' ('+esc(act.g13Date)+')':'')+'.'});
+    }
   }
   // #short — short interest was a real scoring input (penalty + short-trend nudge) that never had its
   // own card in the juice — user asked to surface it. Elevated short = a sizeable bearish crowd (also
