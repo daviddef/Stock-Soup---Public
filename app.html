@@ -218,6 +218,14 @@
   @keyframes tkflash{ 0%{background:rgba(255,77,77,.55);box-shadow:0 0 0 2px rgba(255,77,77,.6),0 0 12px rgba(255,77,77,.5)} 12%{background:rgba(255,77,77,.15)} 24%{background:rgba(255,77,77,.5)} 100%{background:transparent;box-shadow:0 0 0 2px transparent,0 0 0 transparent} }
   .tkfresh{ animation:tkflash 1.8s ease-out 1; border-radius:7px; }
   @media(prefers-reduced-motion:reduce){ .tkinner{animation:none} .tkrow{overflow-x:auto} .tkfresh{animation:none;box-shadow:0 0 0 2px rgba(255,77,77,.6);border-radius:7px} }
+  /* (user ask) watchlist ticker board on the Favourite Course tab */
+  .tknews{font-size:12px;font-weight:600;color:#ffe6bd}
+  .tknews.up{color:#37e07a} .tknews.down{color:#ff5a5a}
+  .tkitem.tkown .tksym{color:#f2a33d}
+  .wtkr{margin:4px 0 16px}
+  .wtkr-cap{font-size:10.5px;font-weight:800;letter-spacing:.03em;color:#c98a34;text-transform:uppercase;padding:1px 6px 6px;text-shadow:0 0 6px rgba(242,163,61,.35)}
+  .wtkr-cap .up{color:#37e07a} .wtkr-cap .down{color:#ff5a5a} .wtkr-cap .wtkr-own{color:#f2a33d;text-transform:none;font-weight:700}
+  .wtkr-empty{color:var(--faint);font-size:11px;padding:0 8px}
   .glance.led .gt-med,.glance.led .gt-wide{min-width:0;max-width:none}
   .glance.led .gt-clip{max-width:52vw}
   @media(prefers-reduced-motion:reduce){.glance.led{overflow-y:auto}}
@@ -4779,6 +4787,7 @@ function render(D,H){
   // ===== ⭐ YOUR FAVOURITES =====
   '<div class="tabview" id="tab-faves">'+
     favesHead()+
+    watchTickerHtml(D)+
     '<section>'+
       '<div class="wlalert" id="wlAlert" role="status" aria-live="polite" style="display:none"></div>'+
       /* #207 — add-ticker bar moved to the top, above the performance summary cards */
@@ -5859,6 +5868,39 @@ function etoroWL(title,emoji,wl,shared){
   return '<section class="etorowl"><div class="sec-head"><h2 class="display">'+emoji+' '+esc(title)+'</h2></div>'+
     '<p class="sec-sub">'+(shared?'Shared with everyone':'🔒 Private to you')+' — curated on eToro, scored by the model'+(ago?' · synced '+esc(ago):'')+'. Tap a card for the full read.</p>'+
     '<div class="wlgrid">'+wl.items.map(wlCard).join('')+'</div></section>';
+}
+// (user ask) a watchlist-focused live ticker board for the Favourite Course tab. Row 1 = your watchlist's
+// UP movers today, row 3 = its DOWN movers (📦 marks the ones you own), row 2 = announcements + news for the
+// stocks you OWN only. Same exchange-tape styling as the header ticker; every item taps to its full read.
+function watchTickerHtml(D){
+  var wl=[]; try{wl=wlGet();}catch(e){}
+  if(!wl.length) return '';
+  var pm=wlPriceMap(D), rows=[];
+  wl.forEach(function(w){ var pi=pm[w.sym+'|'+w.region]||{}; if(pi.price==null)return;
+    var c=parseFloat(String(pi.change||'').replace(/[^0-9.]/g,'')); rows.push({sym:w.sym,region:w.region,own:!!w.own,chg:isFinite(c)?c:0,up:pi.up!==false}); });
+  if(!rows.length) return '';
+  function tk(r){ return '<span class="tkitem'+(r.own?' tkown':'')+'" data-sym="'+esc(r.sym)+'" data-region="'+esc(r.region)+'"><span class="tksym">'+(r.own?'📦 ':'')+esc(r.sym)+'</span><span class="tkchg '+(r.up?'up':'down')+'">'+(r.up?'▲':'▼')+r.chg.toFixed(1)+'%</span></span>'; }
+  var sep='<span class="tksep">•</span>';
+  var ups=rows.filter(function(r){return r.up;}).sort(function(a,b){return b.chg-a.chg;}).map(tk).join(sep);
+  var downs=rows.filter(function(r){return !r.up;}).sort(function(a,b){return b.chg-a.chg;}).map(tk).join(sep);
+  var ownSet={}; rows.forEach(function(r){ if(r.own)ownSet[r.sym]=1; });
+  var pool=(D.candidates||[]).concat((D.regions||[]).reduce(function(a,rg){return a.concat(rg.picks||[]);},[]));
+  var mid=[], seen={};
+  pool.forEach(function(o){ if(!o.sym||!ownSet[o.sym])return; var reg=o.region||MKT;
+    (o.announcements||[]).forEach(function(a){ if(!a||!(a.why||a.headline))return; var t=String(a.why||a.headline), k=o.sym+'|'+t; if(seen[k])return; seen[k]=1;
+      var tc=(a.tone==='bullish'||a.tone==='bull')?' up':((a.tone==='bearish'||a.tone==='bear')?' down':'');
+      mid.push('<span class="tkitem" data-sym="'+esc(o.sym)+'" data-region="'+esc(reg)+'"><span class="tksym">📢 '+esc(o.sym)+'</span><span class="tknews'+tc+'">'+esc(t.length>44?t.slice(0,42)+'…':t)+'</span></span>'); });
+    if(o.news){ var t2=String(o.news), k2=o.sym+'|'+t2; if(!seen[k2]){ seen[k2]=1;
+      mid.push('<span class="tkitem" data-sym="'+esc(o.sym)+'" data-region="'+esc(reg)+'"><span class="tksym">📰 '+esc(o.sym)+'</span><span class="tknews">'+esc(t2.length>44?t2.slice(0,42)+'…':t2)+'</span></span>'); } }
+  });
+  function tkrow(inner,dir,dur){ if(!inner) return ''; return '<div class="tkrow tk-'+dir+'" style="--dur:'+dur+'"><div class="tkinner">'+inner+sep+inner+sep+'</div></div>'; }
+  var rowsHtml=
+    tkrow(ups||'<span class="tkitem"><span class="tksym" style="color:var(--faint)">no watchlist gainers today</span></span>','left','42s')+
+    (mid.length?tkrow(mid.join(sep),'right','56s'):'<div class="tkrow" style="height:26px;display:flex;align-items:center"><span class="wtkr-empty">No fresh news/announcements on the stocks you own</span></div>')+
+    tkrow(downs||'<span class="tkitem"><span class="tksym" style="color:var(--faint)">no watchlist fallers today</span></span>','left','48s');
+  return '<div class="tickerwrap ticklive wtkr" role="group" aria-label="Your watchlist — live movers and owned-stock news">'+
+    '<div class="wtkr-cap">📈 Your watchlist · <span class="up">gainers ↑</span> · owned-stock news · <span class="down">fallers ↓</span> &nbsp;<span class="wtkr-own">📦 = you own it</span></div>'+
+    rowsHtml+'</div>';
 }
 function favesHead(){
   // #228 (user ask) — dropped the WATCHING / YOU OWN header stat pills: the counts already show in the
