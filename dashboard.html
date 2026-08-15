@@ -1950,6 +1950,9 @@
   .mshare{position:absolute;top:14px;right:56px;background:var(--surface-2);border:1px solid var(--line);color:var(--ink);
     width:34px;height:34px;border-radius:10px;cursor:pointer;font-size:15px;line-height:1}
   .mshare:focus-visible{outline:2px solid var(--broth);outline-offset:2px}
+  .myahoo{position:absolute;top:14px;right:98px;background:var(--surface-2);border:1px solid var(--line);color:var(--ink);
+    width:34px;height:34px;border-radius:10px;cursor:pointer;font-size:15px;line-height:34px;text-align:center;text-decoration:none;display:inline-block}
+  .myahoo:focus-visible{outline:2px solid var(--broth);outline-offset:2px}
   /* .docsbar is a plain flex row (not the positioned .mheader .mshare was built for) — cancel the
      absolute placement so the button sits in normal flow next to the close button, not floating. */
   .docsbar .mshare{position:static}
@@ -3658,7 +3661,7 @@ function oneMoveHtml(D){
   return '<div class="onemove '+esc(p.vclass||'')+'" data-sym="'+esc(p.sym)+'" data-region="'+esc(region)+'" role="button" tabindex="0" aria-label="Tonight’s one move: '+esc(p.sym)+'">'+
     '<div class="omeye">🍽️ Tonight’s one move · '+(region==='us'?'U.S.':'Australia')+'</div>'+
     '<div class="omtop"><div class="omsym">'+esc(p.sym)+(p.name?' <span class="omname">'+esc(p.name)+'</span>':'')+'</div>'+
-      '<div class="omscores"><span class="omsc omjuice">🍊 '+p.score.buy_now+'</span>'+cherry+'</div></div>'+
+      '<div class="omscores"><span class="omsc omjuice">🍊 '+Math.round(p.score.buy_now)+'</span>'+cherry+'</div></div>'+
     (p.verdict?'<div class="omverd '+esc(p.vclass||'')+'">'+tfBW(p.tf)+' · '+esc(p.verdict)+'</div>':'')+
     (why?'<p class="omwhy">'+esc(why)+'</p>':'')+
     '<div class="ombuy"><span class="ombz">'+buy+'</span><span class="omcta">See the full card →</span></div>'+
@@ -3790,7 +3793,7 @@ function glanceStripHtml(D){
   var picks=rg?(rg.picks||[]).filter(function(p){return p&&p.sym&&p.sym!=='NONE'&&p.score&&p.score.buy_now!=null;}):[];
   var om=picks.slice().sort(function(a,b){return b.score.buy_now-a.score.buy_now;})[0];
   if(om&&(om.score.buy_now||0)>=45)
-    tiles.push('<button class="gt gt-fun-orange" data-glance="onemove" data-sym="'+esc(om.sym)+'" data-region="'+esc(region)+'" title="Tonight’s single best move"><span class="gt-k">🎯 One move</span><span class="gt-v">'+esc(om.sym)+' <span class="gt-sub">'+om.score.buy_now+'🍊</span></span></button>');
+    tiles.push('<button class="gt gt-fun-orange" data-glance="onemove" data-sym="'+esc(om.sym)+'" data-region="'+esc(region)+'" title="Tonight’s single best move"><span class="gt-k">🎯 One move</span><span class="gt-v">'+esc(om.sym)+' <span class="gt-sub">'+Math.round(om.score.buy_now)+'🍊</span></span></button>');
   // Tonight — the actual served pick tickers (user ask: "just put the tickers in there")
   if(picks.length){ var _pt=picks.map(function(p){return esc(p.sym);}).slice(0,3).join(' · ');
     tiles.push('<button class="gt gt-med" data-glance="picks" title="Tonight’s served picks"><span class="gt-k">🍲 Tonight</span><span class="gt-v"><span class="gt-clip">'+_pt+'</span></span></button>'); }
@@ -3847,7 +3850,7 @@ function glanceStripHtml(D){
   // .gt tiles via the existing .gt[data-glance] handler, crawl items via the .tkitem handler (both in wire()).
   var crawl=[];
   picks.forEach(function(p){ var chg=(p.change!=null)?fmtChg(p.change):''; var up=(p.up!==false);
-    crawl.push('<span class="tkitem'+tkFresh('pk:'+region+':'+p.sym, chg+'|'+p.score.buy_now)+'" data-sym="'+esc(p.sym)+'" data-region="'+esc(region)+'"><span class="tksym">'+esc(p.sym)+'</span><span class="tkscore">'+p.score.buy_now+'🍊</span>'+(chg?'<span class="tkchg '+(up?'up':'down')+'">'+(up?'▲':'▼')+String(chg).replace(/^[+\-\s]*/,'')+'</span>':'')+'</span>'); });
+    crawl.push('<span class="tkitem'+tkFresh('pk:'+region+':'+p.sym, chg+'|'+p.score.buy_now)+'" data-sym="'+esc(p.sym)+'" data-region="'+esc(region)+'"><span class="tksym">'+esc(p.sym)+'</span><span class="tkscore">'+Math.round(p.score.buy_now)+'🍊</span>'+(chg?'<span class="tkchg '+(up?'up':'down')+'">'+(up?'▲':'▼')+String(chg).replace(/^[+\-\s]*/,'')+'</span>':'')+'</span>'); });
   var tm=(D.topMovers&&D.topMovers[region])||{};
   (tm.gainers||[]).slice(0,5).concat((tm.losers||[]).slice(0,5)).forEach(function(m){
     if(!m||!m.sym) return; var cp=(m.change_pct!=null)?m.change_pct:m.pct; if(cp==null||!isFinite(+cp)) return; var up=+cp>=0;
@@ -4014,6 +4017,11 @@ function doShare(hash,label){
 }
 function mShareBtn(hash,label){
   return '<button type="button" class="mshare" data-share-hash="'+esc(hash)+'" data-share-label="'+esc(label)+'" aria-label="Copy a link to '+esc(label)+'" title="Copy a link to share">🔗</button>';
+}
+// A direct "open this stock on Yahoo Finance" link in every ticker overlay header — sits left of the
+// share button. Uses yf() (already handles the .AX suffix for ASX names). Opens a new tab.
+function mYahooBtn(sym,region){
+  return '<a class="myahoo" href="'+yf(sym,region)+'" target="_blank" rel="noopener" aria-label="Open '+esc(sym)+' on Yahoo Finance" title="Open on Yahoo Finance ↗">📈</a>';
 }
 document.body.addEventListener('click',function(e){
   var b=e.target.closest('.mshare,[data-share-hash]'); if(!b) return;
@@ -4339,7 +4347,7 @@ function actionsHtml(D){
     pot.filter(function(c){ var p=yp(c); return c.rsi!=null&&c.rsi>=30&&c.rsi<=58 && p!=null&&p<=0.5 && (c.ema&&c.ema.above_ema20) && !harsh(c)&&!hardex(c) && c.score.buy_now>=35; })
       .sort(function(a,b){return b.score.buy_now-a.score.buy_now;}).slice(0,5).forEach(function(c){
         var pc=Math.round((yp(c)||0)*100);
-        items.push({r:3.6, b:'room', h:card(c,'🍃 ROOM TO RUN','Cheaper alternative — RSI <b>'+Math.round(c.rsi)+'</b>, only <b>'+pc+'% up its year range</b>, and it\'s reclaimed its 20-day average (a base forming). Model '+c.score.buy_now+'/100 — not chasing a hot name.')}); });
+        items.push({r:3.6, b:'room', h:card(c,'🍃 ROOM TO RUN','Cheaper alternative — RSI <b>'+Math.round(c.rsi)+'</b>, only <b>'+pc+'% up its year range</b>, and it\'s reclaimed its 20-day average (a base forming). Model '+Math.round(c.score.buy_now)+'/100 — not chasing a hot name.')}); });
     // 💎 Bargains — beaten down near its year low, nothing actively wrong (no capital raise / insider selling /
     // stale-or-priced-in catalyst, news not negative, not hard-excluded). Deeper value, higher risk.
     pot.filter(function(c){ var p=yp(c); return c.rsi!=null&&c.rsi<=42 && p!=null&&p<=0.25 && !harsh(c)&&!hardex(c) && !(c.news_sentiment!=null&&c.news_sentiment<-0.1); })
@@ -4948,7 +4956,7 @@ function juiceChip(score,sym,name,sigRows){
   // still gate on detail before calling, so this doesn't change their behaviour.
   if(!score||score.buy_now==null) return '';
   var jid=++JUICE_SEQ; JUICE_CACHE[jid]={score:score,sym:sym,name:name,sigRows:sigRows||[]};
-  return '<button class="juicebtn" data-juice-id="'+jid+'" title="Tap for the full breakdown — '+esc(score.band||'')+'">🍊 '+score.buy_now+'</button>';
+  return '<button class="juicebtn" data-juice-id="'+jid+'" title="Tap for the full breakdown — '+esc(score.band||'')+'">🍊 '+Math.round(score.buy_now)+'</button>';
 }
 function scoreBarHtml(score,sym,name){
   if(!score) return '';
@@ -4967,9 +4975,9 @@ function scoreBarHtml(score,sym,name){
   var juiceBtn='';
   if(score.detail){
     var jid=++JUICE_SEQ; JUICE_CACHE[jid]={score:score,sym:sym,name:name,sigRows:[]};
-    juiceBtn=' <button class="juicebtn" data-juice-id="'+jid+'" title="Tap for the full breakdown">🍊 '+score.buy_now+'</button>';
+    juiceBtn=' <button class="juicebtn" data-juice-id="'+jid+'" title="Tap for the full breakdown">🍊 '+Math.round(score.buy_now)+'</button>';
   }
-  return '<div class="viz"><h4>🧮 Buy-Now model score · <span class="scorenum">'+score.buy_now+'/100 · '+esc(score.band)+'</span>'+juiceBtn+'</h4>'+
+  return '<div class="viz"><h4>🧮 Buy-Now model score · <span class="scorenum">'+Math.round(score.buy_now)+'/100 · '+esc(score.band)+'</span>'+juiceBtn+'</h4>'+
     '<div class="scorebar">'+segs+'</div><div class="scorelegend">'+leg+'</div>'+
     (score.verdict?'<div class="rsimeta" style="margin-top:6px"><b>'+esc(score.verdict)+'</b>'+(score.child_sentence?' — '+esc(score.child_sentence):'')+'</div>':'')+
   '</div>';
@@ -5413,6 +5421,7 @@ function openModal(p,region,cur){
   m.className='modal';
   m.innerHTML=
     '<div class="mhead '+esc(p.vclass)+'"><button class="mclose" id="mClose" aria-label="Close">✕</button>'+
+      mYahooBtn(p.sym,region)+
       mShareBtn('sym/'+region+'/'+encodeURIComponent(p.sym),p.sym)+
       '<div class="mtf">'+tfBW(p.tf)+' · '+(region==='au'?'🇦🇺 ASX':'🇺🇸 US')+'</div>'+
       '<div class="mtop"><div><div class="msym" id="mTitle">'+esc(p.sym)+'</div><div class="mco">'+qlink(p.sym,region,p.name)+' ↗</div></div>'+
@@ -5885,18 +5894,31 @@ function watchTickerHtml(D){
   var downs=rows.filter(function(r){return !r.up;}).sort(function(a,b){return b.chg-a.chg;}).map(tk).join(sep);
   var ownSet={}; rows.forEach(function(r){ if(r.own)ownSet[r.sym]=1; });
   var pool=(D.candidates||[]).concat((D.regions||[]).reduce(function(a,rg){return a.concat(rg.picks||[]);},[]));
-  var mid=[], seen={};
+  // Freshness gate: news/announcements older than 3 days don't belong on a live ticker. A missing DATE is
+  // treated differently by kind — ASX announcements are almost always fresh (kept), general NEWS is the
+  // stale-prone one (the CQR 14-month case), so undated news is dropped rather than risk showing something old.
+  function daysOld(s){ if(!s) return null; try{ var t=new Date(String(s)).getTime(); if(!isFinite(t))return null; return (Date.now()-t)/86400000; }catch(e){ return null; } }
+  function norm(t){ return String(t).toLowerCase().replace(/[^a-z0-9]+/g,' ').trim().slice(0,50); }
+  var mid=[], seen={}, perSym={};
+  function push(sym,reg,icon,text,tc){
+    var nk=norm(text); if(!nk||seen[nk])return;            // cross-source dedupe — same story, any wording/source
+    if((perSym[sym]||0)>=2)return;                          // don't let one owned stock flood the row
+    seen[nk]=1; perSym[sym]=(perSym[sym]||0)+1;
+    mid.push('<span class="tkitem" data-sym="'+esc(sym)+'" data-region="'+esc(reg)+'"><span class="tksym">'+icon+' '+esc(sym)+'</span><span class="tknews'+(tc||'')+'">'+esc(text.length>44?text.slice(0,42)+'…':text)+'</span></span>');
+  }
   pool.forEach(function(o){ if(!o.sym||!ownSet[o.sym])return; var reg=o.region||MKT;
-    (o.announcements||[]).forEach(function(a){ if(!a||!(a.why||a.headline))return; var t=String(a.why||a.headline), k=o.sym+'|'+t; if(seen[k])return; seen[k]=1;
+    (o.announcements||[]).forEach(function(a){ if(!a||!(a.why||a.headline))return;
+      var d=daysOld(a.date); if(d!=null&&d>3)return;        // ≤3 days (undated ASX announcements kept)
       var tc=(a.tone==='bullish'||a.tone==='bull')?' up':((a.tone==='bearish'||a.tone==='bear')?' down':'');
-      mid.push('<span class="tkitem" data-sym="'+esc(o.sym)+'" data-region="'+esc(reg)+'"><span class="tksym">📢 '+esc(o.sym)+'</span><span class="tknews'+tc+'">'+esc(t.length>44?t.slice(0,42)+'…':t)+'</span></span>'); });
-    if(o.news){ var t2=String(o.news), k2=o.sym+'|'+t2; if(!seen[k2]){ seen[k2]=1;
-      mid.push('<span class="tkitem" data-sym="'+esc(o.sym)+'" data-region="'+esc(reg)+'"><span class="tksym">📰 '+esc(o.sym)+'</span><span class="tknews">'+esc(t2.length>44?t2.slice(0,42)+'…':t2)+'</span></span>'); } }
+      push(o.sym,reg,'📢',String(a.why||a.headline),tc); });
+    if(o.news){ var d2=daysOld(o.news_date); if(d2!=null&&d2<=3) push(o.sym,reg,'📰',String(o.news),''); }   // news needs a date ≤3d
   });
   function tkrow(inner,dir,dur){ if(!inner) return ''; return '<div class="tkrow tk-'+dir+'" style="--dur:'+dur+'"><div class="tkinner">'+inner+sep+inner+sep+'</div></div>'; }
+  // Slow the news row so it's actually readable — pace it by item count (~15s per item), min 70s.
+  var midDur=Math.max(70, mid.length*15)+'s';
   var rowsHtml=
     tkrow(ups||'<span class="tkitem"><span class="tksym" style="color:var(--faint)">no watchlist gainers today</span></span>','left','42s')+
-    (mid.length?tkrow(mid.join(sep),'right','56s'):'<div class="tkrow" style="height:26px;display:flex;align-items:center"><span class="wtkr-empty">No fresh news/announcements on the stocks you own</span></div>')+
+    (mid.length?tkrow(mid.join(sep),'right',midDur):'<div class="tkrow" style="height:26px;display:flex;align-items:center"><span class="wtkr-empty">No fresh news/announcements (last 3 days) on the stocks you own</span></div>')+
     tkrow(downs||'<span class="tkitem"><span class="tksym" style="color:var(--faint)">no watchlist fallers today</span></span>','left','48s');
   return '<div class="tickerwrap ticklive wtkr" role="group" aria-label="Your watchlist — live movers and owned-stock news">'+
     '<div class="wtkr-cap">📈 Your watchlist · <span class="up">gainers ↑</span> · owned-stock news · <span class="down">fallers ↓</span> &nbsp;<span class="wtkr-own">📦 = you own it</span></div>'+
@@ -6683,16 +6705,17 @@ function openCandidate(idx){
   var _ccChips='';
   if(c.score){
     if(c.score.buy_now!=null){ var _ccjid=++JUICE_SEQ; JUICE_CACHE[_ccjid]={score:c.score,sym:c.sym,name:c.name,sigRows:signalRows(c,c.region)};
-      _ccChips+='<button class="juicebtn callchip" data-juice-id="'+_ccjid+'" title="Buy-now score — tap for the full breakdown">🍊 '+c.score.buy_now+'</button>'; }
+      _ccChips+='<button class="juicebtn callchip" data-juice-id="'+_ccjid+'" title="Buy-now score — tap for the full breakdown">🍊 '+Math.round(c.score.buy_now)+'</button>'; }
     try{ _ccChips+=cherryChip(c.score,c.sym,c.name,signalRows(c,c.region)); }catch(e){}
   }
   var _ccWatch='<button class="watchbtn iconwatch callwatch" data-sym="'+esc(c.sym)+'" data-region="'+esc(c.region)+'"'+(c.name?' data-name="'+esc(c.name)+'"':'')+' aria-pressed="false" title="Add to watchlist">☆</button>';
   var ccallHtml='<div class="mcall"><div class="callchips">'+_ccChips+_ccWatch+'</div></div>';
   var m=document.getElementById('modal'); m.className='modal';
   m.innerHTML='<div class="mhead '+vc+'"><button class="mclose" id="mClose" aria-label="Close">✕</button>'+
+    mYahooBtn(c.sym,c.region)+
     mShareBtn('sym/'+c.region+'/'+encodeURIComponent(c.sym),c.sym)+
     '<div class="mtf">🍲 Full-pot candidate · '+(c.region==='au'?'🇦🇺 ASX':'🇺🇸 US')+'</div>'+
-    '<div class="mtop"><div><div class="msym">'+esc(c.sym)+'</div><div class="mco">'+esc(c.name||c.sym)+'</div></div>'+
+    '<div class="mtop"><div><div class="msym">'+esc(c.sym)+'</div><div class="mco">'+qlink(c.sym,c.region,c.name||c.sym)+' ↗</div></div>'+
       '<div class="mpx"><div class="mp mono">'+esc(c.price!=null?cleanPrice(c.price):'—')+'</div>'+(c.change?'<div class="mono '+(c.up?'up':'down')+'" style="font-weight:700;font-size:13px">'+(c.up?'▲':'▼')+' '+fmtChg(c.change)+'</div>':'')+'</div></div>'+
     '<span class="mverd '+vc+'">'+esc(HEAT[c.heat]||c.heat)+'</span></div>'+
     '<div class="mbody">'+
@@ -6971,7 +6994,7 @@ function openAnalyst(sym,region){
   sym=String(sym||'').toUpperCase().replace(/[^A-Z0-9.]/g,''); region=region||'us'; if(!sym) return;
   LASTFOCUS=document.activeElement;
   var m=document.getElementById('modal'); m.className='modal';
-  m.innerHTML='<div class="mhead v-hold"><button class="mclose" id="mClose" aria-label="Close">✕</button><div class="mtf">🧠 What would you do?</div>'+
+  m.innerHTML='<div class="mhead v-hold"><button class="mclose" id="mClose" aria-label="Close">✕</button>'+mYahooBtn(sym,region)+'<div class="mtf">🧠 What would you do?</div>'+
     '<div class="mtop"><div><div class="msym">'+esc(sym)+'</div><div class="mco">the analyst is reading the tape…</div></div></div></div>'+
     '<div class="mbody"><div class="anload">Crunching trend (ADX), momentum (RSI), volatility (ATR) &amp; the buy/sell zones…</div></div>';
   var ov=document.getElementById('overlay'); ov.classList.add('open'); ov.setAttribute('aria-hidden','false');
@@ -7715,6 +7738,7 @@ function openWatchInsight(sym,region){
   LASTFOCUS=document.activeElement;
   var m=document.getElementById('modal'); m.className='modal';
   m.innerHTML='<div class="mhead"><button class="mclose" id="mClose" aria-label="Close">✕</button>'+
+    mYahooBtn(sym,region)+
     mShareBtn('sym/'+region+'/'+encodeURIComponent(sym),sym)+
     '<div class="mtf">⭐ Your watchlist · '+(region==='au'?'🇦🇺 ASX':'🇺🇸 US')+'</div>'+
     '<div class="mtop"><div><div class="msym">'+esc(sym)+'</div><div class="mco">'+esc(info.name||sym)+'</div></div>'+
