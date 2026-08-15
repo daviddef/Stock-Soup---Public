@@ -420,20 +420,17 @@
      whole; margin-bottom (not gap) does the vertical spacing that columns need. */
   .axgrid{column-count:3;column-gap:10px}
   @media(max-width:760px){.axgrid{column-count:1}}
-  /* (user ask) grouped, collapsible action buckets — a short scannable list of "do these" instead of a
-     wall of cards. Collapsed groups take minimal room; the act-now groups (Get in / Trim) open by default. */
-  .axgrouped{display:flex;flex-direction:column;gap:8px}
-  .axgroup{border:1px solid var(--line);border-radius:13px;background:var(--surface);overflow:hidden}
-  .axgroup>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:9px;padding:12px 14px;user-select:none}
-  .axgroup>summary::-webkit-details-marker{display:none}
-  .axgsum .axgic{font-size:15px;line-height:1}
-  .axgsum .axglabel{font-size:14.5px;font-weight:800;color:var(--ink)}
-  .axgsum .axgcount{font-size:11.5px;font-weight:800;color:var(--muted);background:var(--surface-2);border:1px solid var(--line);border-radius:999px;padding:1px 8px;min-width:20px;text-align:center}
-  .axgsum .axgchev{margin-left:auto;color:var(--muted);font-size:12px;transition:transform .18s ease}
-  .axgroup[open]>summary .axgchev{transform:rotate(180deg)}
-  .axgroup>summary:hover{background:var(--surface-2)}
-  .axgroup>.axgrid{padding:2px 12px 12px}
-  @media(prefers-reduced-motion:reduce){ .axgsum .axgchev{transition:none} }
+  /* (user ask v2) ONE grid that fills the width — cards flow 3-across, grouped only by a thin full-width
+     label between types. No bordered per-bucket containers (those wasted the right half of the screen). */
+  .axwrap{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px 12px;align-items:start}
+  @media(max-width:900px){ .axwrap{grid-template-columns:repeat(2,minmax(0,1fr))} }
+  @media(max-width:600px){ .axwrap{grid-template-columns:1fr} }
+  .axwrap>.axcard{margin-bottom:0;display:block;width:auto}   /* grid item, not masonry inline-block */
+  .axghead{grid-column:1/-1;display:flex;align-items:center;gap:8px;margin:8px 0 -2px;padding-bottom:5px;border-bottom:1px solid var(--line)}
+  .axghead:first-child{margin-top:0}
+  .axghead .axgic{font-size:14px;line-height:1}
+  .axghead .axglabel{font-size:12.5px;font-weight:900;color:var(--ink);text-transform:uppercase;letter-spacing:.04em}
+  .axghead .axgcount{font-size:11px;font-weight:800;color:var(--muted);background:var(--surface-2);border:1px solid var(--line);border-radius:999px;padding:0 7px}
   .axcard{background:linear-gradient(180deg,rgba(35,194,103,.11),transparent 72%),var(--surface);border:1px solid rgba(35,194,103,.34);border-left:3px solid var(--buy);border-radius:13px;padding:13px 15px;cursor:pointer;transition:border-color .12s,transform .05s;break-inside:avoid;-webkit-column-break-inside:avoid;margin-bottom:10px;display:inline-block;width:100%;box-sizing:border-box}
   .axcard:hover{border-color:var(--buy)} .axcard:active{transform:scale(.995)}
   /* #292 PEAD overlay */
@@ -4269,25 +4266,26 @@ function actionsHtml(D){
   })();
   items.sort(function(a,b){return a.r-b.r;});
   if(!items.length) return '<div class="actions"><div class="axnone">No green lights this second — nothing’s dropped to its buy price yet. That’s fine; patience is the edge. Tap <b>📦 I own it</b> on anything you hold and we’ll surface it here when there’s a real move to make. 🍲</div></div>';
-  // (user ask) group the flat card list into a few verb buckets, each collapsible — so it's a short
-  // scannable list of "do these", not a wall of cards. Collapsed groups take LESS room than the old flat
-  // grid (answers the #181 "too much real estate" objection), and the two act-now groups open by default.
+  // (user ask, v2) — ONE section, ONE grid that FILLS the width (cards flow 3-across), with just a thin
+  // full-width label between types. The old version put each bucket in its own bordered container, so a
+  // group of 1-2 cards only filled one column and wasted the right half of the screen. Now the grouping is
+  // a lightweight divider inside a single grid — grouped, compact, no wasted real estate.
   var BUCKETS=[
-    {k:'getin', ic:'🟢', label:'Get in',            open:true},
-    {k:'themes',ic:'🛒', label:'Themes to buy',      open:true},
-    {k:'trim',  ic:'🔴', label:'Trim / take profit', open:true},
-    {k:'wait',  ic:'⏳', label:'Wait / watch',        open:false},
-    {k:'coming',ic:'📅', label:'Coming up',           open:false},
-    {k:'read',  ic:'📰', label:'Read these',          open:false}
+    {k:'getin', ic:'🟢', label:'Get in'},
+    {k:'themes',ic:'🛒', label:'Themes to buy'},
+    {k:'trim',  ic:'🔴', label:'Trim / take profit'},
+    {k:'wait',  ic:'⏳', label:'Wait / watch'},
+    {k:'coming',ic:'📅', label:'Coming up'},
+    {k:'read',  ic:'📰', label:'Read these'}
   ];
-  var groups=BUCKETS.map(function(bk){
+  var out='';
+  BUCKETS.forEach(function(bk){
     var mine=items.filter(function(x){return (x.b||'read')===bk.k;});
-    if(!mine.length) return '';
-    return '<details class="axgroup"'+(bk.open?' open':'')+'><summary class="axgsum"><span class="axgic">'+bk.ic+'</span>'+
-      '<span class="axglabel">'+bk.label+'</span><span class="axgcount">'+mine.length+'</span><span class="axgchev">▾</span></summary>'+
-      '<div class="axgrid">'+mine.map(function(x){return x.h;}).join('')+'</div></details>';
-  }).filter(Boolean).join('');
-  return '<div class="actions axgrouped">'+groups+'</div>';
+    if(!mine.length) return;
+    out+='<div class="axghead"><span class="axgic">'+bk.ic+'</span><span class="axglabel">'+bk.label+'</span><span class="axgcount">'+mine.length+'</span></div>';
+    out+=mine.map(function(x){return x.h;}).join('');
+  });
+  return '<div class="actions"><div class="axwrap">'+out+'</div></div>';
 }
 
 // #143 (user ask, scoped 9 Aug 2026): "how easily can we build a bargain alert — cheap, no real
