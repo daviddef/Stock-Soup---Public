@@ -6471,7 +6471,7 @@ function openTheme(src,idx){
     // off the card edge. Fixed by giving the top row only symbol · flag · + (+ pushed right, one auto-
     // margin), and dropping the verdict pill onto its own full-width line below where it can't collide.
     return '<div class="tscard tappable" data-sym="'+esc(sym)+'" data-region="'+esc(reg)+'"'+hy+tap+'>'+
-      '<div class="tsc-top"><a class="trsym" href="'+yf(sym,reg)+'" target="_blank" rel="noopener">'+esc(sym)+'</a>'+
+      '<div class="tsc-top"><a class="trsym" href="'+yf(sym,reg)+'" target="_blank" rel="noopener">'+esc(sym)+'</a>'+servedTag(sym,reg)+
         '<span class="pmc-flag">'+(reg==='au'?'AU':'US')+'</span>'+
         '<button class="watchbtn iconwatch" data-sym="'+esc(sym)+'" data-region="'+esc(reg)+'" style="margin-left:auto" aria-pressed="false" title="Add to watchlist">☆</button></div>'+
       (verd?'<span class="mverd '+esc(vcl)+' tsc-verd">'+esc(verd)+'</span>':'')+
