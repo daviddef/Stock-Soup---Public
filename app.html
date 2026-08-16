@@ -1362,7 +1362,11 @@
   .fdr-tile{position:absolute;border:1px solid rgba(0,0,0,.25);overflow:hidden;cursor:pointer;display:flex;flex-direction:column;justify-content:center;align-items:center;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.5);transition:filter .1s}
   .fdr-tile:hover{filter:brightness(1.12)}
   .fdr-tile .fdr-tsym2{font-size:12px;line-height:1.05} .fdr-tile .fdr-tsc{font-size:10px;opacity:.9;font-weight:800}
-  .fdr-boardleg{font-size:12px;color:var(--muted);margin-top:9px}
+  .fdr-boardleg{font-size:12px;color:var(--muted);margin-top:10px}
+  .fdr-lgrow{display:flex;flex-wrap:wrap;gap:6px 14px;margin-bottom:6px}
+  .fdr-lgi{display:inline-flex;align-items:center;gap:6px;font-weight:800;color:var(--ink);font-size:11.5px}
+  .fdr-lgi i{width:13px;height:13px;border-radius:3px;border:1px solid rgba(0,0,0,.25);display:inline-block;flex:0 0 auto}
+  .fdr-lgsub{color:var(--muted);font-size:11.5px}
   .fullpot-cta{display:inline-flex;align-items:center;gap:8px;margin-top:4px;background:var(--broth);color:#fff;border:0;
     font-family:var(--font);font-weight:800;font-size:14px;padding:11px 18px;border-radius:12px;cursor:pointer;box-shadow:var(--shadow)}
   .fullpot-cta:hover{filter:brightness(1.05)}
@@ -6134,6 +6138,18 @@ function openVerdictExplain(verdict){
 }
 // ---- Reusable ⓘ explainers (no black box) ----
 var INFO={
+  finderPresets:{icon:'🎛️',title:'The one-tap filters',body:
+    '<p>Each is a shortcut that flips one lever. They <b>stack</b> — tap two and you get names that satisfy <i>both</i> (e.g. 💰 Penny stocks + 💎 Undervalued = cheap-priced <i>and</i> cheap-on-fundamentals). Tap again to clear just that one; <b>Clear</b> resets all.</p>'+
+    '<ul class="infoul">'+
+    '<li>🌱 <b>Coiled spring</b> — flat / hasn’t run up over the past year, but starting to turn (Bollinger squeeze, MACD turning up, volume waking, reclaiming its 20-day line).</li>'+
+    '<li>🪙 <b>Small caps</b> — market value ≤ $2B. Needs fundamentals, so it’s the catalyst-pot names we can measure.</li>'+
+    '<li>💰 <b>Penny stocks</b> — share price ≤ $1. Needs a known price.</li>'+
+    '<li>📰 <b>Fresh news</b> — a dated headline in the last 4 days, freshest first.</li>'+
+    '<li>🎯 <b>On a catalyst</b> — only the catalyst pot (news / earnings / quant / IPO), dropping the wide technical scan.</li>'+
+    '<li>💎 <b>Undervalued</b> — high value score (P/E · P/B · PEG). Needs fundamentals.</li>'+
+    '<li>🚫 <b>Exclude junk</b> — a growing list of obvious no-gos, removed in combination with anything else: sub-2-cent price artifacts, blow-off tops (RSI ≥ 90), and <b>illiquid</b> names below the daily $-volume floor (~A$50k / US$500k a day).</li>'+
+    '</ul>'+
+    '<p class="infofoot">A rule only fires where we actually have the data — turning a filter on never wrongly empties the list. Liquidity is carried by the daily whole-market scan, so it bites hardest on the wide universe; the catalyst pot fills in as fundamentals arrive.</p>'},
   risktol:{icon:'🎢',title:'Risk tolerance',body:
     '<p>Sets which of your own picks get flagged as riskier than you\'d like — every pick still shows, nothing\'s hidden, this just adds a ⚠️ note where it applies.</p>'+
     '<h4>How risk is measured</h4><p>Real volatility and price-extension signals — daily ATR% (typical swing), penny/micro price level, how stretched the RSI is, and whether the model itself already flagged the stock as overextended. <b>Not market cap</b> — this app has no data source for that, so it isn\'t faked.</p>'+
@@ -9115,7 +9131,7 @@ function pushViewState(){
 // Replaces the Full Pot. Reads latest.finderUniverse (#337, the whole scored liquid market) unioned with
 // tonight's candidates/picks, and lets you pull levers for the stock you want. Fully guarded: any throw
 // is caught so a Finder bug can never blank the app (the #216 blank-page class).
-var FDR={mode:'flexible', view:'cards', sectorSet:null, commoditySet:[], toggles:{aboveMa:false}, sort:'match', xAxis:'rangePos', yAxis:'buyNow', query:'', catalystOnly:false, built:false};
+var FDR={mode:'flexible', view:'cards', sectorSet:null, commoditySet:[], toggles:{aboveMa:false}, sort:'match', xAxis:'rangePos', yAxis:'buyNow', query:'', catalystOnly:false, excludeJunk:false, built:false};
 var FDR_LEVERS=[
   {grp:'Scores', items:[
     {k:'buyNow', label:'🍊 Buy-now', min:0,max:100,val:55,on:true, unit:'≥', help:'our momentum/timing score — Buy band'},
@@ -9133,11 +9149,13 @@ var FDR_LEVERS=[
     {k:'quality', label:'Business quality', min:0,max:100,val:0,on:false, unit:'≥', req:true, help:'ROE, margins, balance sheet'},
     {k:'growth', label:'Growth', min:0,max:100,val:0,on:false, unit:'≥', req:true, help:'revenue growth'},
     {k:'mcap', label:'Market-cap floor', min:0,max:500,val:0,on:false, unit:'≥', fmt:'b', req:true, help:'in $B'},
-    {k:'capMax', label:'Market-cap ceiling', min:0,max:50,val:2,on:false, unit:'≤', dir:'max', fmt:'b', req:true, help:'small companies only (needs fundamentals — catalyst-pot names)'}
+    {k:'capMax', label:'Market-cap ceiling', min:0,max:50,val:2,on:false, unit:'≤', dir:'max', fmt:'b', req:true, help:'small companies only (needs fundamentals — catalyst-pot names)'},
+    {k:'price', label:'Share-price ceiling', min:0,max:20,val:1,on:false, unit:'≤', dir:'max', fmt:'px', req:true, help:'penny / low-priced shares — $ per share (needs a known price)'}
   ]},
   {grp:'Positioning', items:[
     {k:'short', label:'Short interest', min:0,max:30,val:30,on:false, unit:'≤', dir:'max', help:'low avoids crowded-short risk'},
-    {k:'div', label:'Dividend yield', min:0,max:10,val:0,on:false, unit:'≥', fmt:'pct', req:true, help:'income floor'}
+    {k:'div', label:'Dividend yield', min:0,max:10,val:0,on:false, unit:'≥', fmt:'pct', req:true, help:'income floor'},
+    {k:'dvol', label:'Min $ traded/day', min:0,max:20,val:0.05,on:false, unit:'≥', fmt:'dv', help:'daily $-volume floor — screens out illiquid names (where we have the number; from the daily whole-market scan)'}
   ]},
   {grp:'Setups', items:[
     {k:'spring', label:'🌱 Coiled spring', min:0,max:100,val:55,on:false, unit:'≥', help:'flat / hasn’t run up, but starting to turn (squeeze · volume · MACD)'}
@@ -9226,6 +9244,7 @@ function fdrNormCand(c){
     rsi:(c.rsi!=null)?Math.round(c.rsi):null, rangePos:_rp, spring:_spring, ret1y:(_ret1y!=null)?Math.round(_ret1y):null,
     news:fdrSent100(c.news_sentiment), value:f.value_score, quality:f.quality_score, growth:f.growth_score,
     mcap:f.market_cap||null, short:(c.short!=null)?c.short:null, industry:f.industry||null,
+    dvol:(c.dollarVol!=null)?c.dollarVol:null,
     newsHead:nh?nh.t:null, newsAge:nh?nh.days:null, newsMove:_newsMove,
     // #freshfix — 0 (not null) when there's NO fresh headline, so the "Fresh news ≥40" filter EXCLUDES it
     // (null used to count as "unknown" and pass, which is why names with no snippet slipped through). Over the
@@ -9248,6 +9267,7 @@ function fdrNormFU(r){
     newsFresh:0,   // #freshfix — wide-scan rows carry no headline TEXT, so they're never "fresh news" we can show
     news:fdrSent100(r.newsSent), value:r.value, quality:r.quality, growth:r.growth,
     mcap:r.mcap||null, short:(r.short!=null)?r.short:null, industry:r.industry||null,
+    dvol:(r.dollarVol!=null)?r.dollarVol:null,
     div:(r.divYield!=null)?Math.round(r.divYield*1000)/10:null,
     aboveMa:((r.aboveEma20!=null||r.aboveEma50!=null)?!!(r.aboveEma20&&r.aboveEma50):null), src:'wide'};
 }
@@ -9262,7 +9282,7 @@ function fdrPool(D){
   fu.forEach(function(r){ try{ put(fdrNormFU(r)); }catch(e){} });
   return order.map(function(k){return byKey[k];});
 }
-function fdrVal(s,k){ if(k==='mcap'||k==='capMax') return s.mcap!=null?s.mcap/1e9:null; return s[k]; }
+function fdrVal(s,k){ if(k==='mcap'||k==='capMax') return s.mcap!=null?s.mcap/1e9:null; if(k==='dvol') return s.dvol!=null?s.dvol/1e6:null; return s[k]; }
 function fdrActive(){ var a=[]; FDR_LEVERS.forEach(function(g){g.items.forEach(function(l){if(l.on)a.push(l);});}); return a; }
 function fdrLever(k){ var r=null; FDR_LEVERS.forEach(function(g){g.items.forEach(function(l){if(l.k===k)r=l;});}); return r; }
 function fdrMatch(s){
@@ -9283,6 +9303,19 @@ function fdrPass(s){
     if(l.dir==='max'){ if(v>l.val) return false; } else { if(v<l.val) return false; } }
   return true;
 }
+// A `req` lever (small caps, undervalued, value/quality/growth/div/cap-floor) is CATEGORICAL — it must be a
+// hard gate in BOTH modes, not just Strict. In Best-match mode fdrPass isn't applied, so without this a name
+// with an UNKNOWN cap (or one that genuinely fails the ceiling) still surfaced — and, worse, fdrMatch scored a
+// missing value as a "skip" and returned 100%, so "Small caps" showed names reading "Cap —" at "Match 100%".
+// (Real bug, user-caught: GNG/LYL/CQR.) Soft signal levers (RSI, news, spring, 1-yr) keep their best-match
+// ranking; only the req levers gate. Data must be present AND satisfy the threshold.
+function fdrReqGate(s){
+  var ls=fdrActive();
+  for(var i=0;i<ls.length;i++){ var l=ls[i]; if(!l.req) continue; var v=fdrVal(s,l.k);
+    if(v==null) return false;
+    if(l.dir==='max'){ if(v>l.val) return false; } else { if(v<l.val) return false; } }
+  return true;
+}
 function fdrInScope(s){
   // sector only excludes a name that HAS a known sector NOT in the set — an unknown/missing sector never
   // excludes (same missing-data-doesn't-exclude principle as fdrPass). Without the `s.sector &&` guard,
@@ -9297,6 +9330,16 @@ function fdrInScope(s){
   // #cat — "On a catalyst": keep only the catalyst pot (scored candidates) + served picks; drop the wide
   // whole-market technical-scan names (src==='wide'). That's the ~106 "Caught on a catalyst" set from the funnel.
   if(FDR.catalystOnly && s.src==='wide') return false;
+  // 🚫 Obvious exclusions — a growing, curated junk filter, composable with every other selection (served picks
+  // exempt). Uses only fields we actually have; each rule fires ONLY when its data is present, so turning it on
+  // never wrongly empties the list. Liquidity floor bites on the wide-scan names (which carry $-volume from the
+  // daily scan); price/RSI rules apply everywhere. (User ask: illiquid penny stocks are obvious exclusions.)
+  if(FDR.excludeJunk && s.src!=='pick'){
+    if(s.price!=null && s.price<0.02) return false;                 // sub-2-cent price artifacts
+    if(s.rsi!=null && s.rsi>=90) return false;                      // blow-off top, exhausted
+    var _floor=(s.region==='us')?500000:50000;                     // same $-vol floor the scan itself uses
+    if(s.dvol!=null && s.dvol<_floor) return false;                 // illiquid (only where $-volume is known)
+  }
   // #23 — commodity filter: when commodities are chosen, a name must match at least one (by industry or name).
   if(s.src!=='pick' && FDR.commoditySet && FDR.commoditySet.length){
     var cok=false; for(var ci=0;ci<FDR.commoditySet.length;ci++){ if(fdrCommMatch(s,FDR.commoditySet[ci])){cok=true;break;} }
@@ -9322,7 +9365,7 @@ function fdrCurrent(D){
     return {rows:out, poolN:matched.length, passN:matched.length, query:q};
   }
   if(FDR.mode==='strict') out=pool.filter(fdrPass).map(function(s){return {s:s,m:fdrMatch(s)};});
-  else out=pool.map(function(s){return {s:s,m:fdrMatch(s)};});
+  else out=pool.filter(fdrReqGate).map(function(s){return {s:s,m:fdrMatch(s)};});
   var key=FDR.sort;
   out.sort(function(a,b){ if(key==='match') return b.m-a.m || (b.s.buyNow||0)-(a.s.buyNow||0);
     return (b.s[key]||0)-(a.s[key]||0); });
@@ -9338,7 +9381,7 @@ function fdrCountHtml(res){
   return '<b>'+res.rows.length+'</b> ranked · <b style="color:var(--broth)">'+res.passN+'</b> pass your levers · '+res.poolN+' in scope';
 }
 function fdrLeverHtml(l){
-  var fv=l.fmt==='b'?('$'+l.val+'B'):l.fmt==='pct'?(l.val+'%'):l.val;
+  var fv=l.fmt==='b'?('$'+l.val+'B'):l.fmt==='pct'?(l.val+'%'):l.fmt==='px'?('$'+l.val):l.fmt==='dv'?('$'+l.val+'M'):l.val;
   return '<div class="fdr-lever'+(l.on?'':' off')+'"><div class="fdr-lvtop">'+
     '<input type="checkbox" class="fdr-chk" '+(l.on?'checked':'')+' data-k="'+l.k+'">'+
     '<label class="fdr-lvlabel" data-k="'+l.k+'">'+l.label+'</label>'+
@@ -9351,12 +9394,14 @@ function fdrRailHtml(pool){
   var h='<div class="fdr-railhead"><b>Your levers</b><button class="fdr-reset" id="fdrReset">Clear</button></div>';
   // #345 — one-tap presets. "Coiled spring" configures the finder to surface flat-but-turning names (see
   // fdrSpringScore): turns on ONLY the spring lever and sorts by it, so the top of the list is the best setups.
-  h+='<div class="fdr-presets"><span class="fdr-presetl">One-tap:</span>'+
+  h+='<div class="fdr-presets"><span class="fdr-presetl">One-tap '+infoBtn('finderPresets')+'</span>'+
     '<button class="fdr-preset'+(fdrLever('spring')&&fdrLever('spring').on?' on':'')+'" id="fdrSpringPreset" title="Flat / hasn’t run up, but starting to turn — squeeze · volume · MACD">🌱 Coiled spring</button>'+
     '<button class="fdr-preset'+(fdrLever('capMax')&&fdrLever('capMax').on?' on':'')+'" id="fdrSmallPreset" title="Small companies only (needs fundamentals — mostly catalyst-pot names)">🪙 Small caps</button>'+
+    '<button class="fdr-preset'+(fdrLever('price')&&fdrLever('price').on?' on':'')+'" id="fdrPennyPreset" title="Low-priced / penny shares — share price ≤ $1 (needs a known price)">💰 Penny stocks</button>'+
     '<button class="fdr-preset'+(fdrLever('newsFresh')&&fdrLever('newsFresh').on?' on':'')+'" id="fdrFreshPreset" title="A fresh headline in the last ~3 days">📰 Fresh news</button>'+
     '<button class="fdr-preset'+(FDR.catalystOnly?' on':'')+'" id="fdrCatPreset" title="Only the catalyst pot — names our news/earnings/quant/IPO nets surfaced (drops the wide technical scan)">🎯 On a catalyst</button>'+
     '<button class="fdr-preset'+(fdrLever('value')&&fdrLever('value').on?' on':'')+'" id="fdrValuePreset" title="Cheap on the fundamentals — high value score (P/E · P/B · PEG). Needs fundamentals (catalyst-pot names).">💎 Undervalued</button>'+
+    '<button class="fdr-preset'+(FDR.excludeJunk?' on':'')+'" id="fdrJunkPreset" title="Drop the obvious no-gos — sub-2c prices, blow-off RSI≥90, and illiquid names below the daily $-volume floor. Stacks with everything else.">🚫 Exclude junk</button>'+
     '</div>';
   h+='<div class="fdr-grp"><div class="fdr-grpt">Sectors <span class="fdr-hint">· All by default · 🍊 = we rate a Buy in that sector</span></div><div class="fdr-chips" id="fdrSecChips">'+
     '<button class="fdr-cchip'+((!FDR.sectorSet||!FDR.sectorSet.length)?' on':'')+'" data-sec="__all">All</button>'+
@@ -9471,14 +9516,20 @@ function fdrBoardHtml(rows){
   var tiles='';
   secRects.forEach(function(sr){ var sg=sr.o; var inner=[]; var arr=sg.items.slice().sort(function(a,b){return sizeOf(b)-sizeOf(a);});
     fdrTreemap(arr.map(function(s){return {o:s,v:sizeOf(s)};}), sr.x, sr.y, sr.w, sr.h, inner);
-    inner.forEach(function(t){ var s=t.o, bg=fdrColor(s.buyNow), big=(t.w>6&&t.h>6);
-      tiles+='<div class="fdr-tile" data-sym="'+esc(s.sym)+'" data-region="'+esc(s.region)+'" style="left:'+t.x.toFixed(2)+'%;top:'+t.y.toFixed(2)+'%;width:'+t.w.toFixed(2)+'%;height:'+t.h.toFixed(2)+'%;background:'+bg+'" title="'+esc(s.sym)+' · '+esc(s.name)+' — 🍊 '+(s.buyNow!=null?s.buyNow:'—')+(s.mcap?' · '+fdrMcap(s.mcap):'')+'">'+
-        (big?'<span class="fdr-tsym2">'+esc(s.sym)+'</span><span class="fdr-tsc">'+(s.buyNow!=null?s.buyNow:'')+'</span>':'')+'</div>';
+    inner.forEach(function(t){ var s=t.o, bg=fdrColor(s.buyNow);
+      // No labels, no hover tooltip — the board is an abstract heat-map (how much green vs red, which sectors
+      // are hot), read at a glance. Tap any tile to open the full card. (User ask: cleaner legend, no ticker
+      // clutter / no useless mobile hover.) Individual names live in Cards / Table.
+      tiles+='<div class="fdr-tile" data-sym="'+esc(s.sym)+'" data-region="'+esc(s.region)+'" style="left:'+t.x.toFixed(2)+'%;top:'+t.y.toFixed(2)+'%;width:'+t.w.toFixed(2)+'%;height:'+t.h.toFixed(2)+'%;background:'+bg+'"></div>';
     });
   });
-  var leg=byCap?'Tile size = market cap · colour = 🍊 buy-now':'Tile size = 🍊 buy-now score · colour = 🍊 buy-now <span class="fdr-hint">(market caps arrive with the daily scan — then tiles size by cap)</span>';
+  var sw=function(c,l){return '<span class="fdr-lgi"><i style="background:'+c+'"></i>'+l+'</span>';};
+  var sz=byCap?'Tile size = market cap (bigger = larger company)':'Tile size = 🍊 score <span class="fdr-hint">(caps fill in after the daily scan, then tiles size by company size)</span>';
   return '<div class="fdr-boardwrap"><div class="fdr-board">'+tiles+'</div>'+
-    '<div class="fdr-boardleg">'+leg+' (<span style="color:var(--dont)">low</span> → <span style="color:var(--buy)">high</span>) · grouped by sector · tap for the read.</div></div>';
+    '<div class="fdr-boardleg">'+
+      '<div class="fdr-lgrow">'+sw('var(--buy)','Strong · 62+')+sw('var(--broth)','Buy · 45–61')+sw('#d98a1f','Watch · 30–44')+sw('var(--dont)','Pass · under 30')+'</div>'+
+      '<div class="fdr-lgsub">'+sz+' · grouped by sector · <b>tap a tile</b> for the full read.</div>'+
+    '</div></div>';
 }
 function renderFinder(){
   var root=document.getElementById('finderRoot'); if(!root) return;
@@ -9539,22 +9590,33 @@ function fdrWire(root){
   root.querySelectorAll('[data-fmode]').forEach(function(b){b.onclick=function(){ FDR.mode=b.dataset.fmode; if(FDR.mode==='flexible')FDR.sort='match'; rerender(); };});
   root.querySelectorAll('[data-fview]').forEach(function(b){b.onclick=function(){ FDR.view=b.dataset.fview; rerender(); };});
   var ss=document.getElementById('fdrSort'); if(ss) ss.onchange=function(){ FDR.sort=ss.value; rerender(); };
-  var reset=document.getElementById('fdrReset'); if(reset) reset.onclick=function(){ FDR_LEVERS.forEach(function(g){g.items.forEach(function(l){ l.on=false; });}); FDR.sectorSet=[]; FDR.commoditySet=[]; FDR.toggles.aboveMa=false; FDR.catalystOnly=false; FDR.sort='match'; rerender(); };
-  // #345/#2c — one-tap presets: each turns on ONLY its lever and sorts sensibly; click again to clear.
+  var reset=document.getElementById('fdrReset'); if(reset) reset.onclick=function(){ FDR_LEVERS.forEach(function(g){g.items.forEach(function(l){ l.on=false; });}); FDR.sectorSet=[]; FDR.commoditySet=[]; FDR.toggles.aboveMa=false; FDR.catalystOnly=false; FDR.excludeJunk=false; FDR.sort='match'; rerender(); };
+  // #345/#2c — one-tap presets. They now STACK (user ask: "can I click penny stocks AND undervalued together?"):
+  // each button toggles ONLY its own lever, leaving the others (and any sector/commodity chips) intact. Click a
+  // preset again to clear just that one. In Best-match mode the categorical `req` levers (penny/small/undervalued)
+  // hard-gate while the soft levers rank — so stacking penny + undervalued = names that are BOTH cheap-priced
+  // AND cheap-on-fundamentals. Clearing the last active lever falls the sort back to the default match ranking.
   function _fdrPreset(btnId, leverK, val, sort){
     var b=document.getElementById(btnId); if(!b)return;
-    b.onclick=function(){ var l=fdrLever(leverK), on=!(l&&l.on);
-      FDR_LEVERS.forEach(function(g){g.items.forEach(function(x){x.on=false;});}); FDR.sectorSet=[]; FDR.toggles.aboveMa=false;
-      if(on&&l){ l.on=true; if(val!=null)l.val=val; FDR.sort=sort||'match'; FDR.mode='flexible'; } else { FDR.sort='match'; }
+    b.onclick=function(){ var l=fdrLever(leverK); if(!l)return;
+      l.on=!l.on;
+      if(l.on){ if(val!=null)l.val=val; FDR.sort=sort||FDR.sort; FDR.mode='flexible'; }
+      else if(!fdrActive().length){ FDR.sort='match'; }
       rerender(); };
   }
   _fdrPreset('fdrSpringPreset','spring',55,'spring');
   _fdrPreset('fdrSmallPreset','capMax',2,'match');
+  _fdrPreset('fdrPennyPreset','price',1,'buyNow');
   _fdrPreset('fdrFreshPreset','newsFresh',40,'newsFresh');
   _fdrPreset('fdrValuePreset','value',60,'value');
   // #cat — "On a catalyst" is a plain toggle (composes with the levers), not a lever-preset: it narrows the
   // pool to the catalyst-caught set (drops the wide technical scan). Keeps whatever levers are already set.
   var cat=document.getElementById('fdrCatPreset'); if(cat) cat.onclick=function(){ FDR.catalystOnly=!FDR.catalystOnly; rerender(); };
+  // 🚫 Obvious exclusions — a composable toggle (like "On a catalyst"), not a lever-preset. Stacks with everything.
+  var junk=document.getElementById('fdrJunkPreset'); if(junk) junk.onclick=function(){ FDR.excludeJunk=!FDR.excludeJunk; rerender(); };
+  // ⓘ on the one-tap row — the preset buttons are injected into the rail after boot's wireInfo() pass ran, so
+  // bind their info buttons locally here (same reason the presets themselves are bound here, not globally).
+  root.querySelectorAll('.fdr-presets .infobtn').forEach(function(b){ b.onclick=function(e){ e.stopPropagation(); openInfo(b.dataset.info); }; });
   // #3 — exact-ticker search. oninput does the LIGHT re-render (results + count) so the input keeps focus while
   // typing; the ✕ clear does a full re-render so the box repaints without it.
   var srch=document.getElementById('fdrSearch'); if(srch){ srch.oninput=function(){ FDR.query=srch.value; fdrRenderView(); }; srch.onkeydown=function(e){ if(e.key==='Enter') e.preventDefault(); }; }
