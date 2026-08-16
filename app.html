@@ -1345,6 +1345,8 @@
   .earnflag{display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:800;border-radius:8px;padding:2px 7px;white-space:nowrap}
   .earnflag.ef-hot{background:rgba(224,58,58,.15);color:#e03a3a}
   .earnflag.ef-soon{background:rgba(217,138,31,.15);color:#d98a1f}
+  .annrow.hapearn{background:rgba(224,58,58,.08);border:1px solid rgba(224,58,58,.32)}
+  .annrow.hapearn .hapkind{background:rgba(224,58,58,.16);color:#e03a3a}
   .fdr-cpx{margin-left:auto;font-weight:800;font-size:13px;font-variant-numeric:tabular-nums}
   .fdr-cstats{display:grid;grid-template-columns:1fr 1fr;gap:3px 10px;font-size:11.5px;color:var(--muted)}
   .fdr-cstats b{color:var(--ink);font-variant-numeric:tabular-nums}
@@ -7210,32 +7212,34 @@ function happeningHtml(o){
   (o.news_top3||[]).forEach(function(n){ news.push({title:n.title||n.t, url:n.url||n.u, date:n.date||n.d, tone:n.tone}); });
   news.forEach(function(n){ if(!n.title) return; var k=keyOf(n.title); if(seen[k]) return; seen[k]=1;
     rows.push({kind:'news', title:n.title, url:n.url, date:n.date, tone:n.tone, why:''}); });
-  if(!rows.length) return '';
+  // #bhp-fix (user ask) — surface an imminent scheduled RESULT as a row here, so "reports today/tomorrow" is
+  // visible IN What's happening (not only as the card flag). Built from the earnings calendar (earnDays).
+  var earnRow=null, _ed=earnDays(o.sym,o.region);
+  if(_ed!=null && _ed<=5){
+    var _el=_ed===0?'Reports its results TODAY':_ed===1?'Reports its results TOMORROW':'Reports its results in '+_ed+' days';
+    earnRow={kind:'earn', title:_el, why:'A scheduled earnings result — expect a bigger-than-usual move. A known catalyst you can pre-position for.', age:(_ed===0?'today':_ed===1?'tomorrow':'in '+_ed+'d')};
+  }
+  if(!rows.length && !earnRow) return '';
   // newest-first (undated last)
   rows.sort(function(a,b){ var da=a.date?Date.parse(String(a.date).slice(0,10)):-1, db=b.date?Date.parse(String(b.date).slice(0,10)):-1; return db-da; });
+  if(earnRow) rows.unshift(earnRow);   // the imminent result always leads
   var TONE={bullish:{ic:'📈',cls:'ann-bull'},bearish:{ic:'📉',cls:'ann-bear'},neutral:{ic:'',cls:'ann-neu'}};
   function ageStr(d){ if(!d) return ''; var days=null; try{ days=Math.floor((Date.now()-new Date(d).getTime())/86400000); }catch(e){} if(days==null) return ''; return days<1?'today':days===1?'1d ago':days+'d ago'; }
-  // #newsmove (user ask) — % the stock has moved SINCE each headline printed, from the daily spark (same
-  // approximate EOD read as the Stock Pot card). Shown as a green/red prefix so the overlay news feed answers
-  // "did this news move it?" at a glance. null when there's no date or no spark to measure against.
-  function hapMove(dateStr){
-    try{ if(!dateStr || !Array.isArray(o.spark) || o.spark.length<3) return null;
-      var days=Math.floor((Date.now()-Date.parse(String(dateStr).slice(0,10)))/86400000);
-      if(days==null||days<0) return null;
-      var td=Math.max(1,Math.round(days*5/7)), idx=o.spark.length-1-td; if(idx<0) return null;
-      var then=o.spark[idx], now=o.spark[o.spark.length-1]; if(!then) return null;
-      return Math.round((now/then-1)*1000)/10;
-    }catch(e){ return null; }
-  }
+  // NOTE (#bhp-fix): the old "X% since" per-headline move was REMOVED — it mapped calendar-days→trading-days via
+  // ×5/7 off the daily spark and never accounted for non-trading days, so on a Monday a Sunday headline showed
+  // the prior Thu→Fri move mislabelled "since the news" (user-caught). A real post-news move needs per-bar dates
+  // aligned to the headline timestamp, which the finder object doesn't carry.
   function row(r){
+    if(r.kind==='earn'){
+      return '<div class="annrow hapearn"><div class="anntop"><span class="hapkind">📊 Reports</span><span class="annhead"><b>'+esc(r.title)+'</b></span>'+(r.age?'<span class="anndate">'+esc(r.age)+'</span>':'')+'</div><div class="annwhy">'+esc(r.why)+'</div></div>';
+    }
     var t=TONE[r.tone]||TONE.neutral;
     var old=false; if(r.date){ try{ old=(Date.now()-new Date(r.date).getTime())/86400000>7; }catch(e){} }
     var kindchip='<span class="hapkind">'+(r.kind==='ann'?'📢 Filing':'📰 News')+'</span>';
     var head=r.url?'<a class="annhead" href="'+esc(r.url)+'" target="_blank" rel="noopener">'+esc(r.title)+' ↗</a>':'<span class="annhead">'+esc(r.title)+'</span>';
-    var mv=hapMove(r.date), mvHtml=(mv!=null)?'<span class="hapmove '+(mv>=0?'up':'down')+'">'+(mv>=0?'▲ +':'▼ ')+Math.abs(mv)+'% since</span>':'';
     var age=ageStr(r.date);
     var deep=r.deep?'<div class="anndeep">🔍 <b>The detail:</b> '+esc(r.why)+'</div>':(r.why?'<div class="annwhy">'+esc(r.why)+'</div>':'');
-    return '<div class="annrow '+t.cls+(old?' mnews-old':'')+'"><div class="anntop">'+kindchip+(t.ic?'<span class="annic">'+t.ic+'</span>':'')+head+annToneTag(r.tone)+mvHtml+(age?'<span class="anndate">'+esc(age)+(old?' ⚠️ OLD':'')+'</span>':'')+'</div>'+deep+'</div>';
+    return '<div class="annrow '+t.cls+(old?' mnews-old':'')+'"><div class="anntop">'+kindchip+(t.ic?'<span class="annic">'+t.ic+'</span>':'')+head+annToneTag(r.tone)+(age?'<span class="anndate">'+esc(age)+(old?' ⚠️ OLD':'')+'</span>':'')+'</div>'+deep+'</div>';
   }
   var top=rows.slice(0,6), rest=rows.slice(6,20);
   var out='<div class="viz"><h4>📣 What’s happening — news &amp; filings</h4>'+top.map(row).join('');
