@@ -5350,7 +5350,10 @@ function kitchenScoreStory(D){
     function ksLanes(list){
       list=(list||[]).filter(function(p){return p&&p.sym&&p.sym!=='NONE';});
       var slots=[['D','⚡'],['W','📅'],['M','📈']], any=false;
-      function findFor(letter){ return list.filter(function(p){ var t=String(p.tf||p.horizon||'').charAt(0).toUpperCase(); return letter==='M' ? (t==='L'||t==='M') : t===letter; })[0]; }
+      // Match on the tf WORD, not charAt(0): T1 picks store "Day"/"Week"/"Long" but the T2/T3 tier picks store
+      // it emoji-prefixed ("⚡ Day"), so a first-char test matched the emoji and showed nothing for T2/T3.
+      function findFor(letter){ return list.filter(function(p){ var t=String(p.tf||p.horizon||'').toLowerCase();
+        return letter==='D' ? /day/.test(t) : letter==='W' ? /week/.test(t) : /long|month/.test(t); })[0]; }
       var cells=slots.map(function(s){ var p=findFor(s[0]); if(p)any=true;
         return '<div class="ks-svsub'+(p?'':' e')+'"><span class="ks-svsl">'+s[1]+' '+s[0]+'</span><span class="ks-svst">'+(p?esc(p.sym):'—')+'</span></div>'; }).join('');
       return any ? '<div class="ks-svsubs">'+cells+'</div>' : '';
