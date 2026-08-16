@@ -9239,7 +9239,11 @@ function fdrInScope(s){
   // excludes (same missing-data-doesn't-exclude principle as fdrPass). Without the `s.sector &&` guard,
   // every name with no fundamentals-derived sector (the vast majority, incl. most picks) was dropped →
   // "0 in scope" even though the pot was full. Served picks are ALWAYS in scope regardless of sector.
-  if(s.src!=='pick' && FDR.sectorSet && FDR.sectorSet.length && s.sector && FDR.sectorSet.indexOf(s.sector)<0) return false;
+  // Sector filter must actually BITE: when sectors are chosen, a name has to HAVE one of them. Previously an
+  // unknown/missing sector (the wide-scan names, which carry no fundamentals-derived sector) counted as "pass",
+  // so selecting sectors changed almost nothing. Now a sector-less name is excluded once any sector is picked
+  // — so the filter narrows to the names we can actually classify (served picks are always exempt).
+  if(s.src!=='pick' && FDR.sectorSet && FDR.sectorSet.length && (!s.sector || FDR.sectorSet.indexOf(s.sector)<0)) return false;
   if(FDR.toggles.aboveMa && s.aboveMa===false) return false;   // null (unknown) passes
   // #cat — "On a catalyst": keep only the catalyst pot (scored candidates) + served picks; drop the wide
   // whole-market technical-scan names (src==='wide'). That's the ~106 "Caught on a catalyst" set from the funnel.
