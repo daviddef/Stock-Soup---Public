@@ -7831,6 +7831,15 @@ function wlSet(a){try{localStorage.setItem(WLKEY,JSON.stringify(a));}catch(e){}}
 function wlHas(sym,region){return wlGet().some(function(w){return w.sym===sym&&w.region===region;});}
 function wlAddItem(it){var a=wlGet();if(!a.some(function(w){return w.sym===it.sym&&w.region===it.region;})){it.addedAt=it.addedAt||Date.now();a.push(it);wlSet(a);apiPush('POST','/me/watchlist',{sym:it.sym,region:it.region,entry:(wlNum(it.entry)||it.entry||null)});}}
 function wlRemove(sym,region){wlSet(wlGet().filter(function(w){return !(w.sym===sym&&w.region===region);}));apiPush('DELETE','/me/watchlist/'+region+'/'+sym);}
+// A watchlist item stored under the WRONG market (a US stock saved as 'au' because that market was selected
+// when it was added) matches nothing — no price, no score, mis-bucketed as "not scanned". Heal it to the
+// market the ticker actually trades in (found in the live data), keeping its flags, and persist the move.
+function wlHealRegion(sym,oldR,newR){
+  var a=wlGet(),moved=false;
+  a.forEach(function(w){ if(w.sym===sym&&w.region===oldR){ w.region=newR; moved=true; } });
+  if(moved){ wlSet(a); try{ apiPush('DELETE','/me/watchlist/'+oldR+'/'+sym); apiPush('POST','/me/watchlist',{sym:sym,region:newR}); }catch(e){} }
+  return moved;
+}
 function wlToggle(it){if(wlHas(it.sym,it.region)){wlRemove(it.sym,it.region);return false;}wlAddItem(it);return true;}
 // "I own it" — a holding. Marking own also keeps it on the watchlist so it syncs.
 function wlOwns(sym,region){return wlGet().some(function(w){return w.sym===sym&&w.region===region&&w.own;});}
@@ -7938,7 +7947,11 @@ function renderWlSummary(rows){
 // performance from the exact same source (and the #318/#319 NaN + since-last-open logic lives once).
 function wlBuildRows(D){
   D=D||(LAST&&LAST.D)||{}; var pm=wlPriceMap(D);
+  // sym-only fallback index → detect a watchlist item stored under the wrong market and heal its region,
+  // so a US stock saved as 'au' (or vice-versa) matches the live price/score instead of showing "—".
+  var byS={}; Object.keys(pm).forEach(function(k){ var i=k.indexOf('|'); var s=k.slice(0,i), r=k.slice(i+1); if(byS[s]==null) byS[s]=r; });
   return wlGet().map(function(w){
+    if(!pm[w.sym+'|'+w.region] && byS[w.sym] && byS[w.sym]!==w.region){ wlHealRegion(w.sym,w.region,byS[w.sym]); w.region=byS[w.sym]; }
     var info=pm[w.sym+'|'+w.region]||null;
     var it=wlIntel(w,D);
     var entry=(w.entry!=null?w.entry:(info&&info.entry!=null?info.entry:(it.entry!=null?it.entry:null)));
