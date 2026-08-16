@@ -5339,6 +5339,17 @@ function kitchenScoreStory(D){
     var served=0; (D.regions||[]).forEach(function(r){ if((r.id||'us')===mkt) (r.picks||[]).forEach(function(p){ if(p.sym&&p.sym!=='NONE') served++; }); });
     var mt=D.modelTiers||{}; function tierN(t){ var a=(mt[t]||{})[mkt]; return (a&&a.filter)?a.filter(function(p){return p&&p.sym&&p.sym!=='NONE';}).length:0; }
     var t2=tierN('type2'), t3=tierN('type3');
+    // (user ask) — inside each served tier card, show the real D/W/L tickers that tier actually served.
+    var t1list=(function(){ var r=(D.regions||[]).filter(function(x){return (x.id||'us')===mkt;})[0]; return r?(r.picks||[]):[]; })();
+    var t2list=(mt.type2||{})[mkt]||[], t3list=(mt.type3||{})[mkt]||[];
+    function ksLanes(list){
+      list=(list||[]).filter(function(p){return p&&p.sym&&p.sym!=='NONE';});
+      var slots=[['D','⚡'],['W','📅'],['M','📈']], any=false;
+      function findFor(letter){ return list.filter(function(p){ var t=String(p.tf||p.horizon||'').charAt(0).toUpperCase(); return letter==='M' ? (t==='L'||t==='M') : t===letter; })[0]; }
+      var cells=slots.map(function(s){ var p=findFor(s[0]); if(p)any=true;
+        return '<div class="ks-svsub'+(p?'':' e')+'"><span class="ks-svsl">'+s[1]+' '+s[0]+'</span><span class="ks-svst">'+(p?esc(p.sym):'—')+'</span></div>'; }).join('');
+      return any ? '<div class="ks-svsubs">'+cells+'</div>' : '';
+    }
     var wholeName = mkt==='au' ? '🇦🇺 The whole ASX' : '🇺🇸 NYSE + Nasdaq';
     // worked examples from the REAL pot: biggest 🍒>🍊 gap (strong but late) and 🍊>🍒 gap (clean entry, so-so name)
     var scoredc=[];
@@ -5384,6 +5395,9 @@ function kitchenScoreStory(D){
       +'.ks-svrisk{font-size:11.5px;font-weight:800;margin:7px 0 5px}.ks-sv.r-lo .ks-svrisk{color:var(--buy)}.ks-sv.r-md .ks-svrisk{color:#c98a1f}.ks-sv.r-hi .ks-svrisk{color:var(--dont)}'
       +'.ks-svn{font-weight:800;font-size:30px;line-height:1;letter-spacing:-.02em}.ks-svlab{font-size:10px;color:var(--faint);text-transform:uppercase;letter-spacing:.08em;font-weight:700;margin-bottom:7px}'
       +'.ks-svd{font-size:12px;color:var(--muted);line-height:1.4}.ks-servnote{text-align:center;color:var(--muted);font-size:12px;margin-top:11px}'
+      +'.ks-svsubs{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:11px}'
+      +'.ks-svsub{background:var(--surface);border:1px solid var(--line);border-radius:9px;padding:6px 3px}.ks-svsub.e{opacity:.45}'
+      +'.ks-svsl{display:block;font-size:9px;font-weight:800;color:var(--faint);letter-spacing:.03em}.ks-svst{display:block;font-weight:800;font-size:12.5px;margin-top:2px}'
       +'.ks-lanes{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:16px}@media(max-width:640px){.ks-lanes{grid-template-columns:1fr}}'
       +'.ks-lane{background:var(--surface-2);border:1px solid var(--line);border-radius:14px;padding:15px 16px}.ks-lane.o{border-top:3px solid var(--broth)}.ks-lane.c{border-top:3px solid #d6283c}'
       +'.ks-lq{font-weight:800;font-size:16px;margin:6px 0 2px}.ks-lsub{color:var(--muted);font-size:12.5px;line-height:1.4}'
@@ -5410,9 +5424,9 @@ function kitchenScoreStory(D){
       +'</div>'   // close the funnel — the served level forks into three risk tiers below
       +'<div class="ks-served"><div class="ks-served-h">🥣 The served level — the <b>same pot</b>, three risk profiles. Switch with the <b>T1 / T2 / T3</b> chips at the top of the app.</div>'
         +'<div class="ks-served-grid">'
-          +'<div class="ks-sv r-lo"><div class="ks-svhead"><span class="ks-tchip t1">T1</span> Catalyst</div><div class="ks-svrisk">🟢 Lower risk</div><div class="ks-svn">'+served+'</div><div class="ks-svlab">served</div><div class="ks-svd">Our safest list. A stock only lands here when something real just happened <em>today</em> — an earnings beat, a contract win, a broker upgrade — that could move the price now. Highest bar, fewest names. <b>Start here if you\'re cautious.</b></div></div>'
-          +'<div class="ks-sv r-md"><div class="ks-svhead"><span class="ks-tchip t2">T2</span> Balanced</div><div class="ks-svrisk">🟡 Medium risk</div><div class="ks-svn">'+t2+'</div><div class="ks-svlab">served</div><div class="ks-svd">From scanning the <b>whole market</b> for the strongest-looking charts — solid stocks quietly setting up to break out, no news needed yet. Good setups, a little more judgement than T1.</div></div>'
-          +'<div class="ks-sv r-hi"><div class="ks-svhead"><span class="ks-tchip t3">T3</span> Aggressive</div><div class="ks-svrisk">🔴 Higher risk</div><div class="ks-svn">'+t3+'</div><div class="ks-svlab">served</div><div class="ks-svd">The bolder names from that same market-wide scan — smaller and faster-moving, less proven. Bigger swings both ways. <b>Only money you can afford to lose.</b></div></div>'
+          +'<div class="ks-sv r-lo"><div class="ks-svhead"><span class="ks-tchip t1">T1</span> Catalyst</div><div class="ks-svrisk">🟢 Lower risk</div><div class="ks-svn">'+served+'</div><div class="ks-svlab">served</div><div class="ks-svd">Our safest list. A stock only lands here when something real just happened <em>today</em> — an earnings beat, a contract win, a broker upgrade — that could move the price now. Highest bar, fewest names. <b>Start here if you\'re cautious.</b></div>'+ksLanes(t1list)+'</div>'
+          +'<div class="ks-sv r-md"><div class="ks-svhead"><span class="ks-tchip t2">T2</span> Balanced</div><div class="ks-svrisk">🟡 Medium risk</div><div class="ks-svn">'+t2+'</div><div class="ks-svlab">served</div><div class="ks-svd">From scanning the <b>whole market</b> for the strongest-looking charts — solid stocks quietly setting up to break out, no news needed yet. Good setups, a little more judgement than T1.</div>'+ksLanes(t2list)+'</div>'
+          +'<div class="ks-sv r-hi"><div class="ks-svhead"><span class="ks-tchip t3">T3</span> Aggressive</div><div class="ks-svrisk">🔴 Higher risk</div><div class="ks-svn">'+t3+'</div><div class="ks-svlab">served</div><div class="ks-svd">The bolder names from that same market-wide scan — smaller and faster-moving, less proven. Bigger swings both ways. <b>Only money you can afford to lose.</b></div>'+ksLanes(t3list)+'</div>'
         +'</div>'
         +'<div class="ks-servnote">Every served pick carries 🍊 + 🍒 and shows in 🥣 the Menu &amp; 🗺️ the Journey.</div>'
       +'</div>'
@@ -9065,7 +9079,7 @@ function pushViewState(){
 // Replaces the Full Pot. Reads latest.finderUniverse (#337, the whole scored liquid market) unioned with
 // tonight's candidates/picks, and lets you pull levers for the stock you want. Fully guarded: any throw
 // is caught so a Finder bug can never blank the app (the #216 blank-page class).
-var FDR={mode:'flexible', view:'cards', sectorSet:null, toggles:{aboveMa:false}, sort:'match', xAxis:'rangePos', yAxis:'buyNow', built:false};
+var FDR={mode:'flexible', view:'cards', sectorSet:null, toggles:{aboveMa:false}, sort:'match', xAxis:'rangePos', yAxis:'buyNow', query:'', built:false};
 var FDR_LEVERS=[
   {grp:'Scores', items:[
     {k:'buyNow', label:'🍊 Buy-now', min:0,max:100,val:55,on:true, unit:'≥', help:'our momentum/timing score — Buy band'},
