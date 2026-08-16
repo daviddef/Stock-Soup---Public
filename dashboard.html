@@ -1340,6 +1340,7 @@
   .fdr-cscores{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:9px}
   .fdr-sc{font-size:12px;font-weight:800;border-radius:8px;padding:3px 8px}
   .fdr-sc-o{background:rgba(232,102,42,.12);color:var(--broth)} .fdr-sc-c{background:rgba(196,40,71,.12);color:var(--cherry,#c42847)}
+  .fdr-mpill{font-size:11px;font-weight:800;border-radius:8px;padding:3px 8px;color:var(--mc);background:color-mix(in srgb,var(--mc) 16%,transparent);white-space:nowrap}
   .fdr-cpx{margin-left:auto;font-weight:800;font-size:13px;font-variant-numeric:tabular-nums}
   .fdr-cstats{display:grid;grid-template-columns:1fr 1fr;gap:3px 10px;font-size:11.5px;color:var(--muted)}
   .fdr-cstats b{color:var(--ink);font-variant-numeric:tabular-nums}
@@ -9664,6 +9665,7 @@ function fdrCardsHtml(rows){
       '<div class="fdr-cname">'+esc(s.name)+'</div>'+
       '<div class="fdr-cscores"><span class="fdr-sc fdr-sc-o">🍊 '+(s.buyNow!=null?s.buyNow:'—')+'</span>'+
         (s.cherry!=null?'<span class="fdr-sc fdr-sc-c">🍒 '+s.cherry+'</span>':'')+
+        (showMatch?'<span class="fdr-mpill" style="--mc:'+fdrColor(o.m)+'" title="How well this name matches your filters">'+o.m+'% match</span>':'')+
         '<span class="fdr-cpx">'+(s.price!=null?fdrCur(s.region)+s.price:'')+'</span></div>'+
       fdrStatCells(s)+
       // #minicharts (user ask) — compact RSI + Value slider bars on the card face. RSI: green→red track with a
@@ -9671,7 +9673,6 @@ function fdrCardsHtml(rows){
       (s.rsi!=null?'<div class="fdr-mini"><span class="fdr-minil">RSI '+s.rsi+'</span>'+fdrMiniBar(s.rsi,'rsi')+'</div>':'')+
       (s.value!=null?'<div class="fdr-mini"><span class="fdr-minil">Value '+s.value+'</span>'+fdrMiniBar(s.value,'val')+'</div>':'')+
       (s.newsHead?'<div class="fdr-cnews">'+(s.newsMove!=null?'<span class="fdr-cnewsmove '+(s.newsMove>=0?'up':'down')+'">'+(s.newsMove>=0?'▲ +':'▼ ')+Math.abs(s.newsMove)+'% since</span> ':'')+'📰 '+esc(fdrFirstSentence(s.newsHead))+'<span class="fdr-cnewsage">'+(s.newsAge<1?'today':s.newsAge+'d ago')+'</span></div>':'')+
-      (showMatch?'<div class="fdr-mb"><div class="fdr-mt"><span>Match</span><b style="color:'+fdrColor(o.m)+'">'+o.m+'%</b></div><div class="fdr-track"><i style="width:'+o.m+'%"></i></div></div>':'')+
       '</div>';
   }).join('')+'</div>'+(rows.length>80?'<p class="fdr-note">Showing top 80 of '+rows.length+'.</p>':'');
 }
