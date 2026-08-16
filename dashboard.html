@@ -5638,11 +5638,10 @@ function openModal(p,region,cur){
         '<div class="rsimeta">'+rsiWord+'</div>'+
         (valChip(p)?'<div class="rsimeta" style="margin-top:6px">'+valChip(p)+'</div>':'')+
         (timingLine(p)?'<div class="rsimeta" style="margin-top:6px">'+timingLine(p)+'</div>':'')+
-        // #329 — this full signal breakdown is the SAME content the 🍒 cherry modal shows (user-flagged as
-        // near-duplicate). Keep it available but COLLAPSED so it isn't a wall competing with the cherry; the
-        // cherry stays the primary interactive read (it adds the for/against vote + charts).
-        '<details class="msigs"><summary>🧮 All the signals, in one place — the full read</summary>'+
-        signalDetailHtml(p,region,{skipRsi:true})+'</details>'+
+        // #329b (user: "aren't the signals only for the cherry?") — the full signal read now lives ONLY
+        // under the 🍒 cherry, not inline here too. This block is a single tappable pointer to it (the
+        // cherry adds the for/against conviction vote + the diagram cards). No more duplicated wall of signals.
+        cherryModalBlock(p.score,p.sym,p.name,signalRows(p,region))+
       '</div>'+
       happeningHtml(p)+
       earningsCallLink(p.sym,region)+
@@ -6912,7 +6911,7 @@ function openCandidate(idx){
       (function(){try{return valBandHtml(c,cCur);}catch(e){return '';}})()+
       cRsiBlock+
       '<div class="mnews">🔎 <span class="lead">How we picked it up:</span> '+esc(c.note||'a signal in tonight\'s scan')+'<div class="mfound">'+(c.foundVia?esc(c.foundVia):'Caught by our wide-net scan — live news, market movers and analyst actions — then priced &amp; scored into the pot.')+'</div></div>'+
-      (signalRows(c,c.region).length?'<h4 style="margin-top:16px">🧮 All the signals, in one place</h4>'+signalDetailHtml(c,c.region):'')+
+      cherryModalBlock(c.score,c.sym,c.name,signalRows(c,c.region))+   /* #329b — signals live under the 🍒 only, not inline too */
       happeningHtml(c)+
       earningsCallLink(c.sym,c.region)+
       (c.short!=null?'<div class="mshort">🩳 <span class="lead">Short interest:</span> <b>'+c.short+'%</b> of shares sold short'+(c.short>=8?' — <b>elevated</b> (squeeze fuel / bearish crowd)':c.short>=4?' — moderate':' — light')+'</div>':'')+
