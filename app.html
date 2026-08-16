@@ -435,6 +435,11 @@
   @media(max-width:560px){ .axsumgrid{grid-template-columns:repeat(2,minmax(0,1fr))} }
   .axsum-card{text-align:left;cursor:pointer;border:1px solid var(--line);border-left:3px solid var(--muted);border-radius:12px;background:var(--surface);padding:11px 12px;display:flex;flex-direction:column;gap:4px;transition:transform .1s,border-color .12s,background .12s;font-family:inherit;min-width:0}
   .axsum-card:hover{transform:translateY(-2px)}
+  /* #actions→pot — "Screen the whole pot" one-tap chips (deep-link into the Stock Pot) */
+  .potscreen{display:flex;flex-wrap:wrap;align-items:center;gap:7px;margin-top:12px;padding-top:12px;border-top:1px dashed var(--line)}
+  .potscreen-l{font-size:11.5px;font-weight:800;color:var(--muted);letter-spacing:.02em;margin-right:2px}
+  .potchip{font-size:12px;font-weight:800;padding:6px 11px;border-radius:999px;border:1px solid var(--line);background:var(--surface-2);color:var(--ink);cursor:pointer;font-family:inherit;white-space:nowrap;transition:border-color .12s,color .12s,background .12s}
+  .potchip:hover{border-color:var(--broth);color:var(--broth);background:rgba(232,102,42,.08)}
   .axsum-card[aria-expanded="true"]{background:var(--surface-2)}
   .axsum-top{display:flex;align-items:center;gap:6px;min-width:0}
   .axsum-ic{font-size:14px;line-height:1;flex:0 0 auto}
@@ -4582,8 +4587,13 @@ function actionsHtml(D){
     {k:'read',  ic:'📰', label:'Read these',          verb:'to read'}
   ];
   function _axSubject(h){ var m=String(h).match(/<span class="axsym[^"]*">([\s\S]*?)<\/span>/); return m?m[1].replace(/<[^>]+>/g,'').trim():''; }
+  // #actions→pot — the 4 market-SCREEN buckets (buy themes / room-to-run / bargains / read) are no longer big
+  // action cards; they moved to the one-tap "Screen the whole pot" chip row below, which deep-links into the
+  // Stock Pot's real presets. The personal cards (Get in / Trim / Review / Wait / Coming up) stay as-is.
+  var SCREEN={themes:1,room:1,bargain:1,read:1};
   var tiles='', details='', firstK=null;
   BUCKETS.forEach(function(bk){
+    if(SCREEN[bk.k]) return;
     var mine=items.filter(function(x){return (x.b||'read')===bk.k;});
     if(!mine.length) return;
     if(!firstK) firstK=bk.k;
@@ -4595,7 +4605,13 @@ function actionsHtml(D){
       (prev?'<div class="axsum-prev">'+prev+'</div>':'')+'</button>';
     details+='<div class="axdetail" data-actgrp-body="'+bk.k+'" hidden><div class="axwrap">'+mine.map(function(x){return x.h;}).join('')+'</div></div>';
   });
-  return '<div class="actions"><div class="axsumgrid">'+tiles+'</div>'+details+'</div>';
+  var potChips='<div class="potscreen"><span class="potscreen-l">🔎 Screen the whole pot</span>'
+    +'<button class="potchip" data-potpreset="buy" title="Every name our model rates a Buy (🍊 55+)">🛒 To buy</button>'
+    +'<button class="potchip" data-potpreset="spring" title="Flat / not run up, but starting to turn">🌱 Coiled spring</button>'
+    +'<button class="potchip" data-potpreset="value" title="Cheap on the fundamentals">💎 Undervalued</button>'
+    +'<button class="potchip" data-potpreset="news" title="A fresh headline in the last few days">📰 Fresh news</button>'
+    +'<button class="potchip" data-potpreset="catalyst" title="Only the catalyst pot — news / earnings / quant / IPO">🎯 On a catalyst</button></div>';
+  return '<div class="actions"><div class="axsumgrid">'+tiles+'</div>'+details+potChips+'</div>';
 }
 
 // #143 (user ask, scoped 9 Aug 2026): "how easily can we build a bargain alert — cheap, no real
@@ -9034,6 +9050,8 @@ function wire(D){
       if(!wasOpen){ t.setAttribute('aria-expanded','true'); var body=document.querySelector('.axdetail[data-actgrp-body="'+k+'"]'); if(body) body.hidden=false; }
     });
   });
+  // #actions→pot — the "Screen the whole pot" chips deep-link into the Stock Pot with a preset applied.
+  document.querySelectorAll('.potchip[data-potpreset]').forEach(function(c){ c.addEventListener('click',function(){ openStockPot(c.dataset.potpreset); }); });
   // 📢 Key-announcements card → open the Market backdrop drawer on its Announcements panel + scroll to it.
   document.querySelectorAll('.axcard[data-backdrop]').forEach(function(c){
     c.addEventListener('click',function(e){ if(e.target.closest('a,button'))return;
@@ -9696,6 +9714,22 @@ function fdrWire(root){
     var th=e.target.closest('th[data-sk]'); if(th){ FDR.sort=(th.dataset.sk==='m'?'match':th.dataset.sk); rerender(); return; }
     var tgt=e.target.closest('[data-sym]'); if(tgt){ try{ openTicker(tgt.dataset.sym, tgt.dataset.region||MKT); }catch(err){} } };
     vw.onkeydown=function(e){ if(e.key!=='Enter'&&e.key!==' ')return; var tgt=e.target.closest('.fdr-card[data-sym]'); if(tgt){ e.preventDefault(); try{ openTicker(tgt.dataset.sym, tgt.dataset.region||MKT); }catch(err){} } }; }
+}
+// #actions→pot (user ask) — the market-screen action buckets are now one-tap deep-links into the Stock Pot.
+// Reset the finder to a clean default, apply the matching preset lever, and jump to the tab. The Stock Pot is
+// the single home for "screen the market by a signal"; the personal action cards (Get in / Trim / Review) stay.
+function openStockPot(preset){
+  try{
+    FDR_LEVERS.forEach(function(g){g.items.forEach(function(l){ l.on=(l.k==='buyNow'||l.k==='news'||l.k==='rsi'); });});
+    FDR.sectorSet=[]; FDR.commoditySet=[]; FDR.toggles={aboveMa:false}; FDR.catalystOnly=false; FDR.excludeJunk=false; FDR.query=''; FDR.mode='flexible'; FDR.sort='match';
+    var on=function(k,v){ var l=fdrLever(k); if(l){ l.on=true; if(v!=null)l.val=v; } };
+    if(preset==='spring'){ on('spring',55); FDR.sort='spring'; }
+    else if(preset==='value'){ on('value',60); FDR.sort='value'; }
+    else if(preset==='news'){ on('newsFresh',40); FDR.sort='newsFresh'; }
+    else if(preset==='catalyst'){ FDR.catalystOnly=true; FDR.sort='buyNow'; }
+    else { FDR.sort='buyNow'; }   // 'buy' — the default Buy-Now screen
+    switchTab('finder');
+  }catch(e){}
 }
 function switchTab(t){
   TAB = t; try{ localStorage.setItem('soup_tab', t); }catch(e){}
