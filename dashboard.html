@@ -8974,7 +8974,10 @@ function fdrNormFU(r){
 function fdrPool(D){
   var mkt=MKT, byKey={}, order=[];
   function put(o){ if(!o||!o.sym||o.sym==='NONE')return; if((o.region||'us')!==mkt)return; if(byKey[o.sym])return; byKey[o.sym]=o; order.push(o.sym); }
-  (D.candidates||[]).forEach(function(c){ try{ put(fdrNormCand(c)); }catch(e){} });   // rich first — they win dedupe
+  // Tonight's served PICKS go in first (richest, and they must ALWAYS be findable — user: "should at
+  // minimum find our picks"). Tagged src:'pick' so fdrInScope never filters them out by sector.
+  (D.regions||[]).forEach(function(rg){ (rg.picks||[]).forEach(function(p){ try{ var o=fdrNormCand(p); o.src='pick'; put(o); }catch(e){} }); });
+  (D.candidates||[]).forEach(function(c){ try{ put(fdrNormCand(c)); }catch(e){} });   // rich next — win dedupe over the wide scan
   var fu=((D.finderUniverse||{})[mkt])||[];
   fu.forEach(function(r){ try{ put(fdrNormFU(r)); }catch(e){} });
   return order.map(function(k){return byKey[k];});
@@ -8997,7 +9000,11 @@ function fdrPass(s){
   return true;
 }
 function fdrInScope(s){
-  if(FDR.sectorSet && FDR.sectorSet.length && FDR.sectorSet.indexOf(s.sector)<0) return false;
+  // sector only excludes a name that HAS a known sector NOT in the set — an unknown/missing sector never
+  // excludes (same missing-data-doesn't-exclude principle as fdrPass). Without the `s.sector &&` guard,
+  // every name with no fundamentals-derived sector (the vast majority, incl. most picks) was dropped →
+  // "0 in scope" even though the pot was full. Served picks are ALWAYS in scope regardless of sector.
+  if(s.src!=='pick' && FDR.sectorSet && FDR.sectorSet.length && s.sector && FDR.sectorSet.indexOf(s.sector)<0) return false;
   if(FDR.toggles.aboveMa && s.aboveMa===false) return false;   // null (unknown) passes
   return true;
 }
@@ -9026,11 +9033,11 @@ function fdrLeverHtml(l){
     (l.help?'<div class="fdr-lvsub">'+l.help+'</div>':'')+'</div>';
 }
 function fdrRailHtml(pool){
-  var secs=fdrSectors(pool);
+  var secs=fdrSectors(pool), buySecs=fdrBuySectors(pool);
   var h='<div class="fdr-railhead"><b>Your levers</b><button class="fdr-reset" id="fdrReset">Clear</button></div>';
-  h+='<div class="fdr-grp"><div class="fdr-grpt">Sectors <span class="fdr-hint">· on = we rate a Buy here</span></div><div class="fdr-chips" id="fdrSecChips">'+
+  h+='<div class="fdr-grp"><div class="fdr-grpt">Sectors <span class="fdr-hint">· All by default · 🍊 = we rate a Buy in that sector</span></div><div class="fdr-chips" id="fdrSecChips">'+
     '<button class="fdr-cchip'+((!FDR.sectorSet||!FDR.sectorSet.length)?' on':'')+'" data-sec="__all">All</button>'+
-    secs.map(function(s){return '<button class="fdr-cchip'+((FDR.sectorSet&&FDR.sectorSet.indexOf(s)>=0)?' on':'')+'" data-sec="'+esc(s)+'">'+esc(s)+'</button>';}).join('')+
+    secs.map(function(s){return '<button class="fdr-cchip'+((FDR.sectorSet&&FDR.sectorSet.indexOf(s)>=0)?' on':'')+'" data-sec="'+esc(s)+'">'+(buySecs.indexOf(s)>=0?'🍊 ':'')+esc(s)+'</button>';}).join('')+
     '</div></div>';
   FDR_LEVERS.forEach(function(g){ h+='<div class="fdr-grp"><div class="fdr-grpt">'+g.grp+'</div>'+g.items.map(fdrLeverHtml).join('')+'</div>'; });
   h+='<div class="fdr-grp"><div class="fdr-grpt">Must-have</div><div class="fdr-chips">'+
@@ -9136,7 +9143,11 @@ function renderFinder(){
   var root=document.getElementById('finderRoot'); if(!root) return;
   try{
     var D=(LAST&&LAST.D)||{};
-    if(FDR.sectorSet===null){ FDR.sectorSet=fdrBuySectors(fdrPool(D)); }   // default: the Buy-rated sectors
+    // Default = ALL sectors (empty set), so the Finder opens on the 🍊 buy-now lever ranking the whole pot —
+    // NOT restricted to Buy-rated sectors. The old Buy-sector default hard-scoped the board to (often) a single
+    // sector and, combined with the missing-sector bug above, showed "0 in scope" even with a full pot. Sector
+    // is now an opt-in filter (the chips), and the orange signal is the star of the default, as intended.
+    if(FDR.sectorSet===null){ FDR.sectorSet=[]; }
     var pool=fdrPool(D);
     var res=fdrCurrent(D);
     var body;
