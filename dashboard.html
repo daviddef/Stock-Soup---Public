@@ -7427,10 +7427,12 @@ function renderAnalyst(a){
     '<div class="mtop"><div><div class="msym">'+esc(a.sym)+'</div><div class="mco">'+esc(a.cur+a.price)+'</div></div><span class="mverd '+tc+'" style="align-self:flex-start">'+esc(a.verdict)+'</span></div></div>'+
     '<div class="mbody">'+
       '<p class="mtake"><span class="lead">'+esc(a.headline)+'.</span> '+a.action+'</p>'+
-      // #318 — every overlay now carries a chart. The generic analyst read used to have none, which is
-      // exactly the "no charts on some screens" inconsistency the user flagged. Lazy-hydrated 24h intraday,
-      // same slot pattern the Misses / Top Movers cards use — no backend change needed.
-      '<div class="viz"><h4>Recent trend · last 24h</h4>'+missChartSlot(a.sym,a.region,a.cur||(a.region==='au'?'A$':'$'))+'</div>'+
+      // #318/#4 — chart aligned to the standard ticker overlay (same "📊 The chart" heading + slot). It's the
+      // lazy intraday fetch (the only price data available for an arbitrary un-scored ticker — a scored name
+      // opens the richer openTicker overlay instead). A thinly-traded small-cap can look flat here simply
+      // because it barely traded intraday — that's real, not a glitch; the note says so.
+      '<div class="viz"><h4>📊 The chart — recent price</h4>'+missChartSlot(a.sym,a.region,a.cur||(a.region==='au'?'A$':'$'))+
+        '<div class="rsimeta" style="margin-top:5px;color:var(--faint)">Intraday — a lightly-traded stock can look flat if it barely traded today.</div></div>'+
       '<div class="anchips">'+trend+rsi+chip('Volatility', s.atrPct!=null?('~'+s.atrPct+'%/day'):null)+chip('vs 20-day', s.ext20!=null?((s.ext20>=0?'+':'')+s.ext20+'%'):null, s.ext20>=15?'bd':'')+chip('52wk', s.near52!=null?(Math.round(s.near52*100)+'% of high'):null)+'</div>'+
       (_sigKey?'<div class="mfound" style="margin:-4px 0 10px">🧮 Tap any signal above for what it means &amp; where it comes from</div>':'')+
       (s.support!=null?'<div class="anzones"><div class="anz anz-buy"><span class="ank">🟢 Buying zone</span> '+esc(a.cur+s.support)+'</div><div class="anz anz-sell"><span class="ank">🔴 Selling zone</span> '+esc(a.cur+s.resistance)+'</div></div>':'')+
