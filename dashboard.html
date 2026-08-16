@@ -5339,6 +5339,8 @@ function kitchenScoreStory(D){
     var potN=pot.length;
     var finderN=(function(){ try{ return fdrPool(D).length; }catch(e){ return potN; } })();
     var served=0; (D.regions||[]).forEach(function(r){ if((r.id||'us')===mkt) (r.picks||[]).forEach(function(p){ if(p.sym&&p.sym!=='NONE') served++; }); });
+    var mt=D.modelTiers||{}; function tierN(t){ var a=(mt[t]||{})[mkt]; return (a&&a.filter)?a.filter(function(p){return p&&p.sym&&p.sym!=='NONE';}).length:0; }
+    var t2=tierN('type2'), t3=tierN('type3');
     var wholeName = mkt==='au' ? '🇦🇺 The whole ASX' : '🇺🇸 NYSE + Nasdaq';
     // worked examples from the REAL pot: biggest 🍒>🍊 gap (strong but late) and 🍊>🍒 gap (clean entry, so-so name)
     var scoredc=[];
@@ -5375,6 +5377,11 @@ function kitchenScoreStory(D){
       +'.ks-step{display:flex;align-items:center;justify-content:center;gap:9px;max-width:620px;margin:0 auto}'
       +'.ks-step .aw{color:var(--faint);flex:none}.ks-step .lb{font-size:12px;color:var(--muted);text-align:center;line-height:1.35}.ks-step .lb b{color:var(--ink)}'
       +'.ks-note{color:var(--muted);font-size:12.5px;line-height:1.5;margin:12px 0 0;max-width:64ch}.ks-note b{color:var(--broth)}'
+      +'.ks-tiers{margin-top:14px;border:1px solid var(--line);border-radius:14px;padding:13px 15px;background:var(--surface-2)}'
+      +'.ks-tiers-h{font-weight:800;font-size:13px;margin-bottom:9px}'
+      +'.ks-tierrow{display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px dashed var(--line);font-size:13px}.ks-tierrow:last-child{border-bottom:0}'
+      +'.ks-tchip{font-weight:800;font-size:11px;padding:2px 8px;border-radius:7px;flex:none;color:#fff}.ks-tchip.t1{background:var(--broth)}.ks-tchip.t2{background:#4a8fd6}.ks-tchip.t3{background:#b0872f}'
+      +'.ks-tnm{font-weight:700;flex:none;min-width:72px}.ks-td{flex:1;color:var(--muted);font-size:12px;min-width:0}.ks-tct{font-family:var(--mono,monospace);font-size:11px;font-weight:800;color:var(--ink);flex:none}'
       +'.ks-lanes{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:16px}@media(max-width:640px){.ks-lanes{grid-template-columns:1fr}}'
       +'.ks-lane{background:var(--surface-2);border:1px solid var(--line);border-radius:14px;padding:15px 16px}.ks-lane.o{border-top:3px solid var(--broth)}.ks-lane.c{border-top:3px solid #d6283c}'
       +'.ks-lq{font-weight:800;font-size:16px;margin:6px 0 2px}.ks-lsub{color:var(--muted);font-size:12.5px;line-height:1.4}'
@@ -5400,7 +5407,12 @@ function kitchenScoreStory(D){
       +'<div class="ks-step"><span class="aw">▼</span><span class="lb"><b style="color:var(--broth)">🍊 timing</b> picks the slot · <b style="color:#d6283c">🍒 conviction</b> confirms it’s strong</span></div>'
       +'<div class="ks-row ks-f3"><div class="ks-num">'+served+'</div><div class="ks-meta"><div class="ks-ft">🥣 Served '+(mkt==='au'?'in Australia':'globally')+'</div><div class="ks-fd">Day · Week · Long — the best plays, this market.</div><div class="ks-sbrow"><span class="ks-bdg ks-bg">🍊 + 🍒 on the card</span><span class="ks-bdg ks-bg">🥣 Menu · 🗺️ Journey</span></div></div></div>'
       +'</div>'
-      +'<p class="ks-note"><b>None of these are scores</b> — they’re counts of stocks. 🍊 attaches at the scan→pot step: the <b>'+finderN+' scored names carry both 🍊 and 🍒</b> and are exactly what you browse in <b>The Stock Pot</b> tab (the '+scanned+' scanned names aren’t all published — only the scored ones are). Of those, <b>'+potN+'</b> hit a fresh catalyst (“How we got here”); the <b>Journey</b> shows the '+served+' served.</p>';
+      +'<p class="ks-note"><b>None of these are scores</b> — they’re counts of stocks. 🍊 attaches at the scan→pot step: the <b>'+finderN+' scored names carry both 🍊 and 🍒</b> and are exactly what you browse in <b>The Stock Pot</b> tab (the '+scanned+' scanned names aren’t all published — only the scored ones are). Of those, <b>'+potN+'</b> hit a fresh catalyst (“How we got here”); the <b>Journey</b> shows the '+served+' served.</p>'
+      +'<div class="ks-tiers"><div class="ks-tiers-h">🎚️ Same pot, served three ways — pick your risk with the T1 / T2 / T3 chips in the header</div>'
+        +'<div class="ks-tierrow"><span class="ks-tchip t1">T1</span><span class="ks-tnm">Catalyst</span><span class="ks-td">the careful production picks — needs a fresh hard catalyst today</span><span class="ks-tct">'+served+' served</span></div>'
+        +'<div class="ks-tierrow"><span class="ks-tchip t2">T2</span><span class="ks-tnm">Balanced</span><span class="ks-td">the whole-market scan’s best technical setups</span><span class="ks-tct">'+t2+' picks</span></div>'
+        +'<div class="ks-tierrow"><span class="ks-tchip t3">T3</span><span class="ks-tnm">Aggressive</span><span class="ks-td">the same scan turned up — more risk, more reach</span><span class="ks-tct">'+t3+' picks</span></div>'
+      +'</div>';
     var lanes='<div class="ks-lanes">'
       +'<div class="ks-lane o"><div class="ks-lq">🍊 "Is <em>now</em> the moment?"</div><div class="ks-lsub">Pure <b>timing</b> — momentum, a fresh catalyst, heavy volume, and a hard check it hasn’t already run away. 0–100.</div>'
         +'<div class="ks-ll">The recipe · to 100</div>'
