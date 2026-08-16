@@ -803,6 +803,7 @@
   .chef-note b{color:var(--broth)}
   .journey{display:flex;align-items:flex-start;gap:12px;overflow-x:auto;padding-bottom:10px;scroll-snap-type:x mandatory}  /* flex-start = cards size to content, no dead space */
   .jcol{flex:0 0 calc((100% - 24px)/3);background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;scroll-snap-align:start}  /* 3 across on desktop */
+  .jcol-scan{border-left:3px solid var(--broth);background:linear-gradient(180deg,var(--broth-soft,rgba(232,102,42,.06)),transparent 40%)}  /* #341 — whole-market scan cards read distinct from the T1 menu cards */
   @media(max-width:640px){ .jcol{flex-basis:calc((100% - 12px)/2);padding:12px} }  /* 2 across on mobile */
   .jcol.now{border-color:var(--broth);box-shadow:0 0 0 1px var(--broth) inset}
   .jhead{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px;gap:6px;flex-wrap:wrap;row-gap:5px}
@@ -2064,6 +2065,14 @@
   .rsibar .rn{position:absolute;top:50%;transform:translate(-50%,-50%);width:4px;height:18px;background:var(--ink);border-radius:2px;box-shadow:0 0 0 3px var(--surface)}
   .rsibar .rcap{position:absolute;top:-22px;transform:translateX(-50%);font-size:10px;font-weight:800;color:var(--ink);white-space:nowrap}
   .rsimeta{font-size:12px;color:var(--muted);margin-top:8px;text-align:center}
+  /* #338/#339 valuation band — cheap (green, left) → fair (amber) → dear (red, right) */
+  .valband{position:relative;height:10px;border-radius:999px;margin:22px 0 8px;
+    background:linear-gradient(90deg,var(--buy),var(--hold) 50%,var(--dont))}
+  .valmark{position:absolute;top:50%;transform:translate(-50%,-50%);width:16px;height:16px;border-radius:50%;
+    background:var(--ink);border:3px solid var(--surface);box-shadow:0 1px 4px rgba(0,0,0,.35)}
+  .valmid{color:var(--muted)}
+  .valv-good{color:var(--buy)} .valv-mix{color:var(--hold,#d98a1f)} .valv-bad{color:var(--dont)}
+  .valnote{display:block;margin-top:5px;font-size:11px;color:var(--faint)}
   .spmm{display:flex;justify-content:space-between;font-size:10.5px;font-weight:700;color:var(--faint);font-variant-numeric:tabular-nums;margin-top:3px}
   .scorebar{display:flex;height:16px;border-radius:8px;overflow:hidden;background:var(--surface);border:1px solid var(--line);margin:6px 0}
   .scoreseg{height:100%}
@@ -3212,6 +3221,23 @@ function fundBarsHtml(fd){
   var body=bar('Cheap',fd.value_score)+bar('Quality',fd.quality_score)+bar('Growth',fd.growth_score);
   if(!body) return '';
   return '<div class="fbars">'+body+'</div>';
+}
+// #338/#339 — a GuruFocus-style "cheap vs dear" valuation band. Answers the question the BHP case raised:
+// where does the price sit vs what the business is worth? Built from our OWN value_score (0-100, high = cheap),
+// so a name our model flags as expensive (BHP value 35) lands in the red/overvalued zone — even when its 🍊
+// buy-now (a TIMING score) reads Buy. Makes the value-vs-momentum tension visible instead of hidden.
+function valBandHtml(p,cur){
+  var fd=p&&p.fundamentals; if(!fd||fd.value_score==null) return '';
+  var v=fd.value_score, pos=Math.max(2,Math.min(98,100-v));   // marker: left = undervalued, right = overvalued
+  var vcls=v>=62?'good':v>=38?'mix':'bad';
+  var verdict=v>=62?'Looks cheap — priced below what its fundamentals justify':v>=38?'Around fair value':'Looks dear — priced above what its fundamentals justify';
+  var val=(p&&p.val)||{}, nums=[];
+  if(val.pe!=null)nums.push('P/E '+val.pe);
+  if(fd.market_cap!=null)nums.push('cap '+ (fd.market_cap>=1e12?('$'+(fd.market_cap/1e12).toFixed(1)+'T'):('$'+Math.round(fd.market_cap/1e9)+'B')));
+  return '<div class="viz"><h4>💰 Valuation — cheap or dear?</h4>'+
+    '<div class="valband"><span class="valmark val-'+vcls+'" style="left:'+pos+'%"></span></div>'+
+    '<div class="lends"><span class="g">Undervalued</span><span class="valmid">Fair</span><span class="r">Overvalued</span></div>'+
+    '<div class="rsimeta"><b class="valv-'+vcls+'">'+verdict+'</b> · our value read <b>'+v+'/100</b>'+(nums.length?' · '+esc(nums.join(' · ')):'')+'.<br><span class="valnote">Heads-up: the 🍊 buy-now score measures <b>timing</b>, not price — a stock can look dear here and still be climbing (that\'s a momentum trade, not a value buy).</span></div></div>';
 }
 function signalRows(p,region,opts){
   opts=opts||{};
@@ -4666,7 +4692,23 @@ function render(D,H){
     var jtime=String(m.time||'').replace(/\s*AEST\s*$/i,'').trim();
     return '<div class="jcol'+(isNow?' now':'')+'"><div class="jhead"><span class="when">'+esc(m.stamp)+'<small>'+esc(jtime)+' AEST</small></span><span class="jhright">'+tierBadge+tally(arr)+(isNow?'<span class="now-b">NOW</span>':'')+'</span></div>'+grp(label,arr,region)+'</div>';
   }
-  var journeyCols=ms.slice(0,8).map(function(m,i){return jcol(m,ms[i+1],i===0);}).join('');   // last 8 runs, 3 visible across
+  // #341 (user-caught) — the Journey was menuHistory-only (Type 1). The whole-market scan's picks (T2/T3)
+  // were recorded (tierHistory / Run Schedule / Dinner Reviews) but never showed here, so a scan's new picks
+  // looked like they'd vanished. Synthesize a tier-badged Journey card for the latest T2 + T3 scan of the
+  // current market from modelTiers, and lead the strip with them. No NEW/DROP diff — it's a fresh scan.
+  function scanJcol(tierKey, tierNum){
+    var mt=(D.modelTiers||{})[tierKey]||{}, picks=(mt[MKT]||[]).filter(function(p){return p&&p.sym&&p.sym!=='NONE';});
+    if(!picks.length) return '';
+    var stamp=String((D.modelTiers||{}).updatedAt||'').slice(0,10);
+    var region=MKT, label=(MKT==='us'?'🇺🇸 US':'🇦🇺 AU');
+    var rows=picks.slice(0,3).map(function(p,idx){ var sym=p.sym, nm=p.name||names[String(sym).replace(/\*$/,'')]||'';
+      return '<div class="jrow"><span class="jtf">'+(TFS[idx]||'')+'</span><span class="jinfo">'+qlink(sym,region)+(nm?'<span class="jname">'+esc(nm)+'</span>':'')+'</span>'+gradeBadge(sym)+'</div>'; });
+    return '<div class="jcol jcol-scan"><div class="jhead"><span class="when">Whole-market scan<small>'+esc(stamp)+' · daily</small></span>'+
+      '<span class="jhright"><span class="rltier rltier-'+tierNum+'" title="Type '+tierNum+' — whole-market technical scan">T'+tierNum+'</span></span></div>'+
+      '<div class="jgrp">'+label+'</div>'+rows.join('')+'</div>';
+  }
+  var scanCols=(TIER==='type1'?(scanJcol('type2',2)+scanJcol('type3',3)):'');   // only lead with scan cards on the T1 view (the tier toggle already shows T2/T3 elsewhere)
+  var journeyCols=scanCols+ms.slice(0,8).map(function(m,i){return jcol(m,ms[i+1],i===0);}).join('');   // last 8 runs, 3 visible across
   var note="This is the first menu on record — the journey starts here.";
   if(ms.length>=2){
     var a=ms[0],b=ms[1];
@@ -5547,6 +5589,7 @@ function openModal(p,region,cur){
         (p.spark?levelChartSVG(p.spark,{stop:_nStop,entry:_nEntry,target:_nTarget,now:_nNow},cur)
                :servedChartSlot(p.sym,region,cur,(function(){try{return pickServedISO(p.sym,region);}catch(e){return null;}})()))+'</div>'+
       rangesHtml+
+      (function(){try{return valBandHtml(p,cur);}catch(e){return '';}})()+
       '<div class="viz">'+
         posSizeHtml(p,cur)+
         '<h4 style="margin-top:0">How hot is it right now? · RSI</h4>'+
@@ -6827,6 +6870,7 @@ function openCandidate(idx){
       // no served stop/target). Keeps the 1w/1m/1y range sliders below, matching the pick card.
       ((c.spark&&c.spark.length>2)?'<div class="viz"><h4>📊 The chart — where it sits in its range</h4>'+levelChartSVG(c.spark,{now:numLevel(c.nNow!=null?c.nNow:c.price),range:true},cCur)+'</div>':'')+
       cRanges+
+      (function(){try{return valBandHtml(c,cCur);}catch(e){return '';}})()+
       cRsiBlock+
       '<div class="mnews">🔎 <span class="lead">How we picked it up:</span> '+esc(c.note||'a signal in tonight\'s scan')+'<div class="mfound">'+(c.foundVia?esc(c.foundVia):'Caught by our wide-net scan — live news, market movers and analyst actions — then priced &amp; scored into the pot.')+'</div></div>'+
       (signalRows(c,c.region).length?'<h4 style="margin-top:16px">🧮 All the signals, in one place</h4>'+signalDetailHtml(c,c.region):'')+
