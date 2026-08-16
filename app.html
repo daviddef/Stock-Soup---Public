@@ -9019,22 +9019,29 @@ function fdrTreemap(items,x,y,w,h,out){
   else { fdrTreemap(a,x,y,w,h*r,out); fdrTreemap(b,x,y+h*r,w,h*(1-r),out); }
 }
 function fdrBoardHtml(rows){
-  var items=rows.map(function(o){return o.s;}).filter(function(s){return s.mcap;});
-  if(items.length<2) return '<div class="fdr-empty"><b>Not enough market-cap data yet.</b>The board fills in once the daily whole-market scan publishes market caps for the pot.</div>';
-  // group by sector, sectors sized by total cap, tiles within sized by cap
+  var all=rows.map(function(o){return o.s;});
+  if(all.length<2) return '<div class="fdr-empty"><b>Nothing to map.</b>Loosen a lever so there are some names to lay out.</div>';
+  // Prefer sizing by MARKET CAP (the real market map). But most of the pot has no cap until the daily scan
+  // publishes fundamentals — if fewer than ~half do, fall back to sizing by 🍊 buy-now so EVERY matched name
+  // still gets a tile (and say so), instead of a board with 3 giant tiles.
+  var withCap=all.filter(function(s){return s.mcap;});
+  var byCap=(withCap.length>=Math.max(8,all.length*0.5));
+  var items=byCap?withCap:all;
+  var sizeOf=function(s){ return byCap?s.mcap:Math.max(1,(s.buyNow||0)); };
   var bySec={}; items.forEach(function(s){var k=s.sector||'Other'; (bySec[k]=bySec[k]||[]).push(s);});
-  var sectors=Object.keys(bySec).map(function(k){var v=0; bySec[k].forEach(function(s){v+=s.mcap;}); return {k:k,v:v,items:bySec[k]};}).sort(function(a,b){return b.v-a.v;});
+  var sectors=Object.keys(bySec).map(function(k){var v=0; bySec[k].forEach(function(s){v+=sizeOf(s);}); return {k:k,v:v,items:bySec[k]};}).sort(function(a,b){return b.v-a.v;});
   var W=100,H=64, secRects=[]; fdrTreemap(sectors.map(function(sg){return {o:sg,v:sg.v};}),0,0,W,H,secRects);
   var tiles='';
-  secRects.forEach(function(sr){ var sg=sr.o; var inner=[]; var arr=sg.items.slice().sort(function(a,b){return b.mcap-a.mcap;});
-    fdrTreemap(arr.map(function(s){return {o:s,v:s.mcap};}), sr.x, sr.y, sr.w, sr.h, inner);
-    inner.forEach(function(t){ var s=t.o, bg=fdrColor(s.buyNow), big=(t.w>7&&t.h>7);
-      tiles+='<div class="fdr-tile" data-sym="'+esc(s.sym)+'" data-region="'+esc(s.region)+'" style="left:'+t.x.toFixed(2)+'%;top:'+t.y.toFixed(2)+'%;width:'+t.w.toFixed(2)+'%;height:'+t.h.toFixed(2)+'%;background:'+bg+'" title="'+esc(s.sym)+' · '+esc(s.name)+' — 🍊 '+(s.buyNow!=null?s.buyNow:'—')+' · '+fdrMcap(s.mcap)+'">'+
+  secRects.forEach(function(sr){ var sg=sr.o; var inner=[]; var arr=sg.items.slice().sort(function(a,b){return sizeOf(b)-sizeOf(a);});
+    fdrTreemap(arr.map(function(s){return {o:s,v:sizeOf(s)};}), sr.x, sr.y, sr.w, sr.h, inner);
+    inner.forEach(function(t){ var s=t.o, bg=fdrColor(s.buyNow), big=(t.w>6&&t.h>6);
+      tiles+='<div class="fdr-tile" data-sym="'+esc(s.sym)+'" data-region="'+esc(s.region)+'" style="left:'+t.x.toFixed(2)+'%;top:'+t.y.toFixed(2)+'%;width:'+t.w.toFixed(2)+'%;height:'+t.h.toFixed(2)+'%;background:'+bg+'" title="'+esc(s.sym)+' · '+esc(s.name)+' — 🍊 '+(s.buyNow!=null?s.buyNow:'—')+(s.mcap?' · '+fdrMcap(s.mcap):'')+'">'+
         (big?'<span class="fdr-tsym2">'+esc(s.sym)+'</span><span class="fdr-tsc">'+(s.buyNow!=null?s.buyNow:'')+'</span>':'')+'</div>';
     });
   });
+  var leg=byCap?'Tile size = market cap · colour = 🍊 buy-now':'Tile size = 🍊 buy-now score · colour = 🍊 buy-now <span class="fdr-hint">(market caps arrive with the daily scan — then tiles size by cap)</span>';
   return '<div class="fdr-boardwrap"><div class="fdr-board">'+tiles+'</div>'+
-    '<div class="fdr-boardleg">Tile size = market cap · colour = 🍊 buy-now (<span style="color:var(--dont)">low</span> → <span style="color:var(--buy)">high</span>) · grouped by sector · tap for the read.</div></div>';
+    '<div class="fdr-boardleg">'+leg+' (<span style="color:var(--dont)">low</span> → <span style="color:var(--buy)">high</span>) · grouped by sector · tap for the read.</div></div>';
 }
 function renderFinder(){
   var root=document.getElementById('finderRoot'); if(!root) return;
@@ -9065,6 +9072,26 @@ function renderFinder(){
     fdrWire(root);
   }catch(e){ try{ root.innerHTML='<div class="fdr-empty"><b>The Finder hit a snag.</b>Refresh the page — if it persists, tell us.</div>'; }catch(e2){} }
 }
+// Light re-render: rebuild ONLY the results pane + count, leaving the lever rail (and any in-progress slider
+// drag) untouched. This is what makes the sliders feel fluid — the old path rebuilt the whole rail on every
+// input event, destroying the slider mid-drag so it read as a click, not a slide.
+function fdrRenderView(){
+  var root=document.getElementById('finderRoot'); if(!root) return;
+  try{
+    var D=(LAST&&LAST.D)||{}, res=fdrCurrent(D);
+    var vw=document.getElementById('fdrView'); if(!vw){ renderFinder(); return; }
+    var body;
+    if(FDR.view==='cards') body=fdrCardsHtml(res.rows);
+    else if(FDR.view==='scatter') body=fdrScatterHtml(res.rows);
+    else if(FDR.view==='board') body=fdrBoardHtml(res.rows);
+    else body=fdrTableHtml(res.rows);
+    vw.innerHTML=body;
+    var cnt=root.querySelector('.fdr-count');
+    if(cnt) cnt.innerHTML='<b>'+res.rows.length+'</b> '+(FDR.mode==='strict'?('of '+res.poolN+' in scope match'):('ranked by match · '+res.poolN+' in scope'));
+    var xs=document.getElementById('fdrX'); if(xs) xs.onchange=function(){ FDR.xAxis=xs.value; fdrRenderView(); };
+    var ys=document.getElementById('fdrY'); if(ys) ys.onchange=function(){ FDR.yAxis=ys.value; fdrRenderView(); };
+  }catch(e){}
+}
 function fdrWire(root){
   function rerender(){ renderFinder(); }
   root.querySelectorAll('[data-fmode]').forEach(function(b){b.onclick=function(){ FDR.mode=b.dataset.fmode; if(FDR.mode==='flexible')FDR.sort='match'; rerender(); };});
@@ -9075,7 +9102,12 @@ function fdrWire(root){
     if(v==='__all'){ FDR.sectorSet=[]; } else { FDR.sectorSet=FDR.sectorSet||[]; var i=FDR.sectorSet.indexOf(v); if(i>=0)FDR.sectorSet.splice(i,1); else FDR.sectorSet.push(v); } rerender(); };});
   root.querySelectorAll('.fdr-chk').forEach(function(cb){cb.onchange=function(){ var l=fdrLever(cb.dataset.k); if(l){l.on=cb.checked; rerender();} };});
   root.querySelectorAll('.fdr-lvlabel').forEach(function(lb){lb.onclick=function(){ var l=fdrLever(lb.dataset.k); if(l){l.on=!l.on; rerender();} };});
-  root.querySelectorAll('.fdr-rng').forEach(function(r){r.oninput=function(){ var l=fdrLever(r.dataset.k); if(!l)return; l.val=+r.value; if(!l.on)l.on=true; rerender(); };});
+  root.querySelectorAll('.fdr-rng').forEach(function(r){r.oninput=function(){ var l=fdrLever(r.dataset.k); if(!l)return; l.val=+r.value;
+    var lev=r.closest('.fdr-lever');
+    if(!l.on){ l.on=true; if(lev){ lev.classList.remove('off'); var cb=lev.querySelector('.fdr-chk'); if(cb)cb.checked=true; } }
+    if(lev){ var vv=lev.querySelector('.fdr-lvval'); if(vv){ var fv=l.fmt==='b'?('$'+l.val+'B'):l.fmt==='pct'?(l.val+'%'):l.val; vv.textContent=l.unit+' '+fv; } }
+    fdrRenderView();   // light — keeps the rail (and this drag) intact so the slider feels fluid
+  };});
   root.querySelectorAll('.fdr-tgl').forEach(function(t){t.onclick=function(){ FDR.toggles[t.dataset.tgl]=!FDR.toggles[t.dataset.tgl]; rerender(); };});
   var xs=document.getElementById('fdrX'); if(xs) xs.onchange=function(){ FDR.xAxis=xs.value; rerender(); };
   var ys=document.getElementById('fdrY'); if(ys) ys.onchange=function(){ FDR.yAxis=ys.value; rerender(); };
