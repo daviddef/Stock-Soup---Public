@@ -9056,7 +9056,7 @@ function pushViewState(){
 // Replaces the Full Pot. Reads latest.finderUniverse (#337, the whole scored liquid market) unioned with
 // tonight's candidates/picks, and lets you pull levers for the stock you want. Fully guarded: any throw
 // is caught so a Finder bug can never blank the app (the #216 blank-page class).
-var FDR={mode:'flexible', view:'cards', sectorSet:null, toggles:{aboveMa:false}, sort:'match', xAxis:'rangePos', yAxis:'buyNow', query:'', built:false};
+var FDR={mode:'flexible', view:'cards', sectorSet:null, toggles:{aboveMa:false}, sort:'match', xAxis:'rangePos', yAxis:'buyNow', query:'', catalystOnly:false, built:false};
 var FDR_LEVERS=[
   {grp:'Scores', items:[
     {k:'buyNow', label:'🍊 Buy-now', min:0,max:100,val:55,on:true, unit:'≥', help:'our momentum/timing score — Buy band'},
@@ -9206,6 +9206,9 @@ function fdrInScope(s){
   // "0 in scope" even though the pot was full. Served picks are ALWAYS in scope regardless of sector.
   if(s.src!=='pick' && FDR.sectorSet && FDR.sectorSet.length && s.sector && FDR.sectorSet.indexOf(s.sector)<0) return false;
   if(FDR.toggles.aboveMa && s.aboveMa===false) return false;   // null (unknown) passes
+  // #cat — "On a catalyst": keep only the catalyst pot (scored candidates) + served picks; drop the wide
+  // whole-market technical-scan names (src==='wide'). That's the ~106 "Caught on a catalyst" set from the funnel.
+  if(FDR.catalystOnly && s.src==='wide') return false;
   return true;
 }
 function fdrSectors(pool){ var set={}; pool.forEach(function(s){ if(s.sector) set[s.sector]=1; }); return Object.keys(set).sort(); }
@@ -9259,6 +9262,7 @@ function fdrRailHtml(pool){
     '<button class="fdr-preset'+(fdrLever('spring')&&fdrLever('spring').on?' on':'')+'" id="fdrSpringPreset" title="Flat / hasn’t run up, but starting to turn — squeeze · volume · MACD">🌱 Coiled spring</button>'+
     '<button class="fdr-preset'+(fdrLever('capMax')&&fdrLever('capMax').on?' on':'')+'" id="fdrSmallPreset" title="Small companies only (needs fundamentals — mostly catalyst-pot names)">🪙 Small caps</button>'+
     '<button class="fdr-preset'+(fdrLever('newsFresh')&&fdrLever('newsFresh').on?' on':'')+'" id="fdrFreshPreset" title="A fresh headline in the last ~3 days">📰 Fresh news</button>'+
+    '<button class="fdr-preset'+(FDR.catalystOnly?' on':'')+'" id="fdrCatPreset" title="Only the catalyst pot — names our news/earnings/quant/IPO nets surfaced (drops the wide technical scan)">🎯 On a catalyst</button>'+
     '</div>';
   h+='<div class="fdr-grp"><div class="fdr-grpt">Sectors <span class="fdr-hint">· All by default · 🍊 = we rate a Buy in that sector</span></div><div class="fdr-chips" id="fdrSecChips">'+
     '<button class="fdr-cchip'+((!FDR.sectorSet||!FDR.sectorSet.length)?' on':'')+'" data-sec="__all">All</button>'+
@@ -9428,7 +9432,7 @@ function fdrWire(root){
   root.querySelectorAll('[data-fmode]').forEach(function(b){b.onclick=function(){ FDR.mode=b.dataset.fmode; if(FDR.mode==='flexible')FDR.sort='match'; rerender(); };});
   root.querySelectorAll('[data-fview]').forEach(function(b){b.onclick=function(){ FDR.view=b.dataset.fview; rerender(); };});
   var ss=document.getElementById('fdrSort'); if(ss) ss.onchange=function(){ FDR.sort=ss.value; rerender(); };
-  var reset=document.getElementById('fdrReset'); if(reset) reset.onclick=function(){ FDR_LEVERS.forEach(function(g){g.items.forEach(function(l){ l.on=false; });}); FDR.sectorSet=[]; FDR.toggles.aboveMa=false; FDR.sort='match'; rerender(); };
+  var reset=document.getElementById('fdrReset'); if(reset) reset.onclick=function(){ FDR_LEVERS.forEach(function(g){g.items.forEach(function(l){ l.on=false; });}); FDR.sectorSet=[]; FDR.toggles.aboveMa=false; FDR.catalystOnly=false; FDR.sort='match'; rerender(); };
   // #345/#2c — one-tap presets: each turns on ONLY its lever and sorts sensibly; click again to clear.
   function _fdrPreset(btnId, leverK, val, sort){
     var b=document.getElementById(btnId); if(!b)return;
@@ -9440,6 +9444,9 @@ function fdrWire(root){
   _fdrPreset('fdrSpringPreset','spring',55,'spring');
   _fdrPreset('fdrSmallPreset','capMax',2,'match');
   _fdrPreset('fdrFreshPreset','newsFresh',40,'newsFresh');
+  // #cat — "On a catalyst" is a plain toggle (composes with the levers), not a lever-preset: it narrows the
+  // pool to the catalyst-caught set (drops the wide technical scan). Keeps whatever levers are already set.
+  var cat=document.getElementById('fdrCatPreset'); if(cat) cat.onclick=function(){ FDR.catalystOnly=!FDR.catalystOnly; rerender(); };
   // #3 — exact-ticker search. oninput does the LIGHT re-render (results + count) so the input keeps focus while
   // typing; the ✕ clear does a full re-render so the box repaints without it.
   var srch=document.getElementById('fdrSearch'); if(srch){ srch.oninput=function(){ FDR.query=srch.value; fdrRenderView(); }; srch.onkeydown=function(e){ if(e.key==='Enter') e.preventDefault(); }; }
