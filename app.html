@@ -4989,6 +4989,8 @@ function render(D,H){
     '<section id="runsched"><div class="sec-head"><h2 class="display">⏱️ Run schedule</h2>'+infoBtn('schedule')+'</div>'+runGanttHtml()+runLogHtml()+'</section>'+
     '<section><div class="sec-head"><h2 class="display">📋 How we got here</h2></div>'+
       '<p class="sec-sub">The recipe, in plain sight. No black box.</p>'+discoveryFunnel(D)+'<div class="panel trail">'+trail+'</div></section>'+
+    '<section id="scorestory"><div class="sec-head"><h2 class="display">🍊🍒 One pot, two scores</h2></div>'+
+      '<p class="sec-sub">The whole market simmered down to a few picks — then rated twice: 🍊 for timing, 🍒 for conviction. Real numbers from tonight’s run.</p>'+kitchenScoreStory(D)+'</section>'+
     '<section><div class="sec-head"><h2 class="display">🗄️ The Archive</h2>'+infoBtn('archive')+'</div>'+
       '<p class="sec-sub">Every menu we\'ve served — the real picks, verdicts and reasoning from that night, not a frozen price.</p>'+
       archiveHtml(H)+
@@ -5319,6 +5321,103 @@ function overallScore(buyNow, rows){
   var vcls=overall>=62?'ov-buy':overall>=45?'ov-watch':'ov-avoid';
   var thin=tot<4;   // #257 coverage-honesty: flag when few signals actually back the number
   return {score:overall,verdict:verdict,vcls:vcls,buy:buyNow,pos:pos,neg:neg,total:tot,thin:thin,consensus:Math.round(consensus)};
+}
+// #kitchen-story (user ask) — "One pot, two scores": the live funnel (real per-run counts) + where each
+// score attaches + a worked example pulled from tonight's real pot. Lives in Inside the Kitchen.
+function kitchenScoreStory(D){
+  try{
+    var mkt=MKT;
+    var whole = mkt==='au' ? '~2,000' : '~4,300';
+    var scanned = mkt==='au' ? '~1,270' : '~2,400';
+    var pot=(D.candidates||[]).filter(function(c){return (c.region||'us')===mkt && c.sym!=='NONE';});
+    var potN=pot.length;
+    var finderN=(function(){ try{ return fdrPool(D).length; }catch(e){ return potN; } })();
+    var served=0; (D.regions||[]).forEach(function(r){ if((r.id||'us')===mkt) (r.picks||[]).forEach(function(p){ if(p.sym&&p.sym!=='NONE') served++; }); });
+    var wholeName = mkt==='au' ? '🇦🇺 The whole ASX' : '🇺🇸 NYSE + Nasdaq';
+    // worked examples from the REAL pot: biggest 🍒>🍊 gap (strong but late) and 🍊>🍒 gap (clean entry, so-so name)
+    var scoredc=[];
+    pot.forEach(function(c){ try{ if(!c.score||c.score.buy_now==null) return;
+      var ov=overallScore(c.score.buy_now, signalRows(c,mkt)); if(!ov) return;
+      scoredc.push({sym:c.sym,name:c.name,o:Math.round(c.score.buy_now),ch:ov.score,gap:ov.score-Math.round(c.score.buy_now)}); }catch(e){} });
+    var hiCherry=scoredc.slice().sort(function(a,b){return b.gap-a.gap;})[0];   // cherry >> orange
+    var hiOrange=scoredc.slice().sort(function(a,b){return a.gap-b.gap;})[0];   // orange >> cherry
+    function exCard(x,kind){
+      if(!x) return '';
+      var strong=kind==='cherry';
+      var title=strong?'🍒 high · 🍊 lower':'🍊 high · 🍒 lower';
+      var sub=strong?'A strong name — but a late entry':'A clean entry — on a so-so name';
+      var read=strong?('Every signal votes yes, so conviction is high — but the timing score is held back (it’s run up / near overbought). <b>Read:</b> strong stock, wait for a better entry.')
+                      :('Fresh timing setup — but the signals are split, so conviction is only middling. <b>Read:</b> a trade, not a marriage — take it with a stop.');
+      return '<div class="ks-exc"><div class="ks-exsym">'+esc(x.sym)+'</div><div class="ks-exname">'+esc(x.name||x.sym)+' · '+esc(title)+'</div>'+
+        '<div class="ks-glab"><span>🍊 timing</span><span>'+x.o+'</span></div><div class="ks-gauge ks-g-o"><i style="width:'+Math.max(3,Math.min(100,x.o))+'%"></i></div>'+
+        '<div class="ks-glab"><span>🍒 conviction</span><span>'+x.ch+'</span></div><div class="ks-gauge ks-g-c"><i style="width:'+Math.max(3,Math.min(100,x.ch))+'%"></i></div>'+
+        '<div class="ks-verdict"><b>'+esc(sub)+'.</b> '+read+'</div></div>';
+    }
+    var examples='';
+    if(hiCherry&&hiOrange&&hiCherry.sym!==hiOrange.sym&&(hiCherry.gap>=4||hiOrange.gap<=-4)){
+      examples='<h4 class="ks-h4">Why two numbers beat one — tonight’s pot, two ways</h4><div class="ks-exgrid">'+exCard(hiCherry,'cherry')+exCard(hiOrange,'orange')+'</div>';
+    }
+    var css='<style>'
+      +'.ks-wrap{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:20px 20px 24px;box-shadow:var(--shadow)}'
+      +'.ks-fn{display:flex;flex-direction:column;gap:8px;margin:4px 0}'
+      +'.ks-row{background:var(--surface-2);border:1px solid var(--line);border-radius:14px;padding:13px 16px;display:flex;align-items:center;gap:16px;margin:0 auto;width:100%}'
+      +'.ks-f0{width:100%;background:linear-gradient(90deg,var(--surface-2),rgba(232,102,42,.10))}.ks-f1{width:84%}.ks-f2{width:56%}.ks-f3{width:34%;background:linear-gradient(90deg,rgba(35,194,103,.13),var(--surface-2));border-color:rgba(35,194,103,.4)}'
+      +'.ks-num{font-weight:800;font-size:clamp(20px,4vw,30px);line-height:1;letter-spacing:-.02em;flex:none}'
+      +'.ks-meta{flex:1;min-width:0}.ks-ft{font-weight:800;font-size:14px}.ks-fd{color:var(--muted);font-size:12.5px;line-height:1.35}'
+      +'.ks-sbrow{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}.ks-bdg{font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:999px;white-space:nowrap}'
+      +'.ks-bo{background:rgba(232,102,42,.13);color:var(--broth)}.ks-bc{background:rgba(214,40,60,.13);color:#d6283c}.ks-bg{background:rgba(35,194,103,.14);color:var(--buy)}.ks-bn{background:var(--line);color:var(--muted)}'
+      +'.ks-step{display:flex;align-items:center;justify-content:center;gap:9px;max-width:620px;margin:0 auto}'
+      +'.ks-step .aw{color:var(--faint);flex:none}.ks-step .lb{font-size:12px;color:var(--muted);text-align:center;line-height:1.35}.ks-step .lb b{color:var(--ink)}'
+      +'.ks-note{color:var(--muted);font-size:12.5px;line-height:1.5;margin:12px 0 0;max-width:64ch}.ks-note b{color:var(--broth)}'
+      +'.ks-lanes{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:16px}@media(max-width:640px){.ks-lanes{grid-template-columns:1fr}}'
+      +'.ks-lane{background:var(--surface-2);border:1px solid var(--line);border-radius:14px;padding:15px 16px}.ks-lane.o{border-top:3px solid var(--broth)}.ks-lane.c{border-top:3px solid #d6283c}'
+      +'.ks-lq{font-weight:800;font-size:16px;margin:6px 0 2px}.ks-lsub{color:var(--muted);font-size:12.5px;line-height:1.4}'
+      +'.ks-ll{font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);font-weight:800;margin:12px 0 7px}'
+      +'.ks-ing{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px dashed var(--line);font-size:13px}.ks-ing:last-child{border-bottom:0}'
+      +'.ks-ing .e{width:20px;text-align:center;flex:none}.ks-ing .n{flex:1;font-weight:600}.ks-ing .n small{display:block;color:var(--muted);font-weight:400;font-size:11.5px}'
+      +'.ks-w{font-family:var(--mono,monospace);font-size:11px;font-weight:800;color:var(--broth);flex:none}'
+      +'.ks-v{font-size:10px;font-weight:800;padding:2px 8px;border-radius:999px;flex:none}.ks-vu{background:rgba(35,194,103,.14);color:var(--buy)}.ks-vd{background:rgba(214,40,60,.13);color:#d6283c}.ks-vn{background:var(--line);color:var(--muted)}'
+      +'.ks-pills{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}.ks-mini{font-size:10.5px;font-weight:700;padding:3px 8px;border-radius:7px;background:rgba(232,102,42,.11);color:var(--broth)}.ks-mini.pen{background:rgba(214,40,60,.11);color:#d6283c}'
+      +'.ks-h4{font-weight:800;font-size:15px;margin:18px 0 10px}.ks-exgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}@media(max-width:640px){.ks-exgrid{grid-template-columns:1fr}}'
+      +'.ks-exc{background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:14px}.ks-exsym{font-weight:800;font-size:17px}.ks-exname{color:var(--muted);font-size:12px;margin-bottom:10px}'
+      +'.ks-glab{display:flex;justify-content:space-between;font-size:11px;color:var(--faint);font-weight:700;margin-top:8px}.ks-gauge{height:8px;border-radius:5px;background:var(--line);overflow:hidden;margin:3px 0}.ks-gauge i{display:block;height:100%}.ks-g-o i{background:var(--broth)}.ks-g-c i{background:#d6283c}'
+      +'.ks-verdict{font-size:12.5px;color:var(--muted);line-height:1.5;margin-top:9px}.ks-verdict b{color:var(--ink)}'
+      +'</style>';
+    var funnel='<div class="ks-fn">'
+      +'<div class="ks-row ks-f0"><div class="ks-num">'+whole+'</div><div class="ks-meta"><div class="ks-ft">'+wholeName+'</div><div class="ks-fd">Every listed company — the whole market goes in the pot.</div><div class="ks-sbrow"><span class="ks-bdg ks-bn">no score yet</span><span class="ks-bdg ks-bn">not shown in the app</span></div></div></div>'
+      +'<div class="ks-step"><span class="aw">▼</span><span class="lb"><b>Liquidity filter</b> — can you actually trade it?</span></div>'
+      +'<div class="ks-row ks-f1"><div class="ks-num">'+scanned+'</div><div class="ks-meta"><div class="ks-ft">🔎 Actually tradeable</div><div class="ks-fd">The daily whole-market scan — the names worth screening.</div><div class="ks-sbrow"><span class="ks-bdg ks-bn">still no score</span><span class="ks-bdg ks-bo">🔎 lives in The Finder</span></div></div></div>'
+      +'<div class="ks-step"><span class="aw">▼</span><span class="lb"><b style="color:var(--broth)">🍊 the Buy-Now model runs here</b> — every name scored; only real signals survive</span></div>'
+      +'<div class="ks-row ks-f2"><div class="ks-num">'+potN+'</div><div class="ks-meta"><div class="ks-ft">🍲 The Stock Pot</div><div class="ks-fd">Names with a real signal — a catalyst, a breakout, a beat.</div><div class="ks-sbrow"><span class="ks-bdg ks-bo">🍊</span><span class="ks-bdg ks-bc">🍒</span><span class="ks-bdg ks-bn">both live on every name</span><span class="ks-bdg ks-bo">🔎 The Finder</span></div></div></div>'
+      +'<div class="ks-step"><span class="aw">▼</span><span class="lb"><b style="color:var(--broth)">🍊 timing</b> picks the slot · <b style="color:#d6283c">🍒 conviction</b> confirms it’s strong</span></div>'
+      +'<div class="ks-row ks-f3"><div class="ks-num">'+served+'</div><div class="ks-meta"><div class="ks-ft">🥣 Served '+(mkt==='au'?'in Australia':'globally')+'</div><div class="ks-fd">Day · Week · Long — the best plays, this market.</div><div class="ks-sbrow"><span class="ks-bdg ks-bg">🍊 + 🍒 on the card</span><span class="ks-bdg ks-bg">🥣 Menu · 🗺️ Journey</span></div></div></div>'
+      +'</div>'
+      +'<p class="ks-note"><b>Neither '+scanned+' nor '+potN+' is a score</b> — they’re counts of stocks. 🍊 attaches at the scan→pot step; by the time a name’s in the <b>'+potN+'-name pot it carries both 🍊 and 🍒</b>. The <b>Finder</b> is where you browse that scored universe ('+finderN+' names tonight); the <b>Journey</b> shows the '+served+' that got served.</p>';
+    var lanes='<div class="ks-lanes">'
+      +'<div class="ks-lane o"><div class="ks-lq">🍊 "Is <em>now</em> the moment?"</div><div class="ks-lsub">Pure <b>timing</b> — momentum, a fresh catalyst, heavy volume, and a hard check it hasn’t already run away. 0–100.</div>'
+        +'<div class="ks-ll">The recipe · to 100</div>'
+        +'<div class="ks-ing"><span class="e">📊</span><span class="n">Earnings surprise <small>beat + drift (PEAD)</small></span><span class="ks-w">25</span></div>'
+        +'<div class="ks-ing"><span class="e">📈</span><span class="n">Analyst revisions</span><span class="ks-w">20</span></div>'
+        +'<div class="ks-ing"><span class="e">🎯</span><span class="n">Trend &amp; 52-wk high</span><span class="ks-w">20</span></div>'
+        +'<div class="ks-ing"><span class="e">📰</span><span class="n">Catalyst / news</span><span class="ks-w">15</span></div>'
+        +'<div class="ks-ing"><span class="e">🔊</span><span class="n">Volume surge</span><span class="ks-w">12</span></div>'
+        +'<div class="ks-ing"><span class="e">👤</span><span class="n">Insider buying</span><span class="ks-w">8</span></div>'
+        +'<div class="ks-ll">+ ~15 nudges · − timing penalties</div>'
+        +'<div class="ks-pills"><span class="ks-mini">📰 news-flow</span><span class="ks-mini">📊 fundamentals</span><span class="ks-mini">🏆 vs index</span><span class="ks-mini">💧 money-flow</span><span class="ks-mini pen">🏃 already up &gt;15%</span><span class="ks-mini pen">🔥 RSI &gt;70</span><span class="ks-mini pen">🚫 too extended</span></div></div>'
+      +'<div class="ks-lane c"><div class="ks-lq">🍒 "How <em>strong</em> is it, full stop?"</div><div class="ks-lsub">Overall <b>conviction</b> — takes the Buy-Now as a backbone, then every signal <b>votes</b> for or against. 0–100.</div>'
+        +'<div class="ks-ll">Backbone → then a vote per signal</div>'
+        +'<div class="ks-ing"><span class="e">🍊</span><span class="n">The Buy-Now score <small>timing is one input, not the whole story</small></span><span class="ks-v ks-vn">start</span></div>'
+        +'<div class="ks-ing"><span class="e">🌡️</span><span class="n">RSI</span><span class="ks-v ks-vu">for</span></div>'
+        +'<div class="ks-ing"><span class="e">📊</span><span class="n">Trend &amp; ADX</span><span class="ks-v ks-vu">for</span></div>'
+        +'<div class="ks-ing"><span class="e">🏆</span><span class="n">Vs the index</span><span class="ks-v ks-vu">for</span></div>'
+        +'<div class="ks-ing"><span class="e">📊</span><span class="n">Fundamentals</span><span class="ks-v ks-vn">neutral</span></div>'
+        +'<div class="ks-ing"><span class="e">🩳</span><span class="n">Short interest</span><span class="ks-v ks-vd">against</span></div>'
+        +'<div class="ks-ing"><span class="e">📰</span><span class="n">News buzz</span><span class="ks-v ks-vu">for</span></div>'
+        +'<div class="ks-ing"><span class="e">💧</span><span class="n">Money-flow</span><span class="ks-v ks-vu">for</span></div>'
+        +'<div class="ks-pills"><span class="ks-mini">tally the votes → conviction. A stock can be <b>strong</b> (high 🍒) yet a <b>poor entry today</b> (low 🍊)</span></div></div>'
+      +'</div>';
+    return '<div class="ks-wrap">'+css+funnel+lanes+examples+'</div>';
+  }catch(e){ try{console.error('kitchenScoreStory',e);}catch(_){}; return ''; }
 }
 function overallBannerHtml(ov){
   if(!ov) return '';
