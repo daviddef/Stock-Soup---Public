@@ -1592,7 +1592,8 @@
   .nc-refen{stroke:var(--broth);opacity:.75;stroke-dasharray:4 3}
   .nc-refst{stroke:var(--dont);opacity:.7;stroke-dasharray:4 3}
   .nc-vmark{stroke:var(--faint);opacity:.5;stroke-width:1;stroke-dasharray:2 4}
-  .nc-vlab{position:absolute;bottom:2px;transform:translateX(-50%);font-size:9px;font-weight:800;color:var(--faint);letter-spacing:.04em;pointer-events:none}
+  .nc-vlabs{position:absolute;top:0;left:0;right:0;height:118px;pointer-events:none}
+  .nc-vlab{position:absolute;bottom:3px;transform:translateX(-50%);font-size:9px;font-weight:800;color:var(--muted);letter-spacing:.04em;background:rgba(11,13,16,.72);padding:0 3px;border-radius:3px}
   /* right-edge Now/High/Low labels, aligned to the reference lines by top:Ypx */
   .nc-lbls{position:absolute;top:0;right:6px;height:118px;pointer-events:none}
   .nc-plbl{position:absolute;right:0;transform:translateY(-50%);font-size:11px;font-weight:800;white-space:nowrap;background:rgba(20,16,14,.72);padding:0 3px;border-radius:4px;font-variant-numeric:tabular-nums}
@@ -8823,7 +8824,7 @@ function ncEvents(o){
 }
 function newsChartSlot(sym,region,cur,o,opts){
   var ev=ncEvents(o||{}); var k=NC_SEQ++; NC_CACHE[k]={ev:ev, opts:opts||{}};
-  return '<div class="viz nc-block"><h4>📊 The chart — price · range · news <span class="nc-hh">· slide to read</span></h4>'+
+  return '<div class="viz nc-block"><h4>📊 The chart — price · range · news</h4>'+
     '<div class="newschart" data-newschart data-sym="'+esc(sym)+'" data-region="'+esc(region)+'" data-cur="'+esc(cur)+'" data-evk="'+k+'">'+
     '<div class="nc-load">···· loading the chart</div></div></div>';
 }
@@ -8879,18 +8880,22 @@ function drawNewsChart(slot, closes, dates, events, cur, opts){
   if(tones.bear) lp.push('<span class="nc-lg"><i style="background:var(--dont)"></i>bad news</span>');
   if(tones.neu)  lp.push('<span class="nc-lg"><i style="background:#3a9be0"></i>update</span>');
   leg='<div class="nc-legend">'+lp.join('')+'<span class="nc-lghint">drag across →</span></div>';
-  // right-edge Now / High / Low labels, positioned by y-pixel (SVG height == viewBox H so px maps 1:1)
-  var loLbl=yLo, hiTop=yHi; if(Math.abs(yNow-yHi)<14) hiTop=yNow+14;   // avoid Now/High overlap when equal
-  var lbls='<span class="nc-plbl nc-pnow" style="top:'+yNow.toFixed(1)+'px">Now '+cur+closes[n-1].toFixed(2)+'</span>'+
-    '<span class="nc-plbl nc-phi" style="top:'+hiTop.toFixed(1)+'px">High '+cur+mx.toFixed(2)+'</span>'+
-    '<span class="nc-plbl nc-plo" style="top:'+loLbl.toFixed(1)+'px">Low '+cur+mn.toFixed(2)+'</span>';
+  // right-edge Now / High / Low labels, positioned by y-pixel (SVG height == viewBox H so px maps 1:1).
+  // De-collide them: High(top) / Now / Low(bottom) can bunch up when price sits near its high — enforce a
+  // minimum vertical gap and pull the stack up if it runs off the bottom, so labels never overlap each other.
+  var ly=[yHi,yNow,yLo];
+  for(var _i=1;_i<3;_i++){ if(ly[_i]<ly[_i-1]+16) ly[_i]=ly[_i-1]+16; }
+  if(ly[2]>H-7){ var _ov=ly[2]-(H-7); ly[0]-=_ov; ly[1]-=_ov; ly[2]-=_ov; if(ly[0]<8)ly[0]=8; }
+  var lbls='<span class="nc-plbl nc-phi" style="top:'+ly[0].toFixed(1)+'px">High '+cur+mx.toFixed(2)+'</span>'+
+    '<span class="nc-plbl nc-pnow" style="top:'+ly[1].toFixed(1)+'px">Now '+cur+closes[n-1].toFixed(2)+'</span>'+
+    '<span class="nc-plbl nc-plo" style="top:'+ly[2].toFixed(1)+'px">Low '+cur+mn.toFixed(2)+'</span>';
   var svg='<svg class="nc-svg" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" role="img" aria-label="Price, range and news timeline">'+
     refs+vlines+
     '<polygon class="nc-area" points="'+area+'" fill="'+lineCol+'" fill-opacity="0.10"/>'+
     '<polyline points="'+pts+'" fill="none" stroke="'+lineCol+'" stroke-width="1.8" stroke-linejoin="round"/>'+dots+
     '<line class="nc-scrub" x1="0" y1="'+padT+'" x2="0" y2="'+(H-padB)+'" stroke="var(--ink)" stroke-width="1" opacity="0"/>'+
     '<circle class="nc-sdot" r="4.2" fill="none" stroke="var(--ink)" stroke-width="2" opacity="0"/></svg>';
-  slot.innerHTML='<div class="nc-wrap" style="--nch:'+H+'px">'+svg+'<div class="nc-lbls">'+lbls+'</div>'+vlabs+
+  slot.innerHTML='<div class="nc-wrap" style="--nch:'+H+'px">'+svg+'<div class="nc-lbls">'+lbls+'</div><div class="nc-vlabs">'+vlabs+'</div>'+
     '<div class="nc-read"><b class="nc-rdate">← slide across</b><b class="nc-rpx"></b></div>'+
     '<div class="nc-rhead" style="display:none"></div>'+leg+'</div>';
   var svgEl=slot.querySelector('.nc-svg'), scrub=slot.querySelector('.nc-scrub'), sdot=slot.querySelector('.nc-sdot'),
