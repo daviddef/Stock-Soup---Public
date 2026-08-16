@@ -1299,6 +1299,11 @@
   .fdr-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px}
   .fdr-card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:13px 14px;position:relative;overflow:hidden;cursor:pointer;transition:transform .12s,border-color .12s}
   .fdr-card:hover{transform:translateY(-2px);border-color:var(--broth)}
+  .fdr-cnews{margin-top:8px;font-size:11.5px;line-height:1.35;color:var(--muted);display:flex;gap:5px;align-items:flex-start}
+  .fdr-cnewsage{margin-left:auto;flex:none;font-weight:800;font-size:10px;color:var(--faint);white-space:nowrap;padding-left:6px}
+  .fdr-search{display:flex;align-items:center;gap:7px;flex:1;min-width:140px;max-width:280px;background:var(--surface-2);border:1px solid var(--line);border-radius:9px;padding:5px 10px}
+  .fdr-search input{border:0;background:transparent;color:var(--ink);font-size:13px;font-weight:700;width:100%;outline:none}
+  .fdr-search .fdr-sx{cursor:pointer;color:var(--faint);font-weight:800;flex:none}
   .fdr-stripe{position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--broth)}
   .fdr-ctop{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
   .fdr-csym{font-family:var(--font);font-weight:900;font-size:18px}
@@ -9067,16 +9072,30 @@ var FDR_SORTS=[['match','Best match'],['buyNow','🍊 Buy-now'],['cherry','🍒 
   ['rangePos','Range position'],['value','Value'],['quality','Quality'],['mcap','Market cap'],['div','Dividend']];
 function fdrSent100(s){ return s==null?null:Math.round((Math.max(-1,Math.min(1,+s))+1)/2*100); }
 function fdrNum(p){ if(p==null)return null; var n=parseFloat(String(p).replace(/[^0-9.\-]/g,'')); return isFinite(n)?n:null; }
+// #2 (user ask) — the freshest news headline within the last 3 days, so a Stock Pot card can show a one-line
+// "what just happened". Candidates/picks carry the real headline text (news + news_top3); the wide-scan
+// universe only has a sentiment number (no text), so those show no snippet. Returns {t,days} or null.
+function fdrFreshNews(c){
+  try{
+    var list=[]; if(c.news) list.push({t:c.news,d:c.news_date}); (c.news_top3||[]).forEach(function(n){list.push({t:n.title||n.t,d:n.date||n.d});});
+    var best=null;
+    list.forEach(function(x){ if(!x.t||!x.d) return; var days=Math.floor((Date.now()-Date.parse(String(x.d).slice(0,10)))/86400000);
+      if(days!=null&&days>=0&&days<=3&&(!best||days<best.days)) best={t:x.t,days:days}; });
+    return best;
+  }catch(e){ return null; }
+}
+function fdrFirstSentence(t){ t=String(t||'').replace(/\s+/g,' ').trim(); var m=t.match(/^.*?[.!?](\s|$)/); var s=m?m[0].trim():t; if(s.length>110) s=s.slice(0,107).trim()+'…'; return s; }
 function fdrNormCand(c){
   var reg=c.region||'us', rows=[]; try{rows=signalRows(c,reg);}catch(e){}
   var cherry=null; try{ if(c.score&&c.score.buy_now!=null){ var ov=overallScore(c.score.buy_now,rows); cherry=ov?ov.score:null; } }catch(e){}
-  var f=c.fundamentals||{}, y1=((c.ranges||{})['1y']||{});
+  var f=c.fundamentals||{}, y1=((c.ranges||{})['1y']||{}), nh=fdrFreshNews(c);
   return {sym:c.sym, region:reg, name:c.name||c.sym, sector:f.sector||null,
     price:fdrNum(c.price), change:c.change, up:c.up!==false,
     buyNow:(c.score&&c.score.buy_now!=null)?Math.round(c.score.buy_now):null, cherry:cherry,
     rsi:(c.rsi!=null)?Math.round(c.rsi):null, rangePos:(y1.pos!=null)?Math.round(y1.pos*100):null,
     news:fdrSent100(c.news_sentiment), value:f.value_score, quality:f.quality_score, growth:f.growth_score,
     mcap:f.market_cap||null, short:(c.short!=null)?c.short:null,
+    newsHead:nh?nh.t:null, newsAge:nh?nh.days:null,
     div:(f.dividend_yield!=null)?Math.round(f.dividend_yield*1000)/10:null,
     aboveMa:(c.ema?!!(c.ema.above_ema20&&c.ema.above_ema50):null), src:'cand'};   // null = unknown (don't exclude)
 }
@@ -9134,13 +9153,31 @@ function fdrCur(reg){ return reg==='au'?'A$':'$'; }
 function fdrMcap(v){ if(v==null) return '—'; var b=v/1e9; return b>=1000?('$'+(b/1000).toFixed(1)+'T'):(b>=1?('$'+Math.round(b)+'B'):('$'+Math.round(v/1e6)+'M')); }
 
 function fdrCurrent(D){
-  var pool=fdrPool(D).filter(fdrInScope), out;
+  var full=fdrPool(D), pool=full.filter(fdrInScope), out;
+  // #3 (user ask) — exact-ticker search: type "TGT" and see just that name, regardless of levers/sectors.
+  // Searches the WHOLE market's pool (not scope-filtered) so a lever/sector setting can't hide the exact match.
+  var q=(FDR.query||'').trim().toUpperCase().replace(/[^A-Z0-9.]/g,'');
+  if(q){
+    var matched=full.filter(function(s){ return s.sym.toUpperCase().indexOf(q)===0 || s.sym.toUpperCase()===q || (s.name&&s.name.toUpperCase().indexOf(q)>=0); });
+    out=matched.map(function(s){return {s:s,m:fdrMatch(s)};});
+    out.sort(function(a,b){ return (b.s.buyNow||0)-(a.s.buyNow||0); });
+    return {rows:out, poolN:matched.length, passN:matched.length, query:q};
+  }
   if(FDR.mode==='strict') out=pool.filter(fdrPass).map(function(s){return {s:s,m:fdrMatch(s)};});
   else out=pool.map(function(s){return {s:s,m:fdrMatch(s)};});
   var key=FDR.sort;
   out.sort(function(a,b){ if(key==='match') return b.m-a.m || (b.s.buyNow||0)-(a.s.buyNow||0);
     return (b.s[key]||0)-(a.s[key]||0); });
-  return {rows:out, poolN:pool.length};
+  // #343 (user ask) — how many actually PASS every active lever, computed live even in Best-match mode (where
+  // levers rank rather than filter). Lets the header show a number that shrinks as you drag a lever.
+  var passN=pool.filter(fdrPass).length;
+  return {rows:out, poolN:pool.length, passN:passN};
+}
+// #343 — the count line, shared by full render + the light re-render.
+function fdrCountHtml(res){
+  if(res.query) return '<b>'+res.rows.length+'</b> match “'+esc(res.query)+'”';
+  if(FDR.mode==='strict') return '<b>'+res.rows.length+'</b> of '+res.poolN+' in scope match';
+  return '<b>'+res.rows.length+'</b> ranked · <b style="color:var(--broth)">'+res.passN+'</b> pass your levers · '+res.poolN+' in scope';
 }
 function fdrLeverHtml(l){
   var fv=l.fmt==='b'?('$'+l.val+'B'):l.fmt==='pct'?(l.val+'%'):l.val;
@@ -9177,11 +9214,16 @@ function fdrCardsHtml(rows){
       '<div class="fdr-cstats"><span>Range <b>'+(s.rangePos!=null?s.rangePos+'%':'—')+'</b></span><span>Value <b>'+(s.value!=null?s.value:'—')+'</b></span>'+
         '<span>Qual <b>'+(s.quality!=null?s.quality:'—')+'</b></span><span>RSI <b>'+(s.rsi!=null?s.rsi:'—')+'</b></span>'+
         '<span>Cap <b>'+fdrMcap(s.mcap)+'</b></span><span>News <b>'+(s.news!=null?s.news:'—')+'</b></span></div>'+
+      (s.newsHead?'<div class="fdr-cnews">📰 '+esc(fdrFirstSentence(s.newsHead))+'<span class="fdr-cnewsage">'+(s.newsAge<1?'today':s.newsAge+'d ago')+'</span></div>':'')+
       (showMatch?'<div class="fdr-mb"><div class="fdr-mt"><span>Match</span><b style="color:'+fdrColor(o.m)+'">'+o.m+'%</b></div><div class="fdr-track"><i style="width:'+o.m+'%"></i></div></div>':'')+
       '</div>';
   }).join('')+'</div>'+(rows.length>80?'<p class="fdr-note">Showing top 80 of '+rows.length+'.</p>':'');
 }
-function fdrEmpty(){ return '<div class="fdr-empty"><b>Nothing clears every lever.</b>Loosen a slider — or switch to <b>Flexible</b> and we’ll rank the whole pot by how close each stock gets.</div>'; }
+function fdrEmpty(){
+  var q=(FDR.query||'').trim().toUpperCase().replace(/[^A-Z0-9.]/g,'');
+  if(q){ return '<div class="fdr-empty"><b>No scored match for “'+esc(q)+'”.</b>It may be outside tonight’s scored pot (only names we scored this run appear here). <button class="fdr-anbtn anbtn" data-sym="'+esc(q)+'" data-region="'+esc(MKT)+'" style="margin-top:8px">🧠 Get a read on '+esc(q)+' →</button></div>'; }
+  return '<div class="fdr-empty"><b>Nothing clears every lever.</b>Loosen a slider — or switch to <b>Flexible</b> and we’ll rank the whole pot by how close each stock gets.</div>';
+}
 function fdrAxisSel(id,val){ return '<select id="'+id+'">'+FDR_AXES.map(function(a){return '<option value="'+a[0]+'"'+(a[0]===val?' selected':'')+'>'+a[1]+'</option>';}).join('')+'</select>'; }
 function fdrScatterHtml(rows){
   rows=rows.filter(function(o){return fdrVal(o.s,FDR.xAxis)!=null && fdrVal(o.s,FDR.yAxis)!=null;});
@@ -9275,11 +9317,12 @@ function renderFinder(){
     else if(FDR.view==='board') body=fdrBoardHtml(res.rows);
     else body=fdrTableHtml(res.rows);
     var sortSel='<select id="fdrSort">'+FDR_SORTS.map(function(s){return '<option value="'+s[0]+'"'+(s[0]===FDR.sort?' selected':'')+'>'+s[1]+'</option>';}).join('')+'</select>';
-    var countLab=FDR.mode==='strict'?('of '+res.poolN+' in scope match'):('ranked by match · '+res.poolN+' in scope');
+    var searchBox='<label class="fdr-search">🔎<input id="fdrSearch" type="search" inputmode="search" autocomplete="off" placeholder="Find a ticker… e.g. TGT" value="'+esc(FDR.query||'')+'">'+(FDR.query?'<span class="fdr-sx" id="fdrSearchClear" title="Clear">✕</span>':'')+'</label>';
     root.innerHTML=
       '<div class="fdr-top">'+
         '<div class="fdr-modesw"><button class="'+(FDR.mode==='strict'?'on':'')+'" data-fmode="strict">⛰ Strict</button><button class="'+(FDR.mode==='flexible'?'on':'')+'" data-fmode="flexible">🎯 Best match</button></div>'+
-        '<span class="fdr-count"><b>'+res.rows.length+'</b> '+countLab+'</span>'+
+        searchBox+
+        '<span class="fdr-count">'+fdrCountHtml(res)+'</span>'+
       '</div>'+
       '<div class="fdr-layout"><aside class="fdr-rail">'+fdrRailHtml(pool)+'</aside>'+
       '<section class="fdr-results">'+
@@ -9306,7 +9349,7 @@ function fdrRenderView(){
     else body=fdrTableHtml(res.rows);
     vw.innerHTML=body;
     var cnt=root.querySelector('.fdr-count');
-    if(cnt) cnt.innerHTML='<b>'+res.rows.length+'</b> '+(FDR.mode==='strict'?('of '+res.poolN+' in scope match'):('ranked by match · '+res.poolN+' in scope'));
+    if(cnt) cnt.innerHTML=fdrCountHtml(res);
     var xs=document.getElementById('fdrX'); if(xs) xs.onchange=function(){ FDR.xAxis=xs.value; fdrRenderView(); };
     var ys=document.getElementById('fdrY'); if(ys) ys.onchange=function(){ FDR.yAxis=ys.value; fdrRenderView(); };
   }catch(e){}
@@ -9317,6 +9360,10 @@ function fdrWire(root){
   root.querySelectorAll('[data-fview]').forEach(function(b){b.onclick=function(){ FDR.view=b.dataset.fview; rerender(); };});
   var ss=document.getElementById('fdrSort'); if(ss) ss.onchange=function(){ FDR.sort=ss.value; rerender(); };
   var reset=document.getElementById('fdrReset'); if(reset) reset.onclick=function(){ FDR_LEVERS.forEach(function(g){g.items.forEach(function(l){ l.on=false; });}); FDR.sectorSet=[]; FDR.toggles.aboveMa=false; rerender(); };
+  // #3 — exact-ticker search. oninput does the LIGHT re-render (results + count) so the input keeps focus while
+  // typing; the ✕ clear does a full re-render so the box repaints without it.
+  var srch=document.getElementById('fdrSearch'); if(srch){ srch.oninput=function(){ FDR.query=srch.value; fdrRenderView(); }; srch.onkeydown=function(e){ if(e.key==='Enter') e.preventDefault(); }; }
+  var srchClr=document.getElementById('fdrSearchClear'); if(srchClr) srchClr.onclick=function(){ FDR.query=''; renderFinder(); };
   root.querySelectorAll('#fdrSecChips .fdr-cchip').forEach(function(c){c.onclick=function(){ var v=c.dataset.sec;
     if(v==='__all'){ FDR.sectorSet=[]; } else { FDR.sectorSet=FDR.sectorSet||[]; var i=FDR.sectorSet.indexOf(v); if(i>=0)FDR.sectorSet.splice(i,1); else FDR.sectorSet.push(v); } rerender(); };});
   root.querySelectorAll('.fdr-chk').forEach(function(cb){cb.onchange=function(){ var l=fdrLever(cb.dataset.k); if(l){l.on=cb.checked; rerender();} };});
