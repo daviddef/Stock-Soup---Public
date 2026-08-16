@@ -1343,6 +1343,7 @@
   .fdr-csrc.src-wide{background:var(--surface-2);color:var(--muted);border:1px solid var(--line)}
   .fdr-csrc.src-pick{background:rgba(35,194,103,.14);color:var(--buy)}
   .fdr-conly{font-size:10.5px;color:var(--faint);margin-top:5px}
+  .fdr-cwatch{width:22px;height:22px;font-size:13px;align-self:center;margin-left:7px}
   .fdr-mb{margin-top:10px} .fdr-mt{display:flex;justify-content:space-between;font-size:11px;font-weight:800;color:var(--muted);margin-bottom:3px}
   .fdr-track{height:7px;border-radius:5px;background:var(--surface-2);overflow:hidden}
   .fdr-track i{display:block;height:100%;border-radius:5px;background:linear-gradient(90deg,var(--broth),var(--buy))}
@@ -5479,15 +5480,27 @@ function kitchenScoreStory(D){
       +'.ks-exc{background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:14px}.ks-exsym{font-weight:800;font-size:17px}.ks-exname{color:var(--muted);font-size:12px;margin-bottom:10px}'
       +'.ks-glab{display:flex;justify-content:space-between;font-size:11px;color:var(--faint);font-weight:700;margin-top:8px}.ks-gauge{height:8px;border-radius:5px;background:var(--line);overflow:hidden;margin:3px 0}.ks-gauge i{display:block;height:100%}.ks-g-o i{background:var(--broth)}.ks-g-c i{background:#d6283c}'
       +'.ks-verdict{font-size:12.5px;color:var(--muted);line-height:1.5;margin-top:9px}.ks-verdict b{color:var(--ink)}'
+      // Mobile: the desktop width-taper (84%/60%/44%/30%) crushes each funnel row into an unreadable sliver.
+      // On phones, every row goes full-width and the funnel narrowing is carried by the descending numbers +
+      // the ▼ arrows (which read as a funnel top-to-bottom). A thin proportional bar under each number keeps
+      // the "getting smaller" cue without stealing the row's text width.
+      +'@media(max-width:600px){'
+        +'.ks-fn .ks-row{width:100%;padding:12px 14px;gap:13px}'
+        +'.ks-num{font-size:23px}'
+        +'.ks-fnbar{display:block}'
+        +'.ks-wrap{padding:16px 14px 20px}'
+        +'.ks-step .lb{font-size:11.5px}'
+      +'}'
+      +'.ks-fnbar{display:none;height:5px;border-radius:3px;background:var(--line);margin-top:7px;overflow:hidden}.ks-fnbar>i{display:block;height:100%;background:linear-gradient(90deg,var(--broth),rgba(232,102,42,.5))}'
       +'</style>';
     var funnel='<div class="ks-fn">'
-      +'<div class="ks-row ks-f0"><div class="ks-num">'+whole+'</div><div class="ks-meta"><div class="ks-ft">'+wholeName+'</div><div class="ks-fd">Every listed company — the whole market goes in the pot.</div><div class="ks-sbrow"><span class="ks-bdg ks-bn">no score yet</span><span class="ks-bdg ks-bn">not shown in the app</span></div></div></div>'
+      +'<div class="ks-row ks-f0"><div class="ks-num">'+whole+'</div><div class="ks-meta"><div class="ks-ft">'+wholeName+'</div><div class="ks-fd">Every listed company — the whole market goes in the pot.</div><div class="ks-sbrow"><span class="ks-bdg ks-bn">no score yet</span><span class="ks-bdg ks-bn">not shown in the app</span></div><div class="ks-fnbar"><i style="width:100%"></i></div></div></div>'
       +'<div class="ks-step"><span class="aw">▼</span><span class="lb"><b>Liquidity filter</b> — can you actually trade it?</span></div>'
-      +'<div class="ks-row ks-f1"><div class="ks-num">'+scanned+'</div><div class="ks-meta"><div class="ks-ft">🔬 Scanned for a signal</div><div class="ks-fd">The daily whole-market scan runs the technicals over every liquid name.</div><div class="ks-sbrow"><span class="ks-bdg ks-bn">technicals only · not all published</span></div></div></div>'
+      +'<div class="ks-row ks-f1"><div class="ks-num">'+scanned+'</div><div class="ks-meta"><div class="ks-ft">🔬 Scanned for a signal</div><div class="ks-fd">The daily whole-market scan runs the technicals over every liquid name.</div><div class="ks-sbrow"><span class="ks-bdg ks-bn">technicals only · not all published</span></div><div class="ks-fnbar"><i style="width:82%"></i></div></div></div>'
       +'<div class="ks-step"><span class="aw">▼</span><span class="lb"><b style="color:var(--broth)">🍊 the Buy-Now model runs here</b> — only names with a real signal get scored &amp; published</span></div>'
-      +'<div class="ks-row ks-f2"><div class="ks-num">'+finderN+'</div><div class="ks-meta"><div class="ks-ft">🍲 The Stock Pot</div><div class="ks-fd">Every name we actually scored — the scan’s picks + the catalyst pot. Browse &amp; screen them all.</div><div class="ks-sbrow"><span class="ks-bdg ks-bo">🍊</span><span class="ks-bdg ks-bc">🍒</span><span class="ks-bdg ks-bn">both live on every name</span><span class="ks-bdg ks-bo">🔎 The Stock Pot tab</span></div></div></div>'
+      +'<div class="ks-row ks-f2"><div class="ks-num">'+finderN+'</div><div class="ks-meta"><div class="ks-ft">🍲 The Stock Pot</div><div class="ks-fd">Every name we actually scored — the scan’s picks + the catalyst pot. Browse &amp; screen them all.</div><div class="ks-sbrow"><span class="ks-bdg ks-bo">🍊</span><span class="ks-bdg ks-bc">🍒</span><span class="ks-bdg ks-bn">both live on every name</span><span class="ks-bdg ks-bo">🔎 The Stock Pot tab</span></div><div class="ks-fnbar"><i style="width:58%"></i></div></div></div>'
       +'<div class="ks-step"><span class="aw">▼</span><span class="lb"><b>Fresh hard catalyst</b> — a beat, a contract, an upgrade <em>today</em></span></div>'
-      +'<div class="ks-row ks-f2b"><div class="ks-num">'+potN+'</div><div class="ks-meta"><div class="ks-ft">🎯 Caught on a catalyst</div><div class="ks-fd">The subset our news / earnings / quant / IPO nets surfaced tonight.</div><div class="ks-sbrow"><span class="ks-bdg ks-bo">📋 audit list ↓</span></div></div></div>'
+      +'<div class="ks-row ks-f2b"><div class="ks-num">'+potN+'</div><div class="ks-meta"><div class="ks-ft">🎯 Caught on a catalyst</div><div class="ks-fd">The subset our news / earnings / quant / IPO nets surfaced tonight.</div><div class="ks-sbrow"><span class="ks-bdg ks-bo">📋 audit list ↓</span></div><div class="ks-fnbar"><i style="width:40%"></i></div></div></div>'
       // #346 — the full audit grid (every scored name + 🍊 + which net found it), folded in here so the
       // "no black box" proof lives exactly where the catalyst count appears — replacing the separate,
       // overlapping "How we got here" section that used to repeat this funnel.
@@ -7516,7 +7529,8 @@ function renderAnalyst(a){
   var rsi= s.rsi!=null? '<span class="anchip antap '+(s.rsi>70?'bd':s.rsi<30?'gd':'')+'"'+_sk+'><span class="ank">RSI</span> '+s.rsi+(s.rsi>70?' hot':s.rsi<30?' cold':'')+(_sigKey?' <span class="chipi">i</span>':'')+'</span>':'';
   m.innerHTML='<div class="mhead '+tc+'"><button class="mclose" id="mClose" aria-label="Close">✕</button>'+
     '<div class="mtf">🧠 What would you do?</div>'+
-    '<div class="mtop"><div><div class="msym">'+esc(a.sym)+'</div><div class="mco">'+esc(a.cur+a.price)+'</div></div><span class="mverd '+tc+'" style="align-self:flex-start">'+esc(a.verdict)+'</span></div></div>'+
+    '<div class="mtop"><div><div class="msym">'+esc(a.sym)+'</div><div class="mco">'+esc(a.cur+a.price)+'</div></div>'+
+      '<span style="display:inline-flex;gap:8px;align-items:center;align-self:flex-start"><button class="watchbtn iconwatch" data-sym="'+esc(a.sym)+'" data-region="'+esc(a.region)+'"'+(a.name?' data-name="'+esc(a.name)+'"':'')+' aria-pressed="false" title="Add to watchlist">☆</button><span class="mverd '+tc+'">'+esc(a.verdict)+'</span></span></div></div>'+
     '<div class="mbody">'+
       '<p class="mtake"><span class="lead">'+esc(a.headline)+'.</span> '+a.action+'</p>'+
       // #318/#4 — chart aligned to the standard ticker overlay (same "📊 The chart" heading + slot). It's the
@@ -7537,7 +7551,7 @@ function renderAnalyst(a){
     '</div>';
   document.getElementById('mClose').onclick=closeModal;
   hydrateMissCharts(m);   // #318 — fill the lazy 24h chart slot injected above
-  var wb=m.querySelector('.watchbtn'); if(wb)wb.addEventListener('click',function(e){e.preventDefault();watchToggleFromEl(wb);}); syncWatchButtons();
+  m.querySelectorAll('.watchbtn').forEach(function(wb){ wb.addEventListener('click',function(e){e.preventDefault();watchToggleFromEl(wb);}); }); syncWatchButtons();
   if(_sigKey){
     m.querySelectorAll('.antap[data-sigkey]').forEach(function(el){
       el.setAttribute('tabindex','0'); el.setAttribute('role','button');
@@ -9454,7 +9468,8 @@ function fdrCardsHtml(rows){
   return '<div class="fdr-grid">'+rows.slice(0,80).map(function(o){var s=o.s;
     return '<div class="fdr-card" data-sym="'+esc(s.sym)+'" data-region="'+esc(s.region)+'" role="button" tabindex="0" aria-label="'+esc(s.sym)+'">'+
       '<span class="fdr-stripe" style="background:'+(showMatch?fdrColor(o.m):'var(--broth)')+'"></span>'+
-      '<div class="fdr-ctop"><span class="fdr-csym">'+esc(s.sym)+'</span>'+fdrSrcBadge(s)+'<span class="fdr-cflag">'+(s.region==='au'?'ASX':'US')+'</span></div>'+
+      '<div class="fdr-ctop"><span class="fdr-csym">'+esc(s.sym)+'</span>'+fdrSrcBadge(s)+'<span class="fdr-cflag">'+(s.region==='au'?'ASX':'US')+'</span>'+
+        '<button class="watchbtn iconwatch fdr-cwatch'+(wlHas(s.sym,s.region)?' on':'')+'" data-sym="'+esc(s.sym)+'" data-region="'+esc(s.region)+'"'+(s.name?' data-name="'+esc(s.name)+'"':'')+' aria-pressed="'+(wlHas(s.sym,s.region)?'true':'false')+'" title="Add to watchlist">'+(wlHas(s.sym,s.region)?'✓':'☆')+'</button></div>'+
       '<div class="fdr-cname">'+esc(s.name)+'</div>'+
       '<div class="fdr-cscores"><span class="fdr-sc fdr-sc-o">🍊 '+(s.buyNow!=null?s.buyNow:'—')+'</span>'+
         (s.cherry!=null?'<span class="fdr-sc fdr-sc-c">🍒 '+s.cherry+'</span>':'')+
@@ -9677,7 +9692,8 @@ function fdrWire(root){
   var xs=document.getElementById('fdrX'); if(xs) xs.onchange=function(){ FDR.xAxis=xs.value; rerender(); };
   var ys=document.getElementById('fdrY'); if(ys) ys.onchange=function(){ FDR.yAxis=ys.value; rerender(); };
   var vw=document.getElementById('fdrView');
-  if(vw){ vw.onclick=function(e){ var th=e.target.closest('th[data-sk]'); if(th){ FDR.sort=(th.dataset.sk==='m'?'match':th.dataset.sk); rerender(); return; }
+  if(vw){ vw.onclick=function(e){ var wbx=e.target.closest('.watchbtn'); if(wbx){ e.stopPropagation(); try{watchToggleFromEl(wbx);}catch(err){} return; }
+    var th=e.target.closest('th[data-sk]'); if(th){ FDR.sort=(th.dataset.sk==='m'?'match':th.dataset.sk); rerender(); return; }
     var tgt=e.target.closest('[data-sym]'); if(tgt){ try{ openTicker(tgt.dataset.sym, tgt.dataset.region||MKT); }catch(err){} } };
     vw.onkeydown=function(e){ if(e.key!=='Enter'&&e.key!==' ')return; var tgt=e.target.closest('.fdr-card[data-sym]'); if(tgt){ e.preventDefault(); try{ openTicker(tgt.dataset.sym, tgt.dataset.region||MKT); }catch(err){} } }; }
 }
