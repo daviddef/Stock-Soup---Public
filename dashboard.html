@@ -4288,16 +4288,14 @@ function marketContextHtml(D, bargainCards, lines){   // `lines` is a render-loc
   var nav=tabs.map(function(t){ var sp=t[1].indexOf(' '); var ic=sp<0?'':t[1].slice(0,sp), lb=sp<0?t[1]:t[1].slice(sp+1);
     return '<button class="mctxbtn'+(t[0]===MCTX?' on':'')+'" data-mctx="'+t[0]+'" role="tab" aria-selected="'+(t[0]===MCTX)+'"><span class="mci">'+ic+'</span><span class="mcl">'+lb+'</span></button>';}).join('');
   var panels=tabs.map(function(t){return '<div class="mctx-panel" data-panel="'+t[0]+'"'+(t[0]===MCTX?'':' hidden')+'>'+t[2]+'</div>';}).join('');
-  // (user ask, step 2) — the actionable half of Market context (Buy Gold / Buy banks, key announcements,
-  // coming-up, news) now lives UP in Actions as verb-led rows. What's left here is the ambient backdrop —
-  // geopolitics, the full sector rotation, commodities detail, movers. So this is no longer a prominent
-  // numbered "04" section competing for attention; it's a single COLLAPSED "Market backdrop" drawer you
-  // open only when you want to browse. Same tabbed content inside, just demoted.
-  return '<details class="mkbackdrop" id="mktctx">'+
-    '<summary class="mkbd-sum"><span class="mkbd-ic">🌍</span><span class="mkbd-t">Market backdrop</span>'+
-      '<span class="mkbd-hint">geopolitics · sectors · commodities · movers</span><span class="mkbd-chev">▾</span></summary>'+
-    '<div class="mkbd-body"><p class="sec-sub" style="margin-top:2px">The wider backdrop behind tonight\'s picks — the <b>actionable</b> bits (buy-a-theme, key announcements, what\'s coming up) are already up in <b>Actions</b>; this is here to browse. Tap a chip.</p>'+
-    '<div class="mctx-nav" role="tablist">'+nav+'</div>'+panels+'</div></details>';
+  // (user ask) — the actionable half of Market context (Buy Gold / Buy banks, key announcements,
+  // coming-up, news) lives UP in Actions as verb-led rows. What's left here is the ambient backdrop —
+  // geopolitics, the full sector rotation, commodities detail, movers. Promoted back to a real numbered
+  // "04" section with the SAME styling as 01/02/03 (was demoted to a collapsed drawer; user asked for it
+  // as its own section). id="mktctx" kept so the 📢 Key-announcements card can still jump + switch tab.
+  return '<section id="mktctx" class="mkctxsec"><div class="sec-head"><h2 class="display"><span class="k">04</span> Market backdrop</h2>'+infoBtn('marketctx')+'</div>'+
+    '<p class="sec-sub" style="margin:0 0 10px">The wider backdrop behind tonight\'s picks — <b>geopolitics</b>, sectors, commodities and the day\'s movers. The <b>actionable</b> bits (buy-a-theme, key announcements, what\'s coming up) are already up in <b>Actions</b>; this is here to browse. Tap a chip.</p>'+
+    '<div class="mctx-nav" role="tablist">'+nav+'</div>'+panels+'</section>';
 }
 function actionsHtml(D){
   // #181 — standardised action cards: every card shares one template (verb badge · subject · 🍊 score
@@ -5412,9 +5410,9 @@ function kitchenScoreStory(D){
       +'</div>'   // close the funnel — the served level forks into three risk tiers below
       +'<div class="ks-served"><div class="ks-served-h">🥣 The served level — the <b>same pot</b>, three risk profiles. Switch with the <b>T1 / T2 / T3</b> chips at the top of the app.</div>'
         +'<div class="ks-served-grid">'
-          +'<div class="ks-sv r-lo"><div class="ks-svhead"><span class="ks-tchip t1">T1</span> Catalyst</div><div class="ks-svrisk">🟢 Lower risk</div><div class="ks-svn">'+served+'</div><div class="ks-svlab">served</div><div class="ks-svd">Careful production picks — needs a fresh hard catalyst <em>today</em>. The conservative default.</div></div>'
-          +'<div class="ks-sv r-md"><div class="ks-svhead"><span class="ks-tchip t2">T2</span> Balanced</div><div class="ks-svrisk">🟡 Medium risk</div><div class="ks-svn">'+t2+'</div><div class="ks-svlab">served</div><div class="ks-svd">The whole-market scan’s best technical setups — no catalyst required.</div></div>'
-          +'<div class="ks-sv r-hi"><div class="ks-svhead"><span class="ks-tchip t3">T3</span> Aggressive</div><div class="ks-svrisk">🔴 Higher risk</div><div class="ks-svn">'+t3+'</div><div class="ks-svlab">served</div><div class="ks-svd">The same scan turned up — more reach, more risk. For the bold.</div></div>'
+          +'<div class="ks-sv r-lo"><div class="ks-svhead"><span class="ks-tchip t1">T1</span> Catalyst</div><div class="ks-svrisk">🟢 Lower risk</div><div class="ks-svn">'+served+'</div><div class="ks-svlab">served</div><div class="ks-svd">Our safest list. A stock only lands here when something real just happened <em>today</em> — an earnings beat, a contract win, a broker upgrade — that could move the price now. Highest bar, fewest names. <b>Start here if you\'re cautious.</b></div></div>'
+          +'<div class="ks-sv r-md"><div class="ks-svhead"><span class="ks-tchip t2">T2</span> Balanced</div><div class="ks-svrisk">🟡 Medium risk</div><div class="ks-svn">'+t2+'</div><div class="ks-svlab">served</div><div class="ks-svd">From scanning the <b>whole market</b> for the strongest-looking charts — solid stocks quietly setting up to break out, no news needed yet. Good setups, a little more judgement than T1.</div></div>'
+          +'<div class="ks-sv r-hi"><div class="ks-svhead"><span class="ks-tchip t3">T3</span> Aggressive</div><div class="ks-svrisk">🔴 Higher risk</div><div class="ks-svn">'+t3+'</div><div class="ks-svlab">served</div><div class="ks-svd">The bolder names from that same market-wide scan — smaller and faster-moving, less proven. Bigger swings both ways. <b>Only money you can afford to lose.</b></div></div>'
         +'</div>'
         +'<div class="ks-servnote">Every served pick carries 🍊 + 🍒 and shows in 🥣 the Menu &amp; 🗺️ the Journey.</div>'
       +'</div>'
@@ -5673,6 +5671,11 @@ function openModal(p,region,cur){
   var sparkHtml = p.spark ? '<div class="viz"><h4>Recent trend · last ~2 months</h4>'+sparkSVG(p.spark)+
     '<div class="spmm"><span>'+esc(cur)+Math.min.apply(null,p.spark).toFixed(1)+'</span><span>'+esc(cur)+Math.max.apply(null,p.spark).toFixed(1)+'</span></div>'+
     '<div class="rsimeta">'+(p.spark[p.spark.length-1]>=p.spark[0]?'📈 Up over the stretch':'📉 Down over the stretch')+'</div></div>' : '';
+  // #ranges-backfill — a hand-built PICK object sometimes lacks `ranges` (1w/1m/1y low→high sliders) even
+  // though the SAME ticker's scored candidate carries them. Backfill from the candidate so the pick overlay
+  // shows the same 3 range bars as everywhere else (was silently blank when p.ranges was absent — perceived
+  // as a regression). Not my signals change — the range section was always separate from the signal read.
+  if(!p.ranges){ try{ var _mc=((LAST&&LAST.D||{}).candidates||[]).filter(function(c){return c.sym===p.sym&&(c.region||'us')===region;})[0]; if(_mc&&_mc.ranges) p.ranges=_mc.ranges; }catch(e){} }
   var rangesHtml = rangeBarsHtml(p,cur);
   // Other options — runner-up + same-market candidates, so there's always a Plan B inside the tap.
   // Real bug (8 Aug 2026): these used to link straight out to Yahoo, unlike every other tappable
@@ -6087,6 +6090,10 @@ var INFO={
     '<ul class="infoul"><li>⚡ <b>Day</b> — a quick trade off a fresh catalyst.</li><li>📅 <b>Week</b> — simmer a few days.</li><li>📈 <b>Long</b> — slow-cooked conviction.</li></ul>'+
     '<h4>How a pick is chosen</h4><p>Every candidate is scored 0–100 by the <b>Buy-Now engine</b>: fresh catalyst, earnings surprise, analyst moves, 52-week-high proximity, volume and trend — minus an <b>overheating penalty</b> so we don\'t chase what already ran. The verdict (Get in / Wait / Too late) and the <b>ideal-buy price</b> come straight from that score. Tap a card for the full breakdown.</p>'+
     '<p class="infofoot">The market toggle (🇦🇺/🇺🇸) switches which three you\'re looking at.</p>'},
+  marketctx:{icon:'🌍',title:'Market backdrop',body:
+    '<p>The <b>wider world</b> around tonight\'s picks — the weather the market is trading in, not a to-do list.</p>'+
+    '<ul class="infoul"><li>🌍 <b>Geopolitics</b> — conflicts, oil, rates: the macro that can gap a market overnight.</li><li>🔥 <b>Sectors</b> — what money is rotating into and out of.</li><li>🛢️ <b>Commodities</b> — gold, oil, copper and the rest.</li><li>📊 <b>Movers</b> — the whole market\'s biggest gainers and losers today.</li></ul>'+
+    '<p class="infofoot">Anything you can <b>act</b> on (buy-a-theme, key announcements, what\'s coming up) is up in <b>Actions</b>. This section is for browsing the context.</p>'},
   changeenv:{icon:'📈',title:'Change Environment',body:
     '<p>What\'s <b>moved</b> since the picks were chosen, and <b>how close each is to its ideal buy</b> — the "should I act yet?" view.</p>'+
     '<h4>Trajectories</h4><p>Each line is a pick\'s price change <b>from the first hourly run tonight</b> to now (not the daily move). Flat names collapse to a note.</p>'+
@@ -8943,7 +8950,7 @@ function wire(D){
   // 📢 Key-announcements card → open the Market backdrop drawer on its Announcements panel + scroll to it.
   document.querySelectorAll('.axcard[data-backdrop]').forEach(function(c){
     c.addEventListener('click',function(e){ if(e.target.closest('a,button'))return;
-      var tab=c.dataset.backdrop, d=document.getElementById('mktctx'); if(!d)return; d.open=true;
+      var tab=c.dataset.backdrop, d=document.getElementById('mktctx'); if(!d)return;  // #mktctx is now a section (was a <details>)
       if(tab){ MCTX=tab;
         d.querySelectorAll('.mctxbtn').forEach(function(b){ var on=b.dataset.mctx===tab; b.classList.toggle('on',on); b.setAttribute('aria-selected',on); });
         d.querySelectorAll('.mctx-panel').forEach(function(p){ p.hidden=p.dataset.panel!==tab; }); }
