@@ -1257,6 +1257,8 @@
   .annhead{flex:1;font-size:13px;color:var(--ink);text-decoration:none}
   a.annhead:hover{text-decoration:underline;color:var(--broth)}
   .anndate{font-size:10.5px;color:var(--faint);font-weight:700;white-space:nowrap}
+  .hapmove{font-size:10.5px;font-weight:800;white-space:nowrap;margin-left:2px}
+  .hapmove.up{color:var(--buy)}.hapmove.down{color:var(--dont)}
   .annchip{flex:0 0 auto}   /* #news-ticker — 🍊 score chip beside a news headline that names a ticker */
   .annspark{margin:7px 0 2px} .annspark .spark{height:28px;width:100%;display:block}
   .annwhy{font-size:12px;color:var(--muted);margin-top:3px;line-height:1.4}
@@ -7113,14 +7115,27 @@ function happeningHtml(o){
   rows.sort(function(a,b){ var da=a.date?Date.parse(String(a.date).slice(0,10)):-1, db=b.date?Date.parse(String(b.date).slice(0,10)):-1; return db-da; });
   var TONE={bullish:{ic:'📈',cls:'ann-bull'},bearish:{ic:'📉',cls:'ann-bear'},neutral:{ic:'',cls:'ann-neu'}};
   function ageStr(d){ if(!d) return ''; var days=null; try{ days=Math.floor((Date.now()-new Date(d).getTime())/86400000); }catch(e){} if(days==null) return ''; return days<1?'today':days===1?'1d ago':days+'d ago'; }
+  // #newsmove (user ask) — % the stock has moved SINCE each headline printed, from the daily spark (same
+  // approximate EOD read as the Stock Pot card). Shown as a green/red prefix so the overlay news feed answers
+  // "did this news move it?" at a glance. null when there's no date or no spark to measure against.
+  function hapMove(dateStr){
+    try{ if(!dateStr || !Array.isArray(o.spark) || o.spark.length<3) return null;
+      var days=Math.floor((Date.now()-Date.parse(String(dateStr).slice(0,10)))/86400000);
+      if(days==null||days<0) return null;
+      var td=Math.max(1,Math.round(days*5/7)), idx=o.spark.length-1-td; if(idx<0) return null;
+      var then=o.spark[idx], now=o.spark[o.spark.length-1]; if(!then) return null;
+      return Math.round((now/then-1)*1000)/10;
+    }catch(e){ return null; }
+  }
   function row(r){
     var t=TONE[r.tone]||TONE.neutral;
     var old=false; if(r.date){ try{ old=(Date.now()-new Date(r.date).getTime())/86400000>7; }catch(e){} }
     var kindchip='<span class="hapkind">'+(r.kind==='ann'?'📢 Filing':'📰 News')+'</span>';
     var head=r.url?'<a class="annhead" href="'+esc(r.url)+'" target="_blank" rel="noopener">'+esc(r.title)+' ↗</a>':'<span class="annhead">'+esc(r.title)+'</span>';
+    var mv=hapMove(r.date), mvHtml=(mv!=null)?'<span class="hapmove '+(mv>=0?'up':'down')+'">'+(mv>=0?'▲ +':'▼ ')+Math.abs(mv)+'% since</span>':'';
     var age=ageStr(r.date);
     var deep=r.deep?'<div class="anndeep">🔍 <b>The detail:</b> '+esc(r.why)+'</div>':(r.why?'<div class="annwhy">'+esc(r.why)+'</div>':'');
-    return '<div class="annrow '+t.cls+(old?' mnews-old':'')+'"><div class="anntop">'+kindchip+(t.ic?'<span class="annic">'+t.ic+'</span>':'')+head+annToneTag(r.tone)+(age?'<span class="anndate">'+esc(age)+(old?' ⚠️ OLD':'')+'</span>':'')+'</div>'+deep+'</div>';
+    return '<div class="annrow '+t.cls+(old?' mnews-old':'')+'"><div class="anntop">'+kindchip+(t.ic?'<span class="annic">'+t.ic+'</span>':'')+head+annToneTag(r.tone)+mvHtml+(age?'<span class="anndate">'+esc(age)+(old?' ⚠️ OLD':'')+'</span>':'')+'</div>'+deep+'</div>';
   }
   var top=rows.slice(0,6), rest=rows.slice(6,20);
   var out='<div class="viz"><h4>📣 What’s happening — news &amp; filings</h4>'+top.map(row).join('');
@@ -9086,7 +9101,7 @@ function pushViewState(){
 // Replaces the Full Pot. Reads latest.finderUniverse (#337, the whole scored liquid market) unioned with
 // tonight's candidates/picks, and lets you pull levers for the stock you want. Fully guarded: any throw
 // is caught so a Finder bug can never blank the app (the #216 blank-page class).
-var FDR={mode:'flexible', view:'cards', sectorSet:null, toggles:{aboveMa:false}, sort:'match', xAxis:'rangePos', yAxis:'buyNow', query:'', catalystOnly:false, built:false};
+var FDR={mode:'flexible', view:'cards', sectorSet:null, commoditySet:[], toggles:{aboveMa:false}, sort:'match', xAxis:'rangePos', yAxis:'buyNow', query:'', catalystOnly:false, built:false};
 var FDR_LEVERS=[
   {grp:'Scores', items:[
     {k:'buyNow', label:'🍊 Buy-now', min:0,max:100,val:55,on:true, unit:'≥', help:'our momentum/timing score — Buy band'},
@@ -9136,6 +9151,22 @@ function fdrFreshNews(c){
   }catch(e){ return null; }
 }
 function fdrFirstSentence(t){ t=String(t||'').replace(/\s+/g,' ').trim(); var m=t.match(/^.*?[.!?](\s|$)/); var s=m?m[0].trim():t; if(s.length>110) s=s.slice(0,107).trim()+'…'; return s; }
+// #23 (user ask) — COMMODITY filter. There's no per-stock commodity tag, but yfinance's granular INDUSTRY
+// ("Gold", "Copper", "Oil & Gas E&P", "Uranium"…) is a clean proxy, and for the wide-scan names that lack it,
+// a keyword match on the company NAME (these commodity words are unambiguous in a miner's name) fills the gap.
+// A name matches a commodity if its industry OR name contains one of the keywords. Best-effort, honestly coarse.
+var FDR_COMMODITIES=[
+  {k:'Oil & Gas', kw:['oil','gas','petroleum']}, {k:'Gold', kw:['gold']}, {k:'Copper', kw:['copper']},
+  {k:'Iron ore', kw:['iron ore','iron']}, {k:'Lithium', kw:['lithium']}, {k:'Uranium', kw:['uranium']},
+  {k:'Coal', kw:['coal']}, {k:'Nickel', kw:['nickel']}, {k:'Silver', kw:['silver']}, {k:'Rare earths', kw:['rare earth']}
+];
+function fdrCommMatch(s, commK){
+  var defs=null; for(var i=0;i<FDR_COMMODITIES.length;i++){ if(FDR_COMMODITIES[i].k===commK){defs=FDR_COMMODITIES[i];break;} }
+  if(!defs) return false;
+  var hay=((s.industry||'')+' '+(s.name||'')).toLowerCase();
+  for(var j=0;j<defs.kw.length;j++){ if(hay.indexOf(defs.kw[j])>=0) return true; }
+  return false;
+}
 // #345 (user ask) — "🌱 Coiled spring": stocks that HAVEN'T grown much (sitting low in their 1-yr range, not
 // already run up) but show early signals they're STARTING to turn. A 0-100 composite from what every scored
 // row carries: 40pts for how flat/un-run-up it is (low range position), then turn-signals stacking on top —
@@ -9180,7 +9211,7 @@ function fdrNormCand(c){
     buyNow:(c.score&&c.score.buy_now!=null)?Math.round(c.score.buy_now):null, cherry:cherry,
     rsi:(c.rsi!=null)?Math.round(c.rsi):null, rangePos:_rp, spring:_spring, ret1y:(_ret1y!=null)?Math.round(_ret1y):null,
     news:fdrSent100(c.news_sentiment), value:f.value_score, quality:f.quality_score, growth:f.growth_score,
-    mcap:f.market_cap||null, short:(c.short!=null)?c.short:null,
+    mcap:f.market_cap||null, short:(c.short!=null)?c.short:null, industry:f.industry||null,
     newsHead:nh?nh.t:null, newsAge:nh?nh.days:null, newsMove:_newsMove,
     // #freshfix — 0 (not null) when there's NO fresh headline, so the "Fresh news ≥40" filter EXCLUDES it
     // (null used to count as "unknown" and pass, which is why names with no snippet slipped through). Over the
@@ -9202,7 +9233,7 @@ function fdrNormFU(r){
     rsi:(r.rsi!=null)?Math.round(r.rsi):null, rangePos:_rp, spring:_spring, ret1y:(_ret1y!=null)?Math.round(_ret1y):null,
     newsFresh:0,   // #freshfix — wide-scan rows carry no headline TEXT, so they're never "fresh news" we can show
     news:fdrSent100(r.newsSent), value:r.value, quality:r.quality, growth:r.growth,
-    mcap:r.mcap||null, short:(r.short!=null)?r.short:null,
+    mcap:r.mcap||null, short:(r.short!=null)?r.short:null, industry:r.industry||null,
     div:(r.divYield!=null)?Math.round(r.divYield*1000)/10:null,
     aboveMa:((r.aboveEma20!=null||r.aboveEma50!=null)?!!(r.aboveEma20&&r.aboveEma50):null), src:'wide'};
 }
@@ -9252,6 +9283,11 @@ function fdrInScope(s){
   // #cat — "On a catalyst": keep only the catalyst pot (scored candidates) + served picks; drop the wide
   // whole-market technical-scan names (src==='wide'). That's the ~106 "Caught on a catalyst" set from the funnel.
   if(FDR.catalystOnly && s.src==='wide') return false;
+  // #23 — commodity filter: when commodities are chosen, a name must match at least one (by industry or name).
+  if(s.src!=='pick' && FDR.commoditySet && FDR.commoditySet.length){
+    var cok=false; for(var ci=0;ci<FDR.commoditySet.length;ci++){ if(fdrCommMatch(s,FDR.commoditySet[ci])){cok=true;break;} }
+    if(!cok) return false;
+  }
   return true;
 }
 function fdrSectors(pool){ var set={}; pool.forEach(function(s){ if(s.sector) set[s.sector]=1; }); return Object.keys(set).sort(); }
@@ -9311,6 +9347,10 @@ function fdrRailHtml(pool){
   h+='<div class="fdr-grp"><div class="fdr-grpt">Sectors <span class="fdr-hint">· All by default · 🍊 = we rate a Buy in that sector</span></div><div class="fdr-chips" id="fdrSecChips">'+
     '<button class="fdr-cchip'+((!FDR.sectorSet||!FDR.sectorSet.length)?' on':'')+'" data-sec="__all">All</button>'+
     secs.map(function(s){return '<button class="fdr-cchip'+((FDR.sectorSet&&FDR.sectorSet.indexOf(s)>=0)?' on':'')+'" data-sec="'+esc(s)+'">'+(buySecs.indexOf(s)>=0?'🍊 ':'')+esc(s)+'</button>';}).join('')+
+    '</div></div>';
+  // #23 — commodity chips (best-effort match on industry + name). Multi-select; none = no commodity filter.
+  h+='<div class="fdr-grp"><div class="fdr-grpt">Commodity <span class="fdr-hint">· best-effort match on industry &amp; name</span></div><div class="fdr-chips" id="fdrCommChips">'+
+    FDR_COMMODITIES.map(function(c){return '<button class="fdr-cchip'+((FDR.commoditySet&&FDR.commoditySet.indexOf(c.k)>=0)?' on':'')+'" data-comm="'+esc(c.k)+'">'+esc(c.k)+'</button>';}).join('')+
     '</div></div>';
   FDR_LEVERS.forEach(function(g){ h+='<div class="fdr-grp"><div class="fdr-grpt">'+g.grp+'</div>'+g.items.map(fdrLeverHtml).join('')+'</div>'; });
   h+='<div class="fdr-grp"><div class="fdr-grpt">Must-have</div><div class="fdr-chips">'+
@@ -9476,7 +9516,7 @@ function fdrWire(root){
   root.querySelectorAll('[data-fmode]').forEach(function(b){b.onclick=function(){ FDR.mode=b.dataset.fmode; if(FDR.mode==='flexible')FDR.sort='match'; rerender(); };});
   root.querySelectorAll('[data-fview]').forEach(function(b){b.onclick=function(){ FDR.view=b.dataset.fview; rerender(); };});
   var ss=document.getElementById('fdrSort'); if(ss) ss.onchange=function(){ FDR.sort=ss.value; rerender(); };
-  var reset=document.getElementById('fdrReset'); if(reset) reset.onclick=function(){ FDR_LEVERS.forEach(function(g){g.items.forEach(function(l){ l.on=false; });}); FDR.sectorSet=[]; FDR.toggles.aboveMa=false; FDR.catalystOnly=false; FDR.sort='match'; rerender(); };
+  var reset=document.getElementById('fdrReset'); if(reset) reset.onclick=function(){ FDR_LEVERS.forEach(function(g){g.items.forEach(function(l){ l.on=false; });}); FDR.sectorSet=[]; FDR.commoditySet=[]; FDR.toggles.aboveMa=false; FDR.catalystOnly=false; FDR.sort='match'; rerender(); };
   // #345/#2c — one-tap presets: each turns on ONLY its lever and sorts sensibly; click again to clear.
   function _fdrPreset(btnId, leverK, val, sort){
     var b=document.getElementById(btnId); if(!b)return;
@@ -9498,6 +9538,8 @@ function fdrWire(root){
   var srchClr=document.getElementById('fdrSearchClear'); if(srchClr) srchClr.onclick=function(){ FDR.query=''; renderFinder(); };
   root.querySelectorAll('#fdrSecChips .fdr-cchip').forEach(function(c){c.onclick=function(){ var v=c.dataset.sec;
     if(v==='__all'){ FDR.sectorSet=[]; } else { FDR.sectorSet=FDR.sectorSet||[]; var i=FDR.sectorSet.indexOf(v); if(i>=0)FDR.sectorSet.splice(i,1); else FDR.sectorSet.push(v); } rerender(); };});
+  root.querySelectorAll('#fdrCommChips .fdr-cchip').forEach(function(c){c.onclick=function(){ var v=c.dataset.comm;
+    FDR.commoditySet=FDR.commoditySet||[]; var i=FDR.commoditySet.indexOf(v); if(i>=0)FDR.commoditySet.splice(i,1); else FDR.commoditySet.push(v); rerender(); };});
   root.querySelectorAll('.fdr-chk').forEach(function(cb){cb.onchange=function(){ var l=fdrLever(cb.dataset.k); if(l){l.on=cb.checked; rerender();} };});
   root.querySelectorAll('.fdr-lvlabel').forEach(function(lb){lb.onclick=function(){ var l=fdrLever(lb.dataset.k); if(l){l.on=!l.on; rerender();} };});
   root.querySelectorAll('.fdr-rng').forEach(function(r){r.oninput=function(){ var l=fdrLever(r.dataset.k); if(!l)return; l.val=+r.value;
