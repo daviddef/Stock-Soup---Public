@@ -4945,9 +4945,11 @@ function render(D,H){
   // (was two flag circles + a separate countdown line), the view switch is a clean SVG glyph (was 📋 Full ⇄).
   '<header class="hero"><div class="brandrow"><div class="hleft"><div class="brand"><span class="hpot hpot-lg"><span class="hsteam"><i></i><i></i><i></i></span><span class="hpotbowl">🍲</span></span> The&nbsp;Stock&nbsp;Soup</div></div>'+
     '<div class="toprail">'+mktBarHtml(D)+tierBarHtml()+
+    '</div></div>'+   // close .toprail + .brandrow — the chrome controls (view-switch · run-status · menu) sit absolute in the hero's top-right corner
+      // Chrome controls clustered top-right on ONE row so line 2 stays a clean market+tier row (no wrapped 3rd row on mobile).
+      '<div class="burgerwrap heroburg">'+
       '<button class="vtico" id="viewTog" title="You’re in Full view — tap for the Simple one-pager" aria-label="Switch to the Simple view"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="3.5" width="7" height="7" rx="1.6"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.6"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.6"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.6"/></svg></button>'+
-    '</div></div>'+   // close .toprail + .brandrow — the burger sits absolute in the hero's top-right corner
-      '<div class="burgerwrap heroburg">'+runStatusIco(D)+'<button class="burger" id="burgerBtn" aria-label="Menu" aria-haspopup="true" aria-expanded="false" aria-controls="burgerMenu">☰</button>'+
+      runStatusIco(D)+'<button class="burger" id="burgerBtn" aria-label="Menu" aria-haspopup="true" aria-expanded="false" aria-controls="burgerMenu">☰</button>'+
         '<div class="burgermenu" id="burgerMenu" role="menu" hidden>'+
           '<div class="bmhead"><span class="live"><span class="pulse"></span>LIVE</span><button class="bmupd" id="lastUpd">updated…</button></div>'+
           (isAdmin()?'<div class="bmadmin" title="You are signed in as the admin account"><span class="adminbadge">ADMIN</span> signed in as admin</div>':'')+
