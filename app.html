@@ -5057,7 +5057,7 @@ function announcementsPanelHtml(D){
   var seen={}, items=[];
   function take(o){ if(!o||(o.region||'us')!==MKT||o.sym==='NONE') return; annRecent(o.announcements).forEach(function(a){
     var k=(o.sym||'')+'|'+(a.headline||'')+'|'+(a.date||''); if(seen[k]) return; seen[k]=1;
-    items.push({sym:o.sym,name:o.name,headline:a.headline,date:a.date,tone:a.tone,why:a.why,link:a.link,deepReadQuery:a.deepReadQuery,_o:o}); }); }
+    items.push({sym:o.sym,name:o.name,headline:a.headline,date:a.date,tone:a.tone,why:a.why,link:a.link,deepRead:a.deepRead,deepReadQuery:a.deepReadQuery,_o:o}); }); }
   (D.regions||[]).forEach(function(rg){ (rg.picks||[]).forEach(take); });
   (D.candidates||[]).forEach(take);
   if(!items.length) return '';
@@ -5069,9 +5069,12 @@ function announcementsPanelHtml(D){
     var label='<b>'+esc(a.sym)+'</b> — '+esc(a.headline||'');
     var head=a.link?'<a class="annhead" href="'+esc(a.link)+'" target="_blank" rel="noopener">'+label+' ↗</a>':'<span class="annhead">'+label+'</span>';
     var chip=(a._o&&a._o.score)?'<span class="annchip">'+dualChip(a._o.score,a._o.sym,a._o.name,signalRows(a._o,MKT))+'</span>':'';
-    var dr=a.deepReadQuery?'<a class="anndr" href="https://news.google.com/search?q='+encodeURIComponent(a.deepReadQuery)+'" target="_blank" rel="noopener" title="Search the news coverage for the real figures">🔎 Read the coverage ↗</a>':'';
+    // A resolved deep-read (real figures from the coverage) wins over the generic "why" — and replaces the
+    // coverage-search link, which was only ever a "someone still needs to read this" todo marker.
+    var deep=a.deepRead?'<div class="anndeep">🔍 <b>The detail:</b> '+esc(a.deepRead)+'</div>':'';
+    var dr=(!a.deepRead&&a.deepReadQuery)?'<a class="anndr" href="https://news.google.com/search?q='+encodeURIComponent(a.deepReadQuery)+'" target="_blank" rel="noopener" title="Search the news coverage for the real figures">🔎 Read the coverage ↗</a>':'';
     return '<div class="annrow '+t.cls+'"><div class="anntop"><span class="annic">'+t.ic+'</span>'+head+chip+(a.date?'<span class="anndate">'+esc(String(a.date).slice(0,10))+'</span>':'')+'</div>'+
-      '<div class="annwhy">'+esc(why)+'</div>'+dr+'</div>';
+      (a.deepRead?'':'<div class="annwhy">'+esc(why)+'</div>')+deep+dr+'</div>';
   }
   var top=items.slice(0,9), rest=items.slice(9,30);
   var out='<div class="nt3grid">'+top.map(row).join('')+'</div>';
