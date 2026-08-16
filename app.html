@@ -2661,54 +2661,62 @@ function clamp(x){return Math.max(3,Math.min(97,x));}
 // so it never drifts stale like the old hand-authored trail. Split-run aware: names only the market(s)
 // actually served this run.
 function trailDerived(D){
-  var cands=(D.candidates||[]), regions=(D.regions||[]);
+  // Market-aware (user ask) — matches discoveryFunnel + the "One pot, two scores" story: every count here
+  // is for the SELECTED market, so the narrative never says "175 names / top 4" while the funnel shows 106/2.
+  var cands=(D.candidates||[]).filter(function(c){return (c.region||'us')===MKT;});
+  var regions=(D.regions||[]).filter(function(rg){return (rg.id||'us')===MKT;});
   var shortlisted=cands.length;
   var served=regions.reduce(function(n,rg){return n+(rg.picks||[]).filter(function(p){return p.sym&&p.sym!=='NONE';}).length;},0);
-  var listedN=((D.discovery||{}).tickers||[]).length||shortlisted;
-  var mkts={}; regions.forEach(function(rg){ (rg.picks||[]).forEach(function(p){ if(p.sym&&p.sym!=='NONE') mkts[(rg.id||p.region||'').toLowerCase()]=1; }); });
-  var mk=Object.keys(mkts).filter(Boolean);
-  var forWhere = mk.length>=2 ? 'across 🇦🇺 Australia and 🇺🇸 the world'
-               : mk[0]==='au' ? 'for 🇦🇺 Australia' : mk[0]==='us' ? 'for 🇺🇸 the US' : 'this run';
+  var listedN=shortlisted;
+  var forWhere = MKT==='au' ? 'for 🇦🇺 Australia' : 'for 🇺🇸 the US';
   // a real, current example: the most-overheated candidate we docked (not a stale hardcoded name)
   var hot=cands.filter(function(c){return c&&c.score&&(c.score.heat||0)>3;}).sort(function(a,b){return (b.score.heat||0)-(a.score.heat||0);})[0];
   var hotEg = hot ? ('E.g. <b>'+esc(hot.sym)+'</b> was docked for running hot.') : 'Overheated names get docked so we don’t chase what already ran.';
   return [
-    {n:'01',text:'<b>Scanned the market</b> — a wide net across news, market movers and analyst actions, then shortlisted the strongest.',note:'A live read — a different-sized net every run, depending on the day’s news.',jump:'howfunnel',jumpLabel:'see the '+listedN+' we can name →'},
+    {n:'01',text:'<b>Scanned the market</b> — a wide net across news, market movers and analyst actions, then shortlisted the strongest.',note:'A live read — a different-sized net every run, depending on the day’s news.',jump:'howfunnel',jumpLabel:'see all '+listedN+' '+forWhere+' →'},
     {n:'02',text:'<b>Scored every candidate</b> — '+shortlisted+' names run through the model on fresh catalysts, then penalised for being extended.',note:hotEg},
     {n:'03',text:'<b>Pulled live prices</b> and checked the charts on the survivors.',note:'Straight from live market data — every candidate priced.'},
-    {n:'04',text:'<b>Picked the top '+served+'</b> '+forWhere+' — the rest sit in <b>The Full Pot</b>, just outside the cut.',note:'No doubling up — each served pick is a distinct name.'}
+    {n:'04',text:'<b>Picked the top '+served+'</b> '+forWhere+' — the rest sit in <b>The Stock Pot</b>, just outside the cut.',note:'No doubling up — each served pick is a distinct name.'}
   ];
 }
 function discoveryFunnel(D){
   var dv=D.discovery; if(!dv) return '';
-  var shortlisted=(D.candidates||[]).length;
-  var listedN=(dv.tickers||[]).length;
+  // Market-aware (user ask): the whole page filters by the AU/US toggle, so this funnel must too —
+  // otherwise it showed a cross-market "175 scored → 4 served" while every other surface (and the
+  // "One pot, two scores" story) showed the selected market's real numbers. Filter everything by MKT.
+  var mkCands=(D.candidates||[]).filter(function(c){return (c.region||'us')===MKT;});
+  var mkTickers=(dv.tickers||[]).filter(function(t){return (t.region||'us')===MKT;});
+  var shortlisted=mkCands.length;
+  var listedN=mkTickers.length;
   // #114 fix (9 Aug 2026): dv.scanned is a hand-recorded number and can go stale/wrong — real incident
   // (user-caught, screenshot): "28 scanned -> 46 shortlisted", an internally impossible funnel since you
   // can't shortlist more names than you scanned. Never trust a recorded "scanned" smaller than what was
   // actually shortlisted or actually listed in discovery.tickers[] — floor it at the real numbers instead.
-  var scanned=Math.max(+dv.scanned||0, shortlisted, listedN);
-  if(!scanned) return '';
-  // "served" used to be a hardcoded literal 6 regardless of how many slots actually got a real pick
-  // (e.g. an insufficient-signal run legitimately serves fewer than 6) — count real picks instead.
-  var served=(D.regions||[]).reduce(function(n,rg){return n+(rg.picks||[]).filter(function(p){return p.sym&&p.sym!=='NONE';}).length;},0);
+  if(!shortlisted && !listedN) return '';
+  // served = real picks for THIS market (was cross-market — the 4-vs-2 mismatch the user caught).
+  var served=(D.regions||[]).filter(function(rg){return (rg.id||'us')===MKT;}).reduce(function(n,rg){return n+(rg.picks||[]).filter(function(p){return p.sym&&p.sym!=='NONE';}).length;},0);
   // #131 (9 Aug 2026, user ask) — ticker-only chips forced a second tap (open the card) just to see
   // whether a name was any good; the real score already exists on the matching candidate, just wasn't
   // being shown here. Open by default too — this is the whole point of "how we got here", not a
   // detail worth hiding behind a click.
-  var candBySym={}; (D.candidates||[]).forEach(function(c){candBySym[c.sym+'|'+c.region]=c;});
+  var candBySym={}; mkCands.forEach(function(c){candBySym[c.sym+'|'+c.region]=c;});
   // #188 follow-up (user ask) — colour each pill by the funnel stage it reached: served (a real pick),
   // shortlisted (scored candidate), or scanned-only (named but didn't make the shortlist).
-  var servedSyms={}; (D.regions||[]).forEach(function(rg){(rg.picks||[]).forEach(function(p){if(p.sym&&p.sym!=='NONE')servedSyms[p.sym+'|'+rg.id]=1;});});
+  var servedSyms={}; (D.regions||[]).filter(function(rg){return (rg.id||'us')===MKT;}).forEach(function(rg){(rg.picks||[]).forEach(function(p){if(p.sym&&p.sym!=='NONE')servedSyms[p.sym+'|'+rg.id]=1;});});
   // #138 (user ask): show each ticker with its real score AND name, sorted highest-score-first —
   // was previously shown in whatever order discovery.tickers[] happened to be authored in, with
   // just the bare symbol. Unscored entries (no matching candidate) sort last, not first.
   // #188 — each pill is now a proper mini card: ticker + name + the 🍊 score chip (tap → the consolidated
   // breakdown) + which discovery net found it. 6 across. Sorted highest-score-first.
   var NETICON={news:'📰',quant:'📊',earnings:'📅',ipo:'🎉'};
-  var list=(dv.tickers||[]).map(function(t){
-    var c=candBySym[t.sym+'|'+t.region], sc=c&&c.score&&c.score.buy_now;
-    return {t:t, c:c, sc:(sc!=null?sc:-1)};
+  // Show ALL scored candidates for this market (not the smaller source-tagged subset) so "N names scored"
+  // and "see the N we can name" are the SAME number — was 175 scored / 106 named / 106 pot (three numbers).
+  var tickBySym={}; mkTickers.forEach(function(t){tickBySym[t.sym+'|'+(t.region||'us')]=t;});
+  var listedN=shortlisted;
+  var list=mkCands.map(function(c){
+    var t=tickBySym[c.sym+'|'+(c.region||'us')]||{sym:c.sym,region:c.region};
+    var sc=(c.score&&c.score.buy_now!=null)?c.score.buy_now:-1;
+    return {t:t, c:c, sc:sc};
   }).sort(function(a,b){return b.sc-a.sc;}).map(function(x){
     var t=x.t, c=x.c, sc=x.sc;
     var jc=(c&&c.score&&c.score.buy_now!=null)?juiceChip(c.score,c.sym,c.name,signalRows(c,c.region||'us')):(sc>=0?'<span class="dvscore">🍊 '+sc+'</span>':'');   // #266 — juiceChip now degrades w/o detail, so a scored ticker always gets a LIVE chip (no dead 🍊 badge)
@@ -2725,12 +2733,12 @@ function discoveryFunnel(D){
   // degenerate "199 → 199 → 5". Only show the "scanned →" stage when a real wider net (> shortlist) was
   // captured; otherwise start honestly at the number of names actually scored. (Recording a true
   // top-of-funnel count — the whole-market/discovery-union size — is the authoring-side follow-up.)
-  var hasRealScan = (+dv.scanned||0) > shortlisted;
-  var fnrow = hasRealScan
-    ? '<span class="fnn fnn-scan">'+scanned+'</span> scanned <span class="fnar">→</span> <span class="fnn fnn-short">'+shortlisted+'</span> scored <span class="fnar">→</span> <span class="fnn fnn-served">'+served+'</span> served'
-    : '<span class="fnn fnn-short">'+shortlisted+'</span> names scored <span class="fnar">→</span> <span class="fnn fnn-served">'+served+'</span> served';
+  // 2-stage, market-aware: "{scored this market} names scored → {served this market} served". The full
+  // top-of-funnel reduction (2,000 → 1,270 → pot → served) lives in the "One pot, two scores" story.
+  var mktName=MKT==='au'?'🇦🇺':'🇺🇸';
+  var fnrow='<span class="fnn fnn-short">'+shortlisted+'</span> '+mktName+' names scored <span class="fnar">→</span> <span class="fnn fnn-served">'+served+'</span> served';
   return '<div class="funnel"><div class="fnrow">'+fnrow+'</div>'+
-    (list?'<details class="dvdet" open><summary>see the '+listedN+' we can name from this run</summary><div class="dvlist">'+list+'</div></details>':'')+'</div>';
+    (list?'<details class="dvdet" open><summary>see all '+listedN+' from this run</summary><div class="dvlist">'+list+'</div></details>':'')+'</div>';
 }
 // "The Misses" (#63): the day's real top movers, checked against what we actually scanned/served —
 // so the run's accountability isn't only ever the winners. Built by misses.py, stored on latest.misses.
@@ -4899,7 +4907,7 @@ function render(D,H){
   // ===== TAB BAR =====
   '<nav class="tabbar" id="tabbar" role="tablist" aria-label="Sections">'+
     '<button class="tabbtn active" data-tab="menu" role="tab">'+tabIcon('menu')+'<span class="tl">Tonight\'s Menu</span></button>'+
-    '<button class="tabbtn" data-tab="finder" role="tab">'+tabIcon('finder')+'<span class="tl">The Finder</span></button>'+
+    '<button class="tabbtn" data-tab="finder" role="tab">'+tabIcon('finder')+'<span class="tl">The Stock Pot</span></button>'+
     '<button class="tabbtn" data-tab="faves" role="tab">'+tabIcon('faves')+'<span class="tl">Favourite Course</span></button>'+
     '<button class="tabbtn" data-tab="reviews" role="tab">'+tabIcon('reviews')+'<span class="tl">Dinner Reviews</span></button>'+
     '<button class="tabbtn" data-tab="kitchen" role="tab">'+tabIcon('kitchen')+'<span class="tl">Inside the Kitchen</span></button>'+
@@ -4926,12 +4934,12 @@ function render(D,H){
     // Change-environment retired — its trajectory + "ready to buy" now live inside each pick card (miniTraj + buyat + rangeBar).
     // #299 — News, World & sectors, Commodities and Bargains are no longer stacked here; they're panels
     // inside the single "04 Market context" section below the Full Pot (see marketContextHtml).
-    // #336 — the Full Pot browsing surface has moved to its own tab, The Finder (a signal-lever screener over
-    // the whole scored pot). This is now a slim pointer; the id="fullpot" anchor is kept so the discovery
-    // trail's "see the list →" jump still lands here.
-    '<section id="fullpot"><div class="sec-head"><h2 class="display"><span class="k">03</span> The full pot</h2>'+infoBtn('fullpot')+'</div>'+
-      '<p class="sec-sub">Every '+(MKT==='au'?'🇦🇺 Australian':'🇺🇸 US')+' candidate the scan shortlisted tonight — <b>'+_potN+' names</b>. Browse and screen the whole pot by any signal in <b>The Finder</b>.</p>'+
-      '<button class="fullpot-cta" onclick="switchTab(\'finder\')">🔎 Open The Finder — screen all '+_potN+' names →</button>'+
+    // #336 — the Full Pot browsing surface has moved to its own tab, The Stock Pot (a signal-lever screener).
+    // Section 03 here is now the "One pot, two scores" explainer (user ask, moved out of Inside the Kitchen):
+    // it tells the story AND points to the tab. id="fullpot" kept so old jump/scroll anchors still land.
+    '<section id="fullpot" class="scorestorysec"><div class="sec-head"><h2 class="display"><span class="k">03</span> One pot, two scores</h2></div>'+
+      '<p class="sec-sub">The whole market simmered down to a few picks — then rated twice: 🍊 for timing, 🍒 for conviction. Real numbers from tonight’s run · browse the full pot in <b>The Stock Pot</b> tab.</p>'+
+      kitchenScoreStory(D)+
       '</section>'+
     marketContextHtml(D, bargainCards, lines)+   // #299 — one tabbed section: news · world · commodities · movers · coming-up · bargains
     // hourly-runs list removed from the menu — it lives (unified) in Inside the Kitchen's run schedule
@@ -4939,7 +4947,7 @@ function render(D,H){
 
   // ===== 🔎 THE FINDER (#336) — its own tab; filled by renderFinder() =====
   '<div class="tabview" id="tab-finder">'+
-    tabHead('🔎 The Finder','Pull the levers for the stock you actually want','Every name we\'ve scored — the whole pot plus the daily whole-market scan — screened by any signal. It opens on our 🍊 Buy profile; drag a lever, or switch to <b>Best match</b> to always get a shortlist. Tap any result for the full read.',[])+
+    tabHead('🍲 The Stock Pot','Pull the levers for the stock you actually want','Every name we\'ve scored this run — the daily whole-market scan plus the catalyst pot — screened by any signal. It opens on our 🍊 Buy profile; drag a lever, or switch to <b>Best match</b> to always get a shortlist. Tap any result for the full read.',[])+
     '<div id="finderRoot"><div class="fdr-empty"><b>Warming up…</b>One moment.</div></div>'+
   '</div>'+
 
@@ -4989,8 +4997,6 @@ function render(D,H){
     '<section id="runsched"><div class="sec-head"><h2 class="display">⏱️ Run schedule</h2>'+infoBtn('schedule')+'</div>'+runGanttHtml()+runLogHtml()+'</section>'+
     '<section><div class="sec-head"><h2 class="display">📋 How we got here</h2></div>'+
       '<p class="sec-sub">The recipe, in plain sight. No black box.</p>'+discoveryFunnel(D)+'<div class="panel trail">'+trail+'</div></section>'+
-    '<section id="scorestory"><div class="sec-head"><h2 class="display">🍊🍒 One pot, two scores</h2></div>'+
-      '<p class="sec-sub">The whole market simmered down to a few picks — then rated twice: 🍊 for timing, 🍒 for conviction. Real numbers from tonight’s run.</p>'+kitchenScoreStory(D)+'</section>'+
     '<section><div class="sec-head"><h2 class="display">🗄️ The Archive</h2>'+infoBtn('archive')+'</div>'+
       '<p class="sec-sub">Every menu we\'ve served — the real picks, verdicts and reasoning from that night, not a frozen price.</p>'+
       archiveHtml(H)+
@@ -5361,7 +5367,7 @@ function kitchenScoreStory(D){
       +'.ks-wrap{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:20px 20px 24px;box-shadow:var(--shadow)}'
       +'.ks-fn{display:flex;flex-direction:column;gap:8px;margin:4px 0}'
       +'.ks-row{background:var(--surface-2);border:1px solid var(--line);border-radius:14px;padding:13px 16px;display:flex;align-items:center;gap:16px;margin:0 auto;width:100%}'
-      +'.ks-f0{width:100%;background:linear-gradient(90deg,var(--surface-2),rgba(232,102,42,.10))}.ks-f1{width:84%}.ks-f2{width:56%}.ks-f3{width:34%;background:linear-gradient(90deg,rgba(35,194,103,.13),var(--surface-2));border-color:rgba(35,194,103,.4)}'
+      +'.ks-f0{width:100%;background:linear-gradient(90deg,var(--surface-2),rgba(232,102,42,.10))}.ks-f1{width:84%}.ks-f2{width:60%;background:linear-gradient(90deg,var(--surface-2),rgba(232,102,42,.07))}.ks-f2b{width:44%}.ks-f3{width:30%;background:linear-gradient(90deg,rgba(35,194,103,.13),var(--surface-2));border-color:rgba(35,194,103,.4)}'
       +'.ks-num{font-weight:800;font-size:clamp(20px,4vw,30px);line-height:1;letter-spacing:-.02em;flex:none}'
       +'.ks-meta{flex:1;min-width:0}.ks-ft{font-weight:800;font-size:14px}.ks-fd{color:var(--muted);font-size:12.5px;line-height:1.35}'
       +'.ks-sbrow{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}.ks-bdg{font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:999px;white-space:nowrap}'
@@ -5386,13 +5392,15 @@ function kitchenScoreStory(D){
     var funnel='<div class="ks-fn">'
       +'<div class="ks-row ks-f0"><div class="ks-num">'+whole+'</div><div class="ks-meta"><div class="ks-ft">'+wholeName+'</div><div class="ks-fd">Every listed company — the whole market goes in the pot.</div><div class="ks-sbrow"><span class="ks-bdg ks-bn">no score yet</span><span class="ks-bdg ks-bn">not shown in the app</span></div></div></div>'
       +'<div class="ks-step"><span class="aw">▼</span><span class="lb"><b>Liquidity filter</b> — can you actually trade it?</span></div>'
-      +'<div class="ks-row ks-f1"><div class="ks-num">'+scanned+'</div><div class="ks-meta"><div class="ks-ft">🔎 Actually tradeable</div><div class="ks-fd">The daily whole-market scan — the names worth screening.</div><div class="ks-sbrow"><span class="ks-bdg ks-bn">still no score</span><span class="ks-bdg ks-bo">🔎 lives in The Finder</span></div></div></div>'
-      +'<div class="ks-step"><span class="aw">▼</span><span class="lb"><b style="color:var(--broth)">🍊 the Buy-Now model runs here</b> — every name scored; only real signals survive</span></div>'
-      +'<div class="ks-row ks-f2"><div class="ks-num">'+potN+'</div><div class="ks-meta"><div class="ks-ft">🍲 The Stock Pot</div><div class="ks-fd">Names with a real signal — a catalyst, a breakout, a beat.</div><div class="ks-sbrow"><span class="ks-bdg ks-bo">🍊</span><span class="ks-bdg ks-bc">🍒</span><span class="ks-bdg ks-bn">both live on every name</span><span class="ks-bdg ks-bo">🔎 The Finder</span></div></div></div>'
+      +'<div class="ks-row ks-f1"><div class="ks-num">'+scanned+'</div><div class="ks-meta"><div class="ks-ft">🔬 Scanned for a signal</div><div class="ks-fd">The daily whole-market scan runs the technicals over every liquid name.</div><div class="ks-sbrow"><span class="ks-bdg ks-bn">technicals only · not all published</span></div></div></div>'
+      +'<div class="ks-step"><span class="aw">▼</span><span class="lb"><b style="color:var(--broth)">🍊 the Buy-Now model runs here</b> — only names with a real signal get scored &amp; published</span></div>'
+      +'<div class="ks-row ks-f2"><div class="ks-num">'+finderN+'</div><div class="ks-meta"><div class="ks-ft">🍲 The Stock Pot</div><div class="ks-fd">Every name we actually scored — the scan’s picks + the catalyst pot. Browse &amp; screen them all.</div><div class="ks-sbrow"><span class="ks-bdg ks-bo">🍊</span><span class="ks-bdg ks-bc">🍒</span><span class="ks-bdg ks-bn">both live on every name</span><span class="ks-bdg ks-bo">🔎 The Stock Pot tab</span></div></div></div>'
+      +'<div class="ks-step"><span class="aw">▼</span><span class="lb"><b>Fresh hard catalyst</b> — a beat, a contract, an upgrade <em>today</em></span></div>'
+      +'<div class="ks-row ks-f2b"><div class="ks-num">'+potN+'</div><div class="ks-meta"><div class="ks-ft">🎯 Caught on a catalyst</div><div class="ks-fd">The subset our news / earnings / quant / IPO nets surfaced tonight.</div><div class="ks-sbrow"><span class="ks-bdg ks-bo">📋 “How we got here”</span></div></div></div>'
       +'<div class="ks-step"><span class="aw">▼</span><span class="lb"><b style="color:var(--broth)">🍊 timing</b> picks the slot · <b style="color:#d6283c">🍒 conviction</b> confirms it’s strong</span></div>'
       +'<div class="ks-row ks-f3"><div class="ks-num">'+served+'</div><div class="ks-meta"><div class="ks-ft">🥣 Served '+(mkt==='au'?'in Australia':'globally')+'</div><div class="ks-fd">Day · Week · Long — the best plays, this market.</div><div class="ks-sbrow"><span class="ks-bdg ks-bg">🍊 + 🍒 on the card</span><span class="ks-bdg ks-bg">🥣 Menu · 🗺️ Journey</span></div></div></div>'
       +'</div>'
-      +'<p class="ks-note"><b>Neither '+scanned+' nor '+potN+' is a score</b> — they’re counts of stocks. 🍊 attaches at the scan→pot step; by the time a name’s in the <b>'+potN+'-name pot it carries both 🍊 and 🍒</b>. The <b>Finder</b> is where you browse that scored universe ('+finderN+' names tonight); the <b>Journey</b> shows the '+served+' that got served.</p>';
+      +'<p class="ks-note"><b>None of these are scores</b> — they’re counts of stocks. 🍊 attaches at the scan→pot step: the <b>'+finderN+' scored names carry both 🍊 and 🍒</b> and are exactly what you browse in <b>The Stock Pot</b> tab (the '+scanned+' scanned names aren’t all published — only the scored ones are). Of those, <b>'+potN+'</b> hit a fresh catalyst (“How we got here”); the <b>Journey</b> shows the '+served+' served.</p>';
     var lanes='<div class="ks-lanes">'
       +'<div class="ks-lane o"><div class="ks-lq">🍊 "Is <em>now</em> the moment?"</div><div class="ks-lsub">Pure <b>timing</b> — momentum, a fresh catalyst, heavy volume, and a hard check it hasn’t already run away. 0–100.</div>'
         +'<div class="ks-ll">The recipe · to 100</div>'
@@ -8769,7 +8777,7 @@ function wire(D){
     if(g==='risk'){ try{ openMarketRead(); }catch(e){} }
     else if(g==='onemove'){ try{ openTicker(b.dataset.sym,b.dataset.region); }catch(e){} }
     else if(g==='news'){ if(b.dataset.sym){ try{ openTicker(b.dataset.sym,b.dataset.region); }catch(e){} } else gotoCtx('news'); }
-    else if(g==='conviction'){ var cs=_syms(); if(cs.length) openGlanceList('🍒 Highest conviction', cs); else { try{ POTLENS='conviction'; applyView(); }catch(e){} var f=document.getElementById('fullpot'); if(f) f.scrollIntoView({behavior:'smooth',block:'start'}); } }
+    else if(g==='conviction'){ var cs=_syms(); if(cs.length) openGlanceList('🍒 Highest conviction', cs); else { try{ switchTab('finder'); }catch(e){} } }   // the pot browser is now the Stock Pot tab
     else if(g==='sector'){ var se=_syms(); if(se.length) openGlanceList('🍳 Sectors to buy — the leaders', se); else gotoCtx('world'); }
     else if(g==='commodity'){ var ce=_syms(); if(ce.length) openGlanceList('🛢️ Commodities to buy — the leaders', ce); else gotoCtx('commodities'); }
     else if(g==='picks'){ var pr=picksLastSessionPct((LAST&&LAST.D)||{}); if(pr&&pr.items&&pr.items.length){ openContribBreakdown('📊 Tonight’s picks — last session', 'Picks average', pr); } else { var m=document.querySelector('#tab-menu .menu'); if(m) m.scrollIntoView({behavior:'smooth',block:'start'}); } }
@@ -9004,7 +9012,7 @@ var VIEW = null, SREGION = 'au', PULSES = null, TRACK = null, MKT = 'au', OUTCOM
 var SIMPLE_POT_THR = 50;   // #199 — the Simple-view whole-pot score threshold (persists across re-renders)
 var FULL_POT_THR = 50;     // #231 — the Full-view Full Pot score threshold. Default 50+ (user ask 11 Aug 2026):
                            // open filtered to the worthwhile names (Buy/Watch), not the whole Pass-band tail. Matches Simple's 50.
-var TABLABEL={menu:"Tonight's Menu",finder:'The Finder',reviews:'Dinner Reviews',faves:'Favourite Course',kitchen:'Inside the Kitchen'};
+var TABLABEL={menu:"Tonight's Menu",finder:'The Stock Pot',reviews:'Dinner Reviews',faves:'Favourite Course',kitchen:'Inside the Kitchen'};
 // #253 (user ask) — the shareable URL now also remembers the AU/US market + the T1/2/3 model type, so a
 // copied link (or a reload) lands on the same filters, not just the same tab. Defaults (au · type1) are
 // omitted to keep links clean; their absence restores the defaults on load.
