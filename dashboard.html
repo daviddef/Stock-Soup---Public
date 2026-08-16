@@ -1241,10 +1241,14 @@
   .annflag.af-bear{background:rgba(255,77,77,.16);color:var(--dont);border-color:rgba(255,77,77,.4)}
   .annflag.af-neu{background:var(--surface-2);color:var(--muted);border-color:var(--line)}
   .name .annflag{margin-left:6px}
-  .annrow{border-radius:10px;padding:9px 12px;margin-bottom:6px;border:1px solid var(--line);background:var(--surface);border-left:3px solid var(--faint)}
-  .annrow.ann-bull{border-left-color:var(--buy);background:rgba(35,194,103,.09)}
-  .annrow.ann-bear{border-left-color:var(--dont);background:rgba(255,77,77,.09)}
+  .annrow{border-radius:10px;padding:9px 12px;margin-bottom:6px;border:1px solid var(--line);background:var(--surface);border-left:4px solid var(--faint)}
+  .annrow.ann-bull{border-left:4px solid var(--buy);border-color:rgba(35,194,103,.35);background:rgba(35,194,103,.16)}
+  .annrow.ann-bear{border-left:4px solid var(--dont);border-color:rgba(255,77,77,.35);background:rgba(255,77,77,.15)}
   .annrow.ann-neu{border-left-color:var(--faint)}
+  /* explicit good/bad tag so direction reads at a glance, not just a tint */
+  .anntag{display:inline-flex;align-items:center;gap:3px;font-size:10.5px;font-weight:800;letter-spacing:.02em;text-transform:uppercase;padding:2px 7px;border-radius:999px;white-space:nowrap}
+  .anntag.at-bull{background:var(--buy);color:#04220f}
+  .anntag.at-bear{background:var(--dont);color:#2a0505}
   .anntop{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
   .annic{font-size:13px}
   .annhead{flex:1;font-size:13px;color:var(--ink);text-decoration:none}
@@ -5011,11 +5015,19 @@ function annDeeper(headline){
   if(/quarterly (activities|cashflow|report)|appendix 5b|4c/.test(h)) return 'Quarterly operations + cash update — check cash on hand and whether they’re spending faster than planned.';
   return '';
 }
+// Explicit good/bad tag so an announcement's direction reads at a glance — not just a background tint.
+// Only bullish/bearish get a tag (neutral = "we're not calling a direction", left uncoloured on purpose).
+function annToneTag(tone){
+  if(tone==='bullish') return '<span class="anntag at-bull">▲ Likely good</span>';
+  if(tone==='bearish') return '<span class="anntag at-bear">▼ Likely bad</span>';
+  return '';
+}
 function announcementsHtml(items){
   if(!items||!items.length) return '';
   var TONE={bullish:{ic:'📈',cls:'ann-bull'},bearish:{ic:'📉',cls:'ann-bear'},neutral:{ic:'➖',cls:'ann-neu'}};
   var rows=items.slice(0,5).map(function(a){
     var t=TONE[a.tone]||TONE.neutral;
+    var tag=annToneTag(a.tone);
     // #324 — for a neutral/generic filing, prefer the headline-type read over the vague fallback line.
     var why=((a.tone==='neutral'||!a.tone)&&annDeeper(a.headline))||a.why||'';
     var head=a.link?'<a class="annhead" href="'+esc(a.link)+'" target="_blank" rel="noopener">'+esc(a.headline||'')+' ↗</a>':'<b class="annhead">'+esc(a.headline||'')+'</b>';
@@ -5030,7 +5042,7 @@ function announcementsHtml(items){
     // a bare headline can't give. Falls back to the tappable coverage-search link when no summary exists yet.
     var deep=a.deepRead?'<div class="anndeep">🔍 <b>The detail:</b> '+esc(a.deepRead)+'</div>':'';
     var dr=(!a.deepRead&&a.deepReadQuery)?'<a class="anndr" href="https://news.google.com/search?q='+encodeURIComponent(a.deepReadQuery)+'" target="_blank" rel="noopener" title="Search the news coverage for the real figures">🔎 Read the coverage ↗</a>':'';
-    return '<div class="annrow '+t.cls+'"><div class="anntop"><span class="annic">'+t.ic+'</span>'+head+(a.date?'<span class="anndate">'+esc(String(a.date).slice(0,10))+'</span>':'')+'</div>'+
+    return '<div class="annrow '+t.cls+'"><div class="anntop"><span class="annic">'+t.ic+'</span>'+head+tag+(a.date?'<span class="anndate">'+esc(String(a.date).slice(0,10))+'</span>':'')+'</div>'+
       '<div class="annwhy">'+esc(why)+'</div>'+deep+dr+'</div>';
   }).join('');
   return '<div class="viz"><h4>📢 Key announcements</h4>'+rows+'</div>';
@@ -5068,12 +5080,13 @@ function announcementsPanelHtml(D){
     var why=((a.tone==='neutral'||!a.tone)&&annDeeper(a.headline))||a.why||'';
     var label='<b>'+esc(a.sym)+'</b> — '+esc(a.headline||'');
     var head=a.link?'<a class="annhead" href="'+esc(a.link)+'" target="_blank" rel="noopener">'+label+' ↗</a>':'<span class="annhead">'+label+'</span>';
+    var tag=annToneTag(a.tone);
     var chip=(a._o&&a._o.score)?'<span class="annchip">'+dualChip(a._o.score,a._o.sym,a._o.name,signalRows(a._o,MKT))+'</span>':'';
     // A resolved deep-read (real figures from the coverage) wins over the generic "why" — and replaces the
     // coverage-search link, which was only ever a "someone still needs to read this" todo marker.
     var deep=a.deepRead?'<div class="anndeep">🔍 <b>The detail:</b> '+esc(a.deepRead)+'</div>':'';
     var dr=(!a.deepRead&&a.deepReadQuery)?'<a class="anndr" href="https://news.google.com/search?q='+encodeURIComponent(a.deepReadQuery)+'" target="_blank" rel="noopener" title="Search the news coverage for the real figures">🔎 Read the coverage ↗</a>':'';
-    return '<div class="annrow '+t.cls+'"><div class="anntop"><span class="annic">'+t.ic+'</span>'+head+chip+(a.date?'<span class="anndate">'+esc(String(a.date).slice(0,10))+'</span>':'')+'</div>'+
+    return '<div class="annrow '+t.cls+'"><div class="anntop"><span class="annic">'+t.ic+'</span>'+head+tag+chip+(a.date?'<span class="anndate">'+esc(String(a.date).slice(0,10))+'</span>':'')+'</div>'+
       (a.deepRead?'':'<div class="annwhy">'+esc(why)+'</div>')+deep+dr+'</div>';
   }
   var top=items.slice(0,9), rest=items.slice(9,30);
