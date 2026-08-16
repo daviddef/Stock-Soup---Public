@@ -4701,7 +4701,9 @@ function render(D,H){
     if(!picks.length) return '';
     var stamp=String((D.modelTiers||{}).updatedAt||'').slice(0,10);
     var region=MKT, label=(MKT==='us'?'🇺🇸 US':'🇦🇺 AU');
-    var rows=picks.slice(0,3).map(function(p,idx){ var sym=p.sym, nm=p.name||names[String(sym).replace(/\*$/,'')]||'';
+    var rows=picks.slice(0,3).map(function(p,idx){ var sym=p.sym, bare=String(sym).replace(/\*$/,'').toUpperCase(),
+        nm=p.name||names[String(sym).replace(/\*$/,'')]||'';
+      if(nm&&nm.toUpperCase()===bare) nm='';   // scan picks carry the ticker as their "name" — don't print it twice
       return '<div class="jrow"><span class="jtf">'+(TFS[idx]||'')+'</span><span class="jinfo">'+qlink(sym,region)+(nm?'<span class="jname">'+esc(nm)+'</span>':'')+'</span>'+gradeBadge(sym)+'</div>'; });
     return '<div class="jcol jcol-scan"><div class="jhead"><span class="when">Whole-market scan<small>'+esc(stamp)+' · daily</small></span>'+
       '<span class="jhright"><span class="rltier rltier-'+tierNum+'" title="Type '+tierNum+' — whole-market technical scan">T'+tierNum+'</span></span></div>'+
