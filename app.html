@@ -1310,6 +1310,12 @@
   .fdr-cnewsage{margin-left:auto;flex:none;font-weight:800;font-size:10px;color:var(--faint);white-space:nowrap;padding-left:6px}
   .fdr-cnewsmove{font-weight:800;white-space:nowrap}
   .fdr-cnewsmove.up{color:var(--buy)}.fdr-cnewsmove.down{color:var(--dont)}
+  .fdr-mini{display:flex;align-items:center;gap:8px;margin-top:6px;font-size:11px}
+  .fdr-minil{flex:none;width:66px;color:var(--muted);font-weight:700}
+  .fdr-mbar{position:relative;flex:1;height:6px;border-radius:4px;background:var(--line);overflow:hidden}
+  .fdr-mbar-rsi{overflow:visible;background:linear-gradient(90deg,var(--buy),#e8b13a,var(--dont))}
+  .fdr-mmk{position:absolute;top:-2px;width:3px;height:10px;background:var(--ink);border-radius:2px;transform:translateX(-50%)}
+  .fdr-mfill{display:block;height:100%;background:var(--buy)}
   .fdr-search{display:flex;align-items:center;gap:7px;flex:1;min-width:140px;max-width:280px;background:var(--surface-2);border:1px solid var(--line);border-radius:9px;padding:5px 10px}
   .fdr-search input{border:0;background:transparent;color:var(--ink);font-size:13px;font-weight:700;width:100%;outline:none}
   .fdr-search .fdr-sx{cursor:pointer;color:var(--faint);font-weight:800;flex:none}
@@ -9357,6 +9363,11 @@ function fdrRailHtml(pool){
     '<button class="fdr-tgl'+(FDR.toggles.aboveMa?' on':'')+'" data-tgl="aboveMa">Above both MAs</button></div></div>';
   return h;
 }
+function fdrMiniBar(v,kind){
+  v=Math.max(0,Math.min(100,Math.round(v)));
+  if(kind==='rsi') return '<div class="fdr-mbar fdr-mbar-rsi"><i class="fdr-mmk" style="left:'+v+'%"></i></div>';
+  return '<div class="fdr-mbar"><i class="fdr-mfill" style="width:'+v+'%"></i></div>';
+}
 function fdrCardsHtml(rows){
   if(!rows.length) return fdrEmpty();
   var showMatch=(FDR.mode==='flexible');
@@ -9371,6 +9382,10 @@ function fdrCardsHtml(rows){
       '<div class="fdr-cstats"><span>Range <b>'+(s.rangePos!=null?s.rangePos+'%':'—')+'</b></span><span>Value <b>'+(s.value!=null?s.value:'—')+'</b></span>'+
         '<span>Qual <b>'+(s.quality!=null?s.quality:'—')+'</b></span><span>RSI <b>'+(s.rsi!=null?s.rsi:'—')+'</b></span>'+
         '<span>Cap <b>'+fdrMcap(s.mcap)+'</b></span><span>News <b>'+(s.news!=null?s.news:'—')+'</b></span></div>'+
+      // #minicharts (user ask) — compact RSI + Value slider bars on the card face. RSI: green→red track with a
+      // marker (cheap↔overheated); Value: a green fill (higher = cheaper). Each shows only when we have it.
+      (s.rsi!=null?'<div class="fdr-mini"><span class="fdr-minil">RSI '+s.rsi+'</span>'+fdrMiniBar(s.rsi,'rsi')+'</div>':'')+
+      (s.value!=null?'<div class="fdr-mini"><span class="fdr-minil">Value '+s.value+'</span>'+fdrMiniBar(s.value,'val')+'</div>':'')+
       (s.newsHead?'<div class="fdr-cnews">'+(s.newsMove!=null?'<span class="fdr-cnewsmove '+(s.newsMove>=0?'up':'down')+'">'+(s.newsMove>=0?'▲ +':'▼ ')+Math.abs(s.newsMove)+'% since</span> ':'')+'📰 '+esc(fdrFirstSentence(s.newsHead))+'<span class="fdr-cnewsage">'+(s.newsAge<1?'today':s.newsAge+'d ago')+'</span></div>':'')+
       (showMatch?'<div class="fdr-mb"><div class="fdr-mt"><span>Match</span><b style="color:'+fdrColor(o.m)+'">'+o.m+'%</b></div><div class="fdr-track"><i style="width:'+o.m+'%"></i></div></div>':'')+
       '</div>';
