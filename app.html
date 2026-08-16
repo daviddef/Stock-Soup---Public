@@ -1581,7 +1581,11 @@
   .newschart{width:100%;min-height:110px}
   .nc-load{color:var(--faint);font-size:12px;padding:34px 0;text-align:center}
   .nc-svg{width:100%;height:104px;display:block;touch-action:none;cursor:ew-resize}
-  .nc-dot{stroke:var(--surface);stroke-width:1.4}
+  .nc-dot{stroke:#0b0d10;stroke-width:1.8;paint-order:stroke}
+  .nc-legend{display:flex;flex-wrap:wrap;align-items:center;gap:5px 13px;margin-top:8px;font-size:11px;color:var(--muted)}
+  .nc-lg{display:inline-flex;align-items:center;gap:5px;font-weight:700}
+  .nc-lg i{width:9px;height:9px;border-radius:50%;display:inline-block;box-shadow:0 0 0 1.5px #0b0d10}
+  .nc-lghint{margin-left:auto;color:var(--faint);font-weight:600}
   .nc-read{display:flex;justify-content:space-between;align-items:baseline;margin-top:6px;font-size:13px}
   .nc-rdate{color:var(--muted);font-weight:800}.nc-rpx{font-variant-numeric:tabular-nums;font-weight:800}
   .nc-rhead{margin-top:7px;font-size:12.5px;line-height:1.4;padding:8px 10px;border-radius:9px;border:1px solid var(--line);background:var(--surface-2)}
@@ -8804,7 +8808,9 @@ function ncEvents(o){
   var ev=[];
   (o.announcements||[]).forEach(function(a){ if(a&&a.date){ var t=(a.tone==='bullish'?'bull':a.tone==='bearish'?'bear':'neu');
     ev.push({date:String(a.date).slice(0,10), head:(a.headline||a.txt||a.why||'Announcement'), tone:t}); }});
-  var nd=o.news_date||o.newsDate; if(o.news && nd){ ev.push({date:String(nd).slice(0,10), head:String(o.news).split('.')[0], tone:'neu'}); }
+  var nd=o.news_date||o.newsDate; if(o.news && nd){ var ns=o.news_sentiment;
+    var nt=(ns!=null)?(ns>0.1?'bull':ns<-0.1?'bear':'neu'):'neu';   // colour the news dot by its sentiment score
+    ev.push({date:String(nd).slice(0,10), head:String(o.news).split('.')[0], tone:nt}); }
   return ev;
 }
 function newsChartSlot(sym,region,cur,o){
@@ -8836,17 +8842,25 @@ function drawNewsChart(slot, closes, dates, events, cur){
   function idxForDate(ds){ var t=Date.parse(ds+'T00:00:00Z'); if(isNaN(t)||!dates.length) return -1;
     var best=-1, bd=1e15; for(var i=0;i<dates.length;i++){ var di=Math.abs(Date.parse(dates[i]+'T00:00:00Z')-t); if(di<bd){bd=di;best=i;} }
     return bd<=4*864e5 ? best : -1; }
-  var evByIdx={}; events.forEach(function(e){ var i=idxForDate(e.date); if(i>=0){ (evByIdx[i]=evByIdx[i]||[]).push(e); } });
-  var dots=''; Object.keys(evByIdx).forEach(function(i){ i=+i; var e=evByIdx[i][0];
-    var col=e.tone==='bull'?'var(--buy)':e.tone==='bear'?'var(--dont)':'var(--broth)';
-    dots+='<circle class="nc-dot" cx="'+X(i).toFixed(1)+'" cy="'+Y(closes[i]).toFixed(1)+'" r="3.6" fill="'+col+'"/>'; });
+  // Colour each news dot by tone so it POPS off the orange price line: 🟢 good news / 🔴 bad news / 🔵 neutral
+  // update (blue, deliberately different from the line — an orange dot on an orange line was invisible).
+  function ncCol(t){ return t==='bull'?'var(--buy)':t==='bear'?'var(--dont)':'#3a9be0'; }
+  var evByIdx={}, tones={}; events.forEach(function(e){ var i=idxForDate(e.date); if(i>=0){ (evByIdx[i]=evByIdx[i]||[]).push(e); } });
+  var dots=''; Object.keys(evByIdx).forEach(function(i){ i=+i; var e=evByIdx[i][0]; tones[e.tone||'neu']=1;
+    dots+='<circle class="nc-dot" cx="'+X(i).toFixed(1)+'" cy="'+Y(closes[i]).toFixed(1)+'" r="4.4" fill="'+ncCol(e.tone)+'"/>'; });
+  var leg=''; if(events.length){ var lp=[];
+    if(tones.bull) lp.push('<span class="nc-lg"><i style="background:var(--buy)"></i>good news</span>');
+    if(tones.bear) lp.push('<span class="nc-lg"><i style="background:var(--dont)"></i>bad news</span>');
+    if(tones.neu)  lp.push('<span class="nc-lg"><i style="background:#3a9be0"></i>update</span>');
+    leg='<div class="nc-legend">'+lp.join('')+'<span class="nc-lghint">drag the line →</span></div>';
+  }
   var svg='<svg class="nc-svg" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" role="img" aria-label="Price and news timeline">'+
     '<polyline points="'+pts+'" fill="none" stroke="var(--broth)" stroke-width="1.7" stroke-linejoin="round"/>'+dots+
     '<line class="nc-scrub" x1="0" y1="'+padT+'" x2="0" y2="'+(H-padB)+'" stroke="var(--ink)" stroke-width="1" opacity="0"/>'+
     '<circle class="nc-sdot" r="4.2" fill="none" stroke="var(--ink)" stroke-width="2" opacity="0"/></svg>';
   slot.innerHTML='<div class="nc-wrap">'+svg+
     '<div class="nc-read"><b class="nc-rdate">← slide across</b><b class="nc-rpx"></b></div>'+
-    '<div class="nc-rhead" style="display:none"></div></div>';
+    '<div class="nc-rhead" style="display:none"></div>'+leg+'</div>';
   var svgEl=slot.querySelector('.nc-svg'), scrub=slot.querySelector('.nc-scrub'), sdot=slot.querySelector('.nc-sdot'),
       rDate=slot.querySelector('.nc-rdate'), rPx=slot.querySelector('.nc-rpx'), rHead=slot.querySelector('.nc-rhead');
   function setIndex(i){ i=Math.max(0,Math.min(n-1,i)); var px=X(i), py=Y(closes[i]);
