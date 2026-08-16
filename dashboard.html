@@ -5896,7 +5896,10 @@ function tickerModalHTML(o, region, cur, isPick){
         (valChip(o)?'<div class="rsimeta" style="margin-top:6px">'+valChip(o)+'</div>':'')+
         (timingLine(o)?'<div class="rsimeta" style="margin-top:6px">'+timingLine(o)+'</div>':'')
       : '';
-  var rsiBlock='<div class="viz">'+(isPick?posSizeHtml(o,cur):'')+rsiInner+cherryModalBlock(o.score,o.sym,o.name,signalRows(o,region))+'</div>';
+  // #dup-cherry (user: "why the cherry twice? waste of real estate") — the 🍒 conviction chip already sits in
+  // the overlay's top call-chips row (tappable to the same breakdown), so the duplicate "Overall conviction"
+  // box under the RSI meter was pure redundancy. Dropped it; the RSI block is now just the RSI meter (+ pos-size on picks).
+  var rsiBlock='<div class="viz">'+(isPick?posSizeHtml(o,cur):'')+rsiInner+'</div>';
   // "how we found it"
   var foundH;
   if(isPick){
