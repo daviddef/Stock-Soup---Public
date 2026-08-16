@@ -1576,6 +1576,18 @@
   .missrow.m-served .missstat{color:var(--buy);background:rgba(35,194,103,.16)}
   .missrow.m-scanned .missstat{color:var(--hold);background:rgba(255,197,61,.18)}
   .missnote{width:100%;color:var(--faint);font-size:12px}
+  /* #newschart — scrubbable multi-day price + news timeline */
+  .nc-block{margin-top:2px}
+  .newschart{width:100%;min-height:110px}
+  .nc-load{color:var(--faint);font-size:12px;padding:34px 0;text-align:center}
+  .nc-svg{width:100%;height:104px;display:block;touch-action:none;cursor:ew-resize}
+  .nc-dot{stroke:var(--surface);stroke-width:1.4}
+  .nc-read{display:flex;justify-content:space-between;align-items:baseline;margin-top:6px;font-size:13px}
+  .nc-rdate{color:var(--muted);font-weight:800}.nc-rpx{font-variant-numeric:tabular-nums;font-weight:800}
+  .nc-rhead{margin-top:7px;font-size:12.5px;line-height:1.4;padding:8px 10px;border-radius:9px;border:1px solid var(--line);background:var(--surface-2)}
+  .nc-rhead.nc-bull{background:rgba(35,194,103,.11);border-color:rgba(35,194,103,.35)}
+  .nc-rhead.nc-bear{background:rgba(214,40,60,.11);border-color:rgba(214,40,60,.35)}
+  .nc-empty{padding:22px 0}
   .misschart{width:100%;order:99}
   .misschart-wrap{position:relative;margin-top:15px}   /* #192 — reserve room so the 'flagged HH:MM' label (top:-13px) never sits on the chart/row above */
   .misschart .spark{width:100%;height:26px;display:block}
@@ -5851,7 +5863,8 @@ function tickerModalHTML(o, region, cur, isPick){
   } else {
     chartInner = servedChartSlot(o.sym,region,cur,(function(){try{return isPick?pickServedISO(o.sym,region):null;}catch(e){return null;}})());
   }
-  var chartH='<div class="viz"><h4>📊 The chart — '+(isPick?'price &amp; your levels':'where it sits in its range')+'</h4>'+chartInner+'</div>';
+  var chartH='<div class="viz"><h4>📊 The chart — '+(isPick?'price &amp; your levels':'where it sits in its range')+'</h4>'+chartInner+'</div>'+
+    newsChartSlot(o.sym,region,cur,o);   // #newschart — scrubbable multi-day price+news timeline (slide to read a brief)
   // RSI + P/E + timing + the 🍒 cherry signal read (all shown when data exists)
   var rsiInner = (rsi!=null)
       ? '<h4'+(isPick?' style="margin-top:0"':'')+'>How hot is it right now? · RSI</h4>'+
@@ -5915,6 +5928,7 @@ function wireTickerModal(m, o, region, isPick){
   }
   syncWatchButtons();
   try{ hydrateMissCharts(m); }catch(e){}
+  try{ hydrateNewsCharts(m); }catch(e){}
 }
 function openModal(p,region,cur){
   LASTFOCUS=document.activeElement;
@@ -7555,6 +7569,7 @@ function renderAnalyst(a){
       // because it barely traded intraday — that's real, not a glitch; the note says so.
       '<div class="viz"><h4>📊 The chart — recent price</h4>'+missChartSlot(a.sym,a.region,a.cur||(a.region==='au'?'A$':'$'))+
         '<div class="rsimeta" style="margin-top:5px;color:var(--faint)">Intraday — a lightly-traded stock can look flat if it barely traded today.</div></div>'+
+      newsChartSlot(a.sym,a.region,a.cur||(a.region==='au'?'A$':'$'),a)+   // #newschart — scrubbable multi-day price+news line
       '<div class="anchips">'+trend+rsi+chip('Volatility', s.atrPct!=null?('~'+s.atrPct+'%/day'):null)+chip('vs 20-day', s.ext20!=null?((s.ext20>=0?'+':'')+s.ext20+'%'):null, s.ext20>=15?'bd':'')+chip('52wk', s.near52!=null?(Math.round(s.near52*100)+'% of high'):null)+'</div>'+
       (_sigKey?'<div class="mfound" style="margin:-4px 0 10px">🧮 Tap any signal above for what it means &amp; where it comes from</div>':'')+
       (s.support!=null?'<div class="anzones"><div class="anz anz-buy"><span class="ank">🟢 Buying zone</span> '+esc(a.cur+s.support)+'</div><div class="anz anz-sell"><span class="ank">🔴 Selling zone</span> '+esc(a.cur+s.resistance)+'</div></div>':'')+
@@ -7567,6 +7582,7 @@ function renderAnalyst(a){
     '</div>';
   document.getElementById('mClose').onclick=closeModal;
   hydrateMissCharts(m);   // #318 — fill the lazy 24h chart slot injected above
+  try{ hydrateNewsCharts(m); }catch(e){}   // #newschart — the scrubbable multi-day price+news line
   m.querySelectorAll('.watchbtn').forEach(function(wb){ wb.addEventListener('click',function(e){e.preventDefault();watchToggleFromEl(wb);}); }); syncWatchButtons();
   if(_sigKey){
     m.querySelectorAll('.antap[data-sigkey]').forEach(function(el){
@@ -8775,6 +8791,80 @@ function missSparkSVG(vals,markIdx){
   return '<svg class="spark '+(up?'up':'down')+'" viewBox="0 0 '+w+' '+h+'" preserveAspectRatio="none" aria-hidden="true">'+
     '<polygon points="0,'+h+' '+poly+' '+w+','+h+'"/><polyline points="'+poly+'"/>'+mark+
     '<circle cx="'+last[0].toFixed(1)+'" cy="'+last[1].toFixed(1)+'" r="2.2"/></svg>';
+}
+// ============================================================================================
+// News-timeline chart (user ask, 16 Aug): a multi-day daily price line with dots where news /
+// announcements happened — DRAG a scrubber across it to read the price + the "brief" at any point
+// (e.g. if you missed a headline). Daily bars from /history (now with dates); events from the
+// overlay object's announcements[] + news headline. Self-contained + lazy-hydrated like the
+// intraday chart. If a ticker has no daily history it degrades to an honest note; no events → just
+// the scrubbable price line.
+var NC_SEQ=0, NC_CACHE=[];
+function ncEvents(o){
+  var ev=[];
+  (o.announcements||[]).forEach(function(a){ if(a&&a.date){ var t=(a.tone==='bullish'?'bull':a.tone==='bearish'?'bear':'neu');
+    ev.push({date:String(a.date).slice(0,10), head:(a.headline||a.txt||a.why||'Announcement'), tone:t}); }});
+  var nd=o.news_date||o.newsDate; if(o.news && nd){ ev.push({date:String(nd).slice(0,10), head:String(o.news).split('.')[0], tone:'neu'}); }
+  return ev;
+}
+function newsChartSlot(sym,region,cur,o){
+  var ev=ncEvents(o||{}); var k=NC_SEQ++; NC_CACHE[k]=ev;
+  return '<div class="viz nc-block"><h4>📰 Price &amp; news — slide to read the story</h4>'+
+    '<div class="newschart" data-newschart data-sym="'+esc(sym)+'" data-region="'+esc(region)+'" data-cur="'+esc(cur)+'" data-evk="'+k+'">'+
+    '<div class="nc-load">···· loading '+(ev.length?(ev.length+' news dot'+(ev.length>1?'s':'')):'daily history')+'</div></div></div>';
+}
+function _ncFmtD(ds){ if(!ds) return ''; var p=String(ds).split('-'); if(p.length<3) return ds;
+  var mo=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][(+p[1])-1]||''; return (+p[2])+' '+mo; }
+function hydrateNewsCharts(root){
+  (root||document).querySelectorAll('.newschart[data-newschart]').forEach(function(slot){
+    if(slot.dataset.done) return; slot.dataset.done='1';
+    var sym=slot.dataset.sym, reg=slot.dataset.region, cur=slot.dataset.cur||'', evk=+slot.dataset.evk;
+    var events=(NC_CACHE[evk]||[]).filter(function(e){return e&&e.date;});
+    fetch(API_BASE+'/history?sym='+encodeURIComponent(sym)+'&region='+encodeURIComponent(reg)).then(function(r){return r.ok?r.json():null;}).then(function(j){
+      if(!j||!j.closes||j.closes.length<3){ slot.innerHTML='<div class="nc-load nc-empty">not enough daily history to chart yet</div>'; return; }
+      try{ drawNewsChart(slot, j.closes, j.dates||[], events, cur); }catch(e){ slot.innerHTML='<div class="nc-load nc-empty">chart unavailable</div>'; }
+    }).catch(function(){ slot.innerHTML='<div class="nc-load nc-empty">daily history unavailable</div>'; });
+  });
+}
+function drawNewsChart(slot, closes, dates, events, cur){
+  var n=closes.length, mn=Math.min.apply(null,closes), mx=Math.max.apply(null,closes), rng=(mx-mn)||1;
+  var W=320, H=104, padX=7, padT=9, padB=9;
+  function X(i){ return padX + (n<=1?0:i/(n-1))*(W-2*padX); }
+  function Y(v){ return padT + (1-(v-mn)/rng)*(H-padT-padB); }
+  var pts=closes.map(function(v,i){return X(i).toFixed(1)+','+Y(v).toFixed(1);}).join(' ');
+  // map each event date to the nearest trading-day index (within ~4 days), so dots sit on the line
+  function idxForDate(ds){ var t=Date.parse(ds+'T00:00:00Z'); if(isNaN(t)||!dates.length) return -1;
+    var best=-1, bd=1e15; for(var i=0;i<dates.length;i++){ var di=Math.abs(Date.parse(dates[i]+'T00:00:00Z')-t); if(di<bd){bd=di;best=i;} }
+    return bd<=4*864e5 ? best : -1; }
+  var evByIdx={}; events.forEach(function(e){ var i=idxForDate(e.date); if(i>=0){ (evByIdx[i]=evByIdx[i]||[]).push(e); } });
+  var dots=''; Object.keys(evByIdx).forEach(function(i){ i=+i; var e=evByIdx[i][0];
+    var col=e.tone==='bull'?'var(--buy)':e.tone==='bear'?'var(--dont)':'var(--broth)';
+    dots+='<circle class="nc-dot" cx="'+X(i).toFixed(1)+'" cy="'+Y(closes[i]).toFixed(1)+'" r="3.6" fill="'+col+'"/>'; });
+  var svg='<svg class="nc-svg" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" role="img" aria-label="Price and news timeline">'+
+    '<polyline points="'+pts+'" fill="none" stroke="var(--broth)" stroke-width="1.7" stroke-linejoin="round"/>'+dots+
+    '<line class="nc-scrub" x1="0" y1="'+padT+'" x2="0" y2="'+(H-padB)+'" stroke="var(--ink)" stroke-width="1" opacity="0"/>'+
+    '<circle class="nc-sdot" r="4.2" fill="none" stroke="var(--ink)" stroke-width="2" opacity="0"/></svg>';
+  slot.innerHTML='<div class="nc-wrap">'+svg+
+    '<div class="nc-read"><b class="nc-rdate">← slide across</b><b class="nc-rpx"></b></div>'+
+    '<div class="nc-rhead" style="display:none"></div></div>';
+  var svgEl=slot.querySelector('.nc-svg'), scrub=slot.querySelector('.nc-scrub'), sdot=slot.querySelector('.nc-sdot'),
+      rDate=slot.querySelector('.nc-rdate'), rPx=slot.querySelector('.nc-rpx'), rHead=slot.querySelector('.nc-rhead');
+  function setIndex(i){ i=Math.max(0,Math.min(n-1,i)); var px=X(i), py=Y(closes[i]);
+    scrub.setAttribute('x1',px); scrub.setAttribute('x2',px); scrub.setAttribute('opacity','0.45');
+    sdot.setAttribute('cx',px); sdot.setAttribute('cy',py); sdot.setAttribute('opacity','1');
+    rDate.textContent=(dates[i]?_ncFmtD(dates[i]):('day '+(i+1))); rPx.textContent=cur+closes[i].toFixed(2);
+    var e=null,bd=99; for(var k in evByIdx){ var d=Math.abs((+k)-i); if(d<bd){bd=d;e=evByIdx[k][0];} }
+    if(e&&bd<=2){ rHead.textContent='📰 '+e.head; rHead.className='nc-rhead '+(e.tone==='bull'?'nc-bull':e.tone==='bear'?'nc-bear':'nc-neu'); rHead.style.display=''; }
+    else rHead.style.display='none';
+  }
+  function idxFromX(clientX){ var r=svgEl.getBoundingClientRect(); if(!r.width) return n-1;
+    var frac=(clientX-r.left)/r.width; frac=Math.max(0,Math.min(1,frac)); return Math.round(frac*(n-1)); }
+  var dragging=false; svgEl.style.touchAction='none';
+  svgEl.addEventListener('pointerdown',function(e){ dragging=true; try{svgEl.setPointerCapture(e.pointerId);}catch(_){} setIndex(idxFromX(e.clientX)); e.preventDefault(); });
+  svgEl.addEventListener('pointermove',function(e){ if(dragging){ setIndex(idxFromX(e.clientX)); e.preventDefault(); } });
+  svgEl.addEventListener('pointerup',function(){ dragging=false; });
+  svgEl.addEventListener('pointercancel',function(){ dragging=false; });
+  setIndex(n-1);   // start on the latest bar
 }
 function hydrateMissCharts(root){
   (root||document).querySelectorAll('.misschart[data-hydrate-chart]').forEach(function(slot){
