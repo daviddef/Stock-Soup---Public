@@ -4650,6 +4650,19 @@ function render(D,H){
   }).join('');
 
   var names=(H&&H.names)||{}, ms=(H&&H.menus)||[];
+  // One name resolver for the whole Journey (menu + scan cards) so they render consistently. The old
+  // menuHistory names map was stale (had "ANZ" not "ANZ Group") — pull the best REAL company name from every
+  // live source, and NEVER return the ticker itself (so a pick whose only "name" is its own ticker shows the
+  // ticker alone, not "CGS / CGS"). Same resolver in jcol AND scanJcol = one consistent look.
+  var _jNames={};
+  function _jn(sym,nm){ if(!sym||!nm)return; var b=String(sym).replace(/\*$/,'').toUpperCase();
+    if(String(nm).toUpperCase()===b) return; if(!_jNames[b]) _jNames[b]=nm; }
+  Object.keys(names).forEach(function(k){ _jn(k,names[k]); });
+  (D.regions||[]).forEach(function(rg){ (rg.picks||[]).forEach(function(p){ _jn(p.sym,p.name); }); });
+  (D.candidates||[]).forEach(function(c){ _jn(c.sym,c.name); });
+  var _fu=(D.finderUniverse||{}); ['au','us'].forEach(function(m){ (_fu[m]||[]).forEach(function(r){ _jn(r.sym,r.name); }); });
+  var _mt=(D.modelTiers||{}); ['type2','type3'].forEach(function(t){ ['au','us'].forEach(function(m){ ((_mt[t]||{})[m]||[]).forEach(function(p){ _jn(p.sym,p.name); }); }); });
+  function jName(sym){ if(sym==='NONE') return names['NONE']||'No pick this run'; return _jNames[String(sym).replace(/\*$/,'').toUpperCase()]||''; }
   function gradeBadge(sym){
     var key=String(sym).replace(/\*$/,'');
     var o=OUTCOMES&&OUTCOMES.outcomes&&OUTCOMES.outcomes[key];
@@ -4664,14 +4677,14 @@ function render(D,H){
       var olderSet=older?older[region]:null;
       var rows=(arr||[]).map(function(sym,idx){
         var isNew=olderSet?olderSet.indexOf(sym)<0:false;
-        var nm=names[String(sym).replace(/\*$/,'')]||'';
+        var nm=jName(sym);
         var rowcls='jrow'+(olderSet&&!isNew?' keep':'');
         var badge=(olderSet&&isNew)?'<span class="jb jb-new">NEW</span>':'';
         return '<div class="'+rowcls+'"><span class="jtf">'+(TFS[idx]||'')+'</span><span class="jinfo">'+qlink(sym,region)+(nm?'<span class="jname">'+esc(nm)+'</span>':'')+'</span>'+gradeBadge(sym)+badge+'</div>';   // #290 — guard TFS[idx]: a run with >3 rows made it undefined → literal "undefined" text
       });
       if(olderSet){
         olderSet.filter(function(s){return (arr||[]).indexOf(s)<0;}).forEach(function(sym){
-          var nm=names[String(sym).replace(/\*$/,'')]||'';
+          var nm=jName(sym);
           rows.push('<div class="jrow drop"><span class="jtf">×</span><span class="jinfo">'+qlink(sym,region)+(nm?'<span class="jname">'+esc(nm)+'</span>':'')+'</span>'+gradeBadge(sym)+'<span class="jb jb-drop">DROP</span></div>');
         });
       }
@@ -4702,7 +4715,7 @@ function render(D,H){
     var stamp=String((D.modelTiers||{}).updatedAt||'').slice(0,10);
     var region=MKT, label=(MKT==='us'?'🇺🇸 US':'🇦🇺 AU');
     var rows=picks.slice(0,3).map(function(p,idx){ var sym=p.sym, bare=String(sym).replace(/\*$/,'').toUpperCase(),
-        nm=p.name||names[String(sym).replace(/\*$/,'')]||'';
+        nm=jName(sym);
       if(nm&&nm.toUpperCase()===bare) nm='';   // scan picks carry the ticker as their "name" — don't print it twice
       return '<div class="jrow"><span class="jtf">'+(TFS[idx]||'')+'</span><span class="jinfo">'+qlink(sym,region)+(nm?'<span class="jname">'+esc(nm)+'</span>':'')+'</span>'+gradeBadge(sym)+'</div>'; });
     return '<div class="jcol jcol-scan"><div class="jhead"><span class="when">Whole-market scan<small>'+esc(stamp)+' · daily</small></span>'+
