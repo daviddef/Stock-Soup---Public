@@ -683,10 +683,11 @@
 
   /* 4-tab navigation */
   .tabbar{position:sticky;top:0;z-index:50;display:flex;gap:6px;background:var(--surface);backdrop-filter:saturate(1.3) blur(8px);border-bottom:2px solid var(--line);padding:10px 0 0;margin:6px 0 12px}
-  .runpillwrap{display:flex;justify-content:center;margin:-4px 0 12px;min-height:0}
-  .runpill{font-size:12px;font-weight:800;padding:6px 14px;border-radius:999px;border:1px solid var(--line);background:var(--surface-2);color:var(--muted);cursor:pointer}
-  .runpill:hover{border-color:var(--broth);color:var(--ink)}
-  .runpill.busy{background:rgba(232,102,42,.12);border-color:var(--broth);color:var(--broth)}
+  /* compact run-status icon, inline in the header toprail (no standalone band) */
+  .runico{display:inline-flex;align-items:center;gap:3px;font-size:12px;font-weight:800;height:30px;padding:0 9px;border-radius:999px;border:1px solid var(--line);background:var(--surface-2);color:var(--muted);cursor:pointer;line-height:1;white-space:nowrap}
+  .runico:hover{border-color:var(--broth);color:var(--ink)}
+  .runico.busy{background:rgba(232,102,42,.12);border-color:var(--broth);color:var(--broth);padding:0 8px}
+  .runico-t{font-variant-numeric:tabular-nums}
   .runspin{display:inline-block;animation:runspin 1.4s linear infinite}
   @keyframes runspin{to{transform:rotate(360deg)}}
   @media (prefers-reduced-motion:reduce){.runspin{animation:none}}
@@ -4938,7 +4939,7 @@ function render(D,H){
   // segmented] · [ⓘ] · [grid/list view-switch icon, no word/emoji]. The market bar is now ONE toggle chip
   // (was two flag circles + a separate countdown line), the view switch is a clean SVG glyph (was 📋 Full ⇄).
   '<header class="hero"><div class="brandrow"><div class="hleft"><div class="brand"><span class="hpot hpot-lg"><span class="hsteam"><i></i><i></i><i></i></span><span class="hpotbowl">🍲</span></span> The&nbsp;Stock&nbsp;Soup</div></div>'+
-    '<div class="toprail">'+mktBarHtml(D)+tierBarHtml()+
+    '<div class="toprail">'+mktBarHtml(D)+tierBarHtml()+runStatusIco(D)+
       '<button class="vtico" id="viewTog" title="You’re in Full view — tap for the Simple one-pager" aria-label="Switch to the Simple view"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="3.5" width="7" height="7" rx="1.6"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.6"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.6"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.6"/></svg></button>'+
     '</div></div>'+   // close .toprail + .brandrow — the burger sits absolute in the hero's top-right corner
       '<div class="burgerwrap heroburg"><button class="burger" id="burgerBtn" aria-label="Menu" aria-haspopup="true" aria-expanded="false" aria-controls="burgerMenu">☰</button>'+
@@ -4965,7 +4966,6 @@ function render(D,H){
     '<button class="tabbtn" data-tab="reviews" role="tab">'+tabIcon('reviews')+'<span class="tl">Dinner Reviews</span></button>'+
     '<button class="tabbtn" data-tab="kitchen" role="tab">'+tabIcon('kitchen')+'<span class="tl">Inside the Kitchen</span></button>'+
   '</nav>'+
-  '<div class="runpillwrap">'+runStatusPill(D)+'</div>'+
 
   // ===== 🍲 TONIGHT'S MENU =====
   '<div class="tabview active" id="tab-menu">'+
@@ -9658,23 +9658,26 @@ function goRunSchedule(){ switchTab('kitchen'); setTimeout(function(){ var s=doc
 // #runpill (user ask) — a status pill under the tab bar: a spinning 🌀 when ANY run is live (tap → the run
 // schedule), otherwise a countdown to the NEXT picks for the market you're viewing. Reuses .schedlink (already
 // wired to goRunSchedule) for the tap. RUNLOG/RUNNING are the live run signals; D.nextAu/nextUs/next the schedule.
-function runStatusPill(D){
+// A compact circular status icon that lives INLINE in the header toprail (not its own band — user ask). When a
+// run is live it's a spinning 🌀 that taps through to the run schedule; when idle it's a small ⏱ chip showing
+// how long until this market's next picks. Icon-first so it barely takes any room.
+function runStatusIco(D){
   try{
     var rl=(typeof RUNLOG!=='undefined'&&RUNLOG)?RUNLOG:[], busy=null;
     for(var i=0;i<rl.length;i++){ var e=rl[i]; if(e&&e.status==='cooking'){ var st=e.startedAt?new Date(e.startedAt).getTime():0;
       var mins=st?(Date.now()-st)/60000:0, budget=(e.kind==='scan-au'||e.kind==='scan-us')?300:45; if(mins<=budget){ busy=e; break; } } }
     if(!busy && typeof RUNNING!=='undefined' && RUNNING && RUNNING.status==='cooking') busy=RUNNING;
     if(busy){
-      var lab=busy.kind==='menu'?'cooking tonight’s picks':busy.kind==='scan-au'?'scanning the ASX':busy.kind==='scan-us'?'scanning the US market':'a run is in progress';
-      return '<button class="runpill busy schedlink" title="A run is live — tap to watch it"><span class="runspin">🌀</span> <b>'+esc(lab)+'</b> · tap to watch</button>';
+      var lab=busy.kind==='menu'?'Cooking tonight’s picks':busy.kind==='scan-au'?'Scanning the ASX':busy.kind==='scan-us'?'Scanning the US market':'A run is in progress';
+      return '<button class="runico busy schedlink" title="'+esc(lab)+' — tap to watch" aria-label="'+esc(lab)+', tap to watch"><span class="runspin">🌀</span></button>';
     }
     var nextStr = (MKT==='au') ? (D.nextAu||D.next) : (D.nextUs||D.next);
     if(!nextStr) return '';
-    var m=String(nextStr).match(/(\d{1,2}):(\d{2})/), when='';
+    var m=String(nextStr).match(/(\d{1,2}):(\d{2})/), when='', full='';
     if(m){ var now=new Date(), t=new Date(now); t.setHours(+m[1],+m[2],0,0); if(t<=now) t.setDate(t.getDate()+1);
-      var mins=Math.round((t-now)/60000); when = mins<60 ? ('in '+mins+' min') : ('in '+Math.floor(mins/60)+'h '+(mins%60)+'m'); }
-    else when='at '+String(nextStr).replace(' AEST','');
-    return '<button class="runpill schedlink" title="Next scheduled picks — tap for the schedule">⏱ next '+(MKT==='au'?'🇦🇺 AU':'🇺🇸 US')+' picks '+when+'</button>';
+      var mn=Math.round((t-now)/60000); when = mn<60 ? (mn+'m') : (Math.floor(mn/60)+'h'+(mn%60)+'m'); full='Next '+(MKT==='au'?'AU':'US')+' picks in '+when; }
+    else { when=String(nextStr).replace(' AEST',''); full='Next '+(MKT==='au'?'AU':'US')+' picks at '+when; }
+    return '<button class="runico schedlink" title="'+esc(full)+' — tap for the schedule" aria-label="'+esc(full)+'">⏱<span class="runico-t">'+esc(when)+'</span></button>';
   }catch(e){ return ''; }
 }
 function setView(v){ VIEW = v; try{ localStorage.setItem('soup_view', v); }catch(e){} applyView(); }
