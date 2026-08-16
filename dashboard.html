@@ -1273,6 +1273,10 @@
   @media(max-width:820px){ .fdr-layout{grid-template-columns:1fr} }
   .fdr-rail{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:6px 4px 10px;position:sticky;top:10px;max-height:calc(100vh - 20px);overflow:auto}
   @media(max-width:820px){ .fdr-rail{position:static;max-height:none} }
+  .fdr-presets{padding:2px 12px 6px}
+  .fdr-preset{font-size:12.5px;font-weight:800;padding:6px 12px;border-radius:9px;border:1px solid var(--line);background:var(--surface-2);color:var(--ink);cursor:pointer}
+  .fdr-preset:hover{border-color:var(--buy)}
+  .fdr-preset.on{background:rgba(35,194,103,.15);border-color:var(--buy);color:var(--buy)}
   .fdr-railhead{display:flex;align-items:center;justify-content:space-between;padding:8px 12px 4px}
   .fdr-railhead b{font-size:13px}
   .fdr-reset{border:0;background:none;color:var(--broth);font-weight:800;font-size:12px;cursor:pointer;font-family:var(--font)}
@@ -9069,11 +9073,14 @@ var FDR_LEVERS=[
   {grp:'Positioning', items:[
     {k:'short', label:'Short interest', min:0,max:30,val:30,on:false, unit:'≤', dir:'max', help:'low avoids crowded-short risk'},
     {k:'div', label:'Dividend yield', min:0,max:10,val:0,on:false, unit:'≥', fmt:'pct', help:'income floor'}
+  ]},
+  {grp:'Setups', items:[
+    {k:'spring', label:'🌱 Coiled spring', min:0,max:100,val:55,on:false, unit:'≥', help:'flat / hasn’t run up, but starting to turn (squeeze · volume · MACD)'}
   ]}
 ];
 var FDR_AXES=[['value','Value (cheap →)'],['rangePos','Range position →'],['quality','Quality →'],
-  ['growth','Growth →'],['buyNow','🍊 Buy-now →'],['cherry','🍒 Conviction →'],['rsi','RSI →'],['news','Positive news →']];
-var FDR_SORTS=[['match','Best match'],['buyNow','🍊 Buy-now'],['cherry','🍒 Conviction'],
+  ['growth','Growth →'],['buyNow','🍊 Buy-now →'],['cherry','🍒 Conviction →'],['rsi','RSI →'],['news','Positive news →'],['spring','🌱 Coiled spring →']];
+var FDR_SORTS=[['match','Best match'],['buyNow','🍊 Buy-now'],['cherry','🍒 Conviction'],['spring','🌱 Coiled spring'],
   ['rangePos','Range position'],['value','Value'],['quality','Quality'],['mcap','Market cap'],['div','Dividend']];
 function fdrSent100(s){ return s==null?null:Math.round((Math.max(-1,Math.min(1,+s))+1)/2*100); }
 function fdrNum(p){ if(p==null)return null; var n=parseFloat(String(p).replace(/[^0-9.\-]/g,'')); return isFinite(n)?n:null; }
@@ -9090,14 +9097,34 @@ function fdrFreshNews(c){
   }catch(e){ return null; }
 }
 function fdrFirstSentence(t){ t=String(t||'').replace(/\s+/g,' ').trim(); var m=t.match(/^.*?[.!?](\s|$)/); var s=m?m[0].trim():t; if(s.length>110) s=s.slice(0,107).trim()+'…'; return s; }
+// #345 (user ask) — "🌱 Coiled spring": stocks that HAVEN'T grown much (sitting low in their 1-yr range, not
+// already run up) but show early signals they're STARTING to turn. A 0-100 composite from what every scored
+// row carries: 40pts for how flat/un-run-up it is (low range position), then turn-signals stacking on top —
+// a Bollinger squeeze (coiled), MACD turning up, volume waking, price reclaiming its 20-day line, RSI lifting
+// off the floor but not yet hot. A genuinely flat name with NO turn signals scores ~20-40; a flat name that's
+// squeezing + rising on volume scores 75+. Needs at least the range position (the "hasn't grown" half).
+function fdrSpringScore(o){
+  if(o.rangePos==null) return null;
+  var s = 40 * Math.max(0, Math.min(1, (60 - o.rangePos) / 60));   // low in 1-yr range = hasn't run up
+  if(o.squeeze===true) s += 15;                                    // coiled (tight Bollinger band)
+  if(o.macdRising===true) s += 15;                                 // momentum turning up
+  if(o.volRatio!=null) s += Math.max(0, Math.min(15, (o.volRatio - 1) * 15));  // volume waking up
+  if(o.aboveMa20===true) s += 10;                                  // reclaiming the 20-day line
+  if(o.rsi!=null && o.rsi >= 40 && o.rsi <= 60) s += 5;            // lifting off the floor, not yet hot
+  return Math.round(Math.max(0, Math.min(100, s)));
+}
 function fdrNormCand(c){
   var reg=c.region||'us', rows=[]; try{rows=signalRows(c,reg);}catch(e){}
   var cherry=null; try{ if(c.score&&c.score.buy_now!=null){ var ov=overallScore(c.score.buy_now,rows); cherry=ov?ov.score:null; } }catch(e){}
   var f=c.fundamentals||{}, y1=((c.ranges||{})['1y']||{}), nh=fdrFreshNews(c);
+  var _rp=(y1.pos!=null)?Math.round(y1.pos*100):null;
+  var _spring=fdrSpringScore({rangePos:_rp, rsi:(c.rsi!=null)?Math.round(c.rsi):null,
+    squeeze:(c.bb_squeeze||{}).squeeze, macdRising:(c.trend||{}).macd_rising,
+    volRatio:(((c.score||{}).detail||{}).raw||{}).volume_ratio, aboveMa20:(c.ema||{}).above_ema20});
   return {sym:c.sym, region:reg, name:c.name||c.sym, sector:f.sector||null,
     price:fdrNum(c.price), change:c.change, up:c.up!==false,
     buyNow:(c.score&&c.score.buy_now!=null)?Math.round(c.score.buy_now):null, cherry:cherry,
-    rsi:(c.rsi!=null)?Math.round(c.rsi):null, rangePos:(y1.pos!=null)?Math.round(y1.pos*100):null,
+    rsi:(c.rsi!=null)?Math.round(c.rsi):null, rangePos:_rp, spring:_spring,
     news:fdrSent100(c.news_sentiment), value:f.value_score, quality:f.quality_score, growth:f.growth_score,
     mcap:f.market_cap||null, short:(c.short!=null)?c.short:null,
     newsHead:nh?nh.t:null, newsAge:nh?nh.days:null,
@@ -9105,10 +9132,15 @@ function fdrNormCand(c){
     aboveMa:(c.ema?!!(c.ema.above_ema20&&c.ema.above_ema50):null), src:'cand'};   // null = unknown (don't exclude)
 }
 function fdrNormFU(r){
+  var _rp=(r.y1pos!=null)?Math.round(r.y1pos*100):null;
+  // Wide-scan rows carry no Bollinger-squeeze flag; the rest of the turn signals (macdRising/volRatio/aboveEma20)
+  // and the range position ARE present, so the spring score still computes (just without the squeeze bonus).
+  var _spring=fdrSpringScore({rangePos:_rp, rsi:(r.rsi!=null)?Math.round(r.rsi):null,
+    squeeze:null, macdRising:r.macdRising, volRatio:r.volRatio, aboveMa20:r.aboveEma20});
   return {sym:r.sym, region:r.region||'us', name:r.name||r.sym, sector:r.sector||null,
     price:fdrNum(r.price), change:r.change, up:(r.change||0)>=0,
     buyNow:(r.buyNow!=null)?Math.round(r.buyNow):null, cherry:null,
-    rsi:(r.rsi!=null)?Math.round(r.rsi):null, rangePos:(r.y1pos!=null)?Math.round(r.y1pos*100):null,
+    rsi:(r.rsi!=null)?Math.round(r.rsi):null, rangePos:_rp, spring:_spring,
     news:fdrSent100(r.newsSent), value:r.value, quality:r.quality, growth:r.growth,
     mcap:r.mcap||null, short:(r.short!=null)?r.short:null,
     div:(r.divYield!=null)?Math.round(r.divYield*1000)/10:null,
@@ -9196,6 +9228,9 @@ function fdrLeverHtml(l){
 function fdrRailHtml(pool){
   var secs=fdrSectors(pool), buySecs=fdrBuySectors(pool);
   var h='<div class="fdr-railhead"><b>Your levers</b><button class="fdr-reset" id="fdrReset">Clear</button></div>';
+  // #345 — one-tap presets. "Coiled spring" configures the finder to surface flat-but-turning names (see
+  // fdrSpringScore): turns on ONLY the spring lever and sorts by it, so the top of the list is the best setups.
+  h+='<div class="fdr-presets"><button class="fdr-preset'+(fdrLever('spring')&&fdrLever('spring').on?' on':'')+'" id="fdrSpringPreset" title="Flat / hasn’t run up, but starting to turn — squeeze · volume · MACD">🌱 Coiled spring</button></div>';
   h+='<div class="fdr-grp"><div class="fdr-grpt">Sectors <span class="fdr-hint">· All by default · 🍊 = we rate a Buy in that sector</span></div><div class="fdr-chips" id="fdrSecChips">'+
     '<button class="fdr-cchip'+((!FDR.sectorSet||!FDR.sectorSet.length)?' on':'')+'" data-sec="__all">All</button>'+
     secs.map(function(s){return '<button class="fdr-cchip'+((FDR.sectorSet&&FDR.sectorSet.indexOf(s)>=0)?' on':'')+'" data-sec="'+esc(s)+'">'+(buySecs.indexOf(s)>=0?'🍊 ':'')+esc(s)+'</button>';}).join('')+
@@ -9364,7 +9399,14 @@ function fdrWire(root){
   root.querySelectorAll('[data-fmode]').forEach(function(b){b.onclick=function(){ FDR.mode=b.dataset.fmode; if(FDR.mode==='flexible')FDR.sort='match'; rerender(); };});
   root.querySelectorAll('[data-fview]').forEach(function(b){b.onclick=function(){ FDR.view=b.dataset.fview; rerender(); };});
   var ss=document.getElementById('fdrSort'); if(ss) ss.onchange=function(){ FDR.sort=ss.value; rerender(); };
-  var reset=document.getElementById('fdrReset'); if(reset) reset.onclick=function(){ FDR_LEVERS.forEach(function(g){g.items.forEach(function(l){ l.on=false; });}); FDR.sectorSet=[]; FDR.toggles.aboveMa=false; rerender(); };
+  var reset=document.getElementById('fdrReset'); if(reset) reset.onclick=function(){ FDR_LEVERS.forEach(function(g){g.items.forEach(function(l){ l.on=false; });}); FDR.sectorSet=[]; FDR.toggles.aboveMa=false; FDR.sort='match'; rerender(); };
+  // #345 — "🌱 Coiled spring" preset: turn on ONLY the spring lever (≥55) and sort by it; click again to clear.
+  var sp=document.getElementById('fdrSpringPreset'); if(sp) sp.onclick=function(){
+    var l=fdrLever('spring'), turningOn=!(l&&l.on);
+    FDR_LEVERS.forEach(function(g){g.items.forEach(function(x){ x.on=false; });}); FDR.sectorSet=[]; FDR.toggles.aboveMa=false;
+    if(turningOn&&l){ l.on=true; l.val=55; FDR.sort='spring'; FDR.mode='flexible'; } else { FDR.sort='match'; }
+    rerender();
+  };
   // #3 — exact-ticker search. oninput does the LIGHT re-render (results + count) so the input keeps focus while
   // typing; the ✕ clear does a full re-render so the box repaints without it.
   var srch=document.getElementById('fdrSearch'); if(srch){ srch.oninput=function(){ FDR.query=srch.value; fdrRenderView(); }; srch.onkeydown=function(e){ if(e.key==='Enter') e.preventDefault(); }; }
