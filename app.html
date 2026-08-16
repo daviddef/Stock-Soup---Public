@@ -5670,33 +5670,15 @@ function _openJuiceInner(id,j,score,d){
   var ov=document.getElementById('overlay'); ov.classList.add('open'); ov.setAttribute('aria-hidden','false');
   document.getElementById('mClose').onclick=closeModal; document.getElementById('mClose').focus();
 }
-function openModal(p,region,cur){
-  LASTFOCUS=document.activeElement;
-  var _nStop=numLevel(p.nStop),_nEntry=numLevel(p.nEntry),_nTarget=numLevel(p.nTarget),_nNow=numLevel(p.nNow!=null?p.nNow:p.price);
-  var span=(_nTarget-_nStop)||1;
-  var nowPct=clamp((_nNow-_nStop)/span*100);
-  var entPct=clamp((_nEntry-_nStop)/span*100);
-  // #323 — when the price is basically at the buy zone the two ladder labels ("Now" / "Buy") stack on top
-  // of each other ("NowBuy"). If they're within ~6% of the track, merge into one "Now · Buy" cap.
-  var _combineCap=Math.abs(nowPct-entPct)<6;
-  var rsi=p.rsi!=null?p.rsi:50;
-  var rsiWord=rsi>=70?"🔥 hot — wait for it to cool":rsi<=35?"🧊 cheap — bargain zone":"😌 comfortable — not stretched";
-  var cats=(p.catalysts||[]).map(function(c){return '<li>'+esc(c)+'</li>';}).join('');
-  var sparkHtml = p.spark ? '<div class="viz"><h4>Recent trend · last ~2 months</h4>'+sparkSVG(p.spark)+
-    '<div class="spmm"><span>'+esc(cur)+Math.min.apply(null,p.spark).toFixed(1)+'</span><span>'+esc(cur)+Math.max.apply(null,p.spark).toFixed(1)+'</span></div>'+
-    '<div class="rsimeta">'+(p.spark[p.spark.length-1]>=p.spark[0]?'📈 Up over the stretch':'📉 Down over the stretch')+'</div></div>' : '';
-  // #ranges-backfill — a hand-built PICK object sometimes lacks `ranges` (1w/1m/1y low→high sliders) even
-  // though the SAME ticker's scored candidate carries them. Backfill from the candidate so the pick overlay
-  // shows the same 3 range bars as everywhere else (was silently blank when p.ranges was absent — perceived
-  // as a regression). Not my signals change — the range section was always separate from the signal read.
-  if(!p.ranges){ try{ var _mc=((LAST&&LAST.D||{}).candidates||[]).filter(function(c){return c.sym===p.sym&&(c.region||'us')===region;})[0]; if(_mc&&_mc.ranges) p.ranges=_mc.ranges; }catch(e){} }
-  var rangesHtml = rangeBarsHtml(p,cur);
-  // Other options — runner-up + same-market candidates, so there's always a Plan B inside the tap.
-  // Real bug (8 Aug 2026): these used to link straight out to Yahoo, unlike every other tappable
-  // stock-card in the app (Full Pot cards open the in-app detail via openCandidate) — same ticker,
-  // two different behaviours depending on where you tapped it from. Fixed: when an alt has a real
-  // index into LAST.D.candidates, tapping it opens the SAME in-app detail modal; only a runnerUp that
-  // isn't itself a tracked candidate (no real score data to show) falls back to an external Yahoo link.
+// #344 — shared short-interest block (pick fine-print AND inline on a candidate).
+function shortHtml(o){
+  var h='';
+  if(o.short!=null) h+='<div class="mshort">🩳 <span class="lead">Short interest:</span> <b>'+o.short+'%</b>'+(o.short>=8?' — elevated (squeeze fuel)':o.short>=4?' — moderate':' — light')+'</div>';
+  if(o.shortDaysToCover!=null) h+='<div class="mshort">🩳 <span class="lead">Short interest:</span> <b>'+o.shortDaysToCover+' days to cover</b>'+(o.shortDaysToCover>=8?' — elevated (squeeze fuel)':o.shortDaysToCover>=4?' — moderate':' — light')+(o.shortDtcChange!=null?' <span class="'+(o.shortDtcChange<0?'up':'down')+'">('+(o.shortDtcChange>=0?'+':'')+o.shortDtcChange+'% since last cycle)</span>':'')+' <span class="mfoot">— FINRA, real US short-position data</span></div>';
+  return h;
+}
+// #344 — "other options" (runner-up + same-market candidates), pick overlay only.
+function _pickAltsHtml(p, region, cur){
   var _curS={}; (LAST.D.regions||[]).forEach(function(rg){(rg.picks||[]).forEach(function(pp){_curS[pp.sym]=1;});});
   var _allCands=LAST.D.candidates||[];
   var _alts=[];
@@ -5709,113 +5691,140 @@ function openModal(p,region,cur){
     .sort(function(x,y){return (_ho[x.c.heat]==null?9:_ho[x.c.heat])-(_ho[y.c.heat]==null?9:_ho[y.c.heat]);})
     .slice(0,Math.max(0,3-_alts.length))
     .forEach(function(x){_alts.push({sym:x.c.sym,region:x.c.region,note:x.c.note,heat:x.c.heat,price:x.c.price,change:x.c.change,up:x.c.up,spark:x.c.spark,ci:x.i});});
-  var altsHtml=_alts.length?'<div class="malts"><h4 class="maltsh">🥈 Prefer another? · '+_alts.length+' other option'+(_alts.length>1?'s':'')+' this run</h4>'+
+  if(!_alts.length) return '';
+  return '<div class="malts"><h4 class="maltsh">🥈 Prefer another? · '+_alts.length+' other option'+(_alts.length>1?'s':'')+' this run</h4>'+
     _alts.map(function(a){
       var px=a.price?'<span class="altpx '+(a.up?'up':'down')+'">'+esc(cleanPrice(a.price))+(a.change?' '+esc(a.change):'')+'</span>':'<span class="altpx muted">live ↗</span>';
       var asp=(a.spark&&a.spark.length>2)?'<div class="altspark">'+sparkSVG(a.spark.slice(-30))+'</div>':'';
       var tag=a.ci!=null?' data-alt-ci="'+a.ci+'" role="button" tabindex="0"':' href="'+yf(a.sym,a.region||region)+'" target="_blank" rel="noopener"';
       return '<a class="altcard'+(a.heat?' h-'+a.heat:'')+'"'+tag+'>'+
         '<div class="altmain"><b>'+esc(a.sym)+'</b>'+(a.name?' <span class="altnm">'+esc(a.name)+'</span>':'')+px+'<span class="altarrow">'+(a.ci!=null?'→':'↗')+'</span></div>'+
-        asp+
-        (a.note?'<div class="altnote">'+esc(a.note)+'</div>':'')+'</a>';
-    }).join('')+'</div>':'';
-  // #323 P2 — "The call": the decision, up top. Verdict sits in the header; here we gather the two score
-  // chips (🍊 buy-now → full breakdown, 🍒 conviction → full read), the plan on one line, and the plain-
-  // English take. The old standalone score-bar + cherry PANELS are removed from the mid-scroll below —
-  // their full detail still opens from these chips (the .juicebtn/.cherrybtn delegated listeners), so no
-  // insight is lost, it's just not shown four ways at once.
-  var _callChips='';
-  if(p.score){
-    // #323 — show the 🍊 whenever there's a score (was gated on score.detail, which hand-built PICKS often
-    // lack, so picks showed only 🍒). openJuice fail-opens (#266) if the detailed weight breakdown is thin.
-    if(p.score.buy_now!=null){ var _cjid=++JUICE_SEQ; JUICE_CACHE[_cjid]={score:p.score,sym:p.sym,name:p.name,sigRows:signalRows(p,region)};
-      _callChips+='<button class="juicebtn callchip" data-juice-id="'+_cjid+'" title="Buy-now score — tap for the full breakdown">🍊 '+p.score.buy_now+'</button>'; }
-    try{ _callChips+=cherryChip(p.score,p.sym,p.name,signalRows(p,region)); }catch(e){}
+        asp+(a.note?'<div class="altnote">'+esc(a.note)+'</div>':'')+'</a>';
+    }).join('')+'</div>';
+}
+// #344 (16 Aug 2026, user ask "consolidate candidate + pick overlays into a single card structure") — ONE
+// builder renders the full ticker detail for BOTH a served PICK and a Full-Pot CANDIDATE. Every section is
+// shown only when the object carries its data, in one fixed order, so the two overlays can no longer drift
+// apart. isPick gates the genuinely pick-only affordances (served buy-plan + position sizing + verdict-explain
+// button + "I own it" + report link + runner-up alts); a candidate hides those and shows its "how we picked it
+// up" line + the "didn't make the top 3" note instead. Same chart / range bars / RSI / cherry-signals / news
+// feed / value band for both.
+function tickerModalHTML(o, region, cur, isPick){
+  var _nStop=numLevel(o.nStop),_nEntry=numLevel(o.nEntry),_nTarget=numLevel(o.nTarget),_nNow=numLevel(o.nNow!=null?o.nNow:o.price);
+  var rsi=o.rsi!=null?o.rsi:null;
+  var rsiWord=rsi==null?'':(rsi>=70?"🔥 hot — wait for it to cool":rsi<=35?"🧊 cheap — bargain zone":"😌 comfortable — not stretched");
+  // ranges backfill — a hand-built PICK sometimes lacks `ranges` even though its scored candidate carries them.
+  if(!o.ranges){ try{ var _mc=((LAST&&LAST.D||{}).candidates||[]).filter(function(c){return c.sym===o.sym&&(c.region||'us')===region;})[0]; if(_mc&&_mc.ranges) o.ranges=_mc.ranges; }catch(e){} }
+  var rangesHtml=''; try{ rangesHtml=rangeBarsHtml(o,cur); }catch(e){}
+  var HEAT={hot:'🔥 sizzling',good:'✅ tasty',mid:'➖ maybe',cold:'⛔ send it back'};
+  var vclass = isPick ? esc(o.vclass) : ((o.heat==='good'||o.heat==='hot')?'v-buy':(o.heat==='cold'?'v-dont':'v-hold'));
+  var tfLabel = (isPick ? tfBW(o.tf) : '🍲 Full-pot candidate')+' · '+(region==='au'?'🇦🇺 ASX':'🇺🇸 US');
+  var verdictEl = isPick
+    ? '<button class="mverd '+esc(o.vclass)+'" id="mVerdictBtn" type="button" title="Tap for plain English">'+esc(o.verdict)+' <span class="chipi">i</span></button>'
+    : '<span class="mverd '+vclass+'">'+esc(HEAT[o.heat]||o.heat||'')+'</span>';
+  var pxDisp = (typeof o.price==='number') ? cleanPrice(o.price) : (o.price!=null?o.price:'—');
+  var chgHtml = o.change ? '<div class="mono '+(isPick?chgTone(o.change,o.up):(o.up?'up':'down'))+'" style="font-weight:700;font-size:13px">'+(isPick?esc(o.change):((o.up?'▲':'▼')+' '+fmtChg(o.change)))+'</div>' : '';
+  // "the call" — score chips + watch + (pick) plan line + (pick) chef take
+  var chips='';
+  if(o.score){
+    if(o.score.buy_now!=null){ var _jid=++JUICE_SEQ; JUICE_CACHE[_jid]={score:o.score,sym:o.sym,name:o.name,sigRows:signalRows(o,region)};
+      chips+='<button class="juicebtn callchip" data-juice-id="'+_jid+'" title="Buy-now score — tap for the full breakdown">🍊 '+Math.round(o.score.buy_now)+'</button>'; }
+    try{ chips+=cherryChip(o.score,o.sym,o.name,signalRows(o,region)); }catch(e){}
   }
-  var _plan=[];
-  if(isFinite(_nEntry)) _plan.push('<span class="plk">Buy</span> '+money(cur,_nEntry));
-  if(isFinite(_nStop)) _plan.push('<span class="plk r">Stop</span> '+money(cur,_nStop));
-  if(isFinite(_nTarget)) _plan.push('<span class="plk g">Target</span> '+money(cur,_nTarget));
-  if(isFinite(_nEntry)&&isFinite(_nStop)&&isFinite(_nTarget)&&(_nEntry-_nStop)>0){ var _rr=(_nTarget-_nEntry)/(_nEntry-_nStop); if(_rr>0) _plan.push('<span class="plk">R:R</span> '+_rr.toFixed(1)+':1'); }
-  // #323 — a compact "+" watch toggle sits in "the call" row (matching the card face), so you can add a
-  // name without scrolling to the footer. Same .watchbtn data attrs → watchToggleFromEl + syncWatchButtons.
-  var _callWatch='<button class="watchbtn iconwatch callwatch" data-sym="'+esc(p.sym)+'" data-region="'+esc(region)+'"'+(p.name?' data-name="'+esc(p.name)+'"':'')+(p.nEntry!=null?' data-entry="'+p.nEntry+'"':'')+' aria-pressed="false" title="Add to watchlist">☆</button>';
-  var callHtml='<div class="mcall">'+
-    '<div class="callchips">'+_callChips+_callWatch+'</div>'+
-    (_plan.length?'<div class="callplan">'+_plan.join('<span class="pldot">·</span>')+'</div>':'')+
-    (p.chefTake?'<p class="callwhy">'+esc(p.chefTake)+'</p>':'')+
-  '</div>';
-  var m=document.getElementById('modal');
-  m.className='modal';
-  m.innerHTML=
-    '<div class="mhead '+esc(p.vclass)+'"><button class="mclose" id="mClose" aria-label="Close">✕</button>'+
-      mYahooBtn(p.sym,region)+
-      mShareBtn('sym/'+region+'/'+encodeURIComponent(p.sym),p.sym)+
-      '<div class="mtf">'+tfBW(p.tf)+' · '+(region==='au'?'🇦🇺 ASX':'🇺🇸 US')+'</div>'+
-      '<div class="mtop"><div><div class="msym" id="mTitle">'+esc(p.sym)+'</div><div class="mco">'+qlink(p.sym,region,p.name)+' ↗</div></div>'+
-        '<div class="mpx"><div class="mp mono">'+esc(p.price)+'</div><div class="mono '+chgTone(p.change,p.up)+'" style="font-weight:700;font-size:13px">'+esc(p.change)+'</div></div></div>'+
-      '<button class="mverd '+esc(p.vclass)+'" id="mVerdictBtn" type="button" title="Tap for plain English">'+esc(p.verdict)+' <span class="chipi">i</span></button></div>'+
-    '<div class="mbody">'+
-      callHtml+
-      // #330 — the plain-English company blurb (what it is + what just happened + why we like it) lives on
-      // the card FACE; it was missing from the overlay (the deeper view carried LESS prose than the card).
-      // Show the full p.plain here, prominently, under "the call". chefTake (callwhy) is the shorter take.
-      (p.plain?'<p class="mplain">'+esc(p.plain)+'</p>':'')+
-      // #323 P3 — the unified price+levels chart REPLACES the old recent-trend spark and the stop→target
-      // ladder (one chart carries the trend + the whole plan). The 1w/1m/1y range sliders are KEPT (user
-      // ask) as the where-in-its-range context beneath it.
-      '<div class="viz"><h4>📊 The chart — price &amp; your levels</h4>'+
-        // #335 — a freshly-published pick has no `spark` until the first ~10-min pulse enriches it; in that
-        // window the levels chart used to read "No price history." Fall back to the SAME lazy-fetched intraday
-        // chart the next-best/candidate cards use (live /intraday fetch + the "served" marker), so a just-served
-        // pick still charts instead of showing a dead-end message.
-        (p.spark?levelChartSVG(p.spark,{stop:_nStop,entry:_nEntry,target:_nTarget,now:_nNow},cur)
-               :servedChartSlot(p.sym,region,cur,(function(){try{return pickServedISO(p.sym,region);}catch(e){return null;}})()))+'</div>'+
-      rangesHtml+
-      (function(){try{return valBandHtml(p,cur);}catch(e){return '';}})()+
-      '<div class="viz">'+
-        posSizeHtml(p,cur)+
-        '<h4 style="margin-top:0">How hot is it right now? · RSI</h4>'+
+  var watchBtn='<button class="watchbtn iconwatch callwatch" data-sym="'+esc(o.sym)+'" data-region="'+esc(region)+'"'+(o.name?' data-name="'+esc(o.name)+'"':'')+(isPick&&o.nEntry!=null?' data-entry="'+o.nEntry+'"':'')+' aria-pressed="false" title="Add to watchlist">☆</button>';
+  var planHtml='';
+  if(isPick){
+    var _plan=[];
+    if(isFinite(_nEntry)) _plan.push('<span class="plk">Buy</span> '+money(cur,_nEntry));
+    if(isFinite(_nStop)) _plan.push('<span class="plk r">Stop</span> '+money(cur,_nStop));
+    if(isFinite(_nTarget)) _plan.push('<span class="plk g">Target</span> '+money(cur,_nTarget));
+    if(isFinite(_nEntry)&&isFinite(_nStop)&&isFinite(_nTarget)&&(_nEntry-_nStop)>0){ var _rr=(_nTarget-_nEntry)/(_nEntry-_nStop); if(_rr>0) _plan.push('<span class="plk">R:R</span> '+_rr.toFixed(1)+':1'); }
+    if(_plan.length) planHtml='<div class="callplan">'+_plan.join('<span class="pldot">·</span>')+'</div>';
+  }
+  var callHtml='<div class="mcall"><div class="callchips">'+chips+watchBtn+'</div>'+planHtml+(isPick&&o.chefTake?'<p class="callwhy">'+esc(o.chefTake)+'</p>':'')+'</div>';
+  // chart — pick: price+levels; candidate: where-in-range; either falls back to the lazy intraday chart if spark-less
+  var chartInner;
+  if(o.spark){
+    chartInner = isPick ? levelChartSVG(o.spark,{stop:_nStop,entry:_nEntry,target:_nTarget,now:_nNow},cur)
+                        : levelChartSVG(o.spark,{now:numLevel(o.nNow!=null?o.nNow:o.price),range:true},cur);
+  } else {
+    chartInner = servedChartSlot(o.sym,region,cur,(function(){try{return isPick?pickServedISO(o.sym,region):null;}catch(e){return null;}})());
+  }
+  var chartH='<div class="viz"><h4>📊 The chart — '+(isPick?'price &amp; your levels':'where it sits in its range')+'</h4>'+chartInner+'</div>';
+  // RSI + P/E + timing + the 🍒 cherry signal read (all shown when data exists)
+  var rsiInner = (rsi!=null)
+      ? '<h4'+(isPick?' style="margin-top:0"':'')+'>How hot is it right now? · RSI</h4>'+
         '<div class="rsibar"><span class="rcap" style="left:'+clamp(rsi)+'%">RSI '+esc(rsi)+'</span><span class="rn" style="left:'+clamp(rsi)+'%"></span></div>'+
         '<div class="lends"><span class="g">Cheap</span><span class="r">Overheated</span></div>'+
         '<div class="rsimeta">'+rsiWord+'</div>'+
-        (valChip(p)?'<div class="rsimeta" style="margin-top:6px">'+valChip(p)+'</div>':'')+
-        (timingLine(p)?'<div class="rsimeta" style="margin-top:6px">'+timingLine(p)+'</div>':'')+
-        // #329b (user: "aren't the signals only for the cherry?") — the full signal read now lives ONLY
-        // under the 🍒 cherry, not inline here too. This block is a single tappable pointer to it (the
-        // cherry adds the for/against conviction vote + the diagram cards). No more duplicated wall of signals.
-        cherryModalBlock(p.score,p.sym,p.name,signalRows(p,region))+
-      '</div>'+
-      happeningHtml(p)+
-      earningsCallLink(p.sym,region)+
-      // #323 P1 — fold the "fine print" (how we found it · short interest · risks · other options) into ONE
-      // collapsed <details>, so the fold isn't eaten by four secondary panels. The decision, chart, signals,
-      // announcements and news stay open above; the reference material is one tap away.
-      '<details class="mfine"><summary>ⓘ The fine print — how we found it, short interest, risks &amp; other options</summary>'+
-        '<div><h4>🔎 How we found it · why it’s on the menu</h4><div class="mfound" style="margin:-2px 0 9px">'+(p.foundVia?esc(p.foundVia):'Surfaced in tonight\'s wide-net scan (news · movers · analyst actions), then scored to the top 6.')+' The signals:</div><ul class="mcat">'+cats+'</ul></div>'+
-        (p.short!=null?'<div class="mshort">🩳 <span class="lead">Short interest:</span> <b>'+p.short+'%</b>'+(p.short>=8?' — elevated (squeeze fuel)':p.short>=4?' — moderate':' — light')+'</div>':'')+
-        (p.shortDaysToCover!=null?'<div class="mshort">🩳 <span class="lead">Short interest:</span> <b>'+p.shortDaysToCover+' days to cover</b>'+(p.shortDaysToCover>=8?' — elevated (squeeze fuel)':p.shortDaysToCover>=4?' — moderate':' — light')+(p.shortDtcChange!=null?' <span class="'+(p.shortDtcChange<0?'up':'down')+'">('+(p.shortDtcChange>=0?'+':'')+p.shortDtcChange+'% since last cycle)</span>':'')+' <span class="mfoot">— FINRA, real US short-position data</span></div>':'')+
-        '<div class="mrisk"><b>Watch out:</b> '+esc(p.risk)+'</div>'+
-        altsHtml+
-      '</details>'+
-      '<div class="mfoot"><button class="mbtn watchbtn" data-sym="'+esc(p.sym)+'" data-region="'+esc(region)+'"'+(p.name?' data-name="'+esc(p.name)+'"':'')+(p.nEntry!=null?' data-entry="'+p.nEntry+'"':'')+' aria-pressed="false">＋ Watch</button>'+
-        '<button class="mbtn ownbtn" data-sym="'+esc(p.sym)+'" data-region="'+esc(region)+'"'+(p.name?' data-name="'+esc(p.name)+'"':'')+' aria-pressed="false">📦 I own it</button>'+
-        '<a class="mbtn" href="'+yf(p.sym,region)+'" target="_blank" rel="noopener">📈 Yahoo ↗</a>'+
-        '<a class="mbtn primary" href="'+esc(LAST.D.reportUrl)+'" target="_blank" rel="noopener">📖 Report ↗</a></div>'+
+        (valChip(o)?'<div class="rsimeta" style="margin-top:6px">'+valChip(o)+'</div>':'')+
+        (timingLine(o)?'<div class="rsimeta" style="margin-top:6px">'+timingLine(o)+'</div>':'')
+      : '';
+  var rsiBlock='<div class="viz">'+(isPick?posSizeHtml(o,cur):'')+rsiInner+cherryModalBlock(o.score,o.sym,o.name,signalRows(o,region))+'</div>';
+  // "how we found it"
+  var foundH;
+  if(isPick){
+    var cats=(o.catalysts||[]).map(function(c){return '<li>'+esc(c)+'</li>';}).join('');
+    foundH='<details class="mfine"><summary>ⓘ The fine print — how we found it, short interest, risks &amp; other options</summary>'+
+      '<div><h4>🔎 How we found it · why it’s on the menu</h4><div class="mfound" style="margin:-2px 0 9px">'+(o.foundVia?esc(o.foundVia):'Surfaced in tonight\'s wide-net scan (news · movers · analyst actions), then scored to the top 6.')+' The signals:</div><ul class="mcat">'+cats+'</ul></div>'+
+      shortHtml(o)+
+      '<div class="mrisk"><b>Watch out:</b> '+esc(o.risk||'')+'</div>'+
+      _pickAltsHtml(o,region,cur)+
+    '</details>';
+  } else {
+    foundH='<div class="mnews">🔎 <span class="lead">How we picked it up:</span> '+esc(o.note||'a signal in tonight\'s scan')+'<div class="mfound">'+(o.foundVia?esc(o.foundVia):'Caught by our wide-net scan — live news, market movers and analyst actions — then priced &amp; scored into the pot.')+'</div></div>';
+  }
+  var closeNote = isPick ? '' : '<div class="mrisk" style="background:var(--surface-2);border-color:var(--line)"><b>Didn\'t make the top 3</b> — it\'s on the radar, not a pick this run.</div>';
+  var footer = isPick
+    ? '<div class="mfoot"><button class="mbtn watchbtn" data-sym="'+esc(o.sym)+'" data-region="'+esc(region)+'"'+(o.name?' data-name="'+esc(o.name)+'"':'')+(o.nEntry!=null?' data-entry="'+o.nEntry+'"':'')+' aria-pressed="false">＋ Watch</button>'+
+        '<button class="mbtn ownbtn" data-sym="'+esc(o.sym)+'" data-region="'+esc(region)+'"'+(o.name?' data-name="'+esc(o.name)+'"':'')+' aria-pressed="false">📦 I own it</button>'+
+        '<a class="mbtn" href="'+yf(o.sym,region)+'" target="_blank" rel="noopener">📈 Yahoo ↗</a>'+
+        '<a class="mbtn primary" href="'+esc(LAST.D.reportUrl)+'" target="_blank" rel="noopener">📖 Report ↗</a></div>'
+    : '<div class="mfoot"><button class="mbtn watchbtn" data-sym="'+esc(o.sym)+'" data-region="'+esc(region)+'"'+(o.name?' data-name="'+esc(o.name)+'"':'')+' aria-pressed="false">＋ Watch</button>'+
+        '<button class="mbtn anbtn" data-sym="'+esc(o.sym)+'" data-region="'+esc(region)+'">🧠 What would you do?</button>'+
+        '<a class="mbtn primary" href="'+yf(o.sym,region)+'" target="_blank" rel="noopener">📈 Yahoo ↗</a></div>';
+  return '<div class="mhead '+vclass+'"><button class="mclose" id="mClose" aria-label="Close">✕</button>'+
+    mYahooBtn(o.sym,region)+mShareBtn('sym/'+region+'/'+encodeURIComponent(o.sym),o.sym)+
+    '<div class="mtf">'+tfLabel+'</div>'+
+    '<div class="mtop"><div><div class="msym" id="mTitle">'+esc(o.sym)+'</div><div class="mco">'+qlink(o.sym,region,o.name||o.sym)+' ↗</div></div>'+
+      '<div class="mpx"><div class="mp mono">'+esc(pxDisp)+'</div>'+chgHtml+'</div></div>'+
+    verdictEl+'</div>'+
+    '<div class="mbody">'+
+      callHtml+
+      (o.plain?'<p class="mplain">'+esc(o.plain)+'</p>':'')+
+      chartH+
+      rangesHtml+
+      (function(){try{return valBandHtml(o,cur);}catch(e){return '';}})()+
+      rsiBlock+
+      happeningHtml(o)+
+      earningsCallLink(o.sym,region)+
+      foundH+
+      (isPick?'':shortHtml(o))+
+      closeNote+
+      footer+
     '</div>';
-  var _vb=document.getElementById('mVerdictBtn'); if(_vb) _vb.onclick=function(){openVerdictExplain(p.verdict);};
-  m.querySelectorAll('.watchbtn').forEach(function(_wb){ _wb.addEventListener('click',function(e){e.preventDefault();watchToggleFromEl(_wb);}); });   /* #323 — now wires BOTH the top "+" and the footer ＋Watch */
-  var _ob=m.querySelector('.ownbtn'); if(_ob){ var _setOwn=function(on){_ob.textContent=on?'📦 Owned ✓':'📦 I own it';_ob.setAttribute('aria-pressed',on?'true':'false');_ob.classList.toggle('owned',on);}; _setOwn(wlOwns(p.sym,region)); _ob.addEventListener('click',function(e){e.preventDefault();var on=wlToggleOwn(p.sym,region,p.name);_setOwn(on);if(LAST&&LAST.D){var sc=window.pageYOffset;render(LAST.D,LAST.H);window.scrollTo(0,sc);}}); }
-  m.querySelectorAll('.altcard[data-alt-ci]').forEach(function(el){
-    var go=function(e){e.preventDefault();openCandidate(+el.dataset.altCi);};
-    el.addEventListener('click',go); el.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();go(e);}});
-  });
+}
+// #344 — shared wiring for both entry points.
+function wireTickerModal(m, o, region, isPick){
+  m.querySelectorAll('.watchbtn').forEach(function(_wb){ _wb.addEventListener('click',function(e){e.preventDefault();watchToggleFromEl(_wb);}); });
+  if(isPick){
+    var _vb=m.querySelector('#mVerdictBtn'); if(_vb) _vb.onclick=function(){openVerdictExplain(o.verdict);};
+    var _ob=m.querySelector('.ownbtn'); if(_ob){ var _setOwn=function(on){_ob.textContent=on?'📦 Owned ✓':'📦 I own it';_ob.setAttribute('aria-pressed',on?'true':'false');_ob.classList.toggle('owned',on);}; _setOwn(wlOwns(o.sym,region)); _ob.addEventListener('click',function(e){e.preventDefault();var on=wlToggleOwn(o.sym,region,o.name);_setOwn(on);if(LAST&&LAST.D){var sc=window.pageYOffset;render(LAST.D,LAST.H);window.scrollTo(0,sc);}}); }
+    m.querySelectorAll('.altcard[data-alt-ci]').forEach(function(el){ var go=function(e){e.preventDefault();openCandidate(+el.dataset.altCi);}; el.addEventListener('click',go); el.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();go(e);}}); });
+  }
   syncWatchButtons();
-  try{ hydrateMissCharts(m); }catch(e){}   // #335 — hydrate the lazy intraday fallback chart (spark-less fresh picks)
+  try{ hydrateMissCharts(m); }catch(e){}
+}
+function openModal(p,region,cur){
+  LASTFOCUS=document.activeElement;
+  var m=document.getElementById('modal'); m.className='modal';
+  m.innerHTML=tickerModalHTML(p,region,cur,true);
+  wireTickerModal(m,p,region,true);
   var ov=document.getElementById('overlay');
   ov.classList.add('open');ov.setAttribute('aria-hidden','false');
   document.getElementById('mClose').focus();
 }
+
 function closeModal(){
   var ov=document.getElementById('overlay');
   ov.classList.remove('open');ov.setAttribute('aria-hidden','true');
@@ -7015,63 +7024,14 @@ function openTheme(src,idx){
 function openCandidate(idx){
   var D=LAST.D||{}, c=(D.candidates||[])[idx]; if(!c)return;
   LASTFOCUS=document.activeElement;
-  var HEAT={hot:'🔥 sizzling',good:'✅ tasty',mid:'➖ maybe',cold:'⛔ send it back'};
-  var vc=(c.heat==='good'||c.heat==='hot')?'v-buy':(c.heat==='cold'?'v-dont':'v-hold');
-  var spk=(c.spark&&c.spark.length>2)?sparkSVG(c.spark.slice(-30)):'';
-  // #318 — a Full-Pot candidate that ISN'T also a served pick now renders the SAME top visual block as the
-  // pick overlay (price-range bars + RSI meter), using the technical fields score-pot.py attaches (#126).
-  // Candidates have no hand-set buy-zone/stop/target, so the stop→target ladder + position-sizing stay
-  // pick-only (honestly — a candidate isn't a served call) — but the chart/ranges/RSI now match.
   var cCur=(c.region==='au'?'A$':'$');
-  var cRanges=''; try{ cRanges=rangeBarsHtml(c,cCur); }catch(e){}
-  var cRsi=(c.rsi!=null)?c.rsi:null;
-  var cRsiBlock = (cRsi!=null) ? '<div class="viz"><h4>How hot is it right now? · RSI</h4>'+
-    '<div class="rsibar"><span class="rcap" style="left:'+clamp(cRsi)+'%">RSI '+esc(cRsi)+'</span><span class="rn" style="left:'+clamp(cRsi)+'%"></span></div>'+
-    '<div class="lends"><span class="g">Cheap</span><span class="r">Overheated</span></div>'+
-    '<div class="rsimeta">'+(cRsi>=70?'🔥 hot — wait for it to cool':cRsi<=35?'🧊 cheap — bargain zone':'😌 comfortable — not stretched')+'</div></div>' : '';
-  // #323 P2 (unify per user) — candidate cards lead with the SAME "the call" chip row as pick cards
-  // (🍊 score → full breakdown, 🍒 conviction → full read). No Buy/Stop/Target line: a candidate has no
-  // served buy-plan. The standalone score-bar + cherry PANELS are removed below, matching the pick card's
-  // lean layout — the detail still opens from these chips.
-  var _ccChips='';
-  if(c.score){
-    if(c.score.buy_now!=null){ var _ccjid=++JUICE_SEQ; JUICE_CACHE[_ccjid]={score:c.score,sym:c.sym,name:c.name,sigRows:signalRows(c,c.region)};
-      _ccChips+='<button class="juicebtn callchip" data-juice-id="'+_ccjid+'" title="Buy-now score — tap for the full breakdown">🍊 '+Math.round(c.score.buy_now)+'</button>'; }
-    try{ _ccChips+=cherryChip(c.score,c.sym,c.name,signalRows(c,c.region)); }catch(e){}
-  }
-  var _ccWatch='<button class="watchbtn iconwatch callwatch" data-sym="'+esc(c.sym)+'" data-region="'+esc(c.region)+'"'+(c.name?' data-name="'+esc(c.name)+'"':'')+' aria-pressed="false" title="Add to watchlist">☆</button>';
-  var ccallHtml='<div class="mcall"><div class="callchips">'+_ccChips+_ccWatch+'</div></div>';
   var m=document.getElementById('modal'); m.className='modal';
-  m.innerHTML='<div class="mhead '+vc+'"><button class="mclose" id="mClose" aria-label="Close">✕</button>'+
-    mYahooBtn(c.sym,c.region)+
-    mShareBtn('sym/'+c.region+'/'+encodeURIComponent(c.sym),c.sym)+
-    '<div class="mtf">🍲 Full-pot candidate · '+(c.region==='au'?'🇦🇺 ASX':'🇺🇸 US')+'</div>'+
-    '<div class="mtop"><div><div class="msym">'+esc(c.sym)+'</div><div class="mco">'+qlink(c.sym,c.region,c.name||c.sym)+' ↗</div></div>'+
-      '<div class="mpx"><div class="mp mono">'+esc(c.price!=null?cleanPrice(c.price):'—')+'</div>'+(c.change?'<div class="mono '+(c.up?'up':'down')+'" style="font-weight:700;font-size:13px">'+(c.up?'▲':'▼')+' '+fmtChg(c.change)+'</div>':'')+'</div></div>'+
-    '<span class="mverd '+vc+'">'+esc(HEAT[c.heat]||c.heat)+'</span></div>'+
-    '<div class="mbody">'+
-      ccallHtml+
-      // #323 P3 — candidate gets the SAME unified chart as picks (with just the Now line — a candidate has
-      // no served stop/target). Keeps the 1w/1m/1y range sliders below, matching the pick card.
-      ((c.spark&&c.spark.length>2)?'<div class="viz"><h4>📊 The chart — where it sits in its range</h4>'+levelChartSVG(c.spark,{now:numLevel(c.nNow!=null?c.nNow:c.price),range:true},cCur)+'</div>':'')+
-      cRanges+
-      (function(){try{return valBandHtml(c,cCur);}catch(e){return '';}})()+
-      cRsiBlock+
-      '<div class="mnews">🔎 <span class="lead">How we picked it up:</span> '+esc(c.note||'a signal in tonight\'s scan')+'<div class="mfound">'+(c.foundVia?esc(c.foundVia):'Caught by our wide-net scan — live news, market movers and analyst actions — then priced &amp; scored into the pot.')+'</div></div>'+
-      cherryModalBlock(c.score,c.sym,c.name,signalRows(c,c.region))+   /* #329b — signals live under the 🍒 only, not inline too */
-      happeningHtml(c)+
-      earningsCallLink(c.sym,c.region)+
-      (c.short!=null?'<div class="mshort">🩳 <span class="lead">Short interest:</span> <b>'+c.short+'%</b> of shares sold short'+(c.short>=8?' — <b>elevated</b> (squeeze fuel / bearish crowd)':c.short>=4?' — moderate':' — light')+'</div>':'')+
-      '<div class="mrisk" style="background:var(--surface-2);border-color:var(--line)"><b>Didn\'t make the top 3</b> — it\'s on the radar, not a pick this run.</div>'+
-      '<div class="mfoot"><button class="mbtn watchbtn" data-sym="'+esc(c.sym)+'" data-region="'+esc(c.region)+'"'+(c.name?' data-name="'+esc(c.name)+'"':'')+' aria-pressed="false">＋ Watch</button>'+
-        '<button class="mbtn anbtn" data-sym="'+esc(c.sym)+'" data-region="'+esc(c.region)+'">🧠 What would you do?</button>'+
-        '<a class="mbtn primary" href="'+yf(c.sym,c.region)+'" target="_blank" rel="noopener">📈 Yahoo ↗</a></div>'+
-    '</div>';
-  m.querySelectorAll('.watchbtn').forEach(function(_wb){ _wb.addEventListener('click',function(e){e.preventDefault();watchToggleFromEl(_wb);}); });   /* #323 — wires the top "+" and footer ＋Watch */
-  syncWatchButtons();
+  m.innerHTML=tickerModalHTML(c,c.region,cCur,false);   // #344 — same builder as picks; isPick=false hides the buy-plan/own/report affordances
+  wireTickerModal(m,c,c.region,false);
   var ov=document.getElementById('overlay'); ov.classList.add('open'); ov.setAttribute('aria-hidden','false');
   document.getElementById('mClose').focus();
 }
+
 function timeAgo(iso){
   if(!iso) return '';
   try{ var mins=Math.round((Date.now()-new Date(iso).getTime())/60000);
