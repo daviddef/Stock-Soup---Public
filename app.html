@@ -9100,15 +9100,15 @@ var FDR_LEVERS=[
     {k:'rsi', label:'RSI — not overbought', min:0,max:100,val:72,on:true, unit:'≤', dir:'max', help:'below the overheated/LATE zone'}
   ]},
   {grp:'Value & quality', items:[
-    {k:'value', label:'Cheapness (value)', min:0,max:100,val:0,on:false, unit:'≥', help:'P/E, P/B, PEG'},
-    {k:'quality', label:'Business quality', min:0,max:100,val:0,on:false, unit:'≥', help:'ROE, margins, balance sheet'},
-    {k:'growth', label:'Growth', min:0,max:100,val:0,on:false, unit:'≥', help:'revenue growth'},
-    {k:'mcap', label:'Market-cap floor', min:0,max:500,val:0,on:false, unit:'≥', fmt:'b', help:'in $B'},
-    {k:'capMax', label:'Market-cap ceiling', min:0,max:50,val:2,on:false, unit:'≤', dir:'max', fmt:'b', help:'small companies only (needs fundamentals — catalyst-pot names)'}
+    {k:'value', label:'Cheapness (value)', min:0,max:100,val:0,on:false, unit:'≥', req:true, help:'P/E, P/B, PEG'},
+    {k:'quality', label:'Business quality', min:0,max:100,val:0,on:false, unit:'≥', req:true, help:'ROE, margins, balance sheet'},
+    {k:'growth', label:'Growth', min:0,max:100,val:0,on:false, unit:'≥', req:true, help:'revenue growth'},
+    {k:'mcap', label:'Market-cap floor', min:0,max:500,val:0,on:false, unit:'≥', fmt:'b', req:true, help:'in $B'},
+    {k:'capMax', label:'Market-cap ceiling', min:0,max:50,val:2,on:false, unit:'≤', dir:'max', fmt:'b', req:true, help:'small companies only (needs fundamentals — catalyst-pot names)'}
   ]},
   {grp:'Positioning', items:[
     {k:'short', label:'Short interest', min:0,max:30,val:30,on:false, unit:'≤', dir:'max', help:'low avoids crowded-short risk'},
-    {k:'div', label:'Dividend yield', min:0,max:10,val:0,on:false, unit:'≥', fmt:'pct', help:'income floor'}
+    {k:'div', label:'Dividend yield', min:0,max:10,val:0,on:false, unit:'≥', fmt:'pct', req:true, help:'income floor'}
   ]},
   {grp:'Setups', items:[
     {k:'spring', label:'🌱 Coiled spring', min:0,max:100,val:55,on:false, unit:'≥', help:'flat / hasn’t run up, but starting to turn (squeeze · volume · MACD)'}
@@ -9230,7 +9230,11 @@ function fdrMatch(s){
 }
 function fdrPass(s){
   var ls=fdrActive();
-  for(var i=0;i<ls.length;i++){ var l=ls[i], v=fdrVal(s,l.k); if(v==null) continue;   // missing data → lever doesn't exclude
+  for(var i=0;i<ls.length;i++){ var l=ls[i], v=fdrVal(s,l.k);
+    // Missing data: a `req` lever EXCLUDES (you can't be a "small cap" or "undervalued" if we don't know your
+    // market cap / value — real bug: 453/468 names with no market cap were "passing" the small-cap ceiling).
+    // Non-req levers stay inclusive (unknown doesn't exclude), matching the finder's default philosophy.
+    if(v==null){ if(l.req) return false; continue; }
     if(l.dir==='max'){ if(v>l.val) return false; } else { if(v<l.val) return false; } }
   return true;
 }
