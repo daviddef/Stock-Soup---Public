@@ -1341,6 +1341,10 @@
   .fdr-sc{font-size:12px;font-weight:800;border-radius:8px;padding:3px 8px}
   .fdr-sc-o{background:rgba(232,102,42,.12);color:var(--broth)} .fdr-sc-c{background:rgba(196,40,71,.12);color:var(--cherry,#c42847)}
   .fdr-mpill{font-size:11px;font-weight:800;border-radius:8px;padding:3px 8px;color:var(--mc);background:color-mix(in srgb,var(--mc) 16%,transparent);white-space:nowrap}
+  /* #bhp-fix — imminent-earnings flag: a dated result ≤3 days out gets a loud chip so a mega-cap's report can't hide in a calendar list */
+  .earnflag{display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:800;border-radius:8px;padding:2px 7px;white-space:nowrap}
+  .earnflag.ef-hot{background:rgba(224,58,58,.15);color:#e03a3a}
+  .earnflag.ef-soon{background:rgba(217,138,31,.15);color:#d98a1f}
   .fdr-cpx{margin-left:auto;font-weight:800;font-size:13px;font-variant-numeric:tabular-nums}
   .fdr-cstats{display:grid;grid-template-columns:1fr 1fr;gap:3px 10px;font-size:11.5px;color:var(--muted)}
   .fdr-cstats b{color:var(--ink);font-variant-numeric:tabular-nums}
@@ -5866,6 +5870,7 @@ function tickerModalHTML(o, region, cur, isPick){
       chips+='<button class="juicebtn callchip" data-juice-id="'+_jid+'" title="Buy-now score — tap for the full breakdown">🍊 '+Math.round(o.score.buy_now)+'</button>'; }
     try{ chips+=cherryChip(o.score,o.sym,o.name,signalRows(o,region)); }catch(e){}
   }
+  try{ chips+=earnFlag(o.sym,region); }catch(e){}   // #bhp-fix — loud "🔴 reports tomorrow" flag in the overlay too
   var watchBtn='<button class="watchbtn iconwatch callwatch" data-sym="'+esc(o.sym)+'" data-region="'+esc(region)+'"'+(o.name?' data-name="'+esc(o.name)+'"':'')+(isPick&&o.nEntry!=null?' data-entry="'+o.nEntry+'"':'')+' aria-pressed="false" title="Add to watchlist">☆</button>';
   var planHtml='';
   if(isPick){
@@ -9381,6 +9386,28 @@ var FDR_SORTS=[['match','Best match'],['buyNow','🍊 Buy-now'],['cherry','🍒 
   ['move','🚀 Today’s move'],['rangePos','Range position'],['value','Value'],['quality','Quality'],['mcap','Market cap'],['div','Dividend']];
 function fdrSent100(s){ return s==null?null:Math.round((Math.max(-1,Math.min(1,+s))+1)/2*100); }
 function fdrNum(p){ if(p==null)return null; var n=parseFloat(String(p).replace(/[^0-9.\-]/g,'')); return isFinite(n)?n:null; }
+// #bhp-fix (user ask) — days until a ticker's next dated earnings result, from D.upcomingEarnings. Null if
+// none within reach. Drives the loud "🔴 reports tomorrow" flag so an imminent result (BHP FY26, 18 Aug) is
+// never just another buried calendar row.
+function earnDays(sym,region){
+  if(!sym) return null;
+  var D=(typeof LAST!=='undefined'&&LAST&&LAST.D)||{}, ue=D.upcomingEarnings||[]; if(!ue.length) return null;
+  var today=new Date(); today.setHours(0,0,0,0); var S=String(sym).toUpperCase(), best=null;
+  for(var i=0;i<ue.length;i++){ var e=ue[i]||{}; if(String(e.sym||'').toUpperCase()!==S) continue;
+    if(region && e.region && e.region!==region) continue;
+    var d=e.date||e.when; if(!d) continue;
+    var dt=new Date(String(d).slice(0,10)+'T00:00:00'); if(isNaN(dt.getTime())) continue;
+    var days=Math.round((dt-today)/86400000); if(days<0) continue;
+    if(best==null||days<best) best=days;
+  }
+  return best;
+}
+function earnFlag(sym,region){
+  var d=earnDays(sym,region); if(d==null||d>3) return '';
+  var lab=d===0?'reports today':d===1?'reports tomorrow':'reports in '+d+'d';
+  var hot=d<=1;
+  return '<span class="earnflag '+(hot?'ef-hot':'ef-soon')+'" title="Earnings/result due — expect a bigger-than-usual move; a known catalyst you can pre-position for">'+(hot?'🔴':'🟠')+' '+lab+'</span>';
+}
 // #2 (user ask) — the freshest news headline within the last 3 days, so a Stock Pot card can show a one-line
 // "what just happened". Candidates/picks carry the real headline text (news + news_top3); the wide-scan
 // universe only has a sentiment number (no text), so those show no snippet. Returns {t,days} or null.
@@ -9668,6 +9695,7 @@ function fdrCardsHtml(rows){
       '<div class="fdr-cscores"><span class="fdr-sc fdr-sc-o">🍊 '+(s.buyNow!=null?s.buyNow:'—')+'</span>'+
         (s.cherry!=null?'<span class="fdr-sc fdr-sc-c">🍒 '+s.cherry+'</span>':'')+
         (showMatch?'<span class="fdr-mpill" style="--mc:'+fdrColor(o.m)+'" title="How well this name matches your filters">'+o.m+'% match</span>':'')+
+        earnFlag(s.sym,s.region)+
         '<span class="fdr-cpx">'+(s.price!=null?fdrCur(s.region)+s.price:'')+'</span></div>'+
       fdrStatCells(s)+
       // #minicharts (user ask) — compact RSI + Value slider bars on the card face. RSI: green→red track with a
