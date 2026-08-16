@@ -8912,6 +8912,37 @@ function drawNewsChart(slot, closes, dates, events, cur, opts){
   svgEl.addEventListener('pointercancel',function(){ dragging=false; });
   setIndex(n-1);   // start on the latest bar
 }
+// #tickerdrag (user ask, 16 Aug) — the old-school ticker tapes were CSS marquees; make them GRABBABLE.
+// Replace the CSS keyframe crawl with a JS rAF scroll (so pausing/dragging is seamless — a CSS-keyframe pause
+// jumps back to 0 on resume). Drag left/right to pull the tape; release and it resumes from there. Content is
+// duplicated in the DOM, so we just wrap the offset by one copy's width to loop endlessly. Tap-vs-drag is
+// disambiguated (a real drag swallows the click) so tapping a ticker item still opens it.
+function wireTickerScroll(root){
+  var reduce=false; try{ reduce=matchMedia('(prefers-reduced-motion:reduce)').matches; }catch(_){}
+  (root||document).querySelectorAll('.ticklive .tkrow').forEach(function(row){
+    if(row.dataset.jsscroll) return; row.dataset.jsscroll='1';
+    var inner=row.querySelector('.tkinner'); if(!inner) return;
+    inner.style.animation='none';
+    var dir=row.classList.contains('tk-right')?1:-1;
+    var dur=parseFloat(getComputedStyle(row).getPropertyValue('--dur'))||46;
+    var half=1, speed=0, offset=0, last=null, downX=0, downOff=0, moved=false, held=false, hover=false;
+    function measure(){ var w=inner.scrollWidth/2; if(w>10){ half=w; speed=half/(dur*1000); } }
+    function apply(){ inner.style.transform='translateX('+offset.toFixed(2)+'px)'; }
+    function wrap(){ if(half>0){ while(offset<=-half) offset+=half; while(offset>0) offset-=half; } }
+    function frame(t){ if(last==null)last=t; var dt=Math.min(64,t-last); last=t;
+      if(!held && !hover && !reduce){ offset+=dir*speed*dt; wrap(); apply(); }
+      requestAnimationFrame(frame); }
+    measure(); requestAnimationFrame(frame); setTimeout(measure,400);
+    row.style.cursor='grab'; row.style.touchAction='pan-y';
+    row.addEventListener('pointerdown',function(e){ held=true; moved=false; downX=e.clientX; downOff=offset; last=null; try{row.setPointerCapture(e.pointerId);}catch(_){}; });
+    row.addEventListener('pointermove',function(e){ if(!held)return; var dx=e.clientX-downX; if(Math.abs(dx)>4)moved=true; if(moved){ offset=downOff+dx; wrap(); apply(); } });
+    function up(){ if(!held)return; held=false; last=null; row.style.cursor='grab'; }
+    row.addEventListener('pointerup',up); row.addEventListener('pointercancel',up);
+    row.addEventListener('mouseenter',function(){hover=true;}); row.addEventListener('mouseleave',function(){hover=false;});
+    // a genuine drag must NOT also fire the item's open-on-tap click
+    row.addEventListener('click',function(e){ if(moved){ e.stopPropagation(); e.preventDefault(); moved=false; } }, true);
+  });
+}
 function hydrateMissCharts(root){
   (root||document).querySelectorAll('.misschart[data-hydrate-chart]').forEach(function(slot){
     var sym=slot.dataset.sym, reg=slot.dataset.region, cur=slot.dataset.cur||'', checkTs=slot.dataset.checkTs?+slot.dataset.checkTs:null;
@@ -9188,6 +9219,7 @@ function wire(D){
   });
   // #actions→pot — the "Screen the whole pot" chips deep-link into the Stock Pot with a preset applied.
   document.querySelectorAll('.potchip[data-potpreset]').forEach(function(c){ c.addEventListener('click',function(){ openStockPot(c.dataset.potpreset); }); });
+  try{ wireTickerScroll(document); }catch(e){}   // #tickerdrag — make the crawling ticker tapes grabbable
   // 📢 Key-announcements card → open the Market backdrop drawer on its Announcements panel + scroll to it.
   document.querySelectorAll('.axcard[data-backdrop]').forEach(function(c){
     c.addEventListener('click',function(e){ if(e.target.closest('a,button'))return;
