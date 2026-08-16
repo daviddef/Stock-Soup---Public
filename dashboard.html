@@ -430,7 +430,8 @@
   @media(max-width:760px){.axgrid{column-count:1}}
   /* (user ask v3) Actions = a row of ~5 compact SUMMARY tiles (one per verb group). Tap a tile → its detail
      cards expand below in a width-filling grid. Default = just the tile row: one scannable line, no waste. */
-  .axsumgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:9px}
+  .axsumgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px}   /* 4 across (user ask) — was auto-fit which packed 6 then orphaned the 7th */
+  @media(max-width:860px){ .axsumgrid{grid-template-columns:repeat(3,minmax(0,1fr))} }
   @media(max-width:560px){ .axsumgrid{grid-template-columns:repeat(2,minmax(0,1fr))} }
   .axsum-card{text-align:left;cursor:pointer;border:1px solid var(--line);border-left:3px solid var(--muted);border-radius:12px;background:var(--surface);padding:11px 12px;display:flex;flex-direction:column;gap:4px;transition:transform .1s,border-color .12s,background .12s;font-family:inherit;min-width:0}
   .axsum-card:hover{transform:translateY(-2px)}
