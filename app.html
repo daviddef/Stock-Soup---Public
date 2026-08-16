@@ -1273,7 +1273,8 @@
   @media(max-width:820px){ .fdr-layout{grid-template-columns:1fr} }
   .fdr-rail{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:6px 4px 10px;position:sticky;top:10px;max-height:calc(100vh - 20px);overflow:auto}
   @media(max-width:820px){ .fdr-rail{position:static;max-height:none} }
-  .fdr-presets{padding:2px 12px 6px}
+  .fdr-presets{padding:2px 12px 8px;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+  .fdr-presetl{font-size:11px;font-weight:800;color:var(--faint);text-transform:uppercase;letter-spacing:.05em}
   .fdr-preset{font-size:12.5px;font-weight:800;padding:6px 12px;border-radius:9px;border:1px solid var(--line);background:var(--surface-2);color:var(--ink);cursor:pointer}
   .fdr-preset:hover{border-color:var(--buy)}
   .fdr-preset.on{background:rgba(35,194,103,.15);border-color:var(--buy);color:var(--buy)}
@@ -1305,6 +1306,8 @@
   .fdr-card:hover{transform:translateY(-2px);border-color:var(--broth)}
   .fdr-cnews{margin-top:8px;font-size:11.5px;line-height:1.35;color:var(--muted);display:flex;gap:5px;align-items:flex-start}
   .fdr-cnewsage{margin-left:auto;flex:none;font-weight:800;font-size:10px;color:var(--faint);white-space:nowrap;padding-left:6px}
+  .fdr-cnewsmove{font-weight:800;white-space:nowrap}
+  .fdr-cnewsmove.up{color:var(--buy)}.fdr-cnewsmove.down{color:var(--dont)}
   .fdr-search{display:flex;align-items:center;gap:7px;flex:1;min-width:140px;max-width:280px;background:var(--surface-2);border:1px solid var(--line);border-radius:9px;padding:5px 10px}
   .fdr-search input{border:0;background:transparent;color:var(--ink);font-size:13px;font-weight:700;width:100%;outline:none}
   .fdr-search .fdr-sx{cursor:pointer;color:var(--faint);font-weight:800;flex:none}
@@ -9061,14 +9064,17 @@ var FDR_LEVERS=[
   ]},
   {grp:'Momentum & timing', items:[
     {k:'rangePos', label:'Range position', min:0,max:100,val:0,on:false, unit:'≥', help:'how high in its 1-yr range'},
+    {k:'ret1y', label:'1-yr change', min:-90,max:200,val:15,on:false, unit:'≤', dir:'max', fmt:'pct', help:'flat / hasn’t run up over the past year (≤ keeps the quiet ones)'},
     {k:'news', label:'Positive news', min:0,max:100,val:50,on:true, unit:'≥', help:'news sentiment positivity'},
+    {k:'newsFresh', label:'📰 Fresh news', min:0,max:100,val:40,on:false, unit:'≥', help:'has a headline in the last ~3 days (higher = fresher)'},
     {k:'rsi', label:'RSI — not overbought', min:0,max:100,val:72,on:true, unit:'≤', dir:'max', help:'below the overheated/LATE zone'}
   ]},
   {grp:'Value & quality', items:[
     {k:'value', label:'Cheapness (value)', min:0,max:100,val:0,on:false, unit:'≥', help:'P/E, P/B, PEG'},
     {k:'quality', label:'Business quality', min:0,max:100,val:0,on:false, unit:'≥', help:'ROE, margins, balance sheet'},
     {k:'growth', label:'Growth', min:0,max:100,val:0,on:false, unit:'≥', help:'revenue growth'},
-    {k:'mcap', label:'Market-cap floor', min:0,max:500,val:0,on:false, unit:'≥', fmt:'b', help:'in $B'}
+    {k:'mcap', label:'Market-cap floor', min:0,max:500,val:0,on:false, unit:'≥', fmt:'b', help:'in $B'},
+    {k:'capMax', label:'Market-cap ceiling', min:0,max:50,val:2,on:false, unit:'≤', dir:'max', fmt:'b', help:'small companies only (needs fundamentals — catalyst-pot names)'}
   ]},
   {grp:'Positioning', items:[
     {k:'short', label:'Short interest', min:0,max:30,val:30,on:false, unit:'≤', dir:'max', help:'low avoids crowded-short risk'},
@@ -9080,7 +9086,7 @@ var FDR_LEVERS=[
 ];
 var FDR_AXES=[['value','Value (cheap →)'],['rangePos','Range position →'],['quality','Quality →'],
   ['growth','Growth →'],['buyNow','🍊 Buy-now →'],['cherry','🍒 Conviction →'],['rsi','RSI →'],['news','Positive news →'],['spring','🌱 Coiled spring →']];
-var FDR_SORTS=[['match','Best match'],['buyNow','🍊 Buy-now'],['cherry','🍒 Conviction'],['spring','🌱 Coiled spring'],
+var FDR_SORTS=[['match','Best match'],['buyNow','🍊 Buy-now'],['cherry','🍒 Conviction'],['spring','🌱 Coiled spring'],['newsFresh','📰 Freshest news'],
   ['rangePos','Range position'],['value','Value'],['quality','Quality'],['mcap','Market cap'],['div','Dividend']];
 function fdrSent100(s){ return s==null?null:Math.round((Math.max(-1,Math.min(1,+s))+1)/2*100); }
 function fdrNum(p){ if(p==null)return null; var n=parseFloat(String(p).replace(/[^0-9.\-]/g,'')); return isFinite(n)?n:null; }
@@ -9090,6 +9096,9 @@ function fdrNum(p){ if(p==null)return null; var n=parseFloat(String(p).replace(/
 function fdrFreshNews(c){
   try{
     var list=[]; if(c.news) list.push({t:c.news,d:c.news_date}); (c.news_top3||[]).forEach(function(n){list.push({t:n.title||n.t,d:n.date||n.d});});
+    // ASX filings/announcements count as "what just happened" too (PIQ's patent filing was an announcement,
+    // not a news headline, so it was missing from the card snippet).
+    (c.announcements||[]).forEach(function(a){ if(a&&a.headline) list.push({t:a.headline,d:a.date}); });
     var best=null;
     list.forEach(function(x){ if(!x.t||!x.d) return; var days=Math.floor((Date.now()-Date.parse(String(x.d).slice(0,10)))/86400000);
       if(days!=null&&days>=0&&days<=3&&(!best||days<best.days)) best={t:x.t,days:days}; });
@@ -9104,8 +9113,13 @@ function fdrFirstSentence(t){ t=String(t||'').replace(/\s+/g,' ').trim(); var m=
 // off the floor but not yet hot. A genuinely flat name with NO turn signals scores ~20-40; a flat name that's
 // squeezing + rising on volume scores 75+. Needs at least the range position (the "hasn't grown" half).
 function fdrSpringScore(o){
-  if(o.rangePos==null) return null;
-  var s = 40 * Math.max(0, Math.min(1, (60 - o.rangePos) / 60));   // low in 1-yr range = hasn't run up
+  // The "hasn't grown" half (40pts): prefer the REAL 1-yr trailing return when we have it (|return| near 0 =
+  // genuinely flat), and fall back to range position (low in its 1-yr range) when the return isn't published.
+  var flatBase;
+  if(o.ret1y!=null) flatBase = 40 * Math.max(0, Math.min(1, (25 - Math.abs(o.ret1y)) / 25));   // ~0% over a year = flat
+  else if(o.rangePos!=null) flatBase = 40 * Math.max(0, Math.min(1, (60 - o.rangePos) / 60));   // low in 1-yr range
+  else return null;
+  var s = flatBase;
   if(o.squeeze===true) s += 15;                                    // coiled (tight Bollinger band)
   if(o.macdRising===true) s += 15;                                 // momentum turning up
   if(o.volRatio!=null) s += Math.max(0, Math.min(15, (o.volRatio - 1) * 15));  // volume waking up
@@ -9118,16 +9132,26 @@ function fdrNormCand(c){
   var cherry=null; try{ if(c.score&&c.score.buy_now!=null){ var ov=overallScore(c.score.buy_now,rows); cherry=ov?ov.score:null; } }catch(e){}
   var f=c.fundamentals||{}, y1=((c.ranges||{})['1y']||{}), nh=fdrFreshNews(c);
   var _rp=(y1.pos!=null)?Math.round(y1.pos*100):null;
-  var _spring=fdrSpringScore({rangePos:_rp, rsi:(c.rsi!=null)?Math.round(c.rsi):null,
+  var _ret1y=(c.ret1y!=null)?c.ret1y:null;
+  // #2b (user ask) — % the stock has moved SINCE that headline printed. Approximate from the daily spark
+  // (closes, oldest→newest): step back ~newsAge trading days (calendar→trading ≈ ×5/7) and compare to now.
+  // EOD-based, so it's a "since the news" read, not intraday-precise — but real and directional.
+  var _newsMove=null;
+  if(nh && nh.days!=null && Array.isArray(c.spark) && c.spark.length>2){
+    var _td=Math.max(1, Math.round(nh.days*5/7)), _idx=c.spark.length-1-_td;
+    if(_idx>=0){ var _then=c.spark[_idx], _now=fdrNum(c.price); if(_now==null)_now=c.spark[c.spark.length-1];
+      if(_then) _newsMove=Math.round((_now/_then-1)*1000)/10; }
+  }
+  var _spring=fdrSpringScore({rangePos:_rp, ret1y:_ret1y, rsi:(c.rsi!=null)?Math.round(c.rsi):null,
     squeeze:(c.bb_squeeze||{}).squeeze, macdRising:(c.trend||{}).macd_rising,
     volRatio:(((c.score||{}).detail||{}).raw||{}).volume_ratio, aboveMa20:(c.ema||{}).above_ema20});
   return {sym:c.sym, region:reg, name:c.name||c.sym, sector:f.sector||null,
     price:fdrNum(c.price), change:c.change, up:c.up!==false,
     buyNow:(c.score&&c.score.buy_now!=null)?Math.round(c.score.buy_now):null, cherry:cherry,
-    rsi:(c.rsi!=null)?Math.round(c.rsi):null, rangePos:_rp, spring:_spring,
+    rsi:(c.rsi!=null)?Math.round(c.rsi):null, rangePos:_rp, spring:_spring, ret1y:(_ret1y!=null)?Math.round(_ret1y):null,
     news:fdrSent100(c.news_sentiment), value:f.value_score, quality:f.quality_score, growth:f.growth_score,
     mcap:f.market_cap||null, short:(c.short!=null)?c.short:null,
-    newsHead:nh?nh.t:null, newsAge:nh?nh.days:null,
+    newsHead:nh?nh.t:null, newsAge:nh?nh.days:null, newsMove:_newsMove, newsFresh:(nh&&nh.days!=null)?Math.max(0,100-nh.days*20):null,
     div:(f.dividend_yield!=null)?Math.round(f.dividend_yield*1000)/10:null,
     aboveMa:(c.ema?!!(c.ema.above_ema20&&c.ema.above_ema50):null), src:'cand'};   // null = unknown (don't exclude)
 }
@@ -9135,12 +9159,13 @@ function fdrNormFU(r){
   var _rp=(r.y1pos!=null)?Math.round(r.y1pos*100):null;
   // Wide-scan rows carry no Bollinger-squeeze flag; the rest of the turn signals (macdRising/volRatio/aboveEma20)
   // and the range position ARE present, so the spring score still computes (just without the squeeze bonus).
-  var _spring=fdrSpringScore({rangePos:_rp, rsi:(r.rsi!=null)?Math.round(r.rsi):null,
+  var _ret1y=(r.ret1y!=null)?r.ret1y:null;
+  var _spring=fdrSpringScore({rangePos:_rp, ret1y:_ret1y, rsi:(r.rsi!=null)?Math.round(r.rsi):null,
     squeeze:null, macdRising:r.macdRising, volRatio:r.volRatio, aboveMa20:r.aboveEma20});
   return {sym:r.sym, region:r.region||'us', name:r.name||r.sym, sector:r.sector||null,
     price:fdrNum(r.price), change:r.change, up:(r.change||0)>=0,
     buyNow:(r.buyNow!=null)?Math.round(r.buyNow):null, cherry:null,
-    rsi:(r.rsi!=null)?Math.round(r.rsi):null, rangePos:_rp, spring:_spring,
+    rsi:(r.rsi!=null)?Math.round(r.rsi):null, rangePos:_rp, spring:_spring, ret1y:(_ret1y!=null)?Math.round(_ret1y):null,
     news:fdrSent100(r.newsSent), value:r.value, quality:r.quality, growth:r.growth,
     mcap:r.mcap||null, short:(r.short!=null)?r.short:null,
     div:(r.divYield!=null)?Math.round(r.divYield*1000)/10:null,
@@ -9157,7 +9182,7 @@ function fdrPool(D){
   fu.forEach(function(r){ try{ put(fdrNormFU(r)); }catch(e){} });
   return order.map(function(k){return byKey[k];});
 }
-function fdrVal(s,k){ if(k==='mcap') return s.mcap!=null?s.mcap/1e9:null; return s[k]; }
+function fdrVal(s,k){ if(k==='mcap'||k==='capMax') return s.mcap!=null?s.mcap/1e9:null; return s[k]; }
 function fdrActive(){ var a=[]; FDR_LEVERS.forEach(function(g){g.items.forEach(function(l){if(l.on)a.push(l);});}); return a; }
 function fdrLever(k){ var r=null; FDR_LEVERS.forEach(function(g){g.items.forEach(function(l){if(l.k===k)r=l;});}); return r; }
 function fdrMatch(s){
@@ -9230,7 +9255,11 @@ function fdrRailHtml(pool){
   var h='<div class="fdr-railhead"><b>Your levers</b><button class="fdr-reset" id="fdrReset">Clear</button></div>';
   // #345 — one-tap presets. "Coiled spring" configures the finder to surface flat-but-turning names (see
   // fdrSpringScore): turns on ONLY the spring lever and sorts by it, so the top of the list is the best setups.
-  h+='<div class="fdr-presets"><button class="fdr-preset'+(fdrLever('spring')&&fdrLever('spring').on?' on':'')+'" id="fdrSpringPreset" title="Flat / hasn’t run up, but starting to turn — squeeze · volume · MACD">🌱 Coiled spring</button></div>';
+  h+='<div class="fdr-presets"><span class="fdr-presetl">One-tap:</span>'+
+    '<button class="fdr-preset'+(fdrLever('spring')&&fdrLever('spring').on?' on':'')+'" id="fdrSpringPreset" title="Flat / hasn’t run up, but starting to turn — squeeze · volume · MACD">🌱 Coiled spring</button>'+
+    '<button class="fdr-preset'+(fdrLever('capMax')&&fdrLever('capMax').on?' on':'')+'" id="fdrSmallPreset" title="Small companies only (needs fundamentals — mostly catalyst-pot names)">🪙 Small caps</button>'+
+    '<button class="fdr-preset'+(fdrLever('newsFresh')&&fdrLever('newsFresh').on?' on':'')+'" id="fdrFreshPreset" title="A fresh headline in the last ~3 days">📰 Fresh news</button>'+
+    '</div>';
   h+='<div class="fdr-grp"><div class="fdr-grpt">Sectors <span class="fdr-hint">· All by default · 🍊 = we rate a Buy in that sector</span></div><div class="fdr-chips" id="fdrSecChips">'+
     '<button class="fdr-cchip'+((!FDR.sectorSet||!FDR.sectorSet.length)?' on':'')+'" data-sec="__all">All</button>'+
     secs.map(function(s){return '<button class="fdr-cchip'+((FDR.sectorSet&&FDR.sectorSet.indexOf(s)>=0)?' on':'')+'" data-sec="'+esc(s)+'">'+(buySecs.indexOf(s)>=0?'🍊 ':'')+esc(s)+'</button>';}).join('')+
@@ -9254,7 +9283,7 @@ function fdrCardsHtml(rows){
       '<div class="fdr-cstats"><span>Range <b>'+(s.rangePos!=null?s.rangePos+'%':'—')+'</b></span><span>Value <b>'+(s.value!=null?s.value:'—')+'</b></span>'+
         '<span>Qual <b>'+(s.quality!=null?s.quality:'—')+'</b></span><span>RSI <b>'+(s.rsi!=null?s.rsi:'—')+'</b></span>'+
         '<span>Cap <b>'+fdrMcap(s.mcap)+'</b></span><span>News <b>'+(s.news!=null?s.news:'—')+'</b></span></div>'+
-      (s.newsHead?'<div class="fdr-cnews">📰 '+esc(fdrFirstSentence(s.newsHead))+'<span class="fdr-cnewsage">'+(s.newsAge<1?'today':s.newsAge+'d ago')+'</span></div>':'')+
+      (s.newsHead?'<div class="fdr-cnews">'+(s.newsMove!=null?'<span class="fdr-cnewsmove '+(s.newsMove>=0?'up':'down')+'">'+(s.newsMove>=0?'▲ +':'▼ ')+Math.abs(s.newsMove)+'% since</span> ':'')+'📰 '+esc(fdrFirstSentence(s.newsHead))+'<span class="fdr-cnewsage">'+(s.newsAge<1?'today':s.newsAge+'d ago')+'</span></div>':'')+
       (showMatch?'<div class="fdr-mb"><div class="fdr-mt"><span>Match</span><b style="color:'+fdrColor(o.m)+'">'+o.m+'%</b></div><div class="fdr-track"><i style="width:'+o.m+'%"></i></div></div>':'')+
       '</div>';
   }).join('')+'</div>'+(rows.length>80?'<p class="fdr-note">Showing top 80 of '+rows.length+'.</p>':'');
@@ -9400,13 +9429,17 @@ function fdrWire(root){
   root.querySelectorAll('[data-fview]').forEach(function(b){b.onclick=function(){ FDR.view=b.dataset.fview; rerender(); };});
   var ss=document.getElementById('fdrSort'); if(ss) ss.onchange=function(){ FDR.sort=ss.value; rerender(); };
   var reset=document.getElementById('fdrReset'); if(reset) reset.onclick=function(){ FDR_LEVERS.forEach(function(g){g.items.forEach(function(l){ l.on=false; });}); FDR.sectorSet=[]; FDR.toggles.aboveMa=false; FDR.sort='match'; rerender(); };
-  // #345 — "🌱 Coiled spring" preset: turn on ONLY the spring lever (≥55) and sort by it; click again to clear.
-  var sp=document.getElementById('fdrSpringPreset'); if(sp) sp.onclick=function(){
-    var l=fdrLever('spring'), turningOn=!(l&&l.on);
-    FDR_LEVERS.forEach(function(g){g.items.forEach(function(x){ x.on=false; });}); FDR.sectorSet=[]; FDR.toggles.aboveMa=false;
-    if(turningOn&&l){ l.on=true; l.val=55; FDR.sort='spring'; FDR.mode='flexible'; } else { FDR.sort='match'; }
-    rerender();
-  };
+  // #345/#2c — one-tap presets: each turns on ONLY its lever and sorts sensibly; click again to clear.
+  function _fdrPreset(btnId, leverK, val, sort){
+    var b=document.getElementById(btnId); if(!b)return;
+    b.onclick=function(){ var l=fdrLever(leverK), on=!(l&&l.on);
+      FDR_LEVERS.forEach(function(g){g.items.forEach(function(x){x.on=false;});}); FDR.sectorSet=[]; FDR.toggles.aboveMa=false;
+      if(on&&l){ l.on=true; if(val!=null)l.val=val; FDR.sort=sort||'match'; FDR.mode='flexible'; } else { FDR.sort='match'; }
+      rerender(); };
+  }
+  _fdrPreset('fdrSpringPreset','spring',55,'spring');
+  _fdrPreset('fdrSmallPreset','capMax',2,'match');
+  _fdrPreset('fdrFreshPreset','newsFresh',40,'newsFresh');
   // #3 — exact-ticker search. oninput does the LIGHT re-render (results + count) so the input keeps focus while
   // typing; the ✕ clear does a full re-render so the box repaints without it.
   var srch=document.getElementById('fdrSearch'); if(srch){ srch.oninput=function(){ FDR.query=srch.value; fdrRenderView(); }; srch.onkeydown=function(e){ if(e.key==='Enter') e.preventDefault(); }; }
