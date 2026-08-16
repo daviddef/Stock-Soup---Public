@@ -4377,7 +4377,8 @@ function marketContextHtml(D, bargainCards, lines){   // `lines` is a render-loc
     ['announcements','📢 Announcements', announcementsPanelHtml(D)],
     ['world','🌍 World &amp; sectors', geoSec],
     ['commodities','🛢️ Commodities', commodSec],
-    ['movers','🔥 Movers', topMoversHtml(D)],
+    // #347 — Top Movers moved OUT of the backdrop into a Stock Pot one-tap (🚀 Today's movers preset), where
+    // each mover is a scored, tappable card. The backdrop no longer carries its own movers tab.
     ['upcoming','📅 Coming up', upcomingHtml(D)]
   ];
   if(bargainCards) tabs.push(['bargains','🛍️ Bargains',
@@ -4394,7 +4395,7 @@ function marketContextHtml(D, bargainCards, lines){   // `lines` is a render-loc
   // "04" section with the SAME styling as 01/02/03 (was demoted to a collapsed drawer; user asked for it
   // as its own section). id="mktctx" kept so the 📢 Key-announcements card can still jump + switch tab.
   return '<section id="mktctx" class="mkctxsec"><div class="sec-head"><h2 class="display"><span class="k">04</span> Market backdrop</h2>'+infoBtn('marketctx')+'</div>'+
-    '<p class="sec-sub" style="margin:0 0 10px">The wider backdrop behind tonight\'s picks — <b>geopolitics</b>, sectors, commodities and the day\'s movers. The <b>actionable</b> bits (buy-a-theme, key announcements, what\'s coming up) are already up in <b>Actions</b>; this is here to browse. Tap a chip.</p>'+
+    '<p class="sec-sub" style="margin:0 0 10px">The wider backdrop behind tonight\'s picks — <b>geopolitics</b>, sectors and commodities. Today\'s movers now live in <b>The Stock Pot</b> under 🚀 Today\'s movers (each one scored). The <b>actionable</b> bits (buy-a-theme, key announcements, what\'s coming up) are already up in <b>Actions</b>; this is here to browse. Tap a chip.</p>'+
     '<div class="mctx-nav" role="tablist">'+nav+'</div>'+panels+'</section>';
 }
 function actionsHtml(D){
@@ -9377,7 +9378,7 @@ var FDR_LEVERS=[
 var FDR_AXES=[['value','Value (cheap →)'],['rangePos','Range position →'],['quality','Quality →'],
   ['growth','Growth →'],['buyNow','🍊 Buy-now →'],['cherry','🍒 Conviction →'],['rsi','RSI →'],['news','Positive news →'],['spring','🌱 Coiled spring →']];
 var FDR_SORTS=[['match','Best match'],['buyNow','🍊 Buy-now'],['cherry','🍒 Conviction'],['spring','🌱 Coiled spring'],['newsFresh','📰 Freshest news'],
-  ['rangePos','Range position'],['value','Value'],['quality','Quality'],['mcap','Market cap'],['div','Dividend']];
+  ['move','🚀 Today’s move'],['rangePos','Range position'],['value','Value'],['quality','Quality'],['mcap','Market cap'],['div','Dividend']];
 function fdrSent100(s){ return s==null?null:Math.round((Math.max(-1,Math.min(1,+s))+1)/2*100); }
 function fdrNum(p){ if(p==null)return null; var n=parseFloat(String(p).replace(/[^0-9.\-]/g,'')); return isFinite(n)?n:null; }
 // #2 (user ask) — the freshest news headline within the last 3 days, so a Stock Pot card can show a one-line
@@ -9452,7 +9453,7 @@ function fdrNormCand(c){
     squeeze:(c.bb_squeeze||{}).squeeze, macdRising:(c.trend||{}).macd_rising,
     volRatio:(((c.score||{}).detail||{}).raw||{}).volume_ratio, aboveMa20:(c.ema||{}).above_ema20});
   return {sym:c.sym, region:reg, name:c.name||c.sym, sector:f.sector||null,
-    price:fdrNum(c.price), change:c.change, up:c.up!==false,
+    price:fdrNum(c.price), change:c.change, move:fdrNum(String(c.change)), up:c.up!==false,
     buyNow:(c.score&&c.score.buy_now!=null)?Math.round(c.score.buy_now):null, cherry:cherry,
     rsi:(c.rsi!=null)?Math.round(c.rsi):null, rangePos:_rp, spring:_spring, ret1y:(_ret1y!=null)?Math.round(_ret1y):null,
     news:fdrSent100(c.news_sentiment), value:f.value_score, quality:f.quality_score, growth:f.growth_score,
@@ -9474,7 +9475,7 @@ function fdrNormFU(r){
   var _spring=fdrSpringScore({rangePos:_rp, ret1y:_ret1y, rsi:(r.rsi!=null)?Math.round(r.rsi):null,
     squeeze:null, macdRising:r.macdRising, volRatio:r.volRatio, aboveMa20:r.aboveEma20});
   return {sym:r.sym, region:r.region||'us', name:r.name||r.sym, sector:r.sector||null,
-    price:fdrNum(r.price), change:r.change, up:(r.change||0)>=0,
+    price:fdrNum(r.price), change:r.change, move:fdrNum(String(r.change)), up:(r.change||0)>=0,
     buyNow:(r.buyNow!=null)?Math.round(r.buyNow):null, cherry:null,
     rsi:(r.rsi!=null)?Math.round(r.rsi):null, rangePos:_rp, spring:_spring, ret1y:(_ret1y!=null)?Math.round(_ret1y):null,
     newsFresh:0,   // #freshfix — wide-scan rows carry no headline TEXT, so they're never "fresh news" we can show
@@ -9612,6 +9613,7 @@ function fdrRailHtml(pool){
     '<button class="fdr-preset'+(fdrLever('capMax')&&fdrLever('capMax').on?' on':'')+'" id="fdrSmallPreset" title="Small companies only (needs fundamentals — mostly catalyst-pot names)">🪙 Small caps</button>'+
     '<button class="fdr-preset'+(fdrLever('price')&&fdrLever('price').on?' on':'')+'" id="fdrPennyPreset" title="Low-priced / penny shares — share price ≤ $1 (needs a known price)">💰 Penny stocks</button>'+
     '<button class="fdr-preset'+(fdrLever('newsFresh')&&fdrLever('newsFresh').on?' on':'')+'" id="fdrFreshPreset" title="A fresh headline in the last ~3 days">📰 Fresh news</button>'+
+    '<button class="fdr-preset'+(FDR.sort==='move'?' on':'')+'" id="fdrMoversPreset" title="Today’s biggest movers among names we’ve scored — sorts by the day’s % change (gainers first; flip the sort for fallers)">🚀 Today’s movers</button>'+
     '<button class="fdr-preset'+(FDR.catalystOnly?' on':'')+'" id="fdrCatPreset" title="Only the catalyst pot — names our news/earnings/quant/IPO nets surfaced (drops the wide technical scan)">🎯 On a catalyst</button>'+
     '<button class="fdr-preset'+(fdrLever('value')&&fdrLever('value').on?' on':'')+'" id="fdrValuePreset" title="Cheap on the fundamentals — high value score (P/E · P/B · PEG). Needs fundamentals (catalyst-pot names).">💎 Undervalued</button>'+
     '<button class="fdr-preset'+(FDR.excludeJunk?' on':'')+'" id="fdrJunkPreset" title="Drop the obvious no-gos — sub-2c prices, blow-off RSI≥90, and illiquid names below the daily $-volume floor. Stacks with everything else.">🚫 Exclude junk</button>'+
@@ -9859,6 +9861,10 @@ function fdrWire(root){
   // #cat — "On a catalyst" is a plain toggle (composes with the levers), not a lever-preset: it narrows the
   // pool to the catalyst-caught set (drops the wide technical scan). Keeps whatever levers are already set.
   var cat=document.getElementById('fdrCatPreset'); if(cat) cat.onclick=function(){ FDR.catalystOnly=!FDR.catalystOnly; rerender(); };
+  // #347 (user ask) — Top Movers as a Pot one-click. Sort-only (no lever): rank scored names by today's %
+  // move. Toggling off falls back to Best match. Covers scored names only — the whole-market by-volume list
+  // that used to live in the Market-backdrop panel isn't reproduced here (dvol lever covers liquidity instead).
+  var mov=document.getElementById('fdrMoversPreset'); if(mov) mov.onclick=function(){ if(FDR.sort==='move'){ FDR.sort='match'; } else { FDR.sort='move'; FDR.mode='flexible'; } rerender(); };
   // 🚫 Obvious exclusions — a composable toggle (like "On a catalyst"), not a lever-preset. Stacks with everything.
   var junk=document.getElementById('fdrJunkPreset'); if(junk) junk.onclick=function(){ FDR.excludeJunk=!FDR.excludeJunk; rerender(); };
   // ⓘ on the one-tap row — the preset buttons are injected into the rail after boot's wireInfo() pass ran, so
@@ -9901,6 +9907,7 @@ function openStockPot(preset){
     else if(preset==='value'){ on('value',60); FDR.sort='value'; }
     else if(preset==='news'){ on('newsFresh',40); FDR.sort='newsFresh'; }
     else if(preset==='catalyst'){ FDR.catalystOnly=true; FDR.sort='buyNow'; }
+    else if(preset==='movers'){ FDR.sort='move'; }   // #347 — today's biggest movers among scored names
     else { FDR.sort='buyNow'; }   // 'buy' — the default Buy-Now screen
     switchTab('finder');
   }catch(e){}
