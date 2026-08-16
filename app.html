@@ -1389,6 +1389,13 @@
   .mnews-old{border-color:rgba(255,77,77,.35);background:rgba(255,77,77,.06)}
   .mnews-age{display:inline-block;margin-left:7px;font-size:11px;font-weight:700;color:var(--muted);font-family:var(--mono)}
   .mnews-old .mnews-age{color:var(--dont)}
+  /* extra headlines (beyond the lead) — a compact stacked list so "In the news" shows the full flow, not one line */
+  .mnews-more{margin-top:7px;display:flex;flex-direction:column;gap:5px;border-top:1px solid var(--line);padding-top:8px}
+  .mnews-item{font-size:12.5px;line-height:1.4;color:var(--muted);position:relative;padding-left:13px}
+  .mnews-item::before{content:"›";position:absolute;left:2px;color:var(--faint);font-weight:800}
+  .mnews-item a{color:var(--broth);font-weight:600}
+  .mnews-item a:visited{color:var(--broth)}
+  .mnews-item.mnews-old{background:none;border:0;padding-left:13px}
   /* #97 news list → 3-up grid (10 Aug 2026, user ask). The rows are .annrow cards; a grid lets them
      sit 3-across on desktop, 2 at medium, 1 on mobile — no change to the card itself. */
   .nt3grid{display:grid;grid-template-columns:1fr;gap:8px;margin-top:8px}
@@ -5636,7 +5643,7 @@ function openModal(p,region,cur){
         signalDetailHtml(p,region,{skipRsi:true})+'</details>'+
       '</div>'+
       announcementsHtml(p.announcements)+
-      newsLineHtml(p.news, p.news_url, p.news_date)+
+      newsLineHtml(p.news, p.news_url, p.news_date, p.news_top3)+
       earningsCallLink(p.sym,region)+
       // #323 P1 — fold the "fine print" (how we found it · short interest · risks · other options) into ONE
       // collapsed <details>, so the fold isn't eaten by four secondary panels. The decision, chart, signals,
@@ -6906,7 +6913,7 @@ function openCandidate(idx){
       '<div class="mnews">🔎 <span class="lead">How we picked it up:</span> '+esc(c.note||'a signal in tonight\'s scan')+'<div class="mfound">'+(c.foundVia?esc(c.foundVia):'Caught by our wide-net scan — live news, market movers and analyst actions — then priced &amp; scored into the pot.')+'</div></div>'+
       (signalRows(c,c.region).length?'<h4 style="margin-top:16px">🧮 All the signals, in one place</h4>'+signalDetailHtml(c,c.region):'')+
       announcementsHtml(c.announcements)+
-      newsLineHtml(c.news, c.news_url, c.news_date)+
+      newsLineHtml(c.news, c.news_url, c.news_date, c.news_top3)+
       earningsCallLink(c.sym,c.region)+
       (c.short!=null?'<div class="mshort">🩳 <span class="lead">Short interest:</span> <b>'+c.short+'%</b> of shares sold short'+(c.short>=8?' — <b>elevated</b> (squeeze fuel / bearish crowd)':c.short>=4?' — moderate':' — light')+'</div>':'')+
       '<div class="mrisk" style="background:var(--surface-2);border-color:var(--line)"><b>Didn\'t make the top 3</b> — it\'s on the radar, not a pick this run.</div>'+
@@ -6929,15 +6936,26 @@ function timeAgo(iso){
 // silently shown as if fresh. Real incident (9 Aug 2026, CQR): the single "In the news" headline
 // was 14 months stale while the same card's ASX announcements were hours old, with no age shown
 // on either to tell them apart.
-function newsLineHtml(news, newsUrl, newsDate){
-  if(!news) return '';
-  var days=null;
-  if(newsDate){ try{ days=Math.floor((Date.now()-new Date(newsDate).getTime())/86400000); }catch(e){} }
-  var old = days!=null && days>7;
-  var age = days==null ? '' : (days<1?'today':days===1?'1d ago':days+'d ago');
-  return '<div class="mnews'+(old?' mnews-old':'')+'">📰 <span class="lead">In the news'+(old?' ⚠️ OLD':'')+':</span> '+
-    (newsUrl?'<a href="'+esc(newsUrl)+'" target="_blank" rel="noopener">'+esc(news)+' ↗</a>':esc(news))+
-    (age?'<span class="mnews-age">'+age+'</span>':'')+'</div>';
+function newsLineHtml(news, newsUrl, newsDate, items){
+  if(!news && !(items&&items.length)) return '';
+  function ageOf(d){ var days=null; if(d){ try{ days=Math.floor((Date.now()-new Date(d).getTime())/86400000); }catch(e){} } return days; }
+  // Build a deduped list: the lead headline + any extra items we already fetched (news_top3 and beyond),
+  // dropping near-duplicate titles (the same story syndicated across outlets).
+  var list=[]; var seen={};
+  function add(t,u,d){ if(!t) return; var k=String(t).toLowerCase().replace(/[^a-z0-9]+/g,' ').trim().slice(0,60); if(seen[k]) return; seen[k]=1; list.push({t:t,u:u,d:d}); }
+  add(news,newsUrl,newsDate);
+  (items||[]).forEach(function(a){ add(a.title||a.t, a.url||a.u, a.date||a.d); });
+  if(!list.length) return '';
+  var leadOld = ageOf(list[0].d); var old = leadOld!=null && leadOld>7;
+  function row(a,lead){ var days=ageOf(a.d); var age=days==null?'':(days<1?'today':days===1?'1d ago':days+'d ago');
+    var body=a.u?'<a href="'+esc(a.u)+'" target="_blank" rel="noopener">'+esc(a.t)+' ↗</a>':esc(a.t);
+    return '<div class="mnews-item'+(days!=null&&days>7?' mnews-old':'')+'">'+body+(age?'<span class="mnews-age">'+age+'</span>':'')+'</div>'; }
+  var lead=list[0], rest=list.slice(1,6);
+  var head='<div class="mnews'+(old?' mnews-old':'')+'">📰 <span class="lead">In the news'+(old?' ⚠️ OLD':'')+':</span> '+
+    (lead.u?'<a href="'+esc(lead.u)+'" target="_blank" rel="noopener">'+esc(lead.t)+' ↗</a>':esc(lead.t))+
+    (ageOf(lead.d)!=null?'<span class="mnews-age">'+(ageOf(lead.d)<1?'today':ageOf(lead.d)===1?'1d ago':ageOf(lead.d)+'d ago')+'</span>':'')+'</div>';
+  if(!rest.length) return head;
+  return head+'<div class="mnews-more">'+rest.map(function(a){return row(a);}).join('')+'</div>';
 }
 // #324 (US-only, user ask 13 Aug) — a light "read the earnings call" link: what management ACTUALLY said,
 // straight from the horse's mouth. Scoped search to Motley Fool's free public transcript archive (US-only;
