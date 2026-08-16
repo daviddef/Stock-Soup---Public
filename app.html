@@ -1338,6 +1338,11 @@
   .fdr-cpx{margin-left:auto;font-weight:800;font-size:13px;font-variant-numeric:tabular-nums}
   .fdr-cstats{display:grid;grid-template-columns:1fr 1fr;gap:3px 10px;font-size:11.5px;color:var(--muted)}
   .fdr-cstats b{color:var(--ink);font-variant-numeric:tabular-nums}
+  .fdr-csrc{font-size:9.5px;font-weight:800;border-radius:5px;padding:1px 5px;letter-spacing:.02em;white-space:nowrap;margin-left:auto}
+  .fdr-csrc.src-cat{background:rgba(232,102,42,.12);color:var(--broth)}
+  .fdr-csrc.src-wide{background:var(--surface-2);color:var(--muted);border:1px solid var(--line)}
+  .fdr-csrc.src-pick{background:rgba(35,194,103,.14);color:var(--buy)}
+  .fdr-conly{font-size:10.5px;color:var(--faint);margin-top:5px}
   .fdr-mb{margin-top:10px} .fdr-mt{display:flex;justify-content:space-between;font-size:11px;font-weight:800;color:var(--muted);margin-bottom:3px}
   .fdr-track{height:7px;border-radius:5px;background:var(--surface-2);overflow:hidden}
   .fdr-track i{display:block;height:100%;border-radius:5px;background:linear-gradient(90deg,var(--broth),var(--buy))}
@@ -9421,20 +9426,38 @@ function fdrMiniBar(v,kind){
   if(kind==='rsi') return '<div class="fdr-mbar fdr-mbar-rsi"><i class="fdr-mmk" style="left:'+v+'%"></i></div>';
   return '<div class="fdr-mbar"><i class="fdr-mfill" style="width:'+v+'%"></i></div>';
 }
+// #rev-mix — a tiny source badge so the user can see WHICH population a result is from: the catalyst pot
+// (has fundamentals + news) vs the whole-market technical scan (technicals + liquidity, no fundamentals yet).
+function fdrSrcBadge(s){
+  var m = s.src==='pick' ? ['src-pick','⭐ served'] : s.src==='cand' ? ['src-cat','🎯 catalyst'] : ['src-wide','🌐 market'];
+  return '<span class="fdr-csrc '+m[0]+'" title="'+(s.src==='cand'?'From the catalyst pot — news/earnings/quant/IPO':s.src==='pick'?'A served pick this run':'From the whole-market technical scan')+'">'+m[1]+'</span>';
+}
+// #rev-dashes — show only the metric cells we actually HAVE, not a wall of em-dashes. When a name carries no
+// fundamentals at all (the wide scan), say so plainly instead of "Value — Qual — Cap —".
+function fdrStatCells(s){
+  var c=[];
+  if(s.rangePos!=null) c.push('<span>Range <b>'+s.rangePos+'%</b></span>');
+  if(s.rsi!=null)      c.push('<span>RSI <b>'+s.rsi+'</b></span>');
+  if(s.value!=null)    c.push('<span>Value <b>'+s.value+'</b></span>');
+  if(s.quality!=null)  c.push('<span>Qual <b>'+s.quality+'</b></span>');
+  if(s.mcap!=null)     c.push('<span>Cap <b>'+fdrMcap(s.mcap)+'</b></span>');
+  if(s.news!=null)     c.push('<span>News <b>'+s.news+'</b></span>');
+  var noFund = (s.value==null && s.quality==null && s.mcap==null);
+  return '<div class="fdr-cstats">'+c.join('')+'</div>'+
+    (noFund && s.src!=='pick' ? '<div class="fdr-conly">📊 technicals only · fundamentals fill in from the daily scan</div>' : '');
+}
 function fdrCardsHtml(rows){
   if(!rows.length) return fdrEmpty();
   var showMatch=(FDR.mode==='flexible');
   return '<div class="fdr-grid">'+rows.slice(0,80).map(function(o){var s=o.s;
     return '<div class="fdr-card" data-sym="'+esc(s.sym)+'" data-region="'+esc(s.region)+'" role="button" tabindex="0" aria-label="'+esc(s.sym)+'">'+
       '<span class="fdr-stripe" style="background:'+(showMatch?fdrColor(o.m):'var(--broth)')+'"></span>'+
-      '<div class="fdr-ctop"><span class="fdr-csym">'+esc(s.sym)+'</span><span class="fdr-cflag">'+(s.region==='au'?'ASX':'US')+'</span></div>'+
+      '<div class="fdr-ctop"><span class="fdr-csym">'+esc(s.sym)+'</span>'+fdrSrcBadge(s)+'<span class="fdr-cflag">'+(s.region==='au'?'ASX':'US')+'</span></div>'+
       '<div class="fdr-cname">'+esc(s.name)+'</div>'+
       '<div class="fdr-cscores"><span class="fdr-sc fdr-sc-o">🍊 '+(s.buyNow!=null?s.buyNow:'—')+'</span>'+
         (s.cherry!=null?'<span class="fdr-sc fdr-sc-c">🍒 '+s.cherry+'</span>':'')+
         '<span class="fdr-cpx">'+(s.price!=null?fdrCur(s.region)+s.price:'')+'</span></div>'+
-      '<div class="fdr-cstats"><span>Range <b>'+(s.rangePos!=null?s.rangePos+'%':'—')+'</b></span><span>Value <b>'+(s.value!=null?s.value:'—')+'</b></span>'+
-        '<span>Qual <b>'+(s.quality!=null?s.quality:'—')+'</b></span><span>RSI <b>'+(s.rsi!=null?s.rsi:'—')+'</b></span>'+
-        '<span>Cap <b>'+fdrMcap(s.mcap)+'</b></span><span>News <b>'+(s.news!=null?s.news:'—')+'</b></span></div>'+
+      fdrStatCells(s)+
       // #minicharts (user ask) — compact RSI + Value slider bars on the card face. RSI: green→red track with a
       // marker (cheap↔overheated); Value: a green fill (higher = cheaper). Each shows only when we have it.
       (s.rsi!=null?'<div class="fdr-mini"><span class="fdr-minil">RSI '+s.rsi+'</span>'+fdrMiniBar(s.rsi,'rsi')+'</div>':'')+
@@ -9447,6 +9470,21 @@ function fdrCardsHtml(rows){
 function fdrEmpty(){
   var q=(FDR.query||'').trim().toUpperCase().replace(/[^A-Z0-9.]/g,'');
   if(q){ return '<div class="fdr-empty"><b>No scored match for “'+esc(q)+'”.</b>It may be outside tonight’s scored pot (only names we scored this run appear here). <button class="fdr-anbtn anbtn" data-sym="'+esc(q)+'" data-region="'+esc(MKT)+'" style="margin-top:8px">🧠 Get a read on '+esc(q)+' →</button></div>'; }
+  // #rev-empty — if the reason is that an active REQUIRES-DATA lever (Small caps / Undervalued / value / quality
+  // / growth / cap / dividend) has almost no coverage in this pool yet, say THAT plainly — otherwise "0 match"
+  // is indistinguishable from "nothing qualified". Coverage builds from the daily scan's fundamentals warm.
+  try{
+    var D=(LAST&&LAST.D)||{}, pool=fdrPool(D).filter(fdrInScope);
+    var reqOn=fdrActive().filter(function(l){return l.req;});
+    if(reqOn.length){
+      var haveAny=pool.some(function(s){ return reqOn.every(function(l){ return fdrVal(s,l.k)!=null; }); });
+      if(!haveAny){
+        var names=reqOn.map(function(l){return l.label;}).join(' · ');
+        return '<div class="fdr-empty"><b>No '+(MKT==='au'?'ASX':'US')+' names carry that data yet.</b>'+
+          '“'+esc(names)+'” needs fundamentals (market-cap / value / quality), which fill in from the daily whole-market scan — coverage builds over a few runs. Try 🎯 On a catalyst, or a technical lever like 🌱 Coiled spring in the meantime.</div>';
+      }
+    }
+  }catch(e){}
   return '<div class="fdr-empty"><b>Nothing clears every lever.</b>Loosen a slider — or switch to <b>Flexible</b> and we’ll rank the whole pot by how close each stock gets.</div>';
 }
 function fdrAxisSel(id,val){ return '<select id="'+id+'">'+FDR_AXES.map(function(a){return '<option value="'+a[0]+'"'+(a[0]===val?' selected':'')+'>'+a[1]+'</option>';}).join('')+'</select>'; }
