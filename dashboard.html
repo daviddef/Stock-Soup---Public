@@ -1576,12 +1576,27 @@
   .missrow.m-served .missstat{color:var(--buy);background:rgba(35,194,103,.16)}
   .missrow.m-scanned .missstat{color:var(--hold);background:rgba(255,197,61,.18)}
   .missnote{width:100%;color:var(--faint);font-size:12px}
-  /* #newschart — scrubbable multi-day price + news timeline */
+  /* #newschart — the unified scrubbable price · range · news chart */
   .nc-block{margin-top:2px}
-  .newschart{width:100%;min-height:110px}
-  .nc-load{color:var(--faint);font-size:12px;padding:34px 0;text-align:center}
-  .nc-svg{width:100%;height:104px;display:block;touch-action:none;cursor:ew-resize}
+  .nc-hh{color:var(--faint);font-weight:600}
+  .newschart{width:100%;min-height:132px}
+  .nc-load{color:var(--faint);font-size:12px;padding:40px 0;text-align:center}
+  .nc-wrap{position:relative}
+  .nc-svg{width:100%;height:118px;display:block;touch-action:none;cursor:ew-resize}
   .nc-dot{stroke:#0b0d10;stroke-width:1.8;paint-order:stroke}
+  /* Low/High reference lines + pick buy-levels */
+  .nc-ref{stroke:var(--line);stroke-width:1}
+  .nc-refhi{stroke:var(--muted);opacity:.5}
+  .nc-reflo{stroke:var(--muted);opacity:.45;stroke-dasharray:3 4}
+  .nc-reftg{stroke:var(--buy);opacity:.7;stroke-dasharray:4 3}
+  .nc-refen{stroke:var(--broth);opacity:.75;stroke-dasharray:4 3}
+  .nc-refst{stroke:var(--dont);opacity:.7;stroke-dasharray:4 3}
+  .nc-vmark{stroke:var(--faint);opacity:.5;stroke-width:1;stroke-dasharray:2 4}
+  .nc-vlab{position:absolute;bottom:2px;transform:translateX(-50%);font-size:9px;font-weight:800;color:var(--faint);letter-spacing:.04em;pointer-events:none}
+  /* right-edge Now/High/Low labels, aligned to the reference lines by top:Ypx */
+  .nc-lbls{position:absolute;top:0;right:6px;height:118px;pointer-events:none}
+  .nc-plbl{position:absolute;right:0;transform:translateY(-50%);font-size:11px;font-weight:800;white-space:nowrap;background:rgba(20,16,14,.72);padding:0 3px;border-radius:4px;font-variant-numeric:tabular-nums}
+  .nc-pnow{color:var(--ink)} .nc-phi{color:var(--muted)} .nc-plo{color:var(--muted)}
   .nc-legend{display:flex;flex-wrap:wrap;align-items:center;gap:5px 13px;margin-top:8px;font-size:11px;color:var(--muted)}
   .nc-lg{display:inline-flex;align-items:center;gap:5px;font-weight:700}
   .nc-lg i{width:9px;height:9px;border-radius:50%;display:inline-block;box-shadow:0 0 0 1.5px #0b0d10}
@@ -5859,16 +5874,9 @@ function tickerModalHTML(o, region, cur, isPick){
     if(_plan.length) planHtml='<div class="callplan">'+_plan.join('<span class="pldot">·</span>')+'</div>';
   }
   var callHtml='<div class="mcall"><div class="callchips">'+chips+watchBtn+'</div>'+planHtml+(isPick&&o.chefTake?'<p class="callwhy">'+esc(o.chefTake)+'</p>':'')+'</div>';
-  // chart — pick: price+levels; candidate: where-in-range; either falls back to the lazy intraday chart if spark-less
-  var chartInner;
-  if(o.spark){
-    chartInner = isPick ? levelChartSVG(o.spark,{stop:_nStop,entry:_nEntry,target:_nTarget,now:_nNow},cur)
-                        : levelChartSVG(o.spark,{now:numLevel(o.nNow!=null?o.nNow:o.price),range:true},cur);
-  } else {
-    chartInner = servedChartSlot(o.sym,region,cur,(function(){try{return isPick?pickServedISO(o.sym,region):null;}catch(e){return null;}})());
-  }
-  var chartH='<div class="viz"><h4>📊 The chart — '+(isPick?'price &amp; your levels':'where it sits in its range')+'</h4>'+chartInner+'</div>'+
-    newsChartSlot(o.sym,region,cur,o);   // #newschart — scrubbable multi-day price+news timeline (slide to read a brief)
+  // ONE chart (user ask, 16 Aug — merged the old separate "range" chart in here): the scrubbable multi-day
+  // price+news timeline now ALSO carries the Low/High/Now lines and, for picks, the entry/target/stop levels.
+  var chartH=newsChartSlot(o.sym,region,cur,o,{isPick:isPick, levels:{stop:_nStop,entry:_nEntry,target:_nTarget,now:_nNow}});
   // RSI + P/E + timing + the 🍒 cherry signal read (all shown when data exists)
   var rsiInner = (rsi!=null)
       ? '<h4'+(isPick?' style="margin-top:0"':'')+'>How hot is it right now? · RSI</h4>'+
@@ -8813,11 +8821,11 @@ function ncEvents(o){
     ev.push({date:String(nd).slice(0,10), head:String(o.news).split('.')[0], tone:nt}); }
   return ev;
 }
-function newsChartSlot(sym,region,cur,o){
-  var ev=ncEvents(o||{}); var k=NC_SEQ++; NC_CACHE[k]=ev;
-  return '<div class="viz nc-block"><h4>📰 Price &amp; news — slide to read the story</h4>'+
+function newsChartSlot(sym,region,cur,o,opts){
+  var ev=ncEvents(o||{}); var k=NC_SEQ++; NC_CACHE[k]={ev:ev, opts:opts||{}};
+  return '<div class="viz nc-block"><h4>📊 The chart — price · range · news <span class="nc-hh">· slide to read</span></h4>'+
     '<div class="newschart" data-newschart data-sym="'+esc(sym)+'" data-region="'+esc(region)+'" data-cur="'+esc(cur)+'" data-evk="'+k+'">'+
-    '<div class="nc-load">···· loading '+(ev.length?(ev.length+' news dot'+(ev.length>1?'s':'')):'daily history')+'</div></div></div>';
+    '<div class="nc-load">···· loading the chart</div></div></div>';
 }
 function _ncFmtD(ds){ if(!ds) return ''; var p=String(ds).split('-'); if(p.length<3) return ds;
   var mo=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][(+p[1])-1]||''; return (+p[2])+' '+mo; }
@@ -8825,46 +8833,70 @@ function hydrateNewsCharts(root){
   (root||document).querySelectorAll('.newschart[data-newschart]').forEach(function(slot){
     if(slot.dataset.done) return; slot.dataset.done='1';
     var sym=slot.dataset.sym, reg=slot.dataset.region, cur=slot.dataset.cur||'', evk=+slot.dataset.evk;
-    var events=(NC_CACHE[evk]||[]).filter(function(e){return e&&e.date;});
+    var payload=NC_CACHE[evk]||{}, events=(payload.ev||[]).filter(function(e){return e&&e.date;}), opts=payload.opts||{};
     fetch(API_BASE+'/history?sym='+encodeURIComponent(sym)+'&region='+encodeURIComponent(reg)).then(function(r){return r.ok?r.json():null;}).then(function(j){
       if(!j||!j.closes||j.closes.length<3){ slot.innerHTML='<div class="nc-load nc-empty">not enough daily history to chart yet</div>'; return; }
-      try{ drawNewsChart(slot, j.closes, j.dates||[], events, cur); }catch(e){ slot.innerHTML='<div class="nc-load nc-empty">chart unavailable</div>'; }
+      try{ drawNewsChart(slot, j.closes, j.dates||[], events, cur, opts); }catch(e){ slot.innerHTML='<div class="nc-load nc-empty">chart unavailable</div>'; }
     }).catch(function(){ slot.innerHTML='<div class="nc-load nc-empty">daily history unavailable</div>'; });
   });
 }
-function drawNewsChart(slot, closes, dates, events, cur){
+// The single unified overlay chart (merged the old green "range" chart in here, 16 Aug): a multi-day daily
+// price line, its Low / High / Now reference lines (right-edge labels), vertical dotted week/month markers,
+// coloured news dots, and a draggable scrubber that reads price + the headline at any point.
+function drawNewsChart(slot, closes, dates, events, cur, opts){
+  opts=opts||{};
   var n=closes.length, mn=Math.min.apply(null,closes), mx=Math.max.apply(null,closes), rng=(mx-mn)||1;
-  var W=320, H=104, padX=7, padT=9, padB=9;
+  var W=320, H=118, padX=7, padT=11, padB=11;
   function X(i){ return padX + (n<=1?0:i/(n-1))*(W-2*padX); }
   function Y(v){ return padT + (1-(v-mn)/rng)*(H-padT-padB); }
   var pts=closes.map(function(v,i){return X(i).toFixed(1)+','+Y(v).toFixed(1);}).join(' ');
-  // map each event date to the nearest trading-day index (within ~4 days), so dots sit on the line
+  var up=closes[n-1]>=closes[0], lineCol=up?'var(--buy)':'var(--dont)';
+  var area=X(0).toFixed(1)+','+(H-padB)+' '+pts+' '+X(n-1).toFixed(1)+','+(H-padB);
+  var yHi=Y(mx), yLo=Y(mn), yNow=Y(closes[n-1]);
+  // reference lines: High (solid faint), Low (dashed faint). Pick buy-levels (entry/target/stop) if in range.
+  var refs='<line class="nc-ref nc-refhi" x1="'+padX+'" y1="'+yHi.toFixed(1)+'" x2="'+(W-padX)+'" y2="'+yHi.toFixed(1)+'"/>'+
+           '<line class="nc-ref nc-reflo" x1="'+padX+'" y1="'+yLo.toFixed(1)+'" x2="'+(W-padX)+'" y2="'+yLo.toFixed(1)+'"/>';
+  function refLine(v,cls){ v=(v==null?null:+v); if(v==null||isNaN(v)||v<mn||v>mx) return ''; return '<line class="nc-ref '+cls+'" x1="'+padX+'" y1="'+Y(v).toFixed(1)+'" x2="'+(W-padX)+'" y2="'+Y(v).toFixed(1)+'"/>'; }
+  var lvl=opts.levels||{};
+  if(opts.isPick){ refs+=refLine(lvl.target,'nc-reftg')+refLine(lvl.entry,'nc-refen')+refLine(lvl.stop,'nc-refst'); }
+  // vertical dotted markers at ~1 week and ~1 month ago (by real date), labelled at the base
+  function idxDaysAgo(days){ if(!dates.length) return -1; var cut=Date.now()-days*864e5, best=-1, bd=1e15;
+    for(var i=0;i<dates.length;i++){ var di=Math.abs(Date.parse(dates[i]+'T00:00:00Z')-cut); if(di<bd){bd=di;best=i;} } return best; }
+  var vlines='', vlabs='';
+  [['1w',7],['1m',30]].forEach(function(m){ var i=idxDaysAgo(m[1]); if(i>1&&i<n-2){ var vx=X(i);
+    vlines+='<line class="nc-vmark" x1="'+vx.toFixed(1)+'" y1="'+padT+'" x2="'+vx.toFixed(1)+'" y2="'+(H-padB)+'"/>';
+    vlabs+='<span class="nc-vlab" style="left:'+(vx/W*100).toFixed(2)+'%">'+m[0]+'</span>'; } });
+  // map each event date to the nearest trading-day index (within ~4 days)
   function idxForDate(ds){ var t=Date.parse(ds+'T00:00:00Z'); if(isNaN(t)||!dates.length) return -1;
     var best=-1, bd=1e15; for(var i=0;i<dates.length;i++){ var di=Math.abs(Date.parse(dates[i]+'T00:00:00Z')-t); if(di<bd){bd=di;best=i;} }
     return bd<=4*864e5 ? best : -1; }
-  // Colour each news dot by tone so it POPS off the orange price line: 🟢 good news / 🔴 bad news / 🔵 neutral
-  // update (blue, deliberately different from the line — an orange dot on an orange line was invisible).
   function ncCol(t){ return t==='bull'?'var(--buy)':t==='bear'?'var(--dont)':'#3a9be0'; }
   var evByIdx={}, tones={}; events.forEach(function(e){ var i=idxForDate(e.date); if(i>=0){ (evByIdx[i]=evByIdx[i]||[]).push(e); } });
   var dots=''; Object.keys(evByIdx).forEach(function(i){ i=+i; var e=evByIdx[i][0]; tones[e.tone||'neu']=1;
     dots+='<circle class="nc-dot" cx="'+X(i).toFixed(1)+'" cy="'+Y(closes[i]).toFixed(1)+'" r="4.4" fill="'+ncCol(e.tone)+'"/>'; });
-  var leg=''; if(events.length){ var lp=[];
-    if(tones.bull) lp.push('<span class="nc-lg"><i style="background:var(--buy)"></i>good news</span>');
-    if(tones.bear) lp.push('<span class="nc-lg"><i style="background:var(--dont)"></i>bad news</span>');
-    if(tones.neu)  lp.push('<span class="nc-lg"><i style="background:#3a9be0"></i>update</span>');
-    leg='<div class="nc-legend">'+lp.join('')+'<span class="nc-lghint">drag the line →</span></div>';
-  }
-  var svg='<svg class="nc-svg" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" role="img" aria-label="Price and news timeline">'+
-    '<polyline points="'+pts+'" fill="none" stroke="var(--broth)" stroke-width="1.7" stroke-linejoin="round"/>'+dots+
+  var leg=''; var lp=[];
+  if(tones.bull) lp.push('<span class="nc-lg"><i style="background:var(--buy)"></i>good news</span>');
+  if(tones.bear) lp.push('<span class="nc-lg"><i style="background:var(--dont)"></i>bad news</span>');
+  if(tones.neu)  lp.push('<span class="nc-lg"><i style="background:#3a9be0"></i>update</span>');
+  leg='<div class="nc-legend">'+lp.join('')+'<span class="nc-lghint">drag across →</span></div>';
+  // right-edge Now / High / Low labels, positioned by y-pixel (SVG height == viewBox H so px maps 1:1)
+  var loLbl=yLo, hiTop=yHi; if(Math.abs(yNow-yHi)<14) hiTop=yNow+14;   // avoid Now/High overlap when equal
+  var lbls='<span class="nc-plbl nc-pnow" style="top:'+yNow.toFixed(1)+'px">Now '+cur+closes[n-1].toFixed(2)+'</span>'+
+    '<span class="nc-plbl nc-phi" style="top:'+hiTop.toFixed(1)+'px">High '+cur+mx.toFixed(2)+'</span>'+
+    '<span class="nc-plbl nc-plo" style="top:'+loLbl.toFixed(1)+'px">Low '+cur+mn.toFixed(2)+'</span>';
+  var svg='<svg class="nc-svg" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" role="img" aria-label="Price, range and news timeline">'+
+    refs+vlines+
+    '<polygon class="nc-area" points="'+area+'" fill="'+lineCol+'" fill-opacity="0.10"/>'+
+    '<polyline points="'+pts+'" fill="none" stroke="'+lineCol+'" stroke-width="1.8" stroke-linejoin="round"/>'+dots+
     '<line class="nc-scrub" x1="0" y1="'+padT+'" x2="0" y2="'+(H-padB)+'" stroke="var(--ink)" stroke-width="1" opacity="0"/>'+
     '<circle class="nc-sdot" r="4.2" fill="none" stroke="var(--ink)" stroke-width="2" opacity="0"/></svg>';
-  slot.innerHTML='<div class="nc-wrap">'+svg+
+  slot.innerHTML='<div class="nc-wrap" style="--nch:'+H+'px">'+svg+'<div class="nc-lbls">'+lbls+'</div>'+vlabs+
     '<div class="nc-read"><b class="nc-rdate">← slide across</b><b class="nc-rpx"></b></div>'+
     '<div class="nc-rhead" style="display:none"></div>'+leg+'</div>';
   var svgEl=slot.querySelector('.nc-svg'), scrub=slot.querySelector('.nc-scrub'), sdot=slot.querySelector('.nc-sdot'),
       rDate=slot.querySelector('.nc-rdate'), rPx=slot.querySelector('.nc-rpx'), rHead=slot.querySelector('.nc-rhead');
   function setIndex(i){ i=Math.max(0,Math.min(n-1,i)); var px=X(i), py=Y(closes[i]);
-    scrub.setAttribute('x1',px); scrub.setAttribute('x2',px); scrub.setAttribute('opacity','0.45');
+    scrub.setAttribute('x1',px); scrub.setAttribute('x2',px); scrub.setAttribute('opacity','0.5');
     sdot.setAttribute('cx',px); sdot.setAttribute('cy',py); sdot.setAttribute('opacity','1');
     rDate.textContent=(dates[i]?_ncFmtD(dates[i]):('day '+(i+1))); rPx.textContent=cur+closes[i].toFixed(2);
     var e=null,bd=99; for(var k in evByIdx){ var d=Math.abs((+k)-i); if(d<bd){bd=d;e=evByIdx[k][0];} }
