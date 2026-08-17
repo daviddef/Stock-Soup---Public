@@ -1372,7 +1372,11 @@
   .tlfilt{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
   .tlchip{font-size:12px;font-weight:800;padding:5px 11px;border-radius:999px;border:1px solid var(--line);background:var(--surface-2);color:var(--ink);cursor:pointer;font-family:inherit;white-space:nowrap}
   .tlchip.on{background:var(--broth);color:#fff;border-color:var(--broth)}
-  .tlwrap{display:flex;flex-direction:column;gap:10px}
+  .tlwrap{display:flex;flex-direction:column;gap:12px}
+  .tlgrid2{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;align-items:start}
+  @media(max-width:640px){.tlgrid2{grid-template-columns:1fr}}
+  .tlolder>summary{cursor:pointer;font-size:12px;font-weight:800;color:var(--broth);list-style:none;padding:7px 0}
+  .tlolder>summary::-webkit-details-marker{display:none}
   .tl-grp{font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);margin:8px 0 2px}
   .tlrow{border:1px solid var(--line);border-left-width:3px;border-radius:12px;padding:11px 13px;background:var(--surface)}
   .tlrow.ann-bull{border-left-color:var(--buy)} .tlrow.ann-bear{border-left-color:var(--dont)} .tlrow.ann-neu{border-left-color:var(--line)}
@@ -4464,31 +4468,43 @@ function marketTimelineHtml(D){
   (D.marketEvents||[]).forEach(function(e){ if(!e||!e.headline)return; var r=(e.scope||{}).region; if(!inMkt(r))return;
     items.push({k:'event',t:ts(e.when),date:e.when,tone:'neutral',head:e.headline,why:e.why,url:e.url,evt:e,syms:(e.tickers||[]).map(function(x){return{sym:x.sym,region:x.region,bn:x.buy_now,role:x.role};})}); });
   // 4) COMING UP — earnings / dividends / IPOs / econ, each with a "so what"
-  (D.upcomingEarnings||[]).forEach(function(e){ if(!e||!e.sym||(e.region||'us')!==MKT)return; items.push({k:'coming',t:ts(e.date),date:e.date,tone:'neutral',head:e.sym+' reports its results',why:'Prices often swing 5–20% on the result — a known catalyst to pre-position for.',syms:[{sym:e.sym,region:e.region}]}); });
+  (D.upcomingEarnings||[]).forEach(function(e){ if(!e||!e.sym||(e.region||'us')!==MKT)return; items.push({k:'coming',earn:true,t:ts(e.date),date:e.date,tone:'neutral',head:e.sym+' reports its results',why:'Prices often swing 5–20% on the result — a known catalyst to pre-position for.',syms:[{sym:e.sym,region:e.region}]}); });
   var _dv=D.upcomingDividends; var _dvi=(_dv&&_dv.items)||(Array.isArray(_dv)?_dv:[]);
   _dvi.forEach(function(d){ if(!d||!d.sym||(d.region||'au')!==MKT)return; var dt=d.exDate||d.ex_date||d.date; items.push({k:'coming',t:ts(dt),date:dt,tone:'neutral',head:d.sym+' goes ex-dividend',why:'Own it the day before the ex-date to receive the payout.',syms:[{sym:d.sym,region:d.region}]}); });
   (D.upcomingIPOs||[]).forEach(function(i){ if(!i)return; if((i.region||'au')!==MKT)return; items.push({k:'coming',t:ts(i.date),date:i.date,tone:'neutral',head:(i.name||i.sym||'New listing')+' lists on the ASX',why:i.note||'A fresh listing — no trading history yet, so treat with care.',syms:i.sym?[{sym:i.sym,region:i.region}]:[]}); });
   (D.upcomingEcon||[]).forEach(function(e){ if(!e||!e.event)return; items.push({k:'coming',t:ts(e.date),date:e.date,tone:'neutral',head:(e.country?e.country+': ':'')+e.event,why:'A macro data point that can move the whole market.',syms:[]}); });
   if(!items.length) return '';
-  // split future vs past; future soonest-first, past newest-first
-  var fut=items.filter(function(x){return x.t!=null && x.t>today.getTime();}).sort(function(a,b){return a.t-b.t;});
-  var past=items.filter(function(x){return x.t==null || x.t<=today.getTime();}).sort(function(a,b){return (b.t||0)-(a.t||0);});
+  // #352 — ONE flat list, purely date-sorted (no Coming-up/Recent group headers): nearest-future first, down
+  // through today into recent-past. Items older than 24h collapse behind a toggle. 2-across grid.
+  items.sort(function(a,b){
+    var af=(a.t!=null&&a.t>today.getTime()), bf=(b.t!=null&&b.t>today.getTime());
+    if(af!==bf) return af?-1:1;               // all future ahead of all past
+    if(af) return a.t-b.t;                     // future: soonest first
+    return (b.t||0)-(a.t||0);                  // past: newest first
+  });
+  var cut24=Date.now()-864e5, recent=[], older=[];
+  items.forEach(function(x){ (x.t==null||x.t>=cut24?recent:older).push(x); });
+  // candidate 🍊 score map so timeline ticker chips carry the same score as the Stock Pot chips
+  var cscore={}; (D.candidates||[]).forEach(function(c){ if(c&&c.sym&&c.score&&c.score.buy_now!=null) cscore[c.sym+'|'+(c.region||'us')]=Math.round(c.score.buy_now); });
   var TONE={bullish:{ic:'📈',cls:'ann-bull'},bearish:{ic:'📉',cls:'ann-bear'},neutral:{ic:'',cls:'ann-neu'}};
   var KND={news:'📰 News',filing:'📢 Filing',event:'🌐 Big picture',coming:'📅 Coming up'};
-  function tkchips(syms){ return (syms||[]).slice(0,6).map(function(s){ if(!s||!s.sym)return''; var bn=s.bn; var cls=bn==null?'':(bn>=62?'tl-tk-buy':bn>=45?'tl-tk-watch':'tl-tk-pass'); var role=s.role==='at-risk'?'▼ ':(s.role==='beneficiary'?'▲ ':''); return '<button class="tl-tk '+cls+'" data-sym="'+esc(s.sym)+'" data-region="'+esc(s.region||'us')+'">'+role+esc(s.sym)+(bn!=null?' 🍊'+Math.round(bn):'')+'</button>'; }).join(''); }
+  function tkchips(syms){ return (syms||[]).slice(0,6).map(function(s){ if(!s||!s.sym)return'';
+    var bn=(s.bn!=null)?s.bn:cscore[s.sym+'|'+(s.region||'us')];
+    var cls=bn==null?'':(bn>=62?'tl-tk-buy':bn>=45?'tl-tk-watch':'tl-tk-pass'); var role=s.role==='at-risk'?'▼ ':(s.role==='beneficiary'?'▲ ':'');
+    return '<button class="tl-tk '+cls+'" data-sym="'+esc(s.sym)+'" data-region="'+esc(s.region||'us')+'">'+role+esc(s.sym)+(bn!=null?' 🍊'+Math.round(bn):'')+'</button>'; }).join(''); }
   function row(x){ var tn=TONE[x.tone]||TONE.neutral;
     var head=x.url?'<a class="tl-head" href="'+esc(x.url)+'" target="_blank" rel="noopener">'+esc(x.head)+' ↗</a>':'<span class="tl-head">'+esc(x.head)+'</span>';
     var when=x.date?'<span class="tl-when">'+esc(dfmt(x.date))+' · '+esc(rel(x.t))+'</span>':'';
-    return '<div class="tlrow '+tn.cls+'" data-k="'+x.k+'"><div class="tl-top"><span class="tl-kind tl-k-'+x.k+'">'+KND[x.k]+'</span>'+when+'</div>'+
+    var flag=(x.earn&&x.syms&&x.syms[0])?earnFlag(x.syms[0].sym,x.syms[0].region):'';   // same '🔴 reports tomorrow' pill as the cards
+    return '<div class="tlrow '+tn.cls+'" data-k="'+x.k+'"><div class="tl-top"><span class="tl-kind tl-k-'+x.k+'">'+KND[x.k]+'</span>'+flag+when+'</div>'+
       '<div class="tl-headw">'+(tn.ic?tn.ic+' ':'')+head+'</div>'+
       (x.why?'<div class="tl-why">'+esc(x.why)+'</div>':'')+
       (x.syms&&x.syms.length?'<div class="tl-tks">'+tkchips(x.syms)+'</div>':'')+'</div>'; }
   var FILT=[['all','Everything'],['coming','📅 Coming up'],['news','📰 News'],['filing','📢 Filings'],['event','🌐 Big picture']];
   var chips=FILT.map(function(f){ return '<button class="tlchip'+(MKTF===f[0]?' on':'')+'" data-tlf="'+f[0]+'">'+f[1]+'</button>'; }).join('');
-  var body='';
-  if(fut.length) body+='<div class="tl-grp">⏳ Coming up</div>'+fut.map(row).join('');
-  if(past.length) body+='<div class="tl-grp">📰 What\'s happened</div>'+past.map(row).join('');
-  return '<p class="sec-sub">Everything with a date — news, ASX filings, earnings/dividends/IPOs and the big structural events — on one timeline. Tap a chip to filter; tap a ticker for its read.</p>'+
+  var body='<div class="tlgrid2">'+recent.map(row).join('')+'</div>';
+  if(older.length) body+='<details class="tlolder"><summary>Show '+older.length+' older (over 24h ago) →</summary><div class="tlgrid2" style="margin-top:10px">'+older.map(row).join('')+'</div></details>';
+  return '<p class="sec-sub">Everything with a date — news, ASX filings, earnings/dividends/IPOs and the big structural events — newest first on one timeline. Tap a chip to filter; tap a ticker for its read.</p>'+
     '<div class="tlfilt">'+chips+'</div><div class="tlwrap" data-flt="'+MKTF+'">'+body+'</div>';
 }
 // Each panel reuses the existing builders verbatim (topNewsHtml/topMoversHtml/upcomingHtml + the geo/
