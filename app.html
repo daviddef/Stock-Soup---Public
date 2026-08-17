@@ -3546,7 +3546,8 @@ function valBandHtml(p,cur){
   var verdict=v>=62?'Looks cheap — priced below what its fundamentals justify':v>=38?'Around fair value':'Looks dear — priced above what its fundamentals justify';
   var val=(p&&p.val)||{}, nums=[];
   if(val.pe!=null)nums.push('P/E '+val.pe);
-  if(fd.market_cap!=null)nums.push('cap '+ (fd.market_cap>=1e12?('$'+(fd.market_cap/1e12).toFixed(1)+'T'):('$'+Math.round(fd.market_cap/1e9)+'B')));
+  // #cap-fmt (17 Aug) — sub-$1B caps were rounding to "$1B" (or "$0B" under 500M). Show real $M below a billion.
+  if(fd.market_cap!=null)nums.push('cap '+ (fd.market_cap>=1e12?('$'+(fd.market_cap/1e12).toFixed(1)+'T'):fd.market_cap>=1e9?('$'+(fd.market_cap/1e9).toFixed(1)+'B'):('$'+Math.round(fd.market_cap/1e6)+'M')));
   return '<div class="viz"><h4>💰 Valuation — cheap or dear?</h4>'+
     '<div class="valband"><span class="valmark val-'+vcls+'" style="left:'+pos+'%"></span></div>'+
     '<div class="lends"><span class="g">Undervalued</span><span class="valmid">Fair</span><span class="r">Overvalued</span></div>'+
