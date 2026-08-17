@@ -570,6 +570,16 @@
   .pxr-dot{position:absolute;top:-4px;width:14px;height:14px;border-radius:50%;background:var(--ink);box-shadow:0 0 0 3px var(--surface);transform:translateX(-50%)}
   .pxr-min,.pxr-max{flex:0 0 auto;font-size:11px;font-weight:700;color:var(--faint);font-variant-numeric:tabular-nums;white-space:nowrap}
   .pxr-load{font-size:11px;color:var(--faint);letter-spacing:.12em;padding:4px 0}
+  /* 📦 owned-holdings "today's movement" card (user ask) — ~3 across, biggest mover first, each tappable */
+  .omvcard{margin-top:12px}
+  .omvcard h4 .omv-tally{font-weight:700;font-size:11.5px;color:var(--muted);margin-left:8px}
+  .omvgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,220px),1fr));gap:8px;margin-top:6px}
+  .omv-row{display:flex;align-items:center;gap:8px;width:100%;text-align:left;cursor:pointer;background:var(--surface);border:1px solid var(--line);border-radius:11px;padding:9px 11px;color:var(--ink)}
+  .omv-row:hover{border-color:var(--broth)} .omv-row:active{transform:scale(.99)}
+  .omv-sym{font-weight:800;font-size:12.5px;white-space:nowrap}
+  .omv-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11.5px;color:var(--muted)}
+  .omv-chg{flex:0 0 auto;font-weight:800;font-size:13px;font-variant-numeric:tabular-nums}
+  .omv-chg.up{color:var(--buy)} .omv-chg.down{color:var(--dont)}
   .docsov{position:fixed;inset:0;z-index:300;background:var(--ground);display:none;flex-direction:column}
   .docsbar{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--line);background:var(--surface)}
   .docstitle{font-weight:900;font-size:15px;display:inline-flex;align-items:center;gap:8px}
@@ -1208,6 +1218,13 @@
   .brkhead{font-weight:650;font-size:13.5px;line-height:1.3}
   .brkhead a{color:var(--ink);text-decoration:none;border-bottom:1px solid var(--line)} .brkhead a:hover{border-color:var(--broth)}
   .brkmeta{font-size:11px;color:var(--muted)}
+  /* (user ask) "Just in" laid out ~3 across, and headlines on names you OWN highlighted with 📦 + brand tint */
+  .brkgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,290px),1fr));gap:7px;padding:8px 10px}
+  .brkgrid .brkrow{border:1px solid rgba(214,38,59,.16);border-radius:10px}
+  .brkgrid .brkrow:first-of-type{border-top:1px solid rgba(214,38,59,.16)}   /* override the list-mode divider reset */
+  .brkrow.brkown{background:rgba(255,107,26,.07);border-color:rgba(255,107,26,.36)}
+  .brkrow.brkown .brksym{background:rgba(255,107,26,.16);color:var(--broth)}
+  .brkownlbl{color:var(--broth);font-weight:800}
   /* glance-tile "show me the cards" mini-cards (conviction / sectors / commodities modal) */
   .gmclist{display:flex;flex-direction:column;gap:10px;margin-top:4px}
   .gmcard{cursor:pointer;background:var(--surface);border:1px solid var(--line);border-radius:13px;padding:12px 13px;transition:border-color .12s,transform .05s}
@@ -4105,7 +4122,11 @@ function breakingHtml(D){
     if((it.region||'')!==MKT) return false;
     if(!it.at) return false;
     try{ return (Date.now()-new Date(it.at).getTime()) < 12*3600*1000; }catch(e){ return false; }
-  }).slice(0,5);
+  });
+  // (user ask) surface headlines on names you OWN first, and mark them with the 📦 owned icon.
+  items.forEach(function(it){ try{ it._own=wlOwns(it.sym,it.region); }catch(e){ it._own=false; } });
+  items.sort(function(a,b){ return (b._own?1:0)-(a._own?1:0); });   // owned first; recency preserved within each group
+  items=items.slice(0,6);   // 6 → a clean 3×2 grid
   if(!items.length) return '';
   // (user ask) dismissible — hide the CURRENT batch once dismissed, but a genuinely NEW set of breaking
   // headlines (different signature) re-surfaces, since that's the whole point of a breaking alert.
@@ -4115,16 +4136,16 @@ function breakingHtml(D){
   var rows=items.map(function(it){
     var ago=timeAgo(it.at), url=it.url||'';
     var head=url?('<a href="'+esc(url)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()">'+esc(it.headline)+'</a>'):esc(it.headline);
-    return '<button class="brkrow" data-sym="'+esc(it.sym)+'" data-region="'+esc(it.region)+'" title="Tap for '+esc(it.sym)+'’s full read">'+
-             '<span class="brksym">'+esc(it.sym)+'</span>'+
+    return '<button class="brkrow'+(it._own?' brkown':'')+'" data-sym="'+esc(it.sym)+'" data-region="'+esc(it.region)+'" title="Tap for '+esc(it.sym)+'’s full read">'+
+             '<span class="brksym">'+(it._own?'📦 ':'')+esc(it.sym)+'</span>'+
              '<span class="brkhead">'+head+'</span>'+
-             '<span class="brkmeta">'+esc(it.source||'')+(ago?' · '+esc(ago):'')+'</span>'+
+             '<span class="brkmeta">'+(it._own?'<b class="brkownlbl">you own this</b> · ':'')+esc(it.source||'')+(ago?' · '+esc(ago):'')+'</span>'+
            '</button>';
   }).join('');
   return '<div class="brkstrip" data-sig="'+esc(sig)+'">'+
     '<div class="brkhdr"><span class="brkdot"></span>Just in'+
       '<button class="brkx" id="brkDismiss" type="button" aria-label="Dismiss these headlines" title="Dismiss">✕</button></div>'+
-    rows+'</div>';
+    '<div class="brkgrid">'+rows+'</div></div>';
 }
 // (user ask) the lean "at a glance" metric strip that REPLACES the old orient banner — the 3-second read of
 // tonight, each tile tapping to its detail. Horizontal scroll + snap (same idiom as the ctx tabs). Every tile
@@ -8373,6 +8394,26 @@ function wlStatBlock(rows,title,icon,emptyMsg){
     '<div class="wlstat-row"><span class="wlstat-wl"><span class="up">'+winTxt+'</span> · <span class="down">'+lossTxt+'</span> <span class="wlstat-wlnote">since each was flagged</span></span></div>'+
     '<div class="wlstat-bw">'+bwChip(best,'🏆','Best')+(usable.length>1?bwChip(worst,'🥶','Worst'):'')+'</div></div>';
 }
+// 📦 (user ask) — "today's movement card for the things I own": each owned holding with its TODAY move
+// (the existing stat cards above show since-FLAGGED %; this is today's session). All owned holdings with a
+// live change, biggest mover first, each tappable to its full read. Renders '' if nothing owned has a change.
+function ownedMovesHtml(rows){
+  var owned=rows.filter(function(r){return r.w.own && r.change!=null && r.change!=='';});
+  owned.forEach(function(r){ r._c=parseFloat(String(r.change).replace(/[^0-9.\-]/g,'')); if(!isFinite(r._c))r._c=0; });
+  owned=owned.filter(function(r){return isFinite(r._c);});
+  if(!owned.length) return '';
+  owned.sort(function(a,b){ return Math.abs(b._c)-Math.abs(a._c); });
+  var up=owned.filter(function(r){return r.up;}).length, dn=owned.length-up;
+  var rowsH=owned.map(function(r){
+    var flag=(r.w.region==='us')?'🇺🇸':'🇦🇺';
+    var chg=String(r.change).replace(/^[+\-]?/, r.up?'+':'−').replace(/[+\-]?([0-9])/,'$1'); // ensure a clean sign
+    return '<button class="omv-row" data-sym="'+esc(r.w.sym)+'" data-region="'+esc(r.w.region)+'" title="Tap for '+esc(r.w.sym)+'’s full read">'+
+      '<span class="omv-sym">📦 '+esc(r.w.sym)+'</span>'+
+      '<span class="omv-name">'+esc(flag+' '+(r.name||''))+'</span>'+
+      '<span class="omv-chg '+(r.up?'up':'down')+'">'+(r.up?'▲':'▼')+' '+esc(r.change)+'</span></button>';
+  }).join('');
+  return '<div class="viz omvcard"><h4>📦 Your holdings today <span class="omv-tally">'+up+' up · '+dn+' down</span></h4><div class="omvgrid">'+rowsH+'</div></div>';
+}
 function renderWlSummary(rows){
   var el=document.getElementById('wlSummary'); if(!el) return;
   if(!rows.length){ el.innerHTML=''; return; }
@@ -8381,7 +8422,11 @@ function renderWlSummary(rows){
   el.innerHTML='<div class="wlstat-grid">'+
     wlStatBlock(owned,'Things you own','📦','Flag something as owned (📦 on a card) to see real performance here.')+
     wlStatBlock(watching,'What you could have owned','👀','Nothing on the watch-only list yet with a captured buy price.')+
-    '</div>';
+    '</div>'+ownedMovesHtml(rows);
+  // owned-moves rows tap through to the ticker's full read (same resolver the stat chips use).
+  el.querySelectorAll('.omv-row[data-sym]').forEach(function(b){
+    b.addEventListener('click',function(e){ e.preventDefault(); openTicker(b.dataset.sym,b.dataset.region); });
+  });
   // #250 — Best/Worst chips tap through to the full per-ticker detail.
   el.querySelectorAll('.wlstat-chip[data-wl-sym]').forEach(function(b){
     b.addEventListener('click',function(e){ e.preventDefault(); openTicker(b.dataset.wlSym,b.dataset.wlRegion); });   // #318 — canonical resolver (pick/cand → rich card, else watch-insight)
