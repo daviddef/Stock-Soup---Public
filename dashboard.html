@@ -1125,7 +1125,12 @@
   @media(max-width:960px){.cols3{grid-template-columns:1fr 1fr}}
   @media(max-width:640px){.cols3{grid-template-columns:1fr}}
   .stack{display:flex;flex-direction:column;gap:9px}
-  .line{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:11px;padding:11px 13px;font-size:14px}
+  .line{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:11px;padding:8px 12px;font-size:14px}
+  /* #359 — theme drill-down: latest-news list */
+  .thmnews{display:flex;flex-direction:column;gap:7px;margin:0 0 4px}
+  .thmnews-row{font-size:13px;line-height:1.35}
+  .thmnews-row a{color:var(--ink);font-weight:600}
+  .thmnews-m{display:block;font-size:11px;color:var(--muted);margin-top:1px}
   .clickline{cursor:pointer;transition:border-color .12s,transform .1s}
   .clickline:hover{border-color:var(--broth)}
   .clickline:active{transform:scale(.995)}
@@ -1169,9 +1174,9 @@
   .line .em{font-size:18px}
   .line .txt{flex:1}
   .line .txt small{display:block;color:var(--muted);font-size:12px;margin-top:1px}
-  .thlead{display:block;font-size:11px;font-weight:700;color:var(--broth);margin-top:3px}
+  .thlead{display:block;font-size:11px;font-weight:700;color:var(--broth);margin-top:2px;line-height:1.2}
   .thlead b{color:var(--ink)}
-  .thnews{display:inline-block;font-size:10.5px;font-weight:800;color:var(--muted);margin-top:3px;letter-spacing:.01em}
+  .thnews{display:inline-block;font-size:10.5px;font-weight:800;color:var(--muted);margin-top:1px;letter-spacing:.01em}
   .thnews.on{color:var(--broth)}
   .uprow{display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:9px 12px;font-size:13px;margin-bottom:6px}
   .upsym{font-weight:800;color:var(--ink)}
@@ -7347,7 +7352,15 @@ function openTheme(src,idx){
         :(item.tclass==='t-buy'||item.tclass==='t-hot')?' This theme itself is rated a genuine buy — none of tonight\'s <b>6 stock picks</b> happen to sit in it, but that\'s a coverage gap (see leaders/ETFs below), not a downgrade.'
         :item.tclass==='t-dont'?' Rated a pass — sitting this one out.'
         :' No scored pick here this run — it’s a watch, not a buy yet.')+'</p>'+
-    '<h4 style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:800;margin:4px 0 10px">Leaders in this theme</h4>'+
+    // #359 (user ask) — the fresh headlines behind the theme, so tapping the card actually shows the news.
+    (function(){ var hs=item.newsHeadlines||[]; if(!hs.length) return '';
+      return '<h4 style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--broth);font-weight:800;margin:4px 0 8px">📰 Latest news'+(item.newsCount!=null?' · '+item.newsCount+' in the last 4 days':'')+'</h4>'+
+        '<div class="thmnews">'+hs.map(function(h){
+          var t=h.url?('<a href="'+esc(h.url)+'" target="_blank" rel="noopener">'+esc(h.title)+' ↗</a>'):esc(h.title);
+          var meta=esc(h.source||'')+(h.date?' · '+esc(String(h.date).slice(0,10)):'');
+          return '<div class="thmnews-row">'+t+'<span class="thmnews-m">'+meta+'</span></div>';
+        }).join('')+'</div>'; })()+
+    '<h4 style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:800;margin:14px 0 10px">Leaders in this theme</h4>'+
     (rows||'<p class="muted">No clear ticker leaders surfaced for this theme tonight.</p>')+etfHtml+
     '<p style="font-size:11px;color:var(--faint);margin-top:14px;line-height:1.6"><b style="color:var(--muted)">What the tags mean:</b> a verdict like <b>Get in</b>/<b>Wait</b> = it\'s one of tonight\'s scored picks · <b>Shortlisted</b> = we considered it, didn\'t pick it · <b>On your watchlist</b> = you\'re tracking it · <b>Live price</b> = shown for reference only. ETFs are the diversified way to play the theme.</p></div>';
   var ov=document.getElementById('overlay'); ov.classList.add('open'); ov.setAttribute('aria-hidden','false');
