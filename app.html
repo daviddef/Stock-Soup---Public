@@ -1375,6 +1375,11 @@
   .tlwrap{display:flex;flex-direction:column;gap:12px}
   .tlgrid2{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;align-items:start}
   @media(max-width:640px){.tlgrid2{grid-template-columns:1fr}}
+  .tlcols{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
+  @media(max-width:720px){.tlcols{grid-template-columns:1fr}}
+  .tlcol{display:flex;flex-direction:column;gap:10px}
+  .tl-colhead{font-size:12px;font-weight:900;letter-spacing:.04em;text-transform:uppercase;color:var(--broth);padding:2px 0 2px;border-bottom:2px solid var(--line)}
+  .tl-empty{font-size:13px;color:var(--muted);padding:14px 4px;font-style:italic}
   .tlolder>summary{cursor:pointer;font-size:12px;font-weight:800;color:var(--broth);list-style:none;padding:7px 0}
   .tlolder>summary::-webkit-details-marker{display:none}
   .tl-grp{font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);margin:8px 0 2px}
@@ -4474,16 +4479,15 @@ function marketTimelineHtml(D){
   (D.upcomingIPOs||[]).forEach(function(i){ if(!i)return; if((i.region||'au')!==MKT)return; items.push({k:'coming',t:ts(i.date),date:i.date,tone:'neutral',head:(i.name||i.sym||'New listing')+' lists on the ASX',why:i.note||'A fresh listing — no trading history yet, so treat with care.',syms:i.sym?[{sym:i.sym,region:i.region}]:[]}); });
   (D.upcomingEcon||[]).forEach(function(e){ if(!e||!e.event)return; items.push({k:'coming',t:ts(e.date),date:e.date,tone:'neutral',head:(e.country?e.country+': ':'')+e.event,why:'A macro data point that can move the whole market.',syms:[]}); });
   if(!items.length) return '';
-  // #352 — ONE flat list, purely date-sorted (no Coming-up/Recent group headers): nearest-future first, down
-  // through today into recent-past. Items older than 24h collapse behind a toggle. 2-across grid.
-  items.sort(function(a,b){
-    var af=(a.t!=null&&a.t>today.getTime()), bf=(b.t!=null&&b.t>today.getTime());
-    if(af!==bf) return af?-1:1;               // all future ahead of all past
-    if(af) return a.t-b.t;                     // future: soonest first
-    return (b.t||0)-(a.t||0);                  // past: newest first
-  });
+  // #357 — TWO columns by time direction (user ask): LEFT = today & earlier news/filings/events, newest first;
+  // RIGHT = everything still ahead (earnings, dividends, IPOs, econ, future events), soonest first.
+  var tEnd=today.getTime()+864e5-1;   // end of today (future = strictly after today)
+  var future=[], past=[];
+  items.forEach(function(x){ (x.t!=null && x.t>tEnd ? future : past).push(x); });
+  future.sort(function(a,b){ return (a.t||0)-(b.t||0); });   // soonest first
+  past.sort(function(a,b){ return (b.t||0)-(a.t||0); });      // newest first (undated fall to the bottom)
   var cut24=Date.now()-864e5, recent=[], older=[];
-  items.forEach(function(x){ (x.t==null||x.t>=cut24?recent:older).push(x); });
+  past.forEach(function(x){ (x.t==null||x.t>=cut24?recent:older).push(x); });
   // candidate 🍊 score map so timeline ticker chips carry the same score as the Stock Pot chips
   var cscore={}; (D.candidates||[]).forEach(function(c){ if(c&&c.sym&&c.score&&c.score.buy_now!=null) cscore[c.sym+'|'+(c.region||'us')]=Math.round(c.score.buy_now); });
   var TONE={bullish:{ic:'📈',cls:'ann-bull'},bearish:{ic:'📉',cls:'ann-bear'},neutral:{ic:'',cls:'ann-neu'}};
@@ -4502,9 +4506,14 @@ function marketTimelineHtml(D){
       (x.syms&&x.syms.length?'<div class="tl-tks">'+tkchips(x.syms)+'</div>':'')+'</div>'; }
   var FILT=[['all','Everything'],['coming','📅 Coming up'],['news','📰 News'],['filing','📢 Filings'],['event','🌐 Big picture']];
   var chips=FILT.map(function(f){ return '<button class="tlchip'+(MKTF===f[0]?' on':'')+'" data-tlf="'+f[0]+'">'+f[1]+'</button>'; }).join('');
-  var body='<div class="tlgrid2">'+recent.map(row).join('')+'</div>';
-  if(older.length) body+='<details class="tlolder"><summary>Show '+older.length+' older (over 24h ago) →</summary><div class="tlgrid2" style="margin-top:10px">'+older.map(row).join('')+'</div></details>';
-  return '<p class="sec-sub">Everything with a date — news, ASX filings, earnings/dividends/IPOs and the big structural events — newest first on one timeline. Tap a chip to filter; tap a ticker for its read.</p>'+
+  var leftBody=recent.length?recent.map(row).join(''):'<div class="tl-empty">No recent news or filings.</div>';
+  if(older.length) leftBody+='<details class="tlolder"><summary>Show '+older.length+' older (over 24h ago) →</summary><div class="tlcol" style="margin-top:10px">'+older.map(row).join('')+'</div></details>';
+  var rightBody=future.length?future.map(row).join(''):'<div class="tl-empty">Nothing scheduled ahead.</div>';
+  var body='<div class="tlcols">'+
+    '<div class="tlcol"><div class="tl-colhead">📰 Latest &amp; today</div>'+leftBody+'</div>'+
+    '<div class="tlcol"><div class="tl-colhead">📅 Coming up</div>'+rightBody+'</div>'+
+  '</div>';
+  return '<p class="sec-sub">Two streams on one board: <b>latest news &amp; filings</b> on the left (newest first), <b>what\'s coming up</b> on the right (soonest first). Tap a chip to filter; tap a ticker for its read.</p>'+
     '<div class="tlfilt">'+chips+'</div><div class="tlwrap" data-flt="'+MKTF+'">'+body+'</div>';
 }
 // Each panel reuses the existing builders verbatim (topNewsHtml/topMoversHtml/upcomingHtml + the geo/
