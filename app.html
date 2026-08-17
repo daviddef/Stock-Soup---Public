@@ -38,6 +38,23 @@
   *{box-sizing:border-box;margin:0;padding:0}
   body{background:var(--ground);color:var(--ink);font-family:var(--font);line-height:1.5;
     -webkit-font-smoothing:antialiased;padding:clamp(14px,3vw,40px)}
+  /* 🎨 (user ask) subtle market-themed animated backdrop — 🇦🇺 green/gold vs 🇺🇸 red/white/blue. A fixed layer
+     ABOVE the opaque --ground but BELOW the content (#app is raised to z-index:1). Low-alpha drifting blobs,
+     works on light & dark; frozen for prefers-reduced-motion. body gets .mkt-au / .mkt-us from render(). */
+  #app{position:relative;z-index:1}
+  body::after{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;
+    background-repeat:no-repeat;background-size:120% 120%,120% 120%,120% 120%;
+    transition:background-image 1s ease;animation:mktdrift 46s ease-in-out infinite alternate}
+  body.mkt-au::after{background-image:
+    radial-gradient(38% 34% at 12% 10%, rgba(0,132,61,.16), transparent 62%),
+    radial-gradient(34% 30% at 90% 20%, rgba(255,205,0,.18), transparent 62%),
+    radial-gradient(40% 34% at 74% 92%, rgba(0,132,61,.12), transparent 62%)}
+  body.mkt-us::after{background-image:
+    radial-gradient(38% 34% at 10% 10%, rgba(178,34,52,.15), transparent 62%),
+    radial-gradient(34% 30% at 90% 18%, rgba(40,60,140,.18), transparent 62%),
+    radial-gradient(40% 34% at 78% 90%, rgba(178,34,52,.11), transparent 62%)}
+  @keyframes mktdrift{0%{background-position:0% 0%,100% 0%,60% 100%}100%{background-position:9% 7%,91% 9%,67% 91%}}
+  @media(prefers-reduced-motion:reduce){body::after{animation:none}}
   .wrap{max-width:1080px;margin:0 auto;display:flex;flex-direction:column;gap:26px}
   .display{font-family:var(--disp);font-weight:900;letter-spacing:-.02em;text-wrap:balance;line-height:.98;text-transform:uppercase}
   .eyebrow{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);font-weight:700}
@@ -4959,6 +4976,7 @@ function isBargain(c){
 function setMkt(m){ if(!m||m===MKT)return; MKT=m; try{pushViewState();}catch(e){} var sc=window.pageYOffset; render(LAST.D,LAST.H); window.scrollTo(0,sc); }
 function render(D,H){
   LAST={D:D,H:H};
+  try{ document.body.classList.toggle('mkt-au', MKT==='au'); document.body.classList.toggle('mkt-us', MKT!=='au'); }catch(e){}   // 🎨 market-themed backdrop
   var r=D.risk||{};
   // Sector-heat tags ("Gold hot · Defence hot · AI on fire") come as one string — split into
   // individual chips; fold "Gold" specifically into the existing Gold price chip instead of
@@ -10744,6 +10762,7 @@ function closeOnboarding(){ var el=document.getElementById('onboard'); if(el){ e
 function maybeOnboard(){ if(window._obTried) return; window._obTried=1; try{ if(localStorage.getItem('soup_onboarded')) return; }catch(e){ return; } setTimeout(function(){ try{ openOnboarding(); }catch(e){} }, 800); }
 function renderSimple(D){
   var region=s2Region(), p=s2TopPick(D,region);
+  try{ document.body.classList.toggle('mkt-au', region==='au'); document.body.classList.toggle('mkt-us', region!=='au'); }catch(e){}   // 🎨 market-themed backdrop
   document.getElementById('app').innerHTML =
     '<div class="s2prog" id="s2prog"></div>'+
     '<div class="s2top">'+
