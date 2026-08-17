@@ -1803,6 +1803,11 @@
   .wlfpill.on .wlfn{background:rgba(255,255,255,.26);color:#fff}
   /* one-line news on a watchlist card sits a touch tighter than the overlay version */
   .wcard .mnews{margin-top:8px;font-size:12.5px;padding:9px 11px}
+  /* #365 — Stock-Pot card face on watchlist cards: chip row + compact RSI meter */
+  .wc-pot{display:block}
+  .wc-potchips{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+  .rsibar.wc-rsi{margin:18px 0 4px;height:7px}
+  .wc-trendnote{font-size:11.5px;color:var(--muted);margin-top:6px}
   .wlpills{display:flex;flex-direction:column;gap:8px;margin-bottom:16px;min-height:8px}
   .wlpill{display:inline-flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:6px 8px 6px 13px;font-size:13px}
   .wlpill a{font-weight:800;color:var(--ink);text-decoration:none}
@@ -5335,8 +5340,8 @@ function render(D,H){
           '<div class="bmhead"><span class="live"><span class="pulse"></span>LIVE</span><button class="bmupd" id="lastUpd">updated…</button></div>'+
           (isAdmin()?'<div class="bmadmin" title="You are signed in as the admin account"><span class="adminbadge">ADMIN</span> signed in as admin</div>':'')+
           '<button class="bmitem" id="signInTop" role="menuitem">👤 Sign in</button>'+
-          '<button class="bmitem" id="refreshBtn" role="menuitem">↻ Refresh prices</button>'+
-          '<button class="bmitem" id="refreshFullBtn" role="menuitem">🍳 Trigger a run…</button>'+
+          // #wl-admintools (17 Aug, user ask) — "Refresh prices" + "Trigger a run" moved OUT of the burger
+          // into the Admin drawer (they were already admin-only; they don't belong in the everyday menu).
           '<button class="bmitem" id="shareTabBtn" role="menuitem">🔗 Share this page</button>'+
           '<button class="bmitem" id="viewBtn" role="menuitem">😋 Simple view</button>'+
           '<button class="bmitem" id="themeBtn" role="menuitem">🌗 Switch theme</button>'+
@@ -8427,7 +8432,7 @@ function wlIntel(w,D){
   (D.regions||[]).forEach(function(rg){(rg.picks||[]).forEach(function(p,i){if(p.sym===w.sym&&rg.id===w.region){pick=p;preg=rg.id;pidx=i;pcur=rg.cur||'$';}});});
   if(pick) return {kind:'pick',region:preg,idx:pidx,cur:pcur,
     score:(pick.score&&!pick.score.pending?(pick.score.buy_now+'/100 · '+pick.score.band):null),
-    target:pick.nTarget,entry:pick.nEntry,verdict:pick.verdict,vclass:pick.vclass,catalyst:(pick.catalysts||[])[0]||pick.plain};
+    target:pick.nTarget,entry:pick.nEntry,verdict:pick.verdict,vclass:pick.vclass,catalyst:(pick.catalysts||[])[0]||pick.plain,full:pick};   // #365 full obj → stock-pot card face
   var wi=(D.watchlistIntel||{})[w.sym];
   if(wi && wi.region===w.region && !wi.error){
     var vclass=/get in|buy|nibble/i.test(wi.verdict||'')?'buy':/wait|late|skip|pass/i.test(wi.verdict||'')?'dont':'hold';
@@ -8437,12 +8442,31 @@ function wlIntel(w,D){
     // attaches to candidates (watchlist-intel.py rewrite, same session).
     return {kind:'intel',cur:wi.cur||pcur,entry:wi.entry,target:wi.target,
       score:(wi.buy_now!=null?(wi.buy_now+'/100 · '+wi.band):null),
-      verdict:wi.verdict||null,vclass:vclass,trend:wi.trend_note,asx:!!wi.asx_limited,sent:wi.sent,raw:wi};
+      verdict:wi.verdict||null,vclass:vclass,trend:wi.trend_note,asx:!!wi.asx_limited,sent:wi.sent,raw:wi,
+      full:(wi.buy_now!=null?Object.assign({},wi,{score:{buy_now:wi.buy_now,band:wi.band,factors:wi.factors||[],verdict:wi.verdict,detail:wi.detail}}):wi)};   // #365 — synth a score obj so the card face can dual-chip it
   }
   var c=(D.candidates||[]).filter(function(x){return x.sym===w.sym&&x.region===w.region;})[0]
      || wlExtraItems(D).filter(function(x){return x&&x.sym===w.sym&&(x.region||'us')===w.region;})[0];   // #wl-etoro — soup/david synced items are scored just like candidates
-  if(c) return {kind:'cand',note:c.note,heat:c.heat};
+  if(c) return {kind:'cand',note:c.note,heat:c.heat,verdict:(c.score&&c.score.verdict)||null,full:c};   // #365
   return {kind:'none'};
+}
+// #365 (user ask, images 1 vs 2) — bring the STOCK POT card face to watchlist cards: the 🍊/🍒 dual-chip,
+// the "% match" signal-summary pill, and the compact RSI meter — exactly the components potCard/pick cards
+// use, driven off the same underlying scored object (now threaded through wlIntel as `it.full`).
+function wlRsiMeter(rsi){ if(rsi==null||!isFinite(+rsi)) return ''; var v=Math.max(0,Math.min(100,Math.round(+rsi)));
+  return '<div class="rsibar wc-rsi"><span class="rcap" style="left:'+v+'%">RSI '+v+'</span><span class="rn" style="left:'+v+'%"></span></div>'; }
+function wlPotFace(it,w,name){
+  var full=it&&it.full; if(!full) return '';
+  var score=full.score||null; if(!score||score.buy_now==null) return '';
+  var region=w.region||'us';
+  var crows=[]; try{ crows=signalRows(full,region)||[]; }catch(e){}
+  var jc=''; try{ jc=dualChip(score,w.sym,name,crows); }catch(e){}
+  var sp=''; try{ if(crows.length) sp=signalPillHtml(full,region,w.sym); }catch(e){}
+  var vd=it.verdict?'<span class="wic vd '+esc(it.vclass||'')+'">'+esc(it.verdict)+'</span>':'';
+  var rsi=(full.rsi!=null?full.rsi:(full.rsi14!=null?full.rsi14:null));
+  var chips=(jc||'')+(vd||'')+(sp||'');
+  if(!chips && rsi==null) return '';
+  return (chips?'<div class="wc-potchips">'+chips+'</div>':'')+wlRsiMeter(rsi);
 }
 // Performance summary cards (#76): real math off the SAME entry/price the buy-trigger banner already
 // uses — "entry" is the ideal-buy price captured when a name was flagged (#1), so for an owned item
@@ -8608,8 +8632,13 @@ function renderWatchlist(){
         ? '<div class="wc-cgt" title="Australia gives a 50% CGT discount on assets held over 12 months. Counted from when you added this here — use your real purchase date for anything that matters. General info, not tax advice.">🏷️ held '+_dh+'d · <b>'+_toCgt+'d</b> to the 50% CGT discount</div>'
         : '<div class="wc-cgt cgt-ok" title="Held over 12 months (counted from when you added it here) — eligible for the 50% AU CGT discount. General info, not tax advice.">🏷️ held '+_dh+'d · <b>50% CGT discount</b> zone (>12mo)</div>');
     }
+    // #365 — scored rows get the STOCK POT card face (🍊/🍒 dual-chip + "% match" summary + RSI meter),
+    // the same components the Full-Pot cards use. Falls back to the compact text tag when there's no score.
+    var potFace=wlPotFace(it,w,r.name);
     var tag='';
-    if(it.kind==='pick'){
+    if(potFace){
+      tag='<div class="wc-tag wc-pot">'+potFace+(it.asx&&it.trend?'<div class="wc-trendnote">'+esc(it.trend)+'</div>':'')+'</div>';
+    } else if(it.kind==='pick'){
       tag='<div class="wc-tag">'+(it.score?'<span class="wic sc">🧮 '+esc(it.score)+'</span>':'')+'<span class="wic vd '+esc(it.vclass)+'">'+esc(it.verdict)+'</span></div>';
     } else if(it.kind==='intel'){
       tag='<div class="wc-tag">'+(it.score?'<span class="wic sc">🧮 '+esc(it.score)+'</span>':'')+(it.verdict?'<span class="wic vd '+esc(it.vclass)+'">'+esc(it.verdict)+'</span>':'')+
@@ -9125,9 +9154,10 @@ function openAdminDrawer(){
     '<div class="mtop"><div class="msym" style="font-size:22px">🛠 Admin drawer</div></div></div>'+
     '<div class="mbody"><p class="sec-sub" style="margin-top:0">Everything admin, in one place.</p>'+
     '<div class="admdrawer">'+
+      '<button class="acctbtn" data-adm="refresh">↻ Refresh prices now</button>'+
+      '<button class="acctbtn" data-adm="controls">🍳 Trigger a run…</button>'+
       '<button class="acctbtn" data-adm="analytics">📊 Members &amp; usage — who\'s signed up, how often</button>'+
       '<button class="acctbtn" data-adm="health">💓 Data-source health</button>'+
-      '<button class="acctbtn" data-adm="controls">🎛️ Kitchen controls — trigger a run</button>'+
       '<button class="acctbtn" data-adm="docs">📖 Kitchen Manual — methodology &amp; data flow</button>'+
     '</div></div>';
   var ov=document.getElementById('overlay'); ov.classList.add('open'); ov.setAttribute('aria-hidden','false');
@@ -9136,6 +9166,7 @@ function openAdminDrawer(){
     if(k==='analytics') openAdminAnalytics();
     else if(k==='health') openDataHealth();
     else if(k==='controls') openRunTrigger();
+    else if(k==='refresh'){ closeModal(); refreshPrices(); }   // #wl-admintools — moved from the burger
     else if(k==='docs') openDocs();
   };});
   document.getElementById('mClose').onclick=closeModal; document.getElementById('mClose').focus();
@@ -9488,8 +9519,7 @@ function wire(D){
   });
   var vb=document.getElementById('viewBtn'); if(vb) vb.onclick=function(){setView('simple');};
   var viewTog=document.getElementById('viewTog'); if(viewTog) viewTog.onclick=function(){setView('simple');};   // single Simple⇄Full toggle (Full view → tap goes Simple)
-  var rb=document.getElementById('refreshBtn'); if(rb){ if(!isAdmin()){ rb.style.display='none'; } else { rb.onclick=function(){refreshPrices(rb);}; } }
-  var rfb=document.getElementById('refreshFullBtn'); if(rfb){ if(!isAdmin()){ rfb.style.display='none'; } else { rfb.onclick=function(){var _bm=document.getElementById('burgerMenu');if(_bm)_bm.setAttribute('hidden','');openRunTrigger();}; } }
+  // (Refresh prices + Trigger a run moved into the Admin drawer — no burger wiring needed here now.)
   var stb=document.getElementById('shareTabBtn'); if(stb) stb.onclick=shareCurrentTab;
   document.querySelectorAll('[data-gsym]').forEach(function(el){
     function go(e){ if(e.target.closest('a'))return; e.stopPropagation(); openGrade(el.dataset.gsym); }
@@ -10831,7 +10861,6 @@ function renderSimple(D){
           '<div class="bmhead"><span class="live"><span class="pulse"></span>LIVE</span><button class="bmupd" id="lastUpdS">updated…</button></div>'+
           (isAdmin()?'<div class="bmadmin"><span class="adminbadge">ADMIN</span> signed in as admin</div>':'')+
           '<button class="bmitem" id="signInTopS" role="menuitem">👤 Sign in</button>'+
-          '<button class="bmitem" id="refreshBtnS" role="menuitem">↻ Refresh prices</button>'+
           '<button class="bmitem" id="viewFull" role="menuitem">📋 Full view</button>'+
           '<button class="bmitem" id="themeBtn2" role="menuitem">🌗 Switch theme</button>'+
           '<button class="bmitem" id="tourBtnS" role="menuitem">👋 Take the tour</button>'+
@@ -10857,7 +10886,7 @@ function wireSimple(D){
     bm.querySelectorAll('.bmitem,.bmupd').forEach(function(it){ it.addEventListener('click',closeBM); }); }
   var luS=document.getElementById('lastUpdS'); if(luS){ if(PULSES&&PULSES.length){ luS.textContent='updated '+timeAgo(PULSES[PULSES.length-1].iso); luS.onclick=goRunSchedule; } else luS.textContent='no runs yet'; }
   var sitS=document.getElementById('signInTopS'); if(sitS){ sitS.textContent=signedIn()?'👤 Account':'👤 Sign in'; sitS.onclick=openAccount; }
-  var rbS=document.getElementById('refreshBtnS'); if(rbS){ if(!isAdmin()) rbS.style.display='none'; else rbS.onclick=function(){refreshPrices(rbS);}; }
+  // (Refresh prices moved into the Admin drawer — reachable via 🛠 Admin tools in this menu too.)
   var adbS=document.getElementById('adminBtnS'); if(adbS){ if(isAdmin()){ adbS.style.display=''; adbS.onclick=function(){var _bm=document.getElementById('burgerMenuS');if(_bm)_bm.setAttribute('hidden','');openAdminDrawer();}; } }
   var lbS=document.getElementById('learnBtnS'); if(lbS) lbS.onclick=function(){openLearn('simple');};   // #300 unified Learn
   var tbS=document.getElementById('tourBtnS'); if(tbS) tbS.onclick=openOnboarding;
