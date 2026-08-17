@@ -8403,12 +8403,23 @@ function wlPriceMap(D){
   function put(sym,region,price,up,change,entry,name,spark,news){var p=wlNum(price);var k=sym+'|'+region;
     if(!m[k])m[k]={price:p,cur:region==='au'?'A$':'$',up:!!up,change:change,entry:(entry!=null?entry:null),name:name||null,spark:spark||null,news:news||null};
     else{ if(p!=null&&m[k].price==null)m[k].price=p; if(entry!=null&&m[k].entry==null)m[k].entry=entry; if(name&&!m[k].name)m[k].name=name; if(spark&&!m[k].spark)m[k].spark=spark; if(news&&!m[k].news)m[k].news=news; }}
-  function _nw(o){ return o&&o.news?{h:o.news,u:o.news_url||null,d:o.news_date||null}:null; }
+  // one-line news: prefer the dedicated `news` field, else fall back to the first of the enriched
+  // news_top3[] (which is how the eToro-synced soupWatchlist/davidWatchlist items carry their news).
+  function _nw(o){ if(!o) return null; if(o.news) return {h:o.news,u:o.news_url||null,d:o.news_date||null};
+    var t=(o.news_top3||[])[0]; return t?{h:t.title||t.t,u:t.url||t.u||null,d:t.date||t.d||null}:null; }
   (D.regions||[]).forEach(function(rg){(rg.picks||[]).forEach(function(p){put(p.sym,rg.id,p.price,p.up,p.change,p.nEntry,p.name,p.spark,_nw(p));});});
   (D.candidates||[]).forEach(function(c){put(c.sym,c.region,c.price,c.up,c.change,null,c.name,c.spark,_nw(c));});
   (D.defaultWatchlist||[]).forEach(function(w){put(w.sym,w.region,w.price,w.up,w.change,null,w.name,w.spark,_nw(w));});
+  // #wl-etoro (17 Aug, user: "lots of RIO news but nothing shows") — RIO (+ every other eToro-synced
+  // holding) IS fully enriched, but it lives in soupWatchlist/davidWatchlist, which wlPriceMap never read.
+  // Fold both in so their live price + news reach the watchlist card. Items store price as "A$167.59"/nNow.
+  wlExtraItems(D).forEach(function(o){ if(o&&o.sym) put(o.sym,o.region||'us',o.price!=null?o.price:o.nNow,o.up,o.change,null,o.name,o.spark,_nw(o)); });
   return m;
 }
+// The eToro-synced watchlists (soupWatchlist = shared, davidWatchlist = admin) — {name,items,...}.
+// Their items carry the SAME rich shape as Full-Pot candidates (score, fundamentals, news_top3, price).
+function wlExtraItems(D){ function it(w){ return (w&&w.items)?w.items:(Array.isArray(w)?w:[]); }
+  return it(D&&D.soupWatchlist).concat(it(D&&D.davidWatchlist)); }
 // Smart overlay for a watched ticker: pull the richest intel we already hold.
 // Priority: current pick (full, tappable) > scored shared-watchlist intel > candidate > none.
 function wlIntel(w,D){
@@ -8428,7 +8439,8 @@ function wlIntel(w,D){
       score:(wi.buy_now!=null?(wi.buy_now+'/100 · '+wi.band):null),
       verdict:wi.verdict||null,vclass:vclass,trend:wi.trend_note,asx:!!wi.asx_limited,sent:wi.sent,raw:wi};
   }
-  var c=(D.candidates||[]).filter(function(x){return x.sym===w.sym&&x.region===w.region;})[0];
+  var c=(D.candidates||[]).filter(function(x){return x.sym===w.sym&&x.region===w.region;})[0]
+     || wlExtraItems(D).filter(function(x){return x&&x.sym===w.sym&&(x.region||'us')===w.region;})[0];   // #wl-etoro — soup/david synced items are scored just like candidates
   if(c) return {kind:'cand',note:c.note,heat:c.heat};
   return {kind:'none'};
 }
