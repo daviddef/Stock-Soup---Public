@@ -2531,7 +2531,7 @@ var LAST=null, LASTFOCUS=null;
 var TIER='type1';   // #152 — selected model tier: type1 (production, default) / type2 (whole-market quant) / type3 (per-indicator leaderboards)
 var POTLENS='timing';   // #273 — Full Pot ranking lens: 'timing' (🍊 buy-now) or 'conviction' (🍒 overall). Flips sort + heat-band grouping so you see the same shortlist ranked either way, no duplicate grids.
 var POTVIEW='bands';    // #296 — Full Pot layout: 'bands' (grouped by heat) or 'board' (flat 1..N leaderboard). One surface, two skins — retires the old separate "Stock Pot Top 20".
-var MCTX='news';        // #299 — which "Market context" panel is showing (news/world/commodities/movers/upcoming/bargains). One tabbed section replaces 6 stacked ones; remembered across re-renders.
+var MCTX='timeline';    // #299/#350 — which "Market backdrop" panel is showing. After the #350/#348 merges the tabs are: timeline / sectors&commodities (+ bargains when present). Remembered across re-renders; auto-resets if it points at a dropped id.
 // #152 — the ONE place that resolves "which picks array is this region actually showing right now."
 // Global (not nested in render()) because click handlers outside render() (openFromEl, ruCard, etc.)
 // need the exact same resolution to correctly index into whichever array built the card the user
@@ -4508,8 +4508,9 @@ function marketContextHtml(D, bargainCards, lines){   // `lines` is a render-loc
     // carries its scored tickers; IPOs resolve to a single dated entry). World/Sectors + Commodities stay
     // (they're the thematic, non-time-based half — #348 merges those two next).
     ['timeline','📅 Timeline', marketTimelineHtml(D)],
-    ['world','🌍 World &amp; sectors', geoSec],
-    ['commodities','🛢️ Commodities', commodSec]
+    // #348 — Sectors + Commodities merged into ONE "Sectors & commodities" panel (geopolitics + sector buy/skip
+    // + rotation, then the commodity cards) instead of two separate tabs.
+    ['sectors','🍳 Sectors &amp; commodities', geoSec+'<div class="eyebrow" style="margin:16px 0 8px">🛢️ Commodities</div>'+commodSec]
   ];
   if(bargainCards) tabs.push(['bargains','🛍️ Bargains',
     '<p class="sec-sub">Genuinely cheap right now — oversold, not in freefall, and nothing actively wrong that we can see. <b>Tap any for the full read.</b></p><div class="pot">'+bargainCards+'</div>']);
