@@ -1621,7 +1621,7 @@
   .nc-refst{stroke:var(--dont);opacity:.7;stroke-dasharray:4 3}
   .nc-vmark{stroke:var(--faint);opacity:.5;stroke-width:1;stroke-dasharray:2 4}
   .nc-vlabs{position:absolute;top:0;left:0;right:0;height:118px;pointer-events:none}
-  .nc-vlab{position:absolute;bottom:3px;transform:translateX(-50%);font-size:9px;font-weight:800;color:var(--muted);letter-spacing:.04em;background:rgba(11,13,16,.72);padding:0 3px;border-radius:3px}
+  .nc-vlab{position:absolute;top:2px;transform:translateX(-50%);font-size:9px;font-weight:800;color:var(--muted);letter-spacing:.04em;background:rgba(11,13,16,.72);padding:0 3px;border-radius:3px;white-space:nowrap}
   /* right-edge Now/High/Low labels, aligned to the reference lines by top:Ypx */
   .nc-lbls{position:absolute;top:0;right:6px;height:118px;pointer-events:none}
   .nc-plbl{position:absolute;right:0;transform:translateY(-50%);font-size:11px;font-weight:800;white-space:nowrap;background:rgba(20,16,14,.72);padding:0 3px;border-radius:4px;font-variant-numeric:tabular-nums}
@@ -8932,13 +8932,19 @@ function drawNewsChart(slot, closes, dates, events, cur, opts){
   function refLine(v,cls){ v=(v==null?null:+v); if(v==null||isNaN(v)||v<mn||v>mx) return ''; return '<line class="nc-ref '+cls+'" x1="'+padX+'" y1="'+Y(v).toFixed(1)+'" x2="'+(W-padX)+'" y2="'+Y(v).toFixed(1)+'"/>'; }
   var lvl=opts.levels||{};
   if(opts.isPick){ refs+=refLine(lvl.target,'nc-reftg')+refLine(lvl.entry,'nc-refen')+refLine(lvl.stop,'nc-refst'); }
-  // vertical dotted markers at ~1 week and ~1 month ago (by real date), labelled at the base
+  // vertical dotted markers labelled with the REAL date of that bar (user: "1m" read as minutes, and the
+  // "1w" marker sat ~5 sessions from the end where it overlapped the right-edge High/Now/Low labels). Now:
+  // ~1 month + ~2 months ago (both mid-chart, well clear of the right edge), each labelled "17 Jul" etc.
   function idxDaysAgo(days){ if(!dates.length) return -1; var cut=Date.now()-days*864e5, best=-1, bd=1e15;
     for(var i=0;i<dates.length;i++){ var di=Math.abs(Date.parse(dates[i]+'T00:00:00Z')-cut); if(di<bd){bd=di;best=i;} } return best; }
-  var vlines='', vlabs='';
-  [['1w',7],['1m',30]].forEach(function(m){ var i=idxDaysAgo(m[1]); if(i>1&&i<n-2){ var vx=X(i);
+  var NCM=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  function ncDate(iso){ if(!iso)return''; var s=String(iso); return (+s.slice(8,10))+' '+NCM[+s.slice(5,7)-1]; }
+  var vlines='', vlabs='', vseen={};
+  [30,60].forEach(function(dd){ var i=idxDaysAgo(dd); if(i>1 && i<n-3 && !vseen[i]){ var vx=X(i);
+    if(vx>W-82) return;                     // clear of the right-edge Now/High/Low labels
+    vseen[i]=1;
     vlines+='<line class="nc-vmark" x1="'+vx.toFixed(1)+'" y1="'+padT+'" x2="'+vx.toFixed(1)+'" y2="'+(H-padB)+'"/>';
-    vlabs+='<span class="nc-vlab" style="left:'+(vx/W*100).toFixed(2)+'%">'+m[0]+'</span>'; } });
+    vlabs+='<span class="nc-vlab" style="left:'+(vx/W*100).toFixed(2)+'%">'+esc(ncDate(dates[i]))+'</span>'; } });
   // map each event date to the nearest trading-day index (within ~4 days)
   function idxForDate(ds){ var t=Date.parse(ds+'T00:00:00Z'); if(isNaN(t)||!dates.length) return -1;
     var best=-1, bd=1e15; for(var i=0;i<dates.length;i++){ var di=Math.abs(Date.parse(dates[i]+'T00:00:00Z')-t); if(di<bd){bd=di;best=i;} }
