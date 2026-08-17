@@ -43,17 +43,18 @@
      works on light & dark; frozen for prefers-reduced-motion. body gets .mkt-au / .mkt-us from render(). */
   #app{position:relative;z-index:1}
   body::after{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;
-    background-repeat:no-repeat;background-size:120% 120%,120% 120%,120% 120%;
-    transition:background-image 1s ease;animation:mktdrift 46s ease-in-out infinite alternate}
+    background-repeat:no-repeat;background-size:130% 130%,130% 130%,130% 130%;
+    transition:background-image 1s ease;animation:mktdrift 30s ease-in-out infinite alternate}
+  /* brighter + more travel (user ask) — alphas raised ~1.7×, drift range widened */
   body.mkt-au::after{background-image:
-    radial-gradient(38% 34% at 12% 10%, rgba(0,132,61,.16), transparent 62%),
-    radial-gradient(34% 30% at 90% 20%, rgba(255,205,0,.18), transparent 62%),
-    radial-gradient(40% 34% at 74% 92%, rgba(0,132,61,.12), transparent 62%)}
+    radial-gradient(42% 38% at 12% 10%, rgba(0,150,70,.30), transparent 60%),
+    radial-gradient(38% 34% at 90% 20%, rgba(255,205,0,.32), transparent 60%),
+    radial-gradient(44% 38% at 74% 92%, rgba(0,150,70,.24), transparent 60%)}
   body.mkt-us::after{background-image:
-    radial-gradient(38% 34% at 10% 10%, rgba(178,34,52,.15), transparent 62%),
-    radial-gradient(34% 30% at 90% 18%, rgba(40,60,140,.18), transparent 62%),
-    radial-gradient(40% 34% at 78% 90%, rgba(178,34,52,.11), transparent 62%)}
-  @keyframes mktdrift{0%{background-position:0% 0%,100% 0%,60% 100%}100%{background-position:9% 7%,91% 9%,67% 91%}}
+    radial-gradient(42% 38% at 10% 10%, rgba(200,40,60,.28), transparent 60%),
+    radial-gradient(38% 34% at 90% 18%, rgba(45,80,190,.32), transparent 60%),
+    radial-gradient(44% 38% at 78% 90%, rgba(200,40,60,.22), transparent 60%)}
+  @keyframes mktdrift{0%{background-position:0% 0%,100% 0%,55% 100%}100%{background-position:26% 22%,74% 28%,80% 72%}}
   @media(prefers-reduced-motion:reduce){body::after{animation:none}}
   .wrap{max-width:1080px;margin:0 auto;display:flex;flex-direction:column;gap:26px}
   .display{font-family:var(--disp);font-weight:900;letter-spacing:-.02em;text-wrap:balance;line-height:.98;text-transform:uppercase}
@@ -1793,6 +1794,15 @@
      wrapping to a second row (dropped the 46%-width mobile rule), and no market selector (uses the top AU/US). */
   .uni-watch,.uni-ask{flex:0 0 auto;min-width:52px;justify-content:center;font-size:19px;padding:11px 14px}
   .wladd{background:var(--broth);color:#1a0f06;border:0;font-family:var(--font);font-weight:800;border-radius:10px;padding:0 20px;cursor:pointer;font-size:14px}
+  /* #wl-filter — All / 📦 My holdings filter pills at the top of the table */
+  .wlfilterbar{display:flex;gap:8px;margin:0 0 14px;flex-wrap:wrap}
+  .wlfpill{display:inline-flex;align-items:center;gap:7px;background:var(--surface);border:1.5px solid var(--line);border-radius:999px;padding:7px 14px;font-size:13.5px;font-weight:700;color:var(--muted);cursor:pointer;transition:background .12s,border-color .12s,color .12s}
+  .wlfpill:hover{border-color:var(--accent)}
+  .wlfpill.on{background:var(--accent);border-color:var(--accent);color:#fff}
+  .wlfpill .wlfn{font-size:12px;font-weight:800;background:rgba(0,0,0,.10);border-radius:999px;padding:1px 8px;min-width:20px;text-align:center}
+  .wlfpill.on .wlfn{background:rgba(255,255,255,.26);color:#fff}
+  /* one-line news on a watchlist card sits a touch tighter than the overlay version */
+  .wcard .mnews{margin-top:8px;font-size:12.5px;padding:9px 11px}
   .wlpills{display:flex;flex-direction:column;gap:8px;margin-bottom:16px;min-height:8px}
   .wlpill{display:inline-flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:6px 8px 6px 13px;font-size:13px}
   .wlpill a{font-weight:800;color:var(--ink);text-decoration:none}
@@ -5411,6 +5421,7 @@ function render(D,H){
         '<button class="uni-ask" id="uniAsk" title="What would you do? — an instant read" aria-label="Instant read">🧠</button></div>'+
       '<p class="sec-sub" style="margin-top:8px">⭐ track · 🧠 instant read '+infoBtn('watchlist')+'</p>'+
       '<div class="wlsummary" id="wlSummary"></div>'+
+      '<div class="wlfilterbar" id="wlFilterBar"></div>'+
       '<div class="wlpills" id="wlPills"></div>'+
       '<div class="wlauth" id="wlAuth"></div></section>'+
     etoroWL('Stock Soup Watchlist','🥣',D.soupWatchlist,true)+
@@ -8500,14 +8511,13 @@ function renderWlSummary(rows){
   if(!rows.length){ el.innerHTML=''; return; }
   var owned=rows.filter(function(r){return r.w.own;});
   var watching=rows.filter(function(r){return !r.w.own;});
+  // #wl-std (17 Aug) — the separate "Your holdings — today & what's new" + "On your watchlist — fresh news"
+  // blocks are gone: every holding/watchlist card now carries its own one-line latest-news headline (the same
+  // treatment the Stock Pot cards use), so a second news list underneath was redundant. Just the two stat tiles.
   el.innerHTML='<div class="wlstat-grid">'+
     wlStatBlock(owned,'Things you own','📦','Flag something as owned (📦 on a card) to see real performance here.')+
     wlStatBlock(watching,'What you could have owned','👀','Nothing on the watch-only list yet with a captured buy price.')+
-    '</div>'+ownedMovesHtml(rows);
-  // owned-moves rows tap through to the ticker's full read (same resolver the stat chips use).
-  el.querySelectorAll('.fjn-row[data-sym]').forEach(function(b){
-    b.addEventListener('click',function(e){ e.preventDefault(); openTicker(b.dataset.sym,b.dataset.region); });
-  });
+    '</div>';
   // #250 — Best/Worst chips tap through to the full per-ticker detail.
   el.querySelectorAll('.wlstat-chip[data-wl-sym]').forEach(function(b){
     b.addEventListener('click',function(e){ e.preventDefault(); openTicker(b.dataset.wlSym,b.dataset.wlRegion); });   // #318 — canonical resolver (pick/cand → rich card, else watch-insight)
@@ -8544,6 +8554,16 @@ function renderWatchlist(){
   var otherMkt=rows.filter(function(r){return (r.w.region||'au')!==MKT;}).length;
   rows=rows.filter(function(r){return (r.w.region||'au')===MKT;});
   renderWlSummary(rows);
+  // #wl-filter (17 Aug, user ask) — All / 📦 My holdings filter pills at the top of the table. The
+  // WL_FILTER mechanism already existed; its pills were dropped in #228, leaving no UI to filter to
+  // holdings. Rendered here (survives re-renders) into #wlFilterBar; owned count is from the MKT-filtered
+  // rows BEFORE the own-filter is applied below, so the badge counts reflect the whole market's table.
+  (function(){ var fb=document.getElementById('wlFilterBar'); if(!fb) return;
+    var ownN=rows.filter(function(r){return r.w.own;}).length, allN=rows.length;
+    fb.innerHTML='<button class="wlfpill'+(WL_FILTER==='all'?' on':'')+'" data-wlf="all">All <span class="wlfn">'+allN+'</span></button>'+
+      '<button class="wlfpill'+(WL_FILTER==='own'?' on':'')+'" data-wlf="own">📦 My holdings <span class="wlfn">'+ownN+'</span></button>';
+    fb.querySelectorAll('.wlfpill').forEach(function(b){ b.onclick=function(){ WL_FILTER=b.dataset.wlf; renderWatchlist(); }; });
+  })();
   var triggered=rows.filter(function(r){return r.gap!=null&&r.gap<=0.5;});
   if(WL_FILTER==='own') rows=rows.filter(function(r){return r.w.own;});
   rows.sort(function(x,y){var gx=x.gap==null?9999:x.gap,gy=y.gap==null?9999:y.gap;return gx-gy;});
@@ -8564,6 +8584,9 @@ function renderWatchlist(){
     var spk = (r.spark&&r.spark.length>2)?'<div class="pmc-spark">'+sparkSVG(r.spark.slice(-30))+'</div>':'';
     var buyLine = (r.entry!=null||it.target!=null)?'<div class="wc-lv">'+(r.entry!=null?'🎯 buy '+r.cur+r.entry:'')+(it.target!=null?(r.entry!=null?' · ':'')+'target '+r.cur+it.target:'')+(lbl?'  <span class="wst">'+lbl+'</span>':'')+'</div>':(lbl?'<div class="wc-lv"><span class="wst">'+lbl+'</span></div>':'');
     var addedLine = w.addedAt?'<div class="wc-added">added '+esc(new Date(w.addedAt).toLocaleDateString('en-AU',{day:'numeric',month:'short'}))+'</div>':'';
+    // #wl-std (17 Aug) — one-line latest-news headline right on the card, same treatment as the Stock Pot
+    // cards (newsLineHtml → 📰 In the news: … + age, ⚠️ OLD >7d). r.news = {h,u,d} from wlBuildRows.
+    var newsLn = (r.news&&r.news.h)?newsLineHtml(r.news.h, r.news.u, r.news.d):'';
     // #282 (12 Aug 2026) — AU CGT holding-period hint. AU gives a 50% capital-gains-tax discount on assets
     // held >12 months. Only for OWNED ASX holdings. Counts from when it was added here (a proxy for the buy
     // date — we don't capture a real purchase date), stated plainly in the tooltip; general info, not tax advice.
@@ -8595,7 +8618,7 @@ function renderWatchlist(){
       // #wl-chart (17 Aug) — every watchlist card gets a chart: use the pre-fetched spark if the pulse has
       // one, else LAZY-HYDRATE a mini-chart from /intraday (the same pattern Top Movers/Misses use), so an
       // "Also tracked" name that wasn't in tonight's scan still shows a chart without needing the 📡 toggle.
-      '<div class="wc-px">'+px+chg+'</div>'+(spk||missChartSlot(w.sym,w.region,r.cur))+(it.kind==='none'?'<div class="wc-monspark"></div>':'')+buyLine+addedLine+tag+'</div>';
+      '<div class="wc-px">'+px+chg+'</div>'+(spk||missChartSlot(w.sym,w.region,r.cur))+(it.kind==='none'?'<div class="wc-monspark"></div>':'')+buyLine+addedLine+newsLn+tag+'</div>';
   }
   var smart=rows.filter(function(r){return r.intel.kind!=='none';});
   var plain=rows.filter(function(r){return r.intel.kind==='none';});
@@ -9552,11 +9575,8 @@ function wire(D){
   var rm=document.getElementById('runMore'), rr=document.getElementById('runRest');
   if(rm&&rr){ var rrN=rr.children.length; rm.onclick=function(){ var open=rr.hasAttribute('hidden'); if(open)rr.removeAttribute('hidden'); else rr.setAttribute('hidden',''); rm.setAttribute('aria-expanded',open?'true':'false'); rm.innerHTML=(open?'▴ Hide older runs':'➖ '+rrN+' older runs ▾'); }; }
   var kh=document.getElementById('kitchenHealthBtn'); if(kh) kh.onclick=function(){ openDataHealth(); };  // #bugfix — bare `=openDataHealth` passed the click PointerEvent in as runFilter ("[object PointerEvent]")
-  var wfa=document.getElementById('wlfAll'), wfo=document.getElementById('wlfOwn');
-  if(wfa&&wfo){
-    wfa.onclick=function(){ WL_FILTER='all'; wfa.classList.add('on'); wfo.classList.remove('on'); renderWatchlist(); };
-    wfo.onclick=function(){ WL_FILTER='own'; wfo.classList.add('on'); wfa.classList.remove('on'); renderWatchlist(); };
-  }
+  // (wlfAll/wlfOwn header pills were dropped in #228; the All/📦 My holdings filter now renders + wires
+  // itself inside renderWatchlist via #wlFilterBar, so no static wiring is needed here anymore.)
   var lu=document.getElementById('lastUpd');
   if(lu){ if(PULSES&&PULSES.length){ lu.textContent='updated '+timeAgo(PULSES[PULSES.length-1].iso); lu.onclick=goRunSchedule; } else { lu.textContent='no runs yet'; } }
   var bg=document.getElementById('burgerBtn'), bm=document.getElementById('burgerMenu');
