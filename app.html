@@ -361,10 +361,12 @@
   .toprow{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:12px}
   .mktcap.mc-open,.mktcap.mc-opening{color:var(--buy)} .mktcap.mc-closing{color:var(--hold)} .mktcap.mc-closed{color:var(--dont)}
   /* #hdroverlap (17 Aug) — the chrome cluster (.heroburg) is absolute top-right and grew wider once the
-     run-status pill shows a long countdown ("15h53m" vs "10m"); the in-flow toprail then slid UNDER it and
-     the icons overlapped. Force the toprail onto its own line (the intended 2-row header) so it always sits
-     BELOW the absolute cluster, never beside it. */
-  .toprail{display:flex;gap:12px;align-items:center;flex-wrap:wrap;flex-basis:100%}
+     run-status pill shows a long countdown ("15h53m" vs "10m"); on DESKTOP the in-flow toprail then slid
+     UNDER it. Fix is desktop-scoped: only there force the toprail to its own row + reserve cluster space.
+     On MOBILE the header stays the original compact 2 rows (brand+chrome / market+tiers) — forcing the
+     extra width there wrapped the market toggle + tier bar into a 3rd row (user-caught). */
+  .toprail{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+  @media(min-width:768px){ .toprail{flex-basis:100%} }
   .burgerwrap{position:relative}
   /* #hero (user ask, 13 Aug) — burger pinned to the hero's top-right corner, out of the filter row.
      Reserve room on the brandrow so the desktop tier row doesn't slide under it. */
