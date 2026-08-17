@@ -7821,7 +7821,7 @@ function streetHtml(a){
   if(v.sentiment!=null){ var t=v.sentiment>0.15?'upbeat 🟢':v.sentiment<-0.15?'gloomy 🔴':'mixed ⚪'; chips.push('<span class="anchip '+(v.sentiment>0.15?'gd':v.sentiment<-0.15?'bd':'')+'"><span class="ank">News mood</span> '+t+'</span>'); }
   if(chips.length) parts.push('<div class="anchips" style="margin:9px 0 0">'+chips.join('')+'</div>');
   if(v.headlines&&v.headlines.length){
-    parts.push('<div class="sthl">'+v.headlines.map(function(h){ if(!h.title) return ''; var dot='<span class="stdot '+(h.tone>0.05?'up':h.tone<-0.05?'down':'flat')+'"></span>'; return '<div class="sthli">'+dot+'<span class="sthlt">'+esc(h.title)+'</span>'+(h.date?'<span class="sthld">'+esc(h.date)+'</span>':'')+'</div>'; }).join('')+'</div>');
+    parts.push('<div class="sthl">'+v.headlines.map(function(h){ if(!h.title) return ''; var dot='<span class="stdot '+(h.tone>0.05?'up':h.tone<-0.05?'down':'flat')+'"></span>'; var ttl=h.url?('<a class="sthlt" href="'+esc(h.url)+'" target="_blank" rel="noopener">'+esc(h.title)+'</a>'):('<span class="sthlt">'+esc(h.title)+'</span>'); return '<div class="sthli">'+dot+ttl+(h.date?'<span class="sthld">'+esc(h.date)+'</span>':'')+'</div>'; }).join('')+'</div>');
   }
   return '<div class="stblock"><h4>🗣️ Word on the street <span class="sthint">— what everyone else reckons</span></h4>'+
     (a.streetSummary?'<p class="stsum">'+a.streetSummary+'</p>':'')+parts.join('')+'</div>';
