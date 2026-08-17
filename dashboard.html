@@ -4510,23 +4510,27 @@ function marketTimelineHtml(D){
 // Each panel reuses the existing builders verbatim (topNewsHtml/topMoversHtml/upcomingHtml + the geo/
 // sector/commodity `lines()` blocks) — nothing was rewritten, just folded behind a chip nav.
 function marketContextHtml(D, bargainCards, lines){   // `lines` is a render-local closure — MUST be passed in (blank-page fix)
-  var geoSec = '<p class="sec-sub">What\'s moving the pot, and which kitchens are hot vs which to skip.</p>'+
-    '<div class="cols"><div class="stack"><div class="eyebrow">🌍 Geopolitics</div>'+lines(D.geo,'title','geo')+'</div>'+
-    '<div class="stack"><div class="eyebrow">🍳 Sectors — buy vs skip</div>'+lines(D.sectors,'title','sectors')+sectorRotationHtml(D)+'</div></div>';
-  var commodSec = '<p class="sec-sub">No jargon. Just: worth a look, emerging (🔥), or leave it.</p>'+
-    (function(){ var items=D.commodities||[], n=items.length, third=Math.ceil(n/3);
-      var a=items.slice(0,third), b=items.slice(third,third*2), c=items.slice(third*2);
-      return '<div class="cols3"><div class="stack">'+lines(a,'name','commodities',0)+'</div>'+
-        '<div class="stack">'+lines(b,'name','commodities',third)+'</div>'+
-        '<div class="stack">'+lines(c,'name','commodities',third*2)+'</div></div>'; })();
+  // #348 layout (user: "commodities sit on the side / don't fit") — one BALANCED 2-col panel: geopolitics +
+  // commodities share the left column (both short lists), sectors buy/skip + rotation fill the right. Commodities
+  // now render as the same 1-col cards as geo/sectors (not a lopsided 3-col strip dumped at the bottom).
+  var sectorsCommodSec = '<p class="sec-sub">The wider backdrop — geopolitics, where the money\'s flowing across sectors, and commodities. Each card carries a real scored leader.</p>'+
+    '<div class="cols">'+
+      '<div class="stack">'+
+        '<div class="eyebrow">🌍 Geopolitics</div>'+lines(D.geo,'title','geo')+
+        '<div class="eyebrow" style="margin-top:18px">🛢️ Commodities</div>'+
+        ((D.commodities&&D.commodities.length)?lines(D.commodities,'title','commodities'):'<p class="sec-sub" style="margin-top:2px">No commodity reads this run.</p>')+
+      '</div>'+
+      '<div class="stack">'+
+        '<div class="eyebrow">🍳 Sectors — buy vs skip</div>'+lines(D.sectors,'title','sectors')+sectorRotationHtml(D)+
+      '</div>'+
+    '</div>';
   var tabs=[
     // #350 — News + Big picture + Announcements + Coming up MERGED into one date-sorted timeline (each row
     // carries its scored tickers; IPOs resolve to a single dated entry). World/Sectors + Commodities stay
     // (they're the thematic, non-time-based half — #348 merges those two next).
     ['timeline','📅 Timeline', marketTimelineHtml(D)],
-    // #348 — Sectors + Commodities merged into ONE "Sectors & commodities" panel (geopolitics + sector buy/skip
-    // + rotation, then the commodity cards) instead of two separate tabs.
-    ['sectors','🍳 Sectors &amp; commodities', geoSec+'<div class="eyebrow" style="margin:16px 0 8px">🛢️ Commodities</div>'+commodSec]
+    // #348 — Sectors + Commodities merged into ONE balanced "Sectors & commodities" panel.
+    ['sectors','🍳 Sectors &amp; commodities', sectorsCommodSec]
   ];
   if(bargainCards) tabs.push(['bargains','🛍️ Bargains',
     '<p class="sec-sub">Genuinely cheap right now — oversold, not in freefall, and nothing actively wrong that we can see. <b>Tap any for the full read.</b></p><div class="pot">'+bargainCards+'</div>']);
@@ -5055,7 +5059,10 @@ function render(D,H){
     }).join('')+'</div>'+(anyPend?'<p class="tierscore-note">⏳ Type 2 & 3 are the daily whole-market scans — their picks grade only once the holding window closes (a Day pick after the next session, a Week after ~5 days, a Long after ~20). New scans show as <b>maturing</b> until then, then a real win-rate appears here.</p>':'')+'</div>';
   })():'';
   function lines(arr,key,src,off){off=off||0;return (arr||[]).map(function(x,i){
-    var lead=x.leader?'<span class="thlead" title="Real model score behind this theme">→ <b>'+esc(x.leader.sym)+'</b> '+x.leader.buy_now+'/100 '+esc(x.leader.band)+'</span>':'';
+    // #leaderscore — the theme-leader object stores its number under `.score` (with `.band`), NOT `.buy_now`,
+    // so the old `x.leader.buy_now` rendered a literal "undefined/100". Read `.score` first, fall back.
+    var _lsc=x.leader?(x.leader.score!=null?x.leader.score:x.leader.buy_now):null;
+    var lead=x.leader?'<span class="thlead" title="Real model score behind this theme">→ <b>'+esc(x.leader.sym)+'</b> '+(_lsc!=null?Math.round(_lsc):'—')+'/100 '+esc(x.leader.band||'')+'</span>':'';
     // robust label: geo/sectors carry `name`, commodities carry `title` — fall back so neither shows
     // "undefined". note was concatenated raw (unescaped + unguarded → literal "undefined" when absent).
     var _label=x[key]||x.title||x.name||x.label||'';
