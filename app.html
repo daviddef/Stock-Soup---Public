@@ -1131,6 +1131,8 @@
   .thmnews-row{font-size:13px;line-height:1.35}
   .thmnews-row a{color:var(--ink);font-weight:600}
   .thmnews-m{display:block;font-size:11px;color:var(--muted);margin-top:1px}
+  .thmnews-more>summary{cursor:pointer;font-size:12px;font-weight:800;color:var(--broth);list-style:none;padding:8px 0 2px}
+  .thmnews-more>summary::-webkit-details-marker{display:none}
   .clickline{cursor:pointer;transition:border-color .12s,transform .1s}
   .clickline:hover{border-color:var(--broth)}
   .clickline:active{transform:scale(.995)}
@@ -7354,12 +7356,13 @@ function openTheme(src,idx){
         :' No scored pick here this run — it’s a watch, not a buy yet.')+'</p>'+
     // #359 (user ask) — the fresh headlines behind the theme, so tapping the card actually shows the news.
     (function(){ var hs=item.newsHeadlines||[]; if(!hs.length) return '';
+      function row(h){ var t=h.url?('<a href="'+esc(h.url)+'" target="_blank" rel="noopener">'+esc(h.title)+' ↗</a>'):esc(h.title);
+        var meta=esc(h.source||'')+(h.date?' · '+esc(String(h.date).slice(0,10)):'');
+        return '<div class="thmnews-row">'+t+'<span class="thmnews-m">'+meta+'</span></div>'; }
+      var head=hs.slice(0,5), rest=hs.slice(5);
       return '<h4 style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--broth);font-weight:800;margin:4px 0 8px">📰 Latest news'+(item.newsCount!=null?' · '+item.newsCount+' in the last 4 days':'')+'</h4>'+
-        '<div class="thmnews">'+hs.map(function(h){
-          var t=h.url?('<a href="'+esc(h.url)+'" target="_blank" rel="noopener">'+esc(h.title)+' ↗</a>'):esc(h.title);
-          var meta=esc(h.source||'')+(h.date?' · '+esc(String(h.date).slice(0,10)):'');
-          return '<div class="thmnews-row">'+t+'<span class="thmnews-m">'+meta+'</span></div>';
-        }).join('')+'</div>'; })()+
+        '<div class="thmnews">'+head.map(row).join('')+'</div>'+
+        (rest.length?'<details class="thmnews-more"><summary>Show '+rest.length+' older (up to a month) →</summary><div class="thmnews" style="margin-top:8px">'+rest.map(row).join('')+'</div></details>':''); })()+
     '<h4 style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:800;margin:14px 0 10px">Leaders in this theme</h4>'+
     (rows||'<p class="muted">No clear ticker leaders surfaced for this theme tonight.</p>')+etfHtml+
     '<p style="font-size:11px;color:var(--faint);margin-top:14px;line-height:1.6"><b style="color:var(--muted)">What the tags mean:</b> a verdict like <b>Get in</b>/<b>Wait</b> = it\'s one of tonight\'s scored picks · <b>Shortlisted</b> = we considered it, didn\'t pick it · <b>On your watchlist</b> = you\'re tracking it · <b>Live price</b> = shown for reference only. ETFs are the diversified way to play the theme.</p></div>';
