@@ -1376,8 +1376,12 @@
   .fdr-preset{font-size:12.5px;font-weight:800;padding:6px 12px;border-radius:9px;border:1px solid var(--line);background:var(--surface-2);color:var(--ink);cursor:pointer}
   .fdr-preset:hover{border-color:var(--buy)}
   .fdr-preset.on{background:rgba(35,194,103,.15);border-color:var(--buy);color:var(--buy)}
-  .fdr-railhead{display:flex;align-items:center;justify-content:space-between;padding:8px 12px 4px}
-  .fdr-railhead b{font-size:13px}
+  .fdr-railhead{display:flex;align-items:center;gap:8px;padding:8px 12px 4px}
+  .fdr-railhead b{font-size:13px;margin-right:auto}
+  /* #fdr-collapse — mobile-only toggle; the lever body collapses behind it. Desktop always shows the body. */
+  .fdr-railtog{display:inline-flex;align-items:center;gap:5px;background:var(--surface-2);border:1px solid var(--line);color:var(--ink);font-family:var(--font);font-weight:800;font-size:12px;padding:5px 11px;border-radius:999px;cursor:pointer}
+  @media(min-width:761px){ .fdr-railtog{display:none} .fdr-railbody{display:block!important} }
+  @media(max-width:760px){ .fdr-railbody{display:none} .fdr-railbody.open{display:block} }
   .fdr-reset{border:0;background:none;color:var(--broth);font-weight:800;font-size:12px;cursor:pointer;font-family:var(--font)}
   .fdr-grp{border-top:1px solid var(--line);padding:8px 12px 12px} .fdr-grp:first-of-type{border-top:0}
   .fdr-grpt{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:2px 0 8px}
@@ -9848,6 +9852,7 @@ function pushViewState(){
 // tonight's candidates/picks, and lets you pull levers for the stock you want. Fully guarded: any throw
 // is caught so a Finder bug can never blank the app (the #216 blank-page class).
 var FDR={mode:'flexible', view:'cards', sectorSet:null, commoditySet:[], toggles:{aboveMa:false}, sort:'match', xAxis:'rangePos', yAxis:'buyNow', query:'', catalystOnly:false, excludeJunk:false, built:false};
+var FDR_RAIL_OPEN=false;   // #fdr-collapse — lever body collapsed by default on mobile
 var FDR_LEVERS=[
   {grp:'Scores', items:[
     {k:'buyNow', label:'🍊 Buy-now', min:0,max:100,val:55,on:true, unit:'≥', help:'our momentum/timing score — Buy band'},
@@ -10129,7 +10134,13 @@ function fdrLeverHtml(l){
 }
 function fdrRailHtml(pool){
   var secs=fdrSectors(pool), buySecs=fdrBuySectors(pool);
-  var h='<div class="fdr-railhead"><b>Your levers</b><button class="fdr-reset" id="fdrReset">Clear</button></div>';
+  // #fdr-collapse (17 Aug, user ask) — on MOBILE the whole lever body (presets + sectors + sliders) eats too
+  // much vertical space, so it's collapsed by default behind a "▾ Filters" toggle in the header. Desktop
+  // always shows it (CSS hides the toggle + forces the body open). State persists in FDR_RAIL_OPEN.
+  var h='<div class="fdr-railhead"><b>Your levers</b>'+
+    '<button class="fdr-railtog" id="fdrRailTog" aria-expanded="'+(FDR_RAIL_OPEN?'true':'false')+'">'+(FDR_RAIL_OPEN?'▴ Hide filters':'▾ Filters &amp; sectors')+'</button>'+
+    '<button class="fdr-reset" id="fdrReset">Clear</button></div>';
+  h+='<div class="fdr-railbody'+(FDR_RAIL_OPEN?' open':'')+'">';
   // #345 — one-tap presets. "Coiled spring" configures the finder to surface flat-but-turning names (see
   // fdrSpringScore): turns on ONLY the spring lever and sorts by it, so the top of the list is the best setups.
   h+='<div class="fdr-presets"><span class="fdr-presetl">One-tap '+infoBtn('finderPresets')+'</span>'+
@@ -10153,6 +10164,7 @@ function fdrRailHtml(pool){
   FDR_LEVERS.forEach(function(g){ h+='<div class="fdr-grp"><div class="fdr-grpt">'+g.grp+'</div>'+g.items.map(fdrLeverHtml).join('')+'</div>'; });
   h+='<div class="fdr-grp"><div class="fdr-grpt">Must-have</div><div class="fdr-chips">'+
     '<button class="fdr-tgl'+(FDR.toggles.aboveMa?' on':'')+'" data-tgl="aboveMa">Above both MAs</button></div></div>';
+  h+='</div>';   // #fdr-collapse — close .fdr-railbody
   return h;
 }
 function fdrMiniBar(v,kind){
@@ -10361,6 +10373,7 @@ function fdrRenderView(){
 }
 function fdrWire(root){
   function rerender(){ renderFinder(); }
+  var rt=root.querySelector('#fdrRailTog'); if(rt){ rt.onclick=function(){ FDR_RAIL_OPEN=!FDR_RAIL_OPEN; renderFinder(); }; }   // #fdr-collapse
   root.querySelectorAll('[data-fmode]').forEach(function(b){b.onclick=function(){ FDR.mode=b.dataset.fmode; if(FDR.mode==='flexible')FDR.sort='match'; rerender(); };});
   root.querySelectorAll('[data-fview]').forEach(function(b){b.onclick=function(){ FDR.view=b.dataset.fview; rerender(); };});
   var ss=document.getElementById('fdrSort'); if(ss) ss.onchange=function(){ FDR.sort=ss.value; rerender(); };
