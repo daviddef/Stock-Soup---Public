@@ -564,6 +564,7 @@
   .pxr-track{flex:1;min-width:0;position:relative;height:6px;border-radius:999px;background:linear-gradient(90deg,rgba(255,77,77,.4),rgba(255,197,61,.35),rgba(35,194,103,.5))}
   .pxr-dot{position:absolute;top:-4px;width:14px;height:14px;border-radius:50%;background:var(--ink);box-shadow:0 0 0 3px var(--surface);transform:translateX(-50%)}
   .pxr-min,.pxr-max{flex:0 0 auto;font-size:11px;font-weight:700;color:var(--faint);font-variant-numeric:tabular-nums;white-space:nowrap}
+  .pxr-load{font-size:11px;color:var(--faint);letter-spacing:.12em;padding:4px 0}
   .docsov{position:fixed;inset:0;z-index:300;background:var(--ground);display:none;flex-direction:column}
   .docsbar{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--line);background:var(--surface)}
   .docstitle{font-weight:900;font-size:15px;display:inline-flex;align-items:center;gap:8px}
@@ -3911,20 +3912,48 @@ function signalDetailHtml(p,region,opts){
 // Week/month/year price range — where the current price sits in each real historical window (#78).
 // p.ranges = {"1w":{lo,hi,pos}, "1m":{...}, "1y":{...}} from features._price_ranges(), pos is 0-1
 // (0=at the low, 1=at the high). Only renders windows we actually have data for.
-function rangeBarsHtml(p,cur,decimals){
-  var r=p&&p.ranges; if(!r) return '';
+function _pxrRowsHtml(r,cur,decimals){
   decimals=decimals==null?1:decimals;   // stock prices default to 1dp; forex rates need more (#131)
   var LBL={"1w":"1 week","1m":"1 month","1y":"1 year"};
   var order=["1w","1m","1y"].filter(function(k){return r[k];});
   if(!order.length) return '';
-  var rows=order.map(function(k){
+  return order.map(function(k){
     var w=r[k], pct=Math.max(0,Math.min(100,w.pos*100));
     return '<div class="pxr-row"><span class="pxr-lbl">'+LBL[k]+'</span>'+
       '<span class="pxr-min">'+esc(cur)+w.lo.toFixed(decimals)+'</span>'+
       '<div class="pxr-track"><div class="pxr-dot" style="left:'+pct+'%"></div></div>'+
       '<span class="pxr-max">'+esc(cur)+w.hi.toFixed(decimals)+'</span></div>';
   }).join('');
+}
+function rangeBarsHtml(p,cur,decimals){
+  var r=p&&p.ranges;
+  decimals=decimals==null?1:decimals;
+  if(!r){
+    // self-heal (#ranges, 17 Aug 2026) — the pipeline published this pick/candidate with ranges=null (a
+    // Yahoo-throttled scheduled runner), so the 3-slider used to just vanish until the next clean pulse.
+    // Lazily fill it from the Worker's /ranges endpoint (EODHD 1y on Cloudflare IPs, immune to that throttle).
+    var sym=p&&p.sym, reg=p&&(p.region||MKT);
+    if(!sym||sym==='NONE') return '';
+    return '<div class="viz pxr-lazy" data-pxr data-sym="'+esc(sym)+'" data-region="'+esc(reg)+'" data-cur="'+esc(cur)+'" data-dec="'+decimals+'">'+
+      '<h4>Price range · low → high, and where we sit</h4><div class="pxranges"><div class="pxr-load">····· loading the range</div></div></div>';
+  }
+  var rows=_pxrRowsHtml(r,cur,decimals);
+  if(!rows) return '';
   return '<div class="viz"><h4>Price range · low → high, and where we sit</h4><div class="pxranges">'+rows+'</div></div>';
+}
+// Fill any lazy range-slider slots (data-pxr) from the Worker's /ranges endpoint. Same lazy-hydrate idiom as
+// hydrateMissCharts/hydrateNewsCharts — called at the overlay render points where the 3-slider appears.
+function hydrateRanges(root){
+  (root||document).querySelectorAll('.pxr-lazy[data-pxr]').forEach(function(slot){
+    if(slot.dataset.done) return; slot.dataset.done='1';
+    var sym=slot.dataset.sym, reg=slot.dataset.region, cur=slot.dataset.cur||'', dec=+slot.dataset.dec;
+    fetch(API_BASE+'/ranges?sym='+encodeURIComponent(sym)+'&region='+encodeURIComponent(reg),{headers:{'Authorization':'Bearer '+sessGet()}})
+      .then(function(r){return r.ok?r.json():null;}).then(function(j){
+        var box=slot.querySelector('.pxranges'); if(!box) return;
+        var rows=(j&&j.ranges)?_pxrRowsHtml(j.ranges,cur,dec):'';
+        box.innerHTML=rows||'<div class="pxr-load">range unavailable</div>';
+      }).catch(function(){ var box=slot.querySelector('.pxranges'); if(box) box.innerHTML='<div class="pxr-load">range unavailable</div>'; });
+  });
 }
 // Market-aware header: prefer a per-market headline/chef when the run provides one
 // (D.headline[MKT] / D.chefByMkt[MKT]), else fall back to the single shared version.
@@ -6143,6 +6172,7 @@ function wireTickerModal(m, o, region, isPick){
   syncWatchButtons();
   try{ hydrateMissCharts(m); }catch(e){}
   try{ hydrateNewsCharts(m); }catch(e){}
+  try{ hydrateRanges(m); }catch(e){}   // #ranges — fill the 3-slider from /ranges when the pipeline left it null
 }
 function openModal(p,region,cur){
   LASTFOCUS=document.activeElement;
@@ -7826,6 +7856,7 @@ function renderAnalyst(a){
   document.getElementById('mClose').onclick=closeModal;
   hydrateMissCharts(m);   // #318 — fill the lazy 24h chart slot injected above
   try{ hydrateNewsCharts(m); }catch(e){}   // #newschart — the scrubbable multi-day price+news line
+  try{ hydrateRanges(m); }catch(e){}   // #ranges — fill the 3-slider from /ranges when the pipeline left it null
   m.querySelectorAll('.watchbtn').forEach(function(wb){ wb.addEventListener('click',function(e){e.preventDefault();watchToggleFromEl(wb);}); }); syncWatchButtons();
   if(_sigKey){
     m.querySelectorAll('.antap[data-sigkey]').forEach(function(el){
