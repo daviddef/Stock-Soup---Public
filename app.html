@@ -1171,6 +1171,8 @@
   .line .txt small{display:block;color:var(--muted);font-size:12px;margin-top:1px}
   .thlead{display:block;font-size:11px;font-weight:700;color:var(--broth);margin-top:3px}
   .thlead b{color:var(--ink)}
+  .thnews{display:inline-block;font-size:10.5px;font-weight:800;color:var(--muted);margin-top:3px;letter-spacing:.01em}
+  .thnews.on{color:var(--broth)}
   .uprow{display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:9px 12px;font-size:13px;margin-bottom:6px}
   .upsym{font-weight:800;color:var(--ink)}
   .upwhen{color:var(--muted);font-size:12px;font-weight:600}
@@ -5086,12 +5088,16 @@ function render(D,H){
   function lines(arr,key,src,off){off=off||0;return (arr||[]).map(function(x,i){
     // #leaderscore — the theme-leader object stores its number under `.score` (with `.band`), NOT `.buy_now`,
     // so the old `x.leader.buy_now` rendered a literal "undefined/100". Read `.score` first, fall back.
-    var _lsc=x.leader?(x.leader.score!=null?x.leader.score:x.leader.buy_now):null;
-    var lead=x.leader?'<span class="thlead" title="Real model score behind this theme">→ <b>'+esc(x.leader.sym)+'</b> '+(_lsc!=null?Math.round(_lsc):'—')+'/100 '+esc(x.leader.band||'')+'</span>':'';
+    // #359 (17 Aug) — MULTIPLE scored tickers (leaders[], from backdrop-news.py) + a FRESH-news count
+    // (<=4 days). Falls back to the single legacy `leader` so old bundles still render.
+    var _L=(x.leaders&&x.leaders.length)?x.leaders
+        :(x.leader&&x.leader.sym?[{sym:x.leader.sym,score:(x.leader.score!=null?x.leader.score:x.leader.buy_now),band:x.leader.band,region:x.leader.region}]:[]);
+    var lead=_L.length?'<span class="thlead" title="Real model scores behind this theme — tap the card for each">→ '+_L.slice(0,3).map(function(l){var s=(l.score!=null)?Math.round(l.score):null;return '<b>'+esc(l.sym)+'</b>'+(s!=null?' '+s:'');}).join(' · ')+'</span>':'';
+    var news=(x.newsCount!=null)?'<span class="thnews'+(x.newsCount>0?' on':'')+'" title="Fresh headlines on this theme in the last 4 days">📰 '+x.newsCount+' this week</span>':'';
     // robust label: geo/sectors carry `name`, commodities carry `title` — fall back so neither shows
     // "undefined". note was concatenated raw (unescaped + unguarded → literal "undefined" when absent).
     var _label=x[key]||x.title||x.name||x.label||'';
-    return '<div class="line clickline'+(x.tclass?' lc-'+esc(String(x.tclass).replace(/^t-/,'')):'')+'" data-theme="'+esc(src)+'" data-ti="'+(off+i)+'" role="button" tabindex="0"><span class="em">'+esc(x.em||'')+'</span><div class="txt">'+esc(_label)+(x.note?'<small>'+esc(x.note)+'</small>':'')+lead+'</div><span class="tag '+esc(x.tclass)+'">'+esc(x.tag)+'</span></div>';
+    return '<div class="line clickline'+(x.tclass?' lc-'+esc(String(x.tclass).replace(/^t-/,'')):'')+'" data-theme="'+esc(src)+'" data-ti="'+(off+i)+'" role="button" tabindex="0"><span class="em">'+esc(x.em||'')+'</span><div class="txt">'+esc(_label)+(x.note?'<small>'+esc(x.note)+'</small>':'')+lead+news+'</div><span class="tag '+esc(x.tclass)+'">'+esc(x.tag)+'</span></div>';
   }).join('');}
   var story = (PULSES&&PULSES.length) ?
     ('<div class="panel"><h3>Tonight\'s hourly runs</h3><p class="panelsub"><b>Minor runs</b> — same menu, re-priced every hour ('+PULSES.length+' this session). The <b>major</b> menu changes are in The Journey. Newest first.</p>'+
