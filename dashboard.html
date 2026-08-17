@@ -8409,13 +8409,17 @@ function renderWatchlist(){
         '<span class="wc-btns"><button class="wan" data-sym="'+esc(w.sym)+'" data-region="'+esc(w.region)+'" aria-label="What would you do?" title="🧠 What would you do?">🧠</button>'+(it.kind==='none'?'<button class="wmon'+(wlMon(w.sym,w.region)?' on':'')+'" data-sym="'+esc(w.sym)+'" data-region="'+esc(w.region)+'" aria-pressed="'+(wlMon(w.sym,w.region)?'true':'false')+'" aria-label="Watch live" title="'+(wlMon(w.sym,w.region)?'Watching live ✓ — tap to stop':'Watch live — keep a live price &amp; chart on this')+'">📡</button>':'')+'<button class="wown'+(wlOwns(w.sym,w.region)?' owned':'')+'" data-sym="'+esc(w.sym)+'" data-region="'+esc(w.region)+'" aria-label="'+(wlOwns(w.sym,w.region)?'Owned — tap to unflag':'Flag as owned')+'" title="'+(wlOwns(w.sym,w.region)?'You own this ✓ — tap to unflag':'I own it')+'">📦</button>'+
         '<button class="wrm" data-sym="'+esc(w.sym)+'" data-region="'+esc(w.region)+'" aria-label="Remove '+esc(w.sym)+'">✕</button></span></div>'+
       '<div class="pmc-name"'+(r.name?'':' data-hy-name="'+esc(w.sym)+'|'+esc(w.region)+'" style="display:none"')+'>'+(r.name?esc(r.name):'')+'</div>'+
-      '<div class="wc-px">'+px+chg+'</div>'+spk+(it.kind==='none'?'<div class="wc-monspark"></div>':'')+buyLine+addedLine+tag+'</div>';
+      // #wl-chart (17 Aug) — every watchlist card gets a chart: use the pre-fetched spark if the pulse has
+      // one, else LAZY-HYDRATE a mini-chart from /intraday (the same pattern Top Movers/Misses use), so an
+      // "Also tracked" name that wasn't in tonight's scan still shows a chart without needing the 📡 toggle.
+      '<div class="wc-px">'+px+chg+'</div>'+(spk||missChartSlot(w.sym,w.region,r.cur))+(it.kind==='none'?'<div class="wc-monspark"></div>':'')+buyLine+addedLine+tag+'</div>';
   }
   var smart=rows.filter(function(r){return r.intel.kind!=='none';});
   var plain=rows.filter(function(r){return r.intel.kind==='none';});
   function group(title,sub,list){ return list.length?'<div class="wlgroup"><div class="wlgh">'+title+' <span class="wlgn">'+list.length+'</span></div>'+(sub?'<div class="wlgs">'+sub+'</div>':'')+'<div class="wlgrid">'+list.map(card).join('')+'</div></div>':''; }
   el.innerHTML=group('🧠 Smart watching','These are in tonight\'s picks or full-pot scan, so we have a <b>live scored read</b> — buy zone, target, verdict, trend.',smart)+
                group('📌 Also tracked','On your list but <b>not in tonight\'s scan yet</b> — we watch the price and give it the full scored read the moment it resurfaces.',plain);
+  hydrateMissCharts(el);   // #wl-chart — fetch the lazy mini-charts for watchlist cards without a pre-fetched spark
   el.querySelectorAll('.wrm').forEach(function(b){b.addEventListener('click',function(e){e.stopPropagation();wlRemove(b.dataset.sym,b.dataset.region);renderWatchlist();syncWatchButtons();});});
   el.querySelectorAll('.wown').forEach(function(b){b.addEventListener('click',function(e){e.stopPropagation();var on=wlToggleOwn(b.dataset.sym,b.dataset.region);b.classList.toggle('owned',on);b.setAttribute('title',on?'You own this ✓ — tap to unflag':'I own it');renderWatchlist();updateOwnCount();});});
   el.querySelectorAll('.wan').forEach(function(b){b.addEventListener('click',function(e){e.stopPropagation();openTicker(b.dataset.sym,b.dataset.region);});});
