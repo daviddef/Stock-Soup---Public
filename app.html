@@ -1403,6 +1403,16 @@
   .fdr-viewtabs button.on{background:var(--surface-2);color:var(--ink)}
   .fdr-sortsel{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--muted)}
   .fdr-sortsel select,.fdr-axrow select{font-family:var(--font);font-size:13px;font-weight:600;padding:6px 9px;border-radius:9px;border:1px solid var(--line);background:var(--surface-2);color:var(--ink)}
+  /* #fdr-simplify (user: "really cluttered") — declutter the control stack on mobile: Scatter + Board are
+     desktop-only power views (unusable on a phone), the count number is smaller, and every control row is
+     tighter so you reach the first card sooner. */
+  @media(max-width:560px){
+    .fdr-viewtabs [data-fview="scatter"],.fdr-viewtabs [data-fview="board"]{display:none}
+    .fdr-count{font-size:12px} .fdr-count b{font-size:16px}
+    .fdr-top{gap:8px;margin:2px 0 10px} .fdr-viewbar{gap:8px;margin-bottom:10px}
+    .fdr-modesw button{padding:7px 11px;font-size:12.5px} .fdr-viewtabs button{padding:6px 10px;font-size:12.5px}
+    .fdr-search{flex:1 1 100%}
+  }
   .fdr-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px}
   .fdr-card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:13px 14px;position:relative;overflow:hidden;cursor:pointer;transition:transform .12s,border-color .12s}
   .fdr-card:hover{transform:translateY(-2px);border-color:var(--broth)}
@@ -10131,8 +10141,10 @@ function fdrCurrent(D){
 // #343 — the count line, shared by full render + the light re-render.
 function fdrCountHtml(res){
   if(res.query) return '<b>'+res.rows.length+'</b> match “'+esc(res.query)+'”';
-  if(FDR.mode==='strict') return '<b>'+res.rows.length+'</b> of '+res.poolN+' in scope match';
-  return '<b>'+res.rows.length+'</b> ranked · <b style="color:var(--broth)">'+res.passN+'</b> pass your levers · '+res.poolN+' in scope';
+  if(FDR.mode==='strict') return '<b>'+res.rows.length+'</b> of '+res.poolN+' match';
+  // #fdr-simplify (17 Aug, user: "cluttered") — dropped the redundant "· N in scope" (= the ranked count in
+  // Best match); "N in the pot · M match your levers" says it in fewer words.
+  return '<b>'+res.rows.length+'</b> in the pot · <b style="color:var(--broth)">'+res.passN+'</b> match your levers';
 }
 function fdrLeverHtml(l){
   var fv=l.fmt==='b'?('$'+l.val+'B'):l.fmt==='pct'?(l.val+'%'):l.fmt==='px'?('$'+l.val):l.fmt==='dv'?('$'+l.val+'M'):l.val;
