@@ -6126,10 +6126,11 @@ function tickerModalHTML(o, region, cur, isPick){
   var rangesHtml=''; try{ rangesHtml=rangeBarsHtml(o,cur); }catch(e){}
   var HEAT={hot:'🔥 sizzling',good:'✅ tasty',mid:'➖ maybe',cold:'⛔ send it back'};
   var vclass = isPick ? esc(o.vclass) : ((o.heat==='good'||o.heat==='hot')?'v-buy':(o.heat==='cold'?'v-dont':'v-hold'));
-  var tfLabel = (isPick ? tfBW(o.tf) : '🍲 Full-pot candidate')+' · '+(region==='au'?'🇦🇺 ASX':'🇺🇸 US');
+  var tfLabel = (isPick ? tfBW(o.tf) : (o.isAnalyst ? '🧠 What would you do?' : '🍲 Full-pot candidate'))+' · '+(region==='au'?'🇦🇺 ASX':'🇺🇸 US');
   var verdictEl = isPick
     ? '<button class="mverd '+esc(o.vclass)+'" id="mVerdictBtn" type="button" title="Tap for plain English">'+esc(o.verdict)+' <span class="chipi">i</span></button>'
-    : '<span class="mverd '+vclass+'">'+esc(HEAT[o.heat]||o.heat||'')+'</span>';
+    : ((o.isAnalyst && o.verdict) ? '<span class="mverd '+vclass+'">'+esc(o.verdict)+'</span>'
+       : '<span class="mverd '+vclass+'">'+esc(HEAT[o.heat]||o.heat||'')+'</span>');
   var pxDisp = (typeof o.price==='number') ? cleanPrice(o.price) : (o.price!=null?o.price:'—');
   var chgHtml = o.change ? '<div class="mono '+(isPick?chgTone(o.change,o.up):(o.up?'up':'down'))+'" style="font-weight:700;font-size:13px">'+(isPick?esc(o.change):((o.up?'▲':'▼')+' '+fmtChg(o.change)))+'</div>' : '';
   // "the call" — score chips + watch + (pick) plan line + (pick) chef take
@@ -6177,18 +6178,23 @@ function tickerModalHTML(o, region, cur, isPick){
       '<div class="mrisk"><b>Watch out:</b> '+esc(o.risk||'')+'</div>'+
       _pickAltsHtml(o,region,cur)+
     '</details>';
+  } else if(o.isAnalyst){
+    foundH='<div class="mnews">🧠 <span class="lead">Live analyst read:</span> computed on the spot from this ticker\'s price history — trend (ADX), momentum (RSI), volatility and the buy/sell zones. Not one of tonight\'s scored picks — a research read for any ticker.</div>';
   } else {
     foundH='<div class="mnews">🔎 <span class="lead">How we picked it up:</span> '+esc(o.note||'a signal in tonight\'s scan')+'<div class="mfound">'+(o.foundVia?esc(o.foundVia):'Caught by our wide-net scan — live news, market movers and analyst actions — then priced &amp; scored into the pot.')+'</div></div>';
   }
-  var closeNote = isPick ? '' : '<div class="mrisk" style="background:var(--surface-2);border-color:var(--line)"><b>Didn\'t make the top 3</b> — it\'s on the radar, not a pick this run.</div>';
+  var closeNote = (isPick||o.isAnalyst) ? '' : '<div class="mrisk" style="background:var(--surface-2);border-color:var(--line)"><b>Didn\'t make the top 3</b> — it\'s on the radar, not a pick this run.</div>';
   var footer = isPick
     ? '<div class="mfoot"><button class="mbtn watchbtn" data-sym="'+esc(o.sym)+'" data-region="'+esc(region)+'"'+(o.name?' data-name="'+esc(o.name)+'"':'')+(o.nEntry!=null?' data-entry="'+o.nEntry+'"':'')+' aria-pressed="false">＋ Watch</button>'+
         '<button class="mbtn ownbtn" data-sym="'+esc(o.sym)+'" data-region="'+esc(region)+'"'+(o.name?' data-name="'+esc(o.name)+'"':'')+' aria-pressed="false">📦 I own it</button>'+
         '<a class="mbtn" href="'+yf(o.sym,region)+'" target="_blank" rel="noopener">📈 Yahoo ↗</a>'+
         '<a class="mbtn primary" href="'+esc(LAST.D.reportUrl)+'" target="_blank" rel="noopener">📖 Report ↗</a></div>'
-    : '<div class="mfoot"><button class="mbtn watchbtn" data-sym="'+esc(o.sym)+'" data-region="'+esc(region)+'"'+(o.name?' data-name="'+esc(o.name)+'"':'')+' aria-pressed="false">＋ Watch</button>'+
+    : (o.isAnalyst
+      ? '<div class="mfoot"><button class="mbtn watchbtn" data-sym="'+esc(o.sym)+'" data-region="'+esc(region)+'"'+(o.name?' data-name="'+esc(o.name)+'"':'')+' aria-pressed="false">＋ Watch</button>'+
+          '<a class="mbtn primary" href="'+yf(o.sym,region)+'" target="_blank" rel="noopener">📈 Yahoo ↗</a></div>'
+      : '<div class="mfoot"><button class="mbtn watchbtn" data-sym="'+esc(o.sym)+'" data-region="'+esc(region)+'"'+(o.name?' data-name="'+esc(o.name)+'"':'')+' aria-pressed="false">＋ Watch</button>'+
         '<button class="mbtn anbtn" data-sym="'+esc(o.sym)+'" data-region="'+esc(region)+'">🧠 What would you do?</button>'+
-        '<a class="mbtn primary" href="'+yf(o.sym,region)+'" target="_blank" rel="noopener">📈 Yahoo ↗</a></div>';
+        '<a class="mbtn primary" href="'+yf(o.sym,region)+'" target="_blank" rel="noopener">📈 Yahoo ↗</a></div>');
   return '<div class="mhead '+vclass+'"><button class="mclose" id="mClose" aria-label="Close">✕</button>'+
     mYahooBtn(o.sym,region)+mShareBtn('sym/'+region+'/'+encodeURIComponent(o.sym),o.sym)+
     '<div class="mtf">'+tfLabel+'</div>'+
@@ -6202,6 +6208,7 @@ function tickerModalHTML(o, region, cur, isPick){
       rangesHtml+
       (function(){try{return valBandHtml(o,cur);}catch(e){return '';}})()+
       rsiBlock+
+      (o.extraHtml||'')+   // analyst-only: 'Word on the street' consensus + Why/Watch-out (empty for picks/candidates)
       happeningHtml(o)+
       earningsCallLink(o.sym,region)+
       foundH+
@@ -7871,49 +7878,61 @@ function analystSignalRows(a){
   }
   return rows;
 }
+// #wwyd-consolidate (17 Aug 2026, user ask) — "What would you do?" now renders through the SAME canonical
+// builder as picks/candidates (tickerModalHTML), so it matches the neat Full-Pot layout. We map the flat
+// /analyst payload `a` into an `o` object: headline+action → o.plain; signals → o.rsi/o.trend + buy/sell
+// zones; street consensus (target/mood/buy-hold-sell) + Why/Watch-out → o.extraHtml; headlines (with the
+// #lmt URL fix) → o.news_top3, which flows into the canonical "What's happening" news section. Missing
+// scored fields (fundamentals/fib/percentiles) simply don't render — honest for an un-scored ticker.
 function renderAnalyst(a){
-  var m=document.getElementById('modal'), tc='v-'+(a.tone==='buy'?'buy':a.tone==='dont'?'dont':'hold'), s=a.signals||{};
-  var _rows=analystSignalRows(a), _sigKey=null;
-  if(_rows.length){ _sigKey='sig'+(SIG_SEQ++); SIG_CACHE[_sigKey]={rows:_rows,title:(a.sym||'Signals')+' — signal breakdown'}; }
-  var _sk=_sigKey?' data-sigkey="'+_sigKey+'"':'';
-  function chip(k,v,cls){ return v==null?'':'<span class="anchip antap '+(cls||'')+'"'+_sk+'><span class="ank">'+k+'</span> '+esc(v)+(_sigKey?' <span class="chipi">i</span>':'')+'</span>'; }
-  var trend= s.trend? '<span class="anchip antap '+(/up/.test(s.trend)?'gd':/down/.test(s.trend)?'bd':'')+'"'+_sk+'><span class="ank">Trend</span> '+esc(s.trend)+(s.adx!=null?' · ADX '+s.adx:'')+(_sigKey?' <span class="chipi">i</span>':'')+'</span>':'';
-  var rsi= s.rsi!=null? '<span class="anchip antap '+(s.rsi>70?'bd':s.rsi<30?'gd':'')+'"'+_sk+'><span class="ank">RSI</span> '+s.rsi+(s.rsi>70?' hot':s.rsi<30?' cold':'')+(_sigKey?' <span class="chipi">i</span>':'')+'</span>':'';
-  m.innerHTML='<div class="mhead '+tc+'"><button class="mclose" id="mClose" aria-label="Close">✕</button>'+
-    '<div class="mtf">🧠 What would you do?</div>'+
-    '<div class="mtop"><div><div class="msym">'+esc(a.sym)+'</div><div class="mco">'+esc(a.cur+a.price)+'</div></div>'+
-      '<span style="display:inline-flex;gap:8px;align-items:center;align-self:flex-start"><button class="watchbtn iconwatch" data-sym="'+esc(a.sym)+'" data-region="'+esc(a.region)+'"'+(a.name?' data-name="'+esc(a.name)+'"':'')+' aria-pressed="false" title="Add to watchlist">☆</button><span class="mverd '+tc+'">'+esc(a.verdict)+'</span></span></div></div>'+
-    '<div class="mbody">'+
-      '<p class="mtake"><span class="lead">'+esc(a.headline)+'.</span> '+a.action+'</p>'+
-      // #318/#4 — chart aligned to the standard ticker overlay (same "📊 The chart" heading + slot). It's the
-      // lazy intraday fetch (the only price data available for an arbitrary un-scored ticker — a scored name
-      // opens the richer openTicker overlay instead). A thinly-traded small-cap can look flat here simply
-      // because it barely traded intraday — that's real, not a glitch; the note says so.
-      '<div class="viz"><h4>📊 The chart — recent price</h4>'+missChartSlot(a.sym,a.region,a.cur||(a.region==='au'?'A$':'$'))+
-        '<div class="rsimeta" style="margin-top:5px;color:var(--faint)">Intraday — a lightly-traded stock can look flat if it barely traded today.</div></div>'+
-      newsChartSlot(a.sym,a.region,a.cur||(a.region==='au'?'A$':'$'),a)+   // #newschart — scrubbable multi-day price+news line
-      '<div class="anchips">'+trend+rsi+chip('Volatility', s.atrPct!=null?('~'+s.atrPct+'%/day'):null)+chip('vs 20-day', s.ext20!=null?((s.ext20>=0?'+':'')+s.ext20+'%'):null, s.ext20>=15?'bd':'')+chip('52wk', s.near52!=null?(Math.round(s.near52*100)+'% of high'):null)+'</div>'+
-      (_sigKey?'<div class="mfound" style="margin:-4px 0 10px">🧮 Tap any signal above for what it means &amp; where it comes from</div>':'')+
-      (s.support!=null?'<div class="anzones"><div class="anz anz-buy"><span class="ank">🟢 Buying zone</span> '+esc(a.cur+s.support)+'</div><div class="anz anz-sell"><span class="ank">🔴 Selling zone</span> '+esc(a.cur+s.resistance)+'</div></div>':'')+
-      (a.drivers&&a.drivers.length?'<div class="anlist"><h4>Why</h4><ul>'+a.drivers.map(function(d){return '<li>'+d+'</li>';}).join('')+'</ul></div>':'')+
-      (a.risks&&a.risks.length?'<div class="anlist anrisk"><h4>Watch out for</h4><ul>'+a.risks.map(function(d){return '<li>'+esc(d)+'</li>';}).join('')+'</ul></div>':'')+
-      streetHtml(a)+
-      '<div class="mfoot"><button class="mbtn watchbtn" data-sym="'+esc(a.sym)+'" data-region="'+esc(a.region)+'" aria-pressed="false">＋ Watch</button>'+
-        '<a class="mbtn primary" href="'+yf(a.sym,a.region)+'" target="_blank" rel="noopener">📈 Yahoo ↗</a></div>'+
-      '<p class="infofoot">A transparent, rules-based read straight off the price action — <b>not</b> a recommendation to trade. The call is yours.</p>'+
-    '</div>';
-  document.getElementById('mClose').onclick=closeModal;
-  hydrateMissCharts(m);   // #318 — fill the lazy 24h chart slot injected above
-  try{ hydrateNewsCharts(m); }catch(e){}   // #newschart — the scrubbable multi-day price+news line
-  try{ hydrateRanges(m); }catch(e){}   // #ranges — fill the 3-slider from /ranges when the pipeline left it null
-  m.querySelectorAll('.watchbtn').forEach(function(wb){ wb.addEventListener('click',function(e){e.preventDefault();watchToggleFromEl(wb);}); }); syncWatchButtons();
-  if(_sigKey){
-    m.querySelectorAll('.antap[data-sigkey]').forEach(function(el){
-      el.setAttribute('tabindex','0'); el.setAttribute('role','button');
-      el.addEventListener('click',function(){openSignalBreakdown(el.dataset.sigkey);});
-      el.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();openSignalBreakdown(el.dataset.sigkey);}});
-    });
+  var m=document.getElementById('modal'); if(!m||!a) return;
+  var region=a.region||'us', cur=a.cur||(region==='au'?'A$':'$'), s=a.signals||{}, v=a.street||{};
+  var _p=numLevel(a.price);
+  var upside=(v.targetMean!=null&&isFinite(_p)&&_p>0)?Math.round((v.targetMean/_p-1)*100):null;
+  // buy/sell zones — always shown (the canonical demand/supply rows are proximity-gated, so we render our own)
+  var zones='';
+  if(s.support!=null||s.resistance!=null){
+    zones='<div class="viz"><div class="anzones">'+
+      (s.support!=null?'<div class="anz anz-buy"><span class="ank">🟢 Buying zone</span> '+esc(cur+s.support)+'</div>':'')+
+      (s.resistance!=null?'<div class="anz anz-sell"><span class="ank">🔴 Selling zone</span> '+esc(cur+s.resistance)+'</div>':'')+
+    '</div></div>';
   }
+  // "Word on the street" consensus (headlines are NOT here — they flow into the canonical news section below)
+  var street='';
+  if(v.analystN||v.targetMean!=null||v.sentiment!=null||a.streetSummary){
+    var sp=[];
+    if(v.analystN) sp.push('<div class="stbar" title="'+v.analystN+' analysts"><span class="stseg stbuy" style="width:'+v.buyPct+'%"></span><span class="stseg sthold" style="width:'+v.holdPct+'%"></span><span class="stseg stsell" style="width:'+v.sellPct+'%"></span></div>'+
+      '<div class="stleg"><span class="up">▲ '+v.buyPct+'% buy</span><span class="stmid">■ '+v.holdPct+'% hold</span><span class="down">▼ '+v.sellPct+'% sell</span><span class="stn">'+v.analystN+' analysts</span></div>');
+    var sc=[];
+    if(v.targetMean!=null) sc.push('<span class="anchip"><span class="ank">Avg target</span> '+esc(cur+v.targetMean)+(upside!=null?' <b class="'+(upside>=0?'up':'down')+'">'+(upside>=0?'+':'')+upside+'%</b>':'')+'</span>');
+    if(v.sentiment!=null){ var t=v.sentiment>0.15?'upbeat 🟢':v.sentiment<-0.15?'gloomy 🔴':'mixed ⚪'; sc.push('<span class="anchip '+(v.sentiment>0.15?'gd':v.sentiment<-0.15?'bd':'')+'"><span class="ank">News mood</span> '+t+'</span>'); }
+    if(sc.length) sp.push('<div class="anchips" style="margin:9px 0 0">'+sc.join('')+'</div>');
+    street='<div class="viz stblock"><h4>🗣️ Word on the street <span class="sthint">— what everyone else reckons</span></h4>'+(a.streetSummary?'<p class="stsum">'+a.streetSummary+'</p>':'')+sp.join('')+'</div>';
+  }
+  // Why / Watch-out
+  var dr='';
+  if((a.drivers&&a.drivers.length)||(a.risks&&a.risks.length)){
+    dr='<div class="viz">'+
+      (a.drivers&&a.drivers.length?'<h4>✅ Why</h4><ul class="mcat">'+a.drivers.map(function(d){return '<li>'+esc(String(d).replace(/<[^>]+>/g,''))+'</li>';}).join('')+'</ul>':'')+
+      (a.risks&&a.risks.length?'<h4 style="margin-top:10px">⚠️ Watch out for</h4><ul class="mcat">'+a.risks.map(function(r){return '<li>'+esc(String(r).replace(/<[^>]+>/g,''))+'</li>';}).join('')+'</ul>':'')+
+    '</div>';
+  }
+  var o={
+    sym:a.sym, region:region, name:a.name||null, isAnalyst:true,
+    price:a.price, nNow:_p,
+    verdict:a.verdict||null, heat:(a.tone==='buy'?'good':a.tone==='dont'?'cold':'mid'),
+    plain:((a.headline?(a.headline+'. '):'')+String(a.action||'').replace(/<[^>]+>/g,'')).trim(),
+    rsi:(s.rsi!=null?s.rsi:null),
+    trend:(s.adx!=null?{adx:s.adx}:null),
+    news_sentiment:(v.sentiment!=null?v.sentiment:null),
+    news_top3:(v.headlines&&v.headlines.length)?v.headlines.map(function(h){return {title:h.title,url:h.url||null,date:h.date||null,tone:h.tone};}):null,
+    foundVia:'🧠 Live analyst read — computed on the spot from price history',
+    extraHtml:zones+street+dr
+  };
+  m.className='modal';
+  m.innerHTML=tickerModalHTML(o, region, cur, false);
+  wireTickerModal(m, o, region, false);   // fills charts/ranges + wires watch (same as picks/candidates)
+  var mc=document.getElementById('mClose'); if(mc) mc.onclick=closeModal;
 }
 // Admin methodology docs — fetched privately from the Worker (admin-gated), shown in an isolated iframe.
 // #246/#247 — two user-facing docs rendered inline in the docs shell (reuses .docsov/.docsbar/.docsbody).
