@@ -10041,7 +10041,15 @@ function fdrPool(D){
   function put(o){ if(!o||!o.sym||o.sym==='NONE')return; if((o.region||'us')!==mkt)return; if(byKey[o.sym])return; byKey[o.sym]=o; order.push(o.sym); }
   // Tonight's served PICKS go in first (richest, and they must ALWAYS be findable — user: "should at
   // minimum find our picks"). Tagged src:'pick' so fdrInScope never filters them out by sector.
-  (D.regions||[]).forEach(function(rg){ (rg.picks||[]).forEach(function(p){ try{ var o=fdrNormCand(p); o.src='pick'; put(o); }catch(e){} }); });
+  // #pick-fund (17 Aug, user-caught: "GWA/BSL/AMC show no market cap"): a served pick is HAND-BUILT and
+  // carries no fundamentals block, but the SAME ticker's candidate does. Since picks win the sym dedupe,
+  // the pick's blank cap/value/quality hid the candidate's real ones. Merge the candidate as the base and
+  // let the pick's live fields (price/score/rsi) win on top — so the pick row shows its real fundamentals.
+  var _candBySym={}; (D.candidates||[]).forEach(function(c){ if(c&&c.sym&&!_candBySym[c.sym]) _candBySym[c.sym]=c; });
+  (D.regions||[]).forEach(function(rg){ (rg.picks||[]).forEach(function(p){ try{
+    var src=p, cand=_candBySym[p.sym]; if(cand) src=Object.assign({}, cand, p);   // candidate base (fundamentals/ranges) + pick's live fields
+    var o=fdrNormCand(src); o.src='pick'; put(o);
+  }catch(e){} }); });
   (D.candidates||[]).forEach(function(c){ try{ put(fdrNormCand(c)); }catch(e){} });   // rich next — win dedupe over the wide scan
   var fu=((D.finderUniverse||{})[mkt])||[];
   fu.forEach(function(r){ try{ put(fdrNormFU(r)); }catch(e){} });
