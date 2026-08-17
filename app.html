@@ -1481,6 +1481,8 @@
   .tl-why{font-size:12px;line-height:1.4;color:var(--muted);margin-top:4px}
   .tl-tks{display:flex;gap:5px;flex-wrap:wrap;margin-top:8px}
   .tl-tk{font-size:11.5px;font-weight:800;border-radius:999px;padding:3px 9px;border:1px solid var(--line);background:var(--surface-2);color:var(--ink);cursor:pointer;font-family:inherit;white-space:nowrap}
+  .tl-tk .tl-o,.tl-tk .tl-c{font-weight:800;font-variant-numeric:tabular-nums}
+  .tl-tk .tl-o{color:var(--broth)} /* #366 — 🍊 timing + 🍒 conviction, the Stock Pot's two-score identity */
   .tl-tk-buy{background:rgba(35,194,103,.12);color:var(--buy);border-color:rgba(35,194,103,.3)} .tl-tk-watch{background:rgba(232,102,42,.1);color:var(--broth)} .tl-tk-pass{color:var(--muted)}
   .tlwrap[data-flt="news"] .tlrow:not([data-k="news"]),.tlwrap[data-flt="filing"] .tlrow:not([data-k="filing"]),.tlwrap[data-flt="event"] .tlrow:not([data-k="event"]),.tlwrap[data-flt="coming"] .tlrow:not([data-k="coming"]){display:none}
   /* a group heading whose rows are all filtered out would dangle — hide the two headings when a non-'all' filter is active */
@@ -4659,13 +4661,22 @@ function marketTimelineHtml(D){
   var futNear=[], futLater=[];
   future.forEach(function(x){ (x.t!=null && x.t<=tomEnd ? futNear : futLater).push(x); });
   // candidate 🍊 score map so timeline ticker chips carry the same score as the Stock Pot chips
-  var cscore={}; (D.candidates||[]).forEach(function(c){ if(c&&c.sym&&c.score&&c.score.buy_now!=null) cscore[c.sym+'|'+(c.region||'us')]=Math.round(c.score.buy_now); });
+  var cscore={}, candBy={}; (D.candidates||[]).forEach(function(c){ if(c&&c.sym){ var k=c.sym+'|'+(c.region||'us'); candBy[k]=c; if(c.score&&c.score.buy_now!=null) cscore[k]=Math.round(c.score.buy_now); } });
+  // #366 — the timeline ticker chips carry the Stock Pot's TWO-score identity (🍊 timing + 🍒 conviction),
+  // not just the orange. Cherry is memoised per key (it re-derives the signal vote), computed lazily so only
+  // tickers that actually appear in the feed pay for it.
+  var _chMemo={};
+  function _cherryOf(key){ if(_chMemo[key]!==undefined) return _chMemo[key]; var c=candBy[key], v=null;
+    if(c&&c.score&&c.score.buy_now!=null){ try{ var ov=overallScore(c.score.buy_now, signalRows(c,c.region||'us')); if(ov&&ov.score!=null) v=Math.round(ov.score); }catch(e){} }
+    _chMemo[key]=v; return v; }
   var TONE={bullish:{ic:'📈',cls:'ann-bull'},bearish:{ic:'📉',cls:'ann-bear'},neutral:{ic:'',cls:'ann-neu'}};
   var KND={news:'📰 News',filing:'📢 Filing',event:'🌐 Big picture',coming:'📅 Coming up'};
   function tkchips(syms){ return (syms||[]).slice(0,6).map(function(s){ if(!s||!s.sym)return'';
-    var bn=(s.bn!=null)?s.bn:cscore[s.sym+'|'+(s.region||'us')];
+    var key=s.sym+'|'+(s.region||'us');
+    var bn=(s.bn!=null)?s.bn:cscore[key]; var ch=_cherryOf(key);
     var cls=bn==null?'':(bn>=62?'tl-tk-buy':bn>=45?'tl-tk-watch':'tl-tk-pass'); var role=s.role==='at-risk'?'▼ ':(s.role==='beneficiary'?'▲ ':'');
-    return '<button class="tl-tk '+cls+'" data-sym="'+esc(s.sym)+'" data-region="'+esc(s.region||'us')+'">'+role+esc(s.sym)+(bn!=null?' 🍊'+Math.round(bn):'')+'</button>'; }).join(''); }
+    var chips=(bn!=null?' <span class="tl-o">🍊'+Math.round(bn)+'</span>':'')+(ch!=null?' <span class="tl-c">🍒'+ch+'</span>':'');
+    return '<button class="tl-tk '+cls+'" data-sym="'+esc(s.sym)+'" data-region="'+esc(s.region||'us')+'">'+role+esc(s.sym)+chips+'</button>'; }).join(''); }
   function row(x){ var tn=TONE[x.tone]||TONE.neutral;
     var head=x.url?'<a class="tl-head" href="'+esc(x.url)+'" target="_blank" rel="noopener">'+esc(x.head)+' ↗</a>':'<span class="tl-head">'+esc(x.head)+'</span>';
     var when=x.date?'<span class="tl-when">'+esc(dfmt(x.date))+' · '+esc(rel(x.t))+'</span>':'';
