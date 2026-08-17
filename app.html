@@ -10569,6 +10569,19 @@ function loadGated(cb){
 function applyBundle(b){
   if(!b) return false;
   var d=b.latest, h=b.menuHistory, pu=b.pulseHistory, tr=b.trackRecord, oc=b.outcomes;
+  // #349 (single source of truth) — a served pick's score MUST be the model's candidate score, never a
+  // hand-authored number. commit-run syncs at publish, but a later score-pot.py candidate rescore desyncs
+  // the picks (real incident: AGL pick 78.8 "Strong Buy" vs candidate 39.8 "Pass" — the model can't credit
+  // ASX earnings, ADJ-5, so 78.8 was never model-backed). Resolve at load: every pick with a matching
+  // candidate takes that candidate's real model score + heat, so the same ticker shows ONE number everywhere.
+  try{ if(d&&d.regions&&d.candidates&&d.candidates.length){
+    var _cby={}; d.candidates.forEach(function(c){ if(c&&c.sym) _cby[c.sym+'|'+(c.region||'us')]=c; });
+    d.regions.forEach(function(rg){ (rg.picks||[]).forEach(function(p){
+      if(!p||!p.sym||p.sym==='NONE')return;
+      var c=_cby[p.sym+'|'+(rg.id||rg.region||'us')];
+      if(c&&c.score&&c.score.buy_now!=null){ p.score=c.score; if(c.heat!=null)p.heat=c.heat; }
+    }); });
+  } }catch(e){ console.warn('pick-score reconcile skipped:',e); }
   if(pu&&pu.pulses&&pu.pulses.length>1) PULSES=pu.pulses;
   if(b.pulseRuns) PULSERUNS=b.pulseRuns;
   if(tr&&tr.record) TRACK=tr;
