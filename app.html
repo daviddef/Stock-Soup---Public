@@ -1347,6 +1347,27 @@
   .earnflag.ef-soon{background:rgba(217,138,31,.15);color:#d98a1f}
   .annrow.hapearn{background:rgba(224,58,58,.08);border:1px solid rgba(224,58,58,.32)}
   .annrow.hapearn .hapkind{background:rgba(224,58,58,.16);color:#e03a3a}
+  /* #glencore — market-event ("Big picture") cards: an event that doesn't belong to one stock we hold + the scored beneficiaries */
+  .evtwrap{display:flex;flex-direction:column;gap:12px}
+  .evtcard{border:1px solid var(--line);border-radius:14px;padding:14px;background:var(--surface)}
+  .evt-top{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px}
+  .evt-badge{font-size:11px;font-weight:800;padding:3px 9px;border-radius:999px;background:var(--surface-2);color:var(--ink)}
+  .evt-when{font-size:11px;font-weight:800;color:var(--broth)}
+  .evt-act{font-size:10.5px;font-weight:800;padding:3px 9px;border-radius:999px;margin-left:auto;white-space:nowrap}
+  .evt-act-diarise{background:rgba(217,138,31,.16);color:#d98a1f}
+  .evt-act-buy{background:rgba(35,194,103,.16);color:var(--buy)}
+  .evt-act-watch,.evt-act-ctx{background:var(--surface-2);color:var(--muted)}
+  .evt-headw{margin-bottom:6px}
+  .evt-head{font-weight:800;font-size:15px;color:var(--ink);text-decoration:none;line-height:1.3}
+  a.evt-head:hover{text-decoration:underline}
+  .evt-why{font-size:12.5px;line-height:1.42;color:var(--muted);margin-bottom:10px}
+  .evt-tks{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+  .evt-tkl{font-size:11px;font-weight:800;color:var(--faint)}
+  .evt-tk{font-size:12px;font-weight:800;border-radius:999px;padding:4px 10px;border:1px solid var(--line);cursor:pointer;font-family:inherit;white-space:nowrap}
+  .evt-tk-buy{background:rgba(35,194,103,.12);color:var(--buy);border-color:rgba(35,194,103,.32)}
+  .evt-tk-watch{background:rgba(232,102,42,.1);color:var(--broth);border-color:rgba(232,102,42,.28)}
+  .evt-tk-pass{background:var(--surface-2);color:var(--muted)}
+  .evt-tk-none{background:var(--surface-2);color:var(--faint)}
   .fdr-cpx{margin-left:auto;font-weight:800;font-size:13px;font-variant-numeric:tabular-nums}
   .fdr-cstats{display:grid;grid-template-columns:1fr 1fr;gap:3px 10px;font-size:11.5px;color:var(--muted)}
   .fdr-cstats b{color:var(--ink);font-variant-numeric:tabular-nums}
@@ -4366,6 +4387,36 @@ function openPead(){
 }
 // #299 — "Market context" — ONE tabbed section replacing six stacked ones (news · world & sectors ·
 // commodities · movers · coming-up · bargains). Only the selected panel shows; MCTX remembers the choice.
+// #glencore (inclusive-market-news) — "Big picture": market-STRUCTURAL events (a giant coming to market, a
+// deal, a macro/commodity shift) that don't reduce to a ticker we already hold, each with the SCORED,
+// tappable beneficiary/at-risk names attached (from events.py → latest.marketEvents). The model tempers the
+// claim — a beneficiary that scores Pass shows a low 🍊, so nothing is overstated.
+function marketEventsHtml(D){
+  var evs=(D.marketEvents||[]).filter(function(e){ if(!e||!e.headline)return false; var r=(e.scope||{}).region; return !r||r===MKT; });
+  if(!evs.length) return '';
+  var TYPE={ipo:{ic:'🆕',lab:'New listing'},macro:{ic:'🌐',lab:'Macro'},deal:{ic:'🤝',lab:'Deal / M&A'},commodity:{ic:'⛏️',lab:'Commodity'},policy:{ic:'🏛️',lab:'Policy'},theme:{ic:'📈',lab:'Theme'}};
+  var ACT={diarise:{cls:'evt-act-diarise',txt:'⏳ Can’t buy yet — diarise'},'buy now':{cls:'evt-act-buy',txt:'✅ Beneficiaries you can buy'},watch:{cls:'evt-act-watch',txt:'👀 Watch'},context:{cls:'evt-act-ctx',txt:'📖 Context'}};
+  var MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  function whenTxt(w){ if(!w)return''; var s=String(w); if(/^\d{4}-\d{2}$/.test(s))return MON[+s.slice(5,7)-1]+' '+s.slice(0,4); if(/^\d{4}-\d{2}-\d{2}/.test(s))return (+s.slice(8,10))+' '+MON[+s.slice(5,7)-1]+' '+s.slice(0,4); return s; }
+  function tkChip(t){
+    var reg=t.region||'us', bn=t.buy_now;
+    var cls=bn==null?'evt-tk-none':(bn>=62?'evt-tk-buy':bn>=45?'evt-tk-watch':'evt-tk-pass');
+    var role=t.role==='at-risk'?'▼':(t.role==='the-name'?'●':'▲');
+    return '<button class="evt-tk '+cls+'" data-sym="'+esc(t.sym)+'" data-region="'+esc(reg)+'" title="'+esc((t.name?t.name+' — ':'')+(t.why||''))+' · tap for the full read">'+role+' '+esc(t.sym)+(bn!=null?' 🍊 '+Math.round(bn):'')+'</button>';
+  }
+  var cards=evs.map(function(e){
+    var ty=TYPE[e.type]||TYPE.theme, ac=ACT[e.actionability]||ACT.watch, wt=whenTxt(e.when);
+    var head=e.url?'<a class="evt-head" href="'+esc(e.url)+'" target="_blank" rel="noopener">'+esc(e.headline)+' ↗</a>':'<span class="evt-head">'+esc(e.headline)+'</span>';
+    var tks=(e.tickers||[]).map(tkChip).join('');
+    return '<div class="evtcard">'+
+      '<div class="evt-top"><span class="evt-badge">'+ty.ic+' '+ty.lab+'</span>'+(wt?'<span class="evt-when">'+esc(wt)+'</span>':'')+'<span class="evt-act '+ac.cls+'">'+ac.txt+'</span></div>'+
+      '<div class="evt-headw">'+head+'</div>'+
+      (e.why?'<div class="evt-why">'+esc(e.why)+'</div>':'')+
+      (tks?'<div class="evt-tks"><span class="evt-tkl">Who moves:</span>'+tks+'</div>':'')+
+      '</div>';
+  }).join('');
+  return '<p class="sec-sub">Big market events that don’t belong to one stock we hold — a giant coming to market, a deal, a macro shift — with the <b>scored names that actually move</b> attached (▲ beneficiary · ▼ at-risk). Tap a name for the full read.</p><div class="evtwrap">'+cards+'</div>';
+}
 // Each panel reuses the existing builders verbatim (topNewsHtml/topMoversHtml/upcomingHtml + the geo/
 // sector/commodity `lines()` blocks) — nothing was rewritten, just folded behind a chip nav.
 function marketContextHtml(D, bargainCards, lines){   // `lines` is a render-local closure — MUST be passed in (blank-page fix)
@@ -4380,6 +4431,7 @@ function marketContextHtml(D, bargainCards, lines){   // `lines` is a render-loc
         '<div class="stack">'+lines(c,'name','commodities',third*2)+'</div></div>'; })();
   var tabs=[
     ['news','📰 News', topNewsHtml(D)],
+    ['events','🌐 Big picture', marketEventsHtml(D)],
     ['announcements','📢 Announcements', announcementsPanelHtml(D)],
     ['world','🌍 World &amp; sectors', geoSec],
     ['commodities','🛢️ Commodities', commodSec],
@@ -6002,6 +6054,12 @@ document.addEventListener('click',function(e){
   var r=e.target.closest('.rltap'); if(!r)return;
   if(e.target.closest('a')||e.target.closest('details'))return;
   openRunInfo(r.dataset.runkind, +r.dataset.runts||null);
+});
+// #glencore — beneficiary chip on a market-event card → open that ticker's real read. Delegated (the
+// Big-picture tab content is part of the static page render, so one global listener covers every chip).
+document.addEventListener('click',function(e){
+  var t=e.target.closest && e.target.closest('.evt-tk'); if(!t)return;
+  e.preventDefault(); openTicker(t.dataset.sym, t.dataset.region||'us');
 });
 document.addEventListener('keydown',function(e){
   if(e.key!=='Enter'&&e.key!==' ')return; var r=e.target.closest&&e.target.closest('.rltap'); if(!r)return;
