@@ -457,7 +457,8 @@
      cards expand below in a width-filling grid. Default = just the tile row: one scannable line, no waste. */
   .axsumgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px}   /* 4 across (user ask) — was auto-fit which packed 6 then orphaned the 7th */
   @media(max-width:860px){ .axsumgrid{grid-template-columns:repeat(3,minmax(0,1fr))} }
-  @media(max-width:560px){ .axsumgrid{grid-template-columns:repeat(2,minmax(0,1fr))} }
+  /* #ax-tidy (user ask) — keep 3 across on mobile (was 2); tighten spacing so the trio fits cleanly */
+  @media(max-width:560px){ .axsumgrid{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px} .axsum-card{padding:9px 8px} .axsum-lbl{font-size:11px} }
   .axsum-card{text-align:left;cursor:pointer;border:1px solid var(--line);border-left:3px solid var(--muted);border-radius:12px;background:var(--surface);padding:11px 12px;display:flex;flex-direction:column;gap:4px;transition:transform .1s,border-color .12s,background .12s;font-family:inherit;min-width:0}
   .axsum-card:hover{transform:translateY(-2px)}
   /* #actions→pot — "Screen the whole pot" one-tap chips (deep-link into the Stock Pot) */
@@ -470,7 +471,6 @@
   .axsum-ic{font-size:14px;line-height:1;flex:0 0 auto}
   .axsum-lbl{font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:.03em;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .axsum-n{margin-left:auto;font-size:11px;font-weight:800;color:var(--broth);background:rgba(232,102,42,.12);border:1px solid rgba(232,102,42,.32);border-radius:999px;padding:0 7px;flex:0 0 auto}  /* (user ask) always orange, not just the open tile */
-  .axsum-big{font-size:14px;font-weight:800;color:var(--ink)}
   .axsum-prev{font-size:11.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-variant-numeric:tabular-nums}
   .axsum-card[aria-expanded="true"] .axsum-n{background:var(--broth);color:#fff;border-color:transparent}
   /* per-group accent colour on the left rail + the count pill */
@@ -4965,8 +4965,8 @@ function actionsHtml(D){
     var subs=mine.map(function(x){return _axSubject(x.h);}).filter(Boolean);
     var prev=subs.slice(0,3).map(esc).join(' · ')+(subs.length>3?' +'+(subs.length-3):'');
     tiles+='<button class="axsum-card axs-'+bk.k+'" data-actgrp="'+bk.k+'" aria-expanded="false" aria-label="'+bk.label+' — '+mine.length+' '+(mine.length===1?'item':'items')+'">'+
+      // #ax-tidy (17 Aug, user ask) — dropped the redundant "3 to get in" line: the count pill + label already say it.
       '<div class="axsum-top"><span class="axsum-ic">'+bk.ic+'</span><span class="axsum-lbl">'+esc(bk.label)+'</span><span class="axsum-n">'+mine.length+'</span></div>'+
-      '<div class="axsum-big">'+mine.length+' '+esc(bk.verb)+'</div>'+
       (prev?'<div class="axsum-prev">'+prev+'</div>':'')+'</button>';
     details+='<div class="axdetail" data-actgrp-body="'+bk.k+'" hidden><div class="axwrap">'+mine.map(function(x){return x.h;}).join('')+'</div></div>';
   });
