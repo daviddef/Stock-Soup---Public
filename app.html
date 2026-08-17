@@ -2924,6 +2924,27 @@ function parseStampTime(stamp){
   if(!mm) return null;
   return new Date(+mm[3], MO.indexOf(mm[2]), +mm[1], tm?+tm[1]:0, tm?+tm[2]:0).getTime();
 }
+// #menuiso (17 Aug 2026, user-caught) — a menuHistory entry published from a run.json without a `generated`
+// field lands with iso=null (commit-run.py only set iso when generated was present). Everything in the Run
+// Schedule reads m.iso for the date, so `new Date(null)` fell back to the epoch → the run rendered as
+// "Thu 1 Jan 10:00" even though its real time lives in m.stamp/m.time (e.g. "2026-08-17T12:44:57"/"12:44").
+// This backfills a real iso from stamp+time at load, so every downstream consumer dates it correctly.
+function _deriveMenuIso(m){
+  var s=String((m&&m.stamp)||''), t=String((m&&m.time)||'');
+  if(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(s)){ var d0=new Date(s); if(!isNaN(d0)) return d0.toISOString(); }
+  if(/^\d{4}-\d{2}-\d{2}$/.test(s)){ var hm=t.match(/(\d{1,2}):(\d{2})/); var hh=('0'+(hm?hm[1]:'0')).slice(-2), mm=hm?hm[2]:'00';
+    var d1=new Date(s+'T'+hh+':'+mm+':00'); if(!isNaN(d1)) return d1.toISOString(); }
+  var MO={Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5,Jul:6,Aug:7,Sep:8,Oct:9,Nov:10,Dec:11};
+  var dm=s.match(/(\d{1,2})\s+([A-Za-z]{3})/), ym=s.match(/(\d{4})/);
+  if(dm && MO[dm[2]]!=null){ var hm2=t.match(/(\d{1,2}):(\d{2})/);
+    var d2=new Date(ym?+ym[1]:(new Date()).getFullYear(), MO[dm[2]], +dm[1], hm2?+hm2[1]:0, hm2?+hm2[2]:0);
+    if(!isNaN(d2)) return d2.toISOString(); }
+  return null;
+}
+function normalizeMenuIsos(H){
+  var ms=H&&H.menus; if(!ms||!ms.forEach) return;
+  ms.forEach(function(m){ if(m && !m.iso){ var iso=_deriveMenuIso(m); if(iso) m.iso=iso; } });
+}
 function missChartSlot(sym,region,cur,checkStamp){
   var ts=checkStamp?parseStampTime(checkStamp):null;
   return '<div class="misschart" data-hydrate-chart data-sym="'+esc(sym)+'" data-region="'+esc(region)+'" data-cur="'+esc(cur)+'"'+(ts?' data-check-ts="'+ts+'"':'')+'><span class="misschart-load">····· 24h</span></div>';
@@ -10263,6 +10284,7 @@ function setView(v){ VIEW = v; try{ localStorage.setItem('soup_view', v); }catch
 function applyView(){ if(!LAST) return; window.scrollTo(0,0); if(VIEW==='simple') renderSimple(LAST.D); else render(LAST.D, LAST.H); }
 var DEEPLINK_DONE=false;
 function boot(D,H){
+  try{ normalizeMenuIsos(H); }catch(e){}   // #menuiso — backfill iso from stamp/time so no run dates to "Thu 1 Jan"
   LAST = {D:D, H:H};
   if(VIEW===null){ try{ VIEW=localStorage.getItem('soup_view'); }catch(e){} if(!VIEW) VIEW = (window.innerWidth<768?'simple':'full'); }
   applyView();
