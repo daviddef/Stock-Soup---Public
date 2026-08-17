@@ -8809,7 +8809,7 @@ function dhRunForKind(k){ k=(k||'').toLowerCase();
 // hidden by default (user ask #3): anything blocked, plus the deliberately-parked dropped/dead categories.
 function dhDefaultHidden(s){ return s.status==='blocked' || /dropped|dead/i.test(s.cat); }
 function openDataHealth(runFilter){
-  if(runFilter!==undefined) DH_RUNFILTER=runFilter||null;   // opened pre-filtered from a run row (user ask)
+  if(runFilter!==undefined) DH_RUNFILTER=(typeof runFilter==='string'?runFilter:'')||null;   // opened pre-filtered from a run row; guard against a DOM event being passed as the filter (#bugfix)
   var ic={ok:'🟢',degraded:'🟡',blocked:'🔴',untested:'⚪'}, lbl={ok:'Live',degraded:'Degraded',blocked:'Blocked',untested:'Untested'};
   function inRun(s){ return dhRunList(s.cat).some(function(x){return x.k===DH_RUNFILTER;}); }
   // status counts for the filter chips (user ask #2)
@@ -9333,7 +9333,7 @@ function wire(D){
   var bx=document.getElementById('brkDismiss'); if(bx) bx.onclick=function(e){ e.stopPropagation(); var s=bx.closest('.brkstrip'); if(s){ try{ localStorage.setItem('soup_brk_dismiss', s.dataset.sig||''); }catch(e){} s.remove(); } };
   var rm=document.getElementById('runMore'), rr=document.getElementById('runRest');
   if(rm&&rr){ var rrN=rr.children.length; rm.onclick=function(){ var open=rr.hasAttribute('hidden'); if(open)rr.removeAttribute('hidden'); else rr.setAttribute('hidden',''); rm.setAttribute('aria-expanded',open?'true':'false'); rm.innerHTML=(open?'▴ Hide older runs':'➖ '+rrN+' older runs ▾'); }; }
-  var kh=document.getElementById('kitchenHealthBtn'); if(kh) kh.onclick=openDataHealth;
+  var kh=document.getElementById('kitchenHealthBtn'); if(kh) kh.onclick=function(){ openDataHealth(); };  // #bugfix — bare `=openDataHealth` passed the click PointerEvent in as runFilter ("[object PointerEvent]")
   var wfa=document.getElementById('wlfAll'), wfo=document.getElementById('wlfOwn');
   if(wfa&&wfo){
     wfa.onclick=function(){ WL_FILTER='all'; wfa.classList.add('on'); wfo.classList.remove('on'); renderWatchlist(); };
