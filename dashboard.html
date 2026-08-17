@@ -4498,6 +4498,11 @@ function marketTimelineHtml(D){
   past.sort(function(a,b){ return (b.t||0)-(a.t||0); });      // newest first (undated fall to the bottom)
   var cut24=Date.now()-864e5, recent=[], older=[];
   past.forEach(function(x){ (x.t==null||x.t>=cut24?recent:older).push(x); });
+  // #357-b (user ask) — the "Coming up" column shows only through the END OF TOMORROW; everything further
+  // out collapses behind a toggle (mirrors the left column's >24h-old collapse).
+  var tomEnd=today.getTime()+2*864e5-1;
+  var futNear=[], futLater=[];
+  future.forEach(function(x){ (x.t!=null && x.t<=tomEnd ? futNear : futLater).push(x); });
   // candidate 🍊 score map so timeline ticker chips carry the same score as the Stock Pot chips
   var cscore={}; (D.candidates||[]).forEach(function(c){ if(c&&c.sym&&c.score&&c.score.buy_now!=null) cscore[c.sym+'|'+(c.region||'us')]=Math.round(c.score.buy_now); });
   var TONE={bullish:{ic:'📈',cls:'ann-bull'},bearish:{ic:'📉',cls:'ann-bear'},neutral:{ic:'',cls:'ann-neu'}};
@@ -4518,7 +4523,8 @@ function marketTimelineHtml(D){
   var chips=FILT.map(function(f){ return '<button class="tlchip'+(MKTF===f[0]?' on':'')+'" data-tlf="'+f[0]+'">'+f[1]+'</button>'; }).join('');
   var leftBody=recent.length?recent.map(row).join(''):'<div class="tl-empty">No recent news or filings.</div>';
   if(older.length) leftBody+='<details class="tlolder"><summary>Show '+older.length+' older (over 24h ago) →</summary><div class="tlcol" style="margin-top:10px">'+older.map(row).join('')+'</div></details>';
-  var rightBody=future.length?future.map(row).join(''):'<div class="tl-empty">Nothing scheduled ahead.</div>';
+  var rightBody=futNear.length?futNear.map(row).join(''):'<div class="tl-empty">Nothing scheduled through tomorrow.</div>';
+  if(futLater.length) rightBody+='<details class="tlolder"><summary>Show '+futLater.length+' further out →</summary><div class="tlcol" style="margin-top:10px">'+futLater.map(row).join('')+'</div></details>';
   var body='<div class="tlcols">'+
     '<div class="tlcol"><div class="tl-colhead">📰 Latest &amp; today</div>'+leftBody+'</div>'+
     '<div class="tlcol"><div class="tl-colhead">📅 Coming up</div>'+rightBody+'</div>'+
