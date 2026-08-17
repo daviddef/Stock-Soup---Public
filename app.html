@@ -599,6 +599,18 @@
   .omv-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11.5px;color:var(--muted)}
   .omv-chg{flex:0 0 auto;font-weight:800;font-size:13px;font-variant-numeric:tabular-nums}
   .omv-chg.up{color:var(--buy)} .omv-chg.down{color:var(--dont)}
+  /* 📦 merged "holdings + fresh news" rows (user ask) — today's move on top, its own headline below */
+  .fjn-row{display:flex;flex-direction:column;gap:5px;align-items:stretch;width:100%;text-align:left;cursor:pointer;background:var(--surface);border:1px solid var(--line);border-radius:11px;padding:9px 11px;color:var(--ink)}
+  .fjn-row:hover{border-color:var(--broth)} .fjn-row:active{transform:scale(.99)}
+  .fjn-top{display:flex;align-items:center;gap:8px}
+  .fjn-sym{font-weight:800;font-size:12.5px;white-space:nowrap}
+  .fjn-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11.5px;color:var(--muted)}
+  .fjn-chg{flex:0 0 auto;font-weight:800;font-size:13px;font-variant-numeric:tabular-nums}
+  .fjn-chg.up{color:var(--buy)} .fjn-chg.down{color:var(--dont)}
+  .fjn-news{display:flex;gap:6px;align-items:flex-start;font-size:11.5px;line-height:1.35}
+  .fjn-h{flex:1;min-width:0} .fjn-news a{color:var(--ink);text-decoration:none;border-bottom:1px solid var(--line)} .fjn-news a:hover{border-color:var(--broth)}
+  .fjn-dot{flex:0 0 auto;width:6px;height:6px;border-radius:50%;background:var(--broth);margin-top:5px}
+  .fjn-age{flex:0 0 auto;color:var(--faint);white-space:nowrap;font-size:10.5px;margin-top:1px}
   .docsov{position:fixed;inset:0;z-index:300;background:var(--ground);display:none;flex-direction:column}
   .docsbar{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--line);background:var(--surface)}
   .docstitle{font-weight:900;font-size:15px;display:inline-flex;align-items:center;gap:8px}
@@ -8377,12 +8389,13 @@ function wlToggleOwn(sym,region,name){var on=!wlOwns(sym,region);wlSetOwn(sym,re
 function wlNum(s){var v=(String(s==null?'':s)).match(/([\d.]+)/);return v?parseFloat(v[1]):null;}
 function wlPriceMap(D){
   var m={};
-  function put(sym,region,price,up,change,entry,name,spark){var p=wlNum(price);var k=sym+'|'+region;
-    if(!m[k])m[k]={price:p,cur:region==='au'?'A$':'$',up:!!up,change:change,entry:(entry!=null?entry:null),name:name||null,spark:spark||null};
-    else{ if(p!=null&&m[k].price==null)m[k].price=p; if(entry!=null&&m[k].entry==null)m[k].entry=entry; if(name&&!m[k].name)m[k].name=name; if(spark&&!m[k].spark)m[k].spark=spark; }}
-  (D.regions||[]).forEach(function(rg){(rg.picks||[]).forEach(function(p){put(p.sym,rg.id,p.price,p.up,p.change,p.nEntry,p.name,p.spark);});});
-  (D.candidates||[]).forEach(function(c){put(c.sym,c.region,c.price,c.up,c.change,null,c.name,c.spark);});
-  (D.defaultWatchlist||[]).forEach(function(w){put(w.sym,w.region,w.price,w.up,w.change,null,w.name,w.spark);});
+  function put(sym,region,price,up,change,entry,name,spark,news){var p=wlNum(price);var k=sym+'|'+region;
+    if(!m[k])m[k]={price:p,cur:region==='au'?'A$':'$',up:!!up,change:change,entry:(entry!=null?entry:null),name:name||null,spark:spark||null,news:news||null};
+    else{ if(p!=null&&m[k].price==null)m[k].price=p; if(entry!=null&&m[k].entry==null)m[k].entry=entry; if(name&&!m[k].name)m[k].name=name; if(spark&&!m[k].spark)m[k].spark=spark; if(news&&!m[k].news)m[k].news=news; }}
+  function _nw(o){ return o&&o.news?{h:o.news,u:o.news_url||null,d:o.news_date||null}:null; }
+  (D.regions||[]).forEach(function(rg){(rg.picks||[]).forEach(function(p){put(p.sym,rg.id,p.price,p.up,p.change,p.nEntry,p.name,p.spark,_nw(p));});});
+  (D.candidates||[]).forEach(function(c){put(c.sym,c.region,c.price,c.up,c.change,null,c.name,c.spark,_nw(c));});
+  (D.defaultWatchlist||[]).forEach(function(w){put(w.sym,w.region,w.price,w.up,w.change,null,w.name,w.spark,_nw(w));});
   return m;
 }
 // Smart overlay for a watched ticker: pull the richest intel we already hold.
@@ -8456,22 +8469,31 @@ function wlStatBlock(rows,title,icon,emptyMsg){
 // 📦 (user ask) — "today's movement card for the things I own": each owned holding with its TODAY move
 // (the existing stat cards above show since-FLAGGED %; this is today's session). All owned holdings with a
 // live change, biggest mover first, each tappable to its full read. Renders '' if nothing owned has a change.
+// (user ask) "Just in" for MY names — a consolidation of holdings-today + fresh news. Each holding shows its
+// today's move AND its own news headline (carried per-item through wlBuildRows via the #245 pulse enrichment,
+// so it never says "0" like the whole-market breaking sweep can); watch-only names with news follow below.
 function ownedMovesHtml(rows){
-  var owned=rows.filter(function(r){return r.w.own && r.change!=null && r.change!=='';});
-  owned.forEach(function(r){ r._c=parseFloat(String(r.change).replace(/[^0-9.\-]/g,'')); if(!isFinite(r._c))r._c=0; });
-  owned=owned.filter(function(r){return isFinite(r._c);});
-  if(!owned.length) return '';
-  owned.sort(function(a,b){ return Math.abs(b._c)-Math.abs(a._c); });
-  var up=owned.filter(function(r){return r.up;}).length, dn=owned.length-up;
-  var rowsH=owned.map(function(r){
-    var flag=(r.w.region==='us')?'🇺🇸':'🇦🇺';
-    var chg=String(r.change).replace(/^[+\-]?/, r.up?'+':'−').replace(/[+\-]?([0-9])/,'$1'); // ensure a clean sign
-    return '<button class="omv-row" data-sym="'+esc(r.w.sym)+'" data-region="'+esc(r.w.region)+'" title="Tap for '+esc(r.w.sym)+'’s full read">'+
-      '<span class="omv-sym">📦 '+esc(r.w.sym)+'</span>'+
-      '<span class="omv-name">'+esc(flag+' '+(r.name||''))+'</span>'+
-      '<span class="omv-chg '+(r.up?'up':'down')+'">'+(r.up?'▲':'▼')+' '+esc(r.change)+'</span></button>';
-  }).join('');
-  return '<div class="viz omvcard"><h4>📦 Your holdings today <span class="omv-tally">'+up+' up · '+dn+' down</span></h4><div class="omvgrid">'+rowsH+'</div></div>';
+  function pc(r){ var c=parseFloat(String(r.change||'').replace(/[^0-9.\-]/g,'')); return isFinite(c)?c:0; }
+  function newsBit(r){ var n=r.news; if(!n||!n.h) return '';
+    var old=''; try{ if(n.d && (Date.now()-new Date(n.d).getTime())/864e5>7) old='⚠️ '; }catch(e){}
+    var age=''; try{ if(n.d) age='<span class="fjn-age">'+esc(timeAgo(n.d))+'</span>'; }catch(e){}
+    var head=n.u?('<a href="'+esc(n.u)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()">'+esc(n.h)+'</a>'):esc(n.h);
+    return '<div class="fjn-news"><span class="fjn-dot"></span><span class="fjn-h">'+old+head+'</span>'+age+'</div>';
+  }
+  function row(r,ic){
+    var chg=(r.change!=null&&r.change!=='')?('<span class="fjn-chg '+(r.up?'up':'down')+'">'+(r.up?'▲':'▼')+' '+esc(r.change)+'</span>'):'';
+    return '<button class="fjn-row" data-sym="'+esc(r.w.sym)+'" data-region="'+esc(r.w.region)+'" title="Tap for '+esc(r.w.sym)+'’s full read">'+
+      '<div class="fjn-top"><span class="fjn-sym">'+ic+' '+esc(r.w.sym)+'</span><span class="fjn-name">'+esc(r.name||'')+'</span>'+chg+'</div>'+newsBit(r)+'</button>';
+  }
+  var owned=rows.filter(function(r){return r.w.own;});
+  var watch=rows.filter(function(r){return !r.w.own && r.news && r.news.h;});   // watch-only names that have fresh news
+  if(!owned.length && !watch.length) return '';
+  owned.sort(function(a,b){ return Math.abs(pc(b))-Math.abs(pc(a)); });   // biggest mover first
+  var up=owned.filter(function(r){return r.up===true;}).length, dn=owned.filter(function(r){return r.up===false;}).length;
+  var ownH=owned.length? '<div class="omvgrid">'+owned.map(function(r){return row(r,'📦');}).join('')+'</div>'
+                       : '<div class="pxr-load">Flag something as owned (📦 on a card) to see it here.</div>';
+  var watchH=watch.length? '<h4 style="margin-top:15px">👀 On your watchlist — fresh news</h4><div class="omvgrid">'+watch.map(function(r){return row(r,'👀');}).join('')+'</div>' : '';
+  return '<div class="viz omvcard"><h4>📦 Your holdings — today &amp; what\'s new'+(owned.length?' <span class="omv-tally">'+up+' up · '+dn+' down</span>':'')+'</h4>'+ownH+watchH+'</div>';
 }
 function renderWlSummary(rows){
   var el=document.getElementById('wlSummary'); if(!el) return;
@@ -8483,7 +8505,7 @@ function renderWlSummary(rows){
     wlStatBlock(watching,'What you could have owned','👀','Nothing on the watch-only list yet with a captured buy price.')+
     '</div>'+ownedMovesHtml(rows);
   // owned-moves rows tap through to the ticker's full read (same resolver the stat chips use).
-  el.querySelectorAll('.omv-row[data-sym]').forEach(function(b){
+  el.querySelectorAll('.fjn-row[data-sym]').forEach(function(b){
     b.addEventListener('click',function(e){ e.preventDefault(); openTicker(b.dataset.sym,b.dataset.region); });
   });
   // #250 — Best/Worst chips tap through to the full per-ticker detail.
@@ -8510,7 +8532,7 @@ function wlBuildRows(D){
     var _eN=numLevel(entry), _pN=numLevel(price);
     var gap=(isFinite(_eN)&&_eN>0&&isFinite(_pN))?(_pN/_eN-1)*100:null;
     return {w:w,price:price,cur:cur,up:info?info.up:null,change:info?info.change:null,entry:entry,gap:gap,intel:it,
-      name:(info&&info.name)||w.name||null, spark:(info&&info.spark)||null};
+      name:(info&&info.name)||w.name||null, spark:(info&&info.spark)||null, news:(info&&info.news)||null};
   });
 }
 function renderWatchlist(){
