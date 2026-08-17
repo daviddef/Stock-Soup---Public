@@ -836,6 +836,13 @@
   .rmupdated{color:var(--faint);font-weight:600;letter-spacing:0;text-transform:none;font-size:11px;align-self:center;margin-left:2px}
   .rmcols{display:grid;grid-template-columns:1fr;gap:16px}
   @media(min-width:640px){.rmcols{grid-template-columns:1fr 1fr}}
+  /* #356 — Roadmap/Delivered toggle (one list at a time) */
+  .rmtabs{display:inline-flex;gap:5px;background:var(--surface2,rgba(0,0,0,.05));padding:4px;border-radius:11px;margin:0 0 13px}
+  .rmtab{border:0;background:transparent;font-family:var(--font);font-size:12.5px;font-weight:800;color:var(--muted);padding:6px 13px;border-radius:8px;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+  .rmtab b{font-weight:900}
+  .rmtab.on{background:var(--broth);color:#fff}
+  .rmwrap[data-rmtab="pending"] .rmpane-shipped{display:none}
+  .rmwrap[data-rmtab="shipped"] .rmpane-pending{display:none}
   .rmcolh{font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
   .rmrow{padding:8px 0;border-bottom:1px solid var(--line)}
   /* #200 — "＋ N more" expander per roadmap column */
@@ -2394,7 +2401,7 @@
   .altspark{margin-top:6px;height:24px;opacity:.85}
   .altspark svg{width:100%;height:100%}
   .dhgrid{display:flex;flex-direction:column;gap:8px}
-  .dhcat{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--broth);margin:14px 0 2px}
+  .dhcat{font-family:var(--disp);font-weight:900;font-size:16px;letter-spacing:-.01em;text-transform:none;color:var(--ink);margin:20px 0 3px;padding-left:11px;border-left:3px solid var(--broth);line-height:1.18}
   .dhchips{display:flex;flex-wrap:wrap;gap:6px;margin:2px 0 14px;align-items:center}
   .dhchips-lbl{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin-right:2px}
   .dhrunchips{padding-bottom:10px;border-bottom:1px dashed var(--line)}
@@ -2419,7 +2426,7 @@
   .dhsstat{font-size:12px;color:var(--muted)}
   .dhsstat b{color:var(--ink)}
   .dhcat:first-child{margin-top:0}
-  .dhcatdesc{font-size:12px;color:var(--muted);margin:0 0 8px;line-height:1.4}
+  .dhcatdesc{font-size:12px;color:var(--muted);margin:0 0 8px;line-height:1.4;padding-left:14px}
   .dhrow{border:1px solid var(--line);border-radius:11px;padding:11px 14px;background:var(--surface-2)}
   .dhrow.dh-blocked{border-left:3px solid var(--dont)} .dhrow.dh-degraded{border-left:3px solid var(--hold)} .dhrow.dh-ok{border-left:3px solid var(--buy)} .dhrow.dh-untested{border-left:3px solid var(--faint)}
   .dhtop{display:flex;align-items:center;gap:8px}
@@ -3981,7 +3988,10 @@ function morningBriefHtml(D){
   // and the separate timestamp eyebrow were folded away, so there's ONE thin persistent line, not two.
   var greet=(function(){var h=new Date().getHours();return h<12?'Good morning':h<18?'Good afternoon':'Good evening';})();
   var ms=marketStatus(MKT);
-  var when=esc(stampNoWeekday(D.stamp))+(D.next?' · next ~'+esc(D.next):'');
+  // #355 — distinguish the two cadences: PRICES refresh every ~10 min (the pulse), the MENU re-cooks at the
+  // major-run time. Showing only "next ~ 12:04" made the 1h-away menu read as the next data update.
+  var _nextMenu=(MKT==='au')?(D.nextAu||D.next):(D.nextUs||D.next);
+  var when=esc(stampNoWeekday(D.stamp))+' · prices ~10 min fresh'+(_nextMenu?' · new menu ~'+esc(String(_nextMenu).replace(' AEST','')):'');
   // #hero — the market "weather" read now lives INSIDE this one strip as a chip (user ask): the strip taps
   // to the run schedule; the risk chip is its own button → the full market read (stopPropagation in wire()).
   var r=D.risk||{}, lvl=(r.level!=null)?+r.level:50;
@@ -5266,19 +5276,19 @@ function render(D,H){
     // #209 (user ask) — section order: Run schedule → How we got here → The Archive → Data-source health
     // → Roadmap. The Roadmap moved OUT of the Run-schedule section down to the very bottom, and
     // "How we got here" now sits above "The Archive".
-    '<section id="runsched"><div class="sec-head"><h2 class="display">⏱️ Run schedule</h2>'+infoBtn('schedule')+'</div>'+runGanttHtml()+runLogHtml()+'</section>'+
+    '<section id="runsched"><div class="sec-head"><h2 class="display"><span class="k">01</span> ⏱️ Run schedule</h2>'+infoBtn('schedule')+'</div>'+runGanttHtml()+runLogHtml()+'</section>'+
     // #351 (user ask) — "One pot, two scores" moved here, BELOW the Run schedule (was Tonight's Menu §03).
-    '<section id="fullpot" class="scorestorysec"><div class="sec-head"><h2 class="display">🍲 One pot, two scores</h2></div>'+
+    '<section id="fullpot" class="scorestorysec"><div class="sec-head"><h2 class="display"><span class="k">02</span> 🍲 One pot, two scores</h2></div>'+
       '<p class="sec-sub">The whole market simmered down to a few picks — then rated twice: 🍊 for timing, 🍒 for conviction. Real numbers from tonight’s run · browse the full pot in <b>The Stock Pot</b> tab.</p>'+
       kitchenScoreStory(D)+'</section>'+
     /* #346 — "How we got here" retired: its unique audit grid is now folded into "One pot, two scores"
        (Tonight's Menu §3, kitchenScoreStory), so the funnel + 01-04 narrative no longer repeat across two tabs. */
     ''+
-    '<section><div class="sec-head"><h2 class="display">🗄️ The Archive</h2>'+infoBtn('archive')+'</div>'+
+    '<section><div class="sec-head"><h2 class="display"><span class="k">03</span> 🗄️ The Archive</h2>'+infoBtn('archive')+'</div>'+
       '<p class="sec-sub">Every menu we\'ve served — the real picks, verdicts and reasoning from that night, not a frozen price.</p>'+
       archiveHtml(H)+
     '</section>'+
-    (isAdmin()?'<section id="adminhealth"><div class="sec-head"><h2 class="display">💓 Data-source health <span class="adminbadge">ADMIN</span></h2></div>'+
+    (isAdmin()?'<section id="adminhealth"><div class="sec-head"><h2 class="display"><span class="k">04</span> 💓 Data-source health <span class="adminbadge">ADMIN</span></h2></div>'+
       '<p class="sec-sub">What is actually feeding tonight\'s picks, and any known gaps — maintained by hand, not a live ping. Only visible to you.</p>'+
       '<button class="trackcta" id="kitchenHealthBtn">💓 Open data-source health →</button></section>':'')+
     (function(){var r=roadmapHtml(D);return r?'<section id="roadmapsec">'+r+'</section>':'';})()+
@@ -6170,6 +6180,10 @@ document.addEventListener('click',function(e){
     var w=f.parentNode&&f.parentNode.parentNode?f.parentNode.parentNode.querySelector('.tlwrap'):document.querySelector('.tlwrap');
     if(w)w.setAttribute('data-flt',MKTF);
     if(f.parentNode)f.parentNode.querySelectorAll('.tlchip').forEach(function(c){c.classList.toggle('on',c===f);}); }
+  // #356 — Roadmap/Delivered toggle (pure CSS, no re-render): set data-rmtab on the wrap + light the tab.
+  var rt=e.target.closest && e.target.closest('.rmtab'); if(rt){ var box=rt.closest('.roadmapbox');
+    var rw=box?box.querySelector('.rmwrap'):null; if(rw)rw.setAttribute('data-rmtab',rt.dataset.rmtab||'pending');
+    if(rt.parentNode)rt.parentNode.querySelectorAll('.rmtab').forEach(function(c){c.classList.toggle('on',c===rt);}); }
 });
 document.addEventListener('keydown',function(e){
   if(e.key!=='Enter'&&e.key!==' ')return; var r=e.target.closest&&e.target.closest('.rltap'); if(!r)return;
@@ -7127,20 +7141,24 @@ function roadmapHtml(D){
     return '<div class="rmrow"><div class="rmtitle">'+esc(item.title)+' <span class="rmid">#'+esc(item.id)+'</span></div>'+
       (item.note?'<div class="rmnote">'+esc(item.note)+'</div>':'')+'</div>';
   }
-  // #200 (user ask) — keep each column glanceable: show the top N, collapse the rest behind a native
-  // <details> (no JS needed). Shipped runs long; pending is now long too, so both get the treatment.
+  // #356 (user ask) — show the top 5 only, collapse the rest behind a native <details>, and a
+  // Roadmap/Delivered toggle so ONE list shows at a time (was two columns side-by-side).
   function col(items,topN){
     items=items||[]; var top=items.slice(0,topN).map(row).join(''), rest=items.slice(topN);
     return top+(rest.length?'<details class="rmmore"><summary>＋ '+rest.length+' more ▾</summary>'+rest.map(row).join('')+'</details>':'');
   }
-  var pendingHtml=col(rm.pending,12);
-  var shippedHtml=col(rm.shipped,10);
+  var pend=rm.pending||[], ship=rm.shipped||[];
+  var pendingHtml=col(pend,5), shippedHtml=col(ship,5);
   // #208 — brand the Roadmap header like The Archive (big display h2 + subtitle), not a small caps label.
-  return '<div class="roadmapbox"><div class="sec-head" style="margin:4px 0 2px"><h2 class="display">🗺️ Roadmap</h2>'+(rm.updatedAt?'<span class="rmupdated">updated '+timeAgo(rm.updatedAt)+'</span>':'')+'</div>'+
-    '<p class="sec-sub" style="margin:0 0 14px">What\'s shipped, and what\'s still on the stove — the honest running list.</p>'+
-    '<div class="rmcols">'+
-      (pendingHtml?'<div><div class="rmcolh">🚧 Still open</div>'+pendingHtml+'</div>':'')+
-      (shippedHtml?'<div><div class="rmcolh">✅ Recently shipped</div>'+shippedHtml+'</div>':'')+
+  return '<div class="roadmapbox"><div class="sec-head" style="margin:4px 0 2px"><h2 class="display"><span class="k">05</span> 🗺️ Roadmap</h2>'+(rm.updatedAt?'<span class="rmupdated">updated '+timeAgo(rm.updatedAt)+'</span>':'')+'</div>'+
+    '<p class="sec-sub" style="margin:0 0 12px">What\'s shipped, and what\'s still on the stove — the honest running list.</p>'+
+    '<div class="rmtabs">'+
+      '<button class="rmtab on" data-rmtab="pending">🚧 Roadmap <b>'+pend.length+'</b></button>'+
+      '<button class="rmtab" data-rmtab="shipped">✅ Delivered <b>'+ship.length+'</b></button>'+
+    '</div>'+
+    '<div class="rmwrap" data-rmtab="pending">'+
+      '<div class="rmpane rmpane-pending">'+(pendingHtml||'<p class="muted" style="font-size:13px">Nothing open right now — all caught up. 🎉</p>')+'</div>'+
+      '<div class="rmpane rmpane-shipped">'+(shippedHtml||'<p class="muted" style="font-size:13px">No delivered items logged yet.</p>')+'</div>'+
     '</div></div>';
 }
 function openInfo(key){
@@ -10167,7 +10185,10 @@ function runStatusIco(D){
     if(m){ var now=new Date(), t=new Date(now); t.setHours(+m[1],+m[2],0,0); if(t<=now) t.setDate(t.getDate()+1);
       var mn=Math.round((t-now)/60000); when = mn<60 ? (mn+'m') : (Math.floor(mn/60)+'h'+(mn%60)+'m'); full='Next '+(MKT==='au'?'AU':'US')+' picks in '+when; }
     else { when=String(nextStr).replace(' AEST',''); full='Next '+(MKT==='au'?'AU':'US')+' picks at '+when; }
-    return '<button class="runico schedlink" title="'+esc(full)+' — tap for the schedule" aria-label="'+esc(full)+'">⏱<span class="runico-t">'+esc(when)+'</span></button>';
+    // #355 — this counts down to the next MENU COOK (fresh picks), NOT the ~10-min price re-price. The ⏱ clock
+    // read as a generic "next update" timer, confusing "why 1h5m when a re-price is 10 min away" — so it's a 🍳
+    // chef icon now (fresh menu), and the tooltip already says "picks". Prices still refresh every ~10 min.
+    return '<button class="runico schedlink" title="'+esc(full)+' · (prices still refresh every ~10 min) — tap for the schedule" aria-label="'+esc(full)+'">🍳<span class="runico-t">'+esc(when)+'</span></button>';
   }catch(e){ return ''; }
 }
 function setView(v){ VIEW = v; try{ localStorage.setItem('soup_view', v); }catch(e){} applyView(); }
