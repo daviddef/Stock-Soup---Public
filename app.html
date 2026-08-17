@@ -1227,6 +1227,18 @@
   .brkrow.brkown{background:rgba(255,107,26,.07);border-color:rgba(255,107,26,.36)}
   .brkrow.brkown .brksym{background:rgba(255,107,26,.16);color:var(--broth)}
   .brkownlbl{color:var(--broth);font-weight:800}
+  /* (user ask) filter pills (All · Holdings · Watchlist) + scroll past the first rows */
+  .brkgrid{max-height:340px;overflow-y:auto}
+  .brkhdr{flex-wrap:wrap}
+  .brkpills{display:inline-flex;gap:5px;flex-wrap:wrap;align-items:center}
+  .brkpill{font-size:11px;font-weight:800;border:1px solid rgba(214,38,59,.28);background:transparent;color:#d6263b;border-radius:999px;padding:3px 9px;cursor:pointer}
+  .brkpill b{opacity:.65}
+  .brkpill:hover:not([disabled]){background:rgba(214,38,59,.08)}
+  .brkpill.on{background:#d6263b;color:#fff;border-color:#d6263b} .brkpill.on b{opacity:.85}
+  .brkpill[disabled]{opacity:.4;cursor:default}
+  .brkx{margin-left:auto}
+  .brkstrip.brk-f-own .brkrow:not([data-own]){display:none}
+  .brkstrip.brk-f-watch .brkrow:not([data-watch]){display:none}
   /* glance-tile "show me the cards" mini-cards (conviction / sectors / commodities modal) */
   .gmclist{display:flex;flex-direction:column;gap:10px;margin-top:4px}
   .gmcard{cursor:pointer;background:var(--surface);border:1px solid var(--line);border-radius:13px;padding:12px 13px;transition:border-color .12s,transform .05s}
@@ -4125,27 +4137,35 @@ function breakingHtml(D){
     if(!it.at) return false;
     try{ return (Date.now()-new Date(it.at).getTime()) < 12*3600*1000; }catch(e){ return false; }
   });
-  // (user ask) surface headlines on names you OWN first, and mark them with the 📦 owned icon.
-  items.forEach(function(it){ try{ it._own=wlOwns(it.sym,it.region); }catch(e){ it._own=false; } });
+  // (user ask) surface headlines on names you OWN first (📦), and tag each with own/watchlist for the pills.
+  items.forEach(function(it){
+    try{ it._own=wlOwns(it.sym,it.region); }catch(e){ it._own=false; }
+    try{ it._watch=wlGet().some(function(w){return w.sym===it.sym && (w.region||'au')===it.region;}); }catch(e){ it._watch=false; }
+  });
   items.sort(function(a,b){ return (b._own?1:0)-(a._own?1:0); });   // owned first; recency preserved within each group
-  items=items.slice(0,6);   // 6 → a clean 3×2 grid
+  items=items.slice(0,30);   // (user ask) show more than 6 — the grid scrolls
   if(!items.length) return '';
   // (user ask) dismissible — hide the CURRENT batch once dismissed, but a genuinely NEW set of breaking
   // headlines (different signature) re-surfaces, since that's the whole point of a breaking alert.
   var sig=(b.stamp||'')+'|'+MKT+'|'+items.map(function(it){return it.sym;}).join(',');
   var dismissed=''; try{ dismissed=localStorage.getItem('soup_brk_dismiss')||''; }catch(e){}
   if(sig && sig===dismissed) return '';
+  var nOwn=items.filter(function(it){return it._own;}).length, nWatch=items.filter(function(it){return it._watch;}).length;
+  var filt='all'; try{ filt=localStorage.getItem('soup_brk_filter')||'all'; }catch(e){}
+  if((filt==='own'&&!nOwn)||(filt==='watch'&&!nWatch)) filt='all';   // never land on an empty filter
   var rows=items.map(function(it){
     var ago=timeAgo(it.at), url=it.url||'';
     var head=url?('<a href="'+esc(url)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()">'+esc(it.headline)+'</a>'):esc(it.headline);
-    return '<button class="brkrow'+(it._own?' brkown':'')+'" data-sym="'+esc(it.sym)+'" data-region="'+esc(it.region)+'" title="Tap for '+esc(it.sym)+'’s full read">'+
+    return '<button class="brkrow'+(it._own?' brkown':'')+'" data-sym="'+esc(it.sym)+'" data-region="'+esc(it.region)+'"'+(it._own?' data-own="1"':'')+(it._watch?' data-watch="1"':'')+' title="Tap for '+esc(it.sym)+'’s full read">'+
              '<span class="brksym">'+(it._own?'📦 ':'')+esc(it.sym)+'</span>'+
              '<span class="brkhead">'+head+'</span>'+
              '<span class="brkmeta">'+(it._own?'<b class="brkownlbl">you own this</b> · ':'')+esc(it.source||'')+(ago?' · '+esc(ago):'')+'</span>'+
            '</button>';
   }).join('');
-  return '<div class="brkstrip" data-sig="'+esc(sig)+'">'+
-    '<div class="brkhdr"><span class="brkdot"></span>Just in'+
+  function pill(k,lab,n){ return '<button class="brkpill'+(filt===k?' on':'')+'" data-brkf="'+k+'"'+(n===0&&k!=='all'?' disabled':'')+' type="button">'+lab+(n!=null?' <b>'+n+'</b>':'')+'</button>'; }
+  var pills='<span class="brkpills">'+pill('all','All',items.length)+pill('own','📦 Holdings',nOwn)+pill('watch','👀 Watchlist',nWatch)+'</span>';
+  return '<div class="brkstrip brk-f-'+filt+'" data-sig="'+esc(sig)+'">'+
+    '<div class="brkhdr"><span class="brkdot"></span><span class="brkttl">Just in</span>'+pills+
       '<button class="brkx" id="brkDismiss" type="button" aria-label="Dismiss these headlines" title="Dismiss">✕</button></div>'+
     '<div class="brkgrid">'+rows+'</div></div>';
 }
@@ -9483,6 +9503,12 @@ function wire(D){
   document.querySelectorAll('.brkrow[data-sym]').forEach(function(b){ b.onclick=function(){
     try{ openMover(b.dataset.sym, b.dataset.region); }catch(e){} }; });
   var bx=document.getElementById('brkDismiss'); if(bx) bx.onclick=function(e){ e.stopPropagation(); var s=bx.closest('.brkstrip'); if(s){ try{ localStorage.setItem('soup_brk_dismiss', s.dataset.sig||''); }catch(e){} s.remove(); } };
+  // (user ask) "Just in" filter pills — toggle All / 📦 Holdings / 👀 Watchlist by adding a class to the strip
+  // (CSS hides non-matching rows, so no re-render needed); the choice persists in localStorage.
+  document.querySelectorAll('.brkpill[data-brkf]').forEach(function(p){ p.onclick=function(e){ e.stopPropagation(); if(p.disabled) return;
+    var f=p.dataset.brkf||'all'; try{ localStorage.setItem('soup_brk_filter', f); }catch(e2){}
+    var strip=p.closest('.brkstrip'); if(strip){ strip.classList.remove('brk-f-all','brk-f-own','brk-f-watch'); strip.classList.add('brk-f-'+f);
+      strip.querySelectorAll('.brkpill').forEach(function(x){ x.classList.toggle('on', x.dataset.brkf===f); }); } }; });
   var rm=document.getElementById('runMore'), rr=document.getElementById('runRest');
   if(rm&&rr){ var rrN=rr.children.length; rm.onclick=function(){ var open=rr.hasAttribute('hidden'); if(open)rr.removeAttribute('hidden'); else rr.setAttribute('hidden',''); rm.setAttribute('aria-expanded',open?'true':'false'); rm.innerHTML=(open?'▴ Hide older runs':'➖ '+rrN+' older runs ▾'); }; }
   var kh=document.getElementById('kitchenHealthBtn'); if(kh) kh.onclick=function(){ openDataHealth(); };  // #bugfix — bare `=openDataHealth` passed the click PointerEvent in as runFilter ("[object PointerEvent]")
