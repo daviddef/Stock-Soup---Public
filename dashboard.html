@@ -6625,7 +6625,8 @@ var INFO={
     '<li>🚫 <b>Exclude junk</b> — a growing list of obvious no-gos, removed in combination with anything else: sub-2-cent price artifacts, blow-off tops (RSI ≥ 90), and <b>illiquid</b> names below the daily $-volume floor (~A$50k / US$500k a day).</li>'+
     '</ul>'+
     '<p class="infofoot">A rule only fires where we actually have the data — turning a filter on never wrongly empties the list. Liquidity is carried by the daily whole-market scan, so it bites hardest on the wide universe; the catalyst pot fills in as fundamentals arrive.</p>'},
-  finderCols:{icon:'📊',title:'What each column means',body:
+  finderCols:{icon:'📊',title:'How to read the Finder',body:
+    '<h4>The columns</h4>'+
     '<p>Every number is 0–100 unless noted. A dash (—) just means we don’t have that data for this name yet — it fills in as the daily scan and fundamentals arrive.</p>'+
     '<ul class="infoul">'+
     '<li><b>Ticker</b> — the stock code and company name.</li>'+
@@ -6640,7 +6641,18 @@ var INFO={
     '<li><b>Cap</b> — market value (company size), e.g. $137B.</li>'+
     '<li><b>Div%</b> — trailing dividend yield. A dash means no dividend.</li>'+
     '</ul>'+
-    '<p class="infofoot">Tap any row to open the full card, where every one of these is broken down with its “why”.</p>'},
+    '<h4>The one-tap filters</h4>'+
+    '<p>Each shortcut flips one lever. They <b>stack</b> — tap two and you get names that satisfy <i>both</i> (e.g. 💰 Penny stocks + 💎 Undervalued = cheap-priced <i>and</i> cheap-on-fundamentals). Tap again to clear just that one; <b>Clear</b> resets all.</p>'+
+    '<ul class="infoul">'+
+    '<li>🌱 <b>Coiled spring</b> — flat / hasn’t run up over the past year, but starting to turn (Bollinger squeeze, MACD turning up, volume waking, reclaiming its 20-day line).</li>'+
+    '<li>🪙 <b>Small caps</b> — market value ≤ $2B.</li>'+
+    '<li>💰 <b>Penny stocks</b> — share price ≤ $1.</li>'+
+    '<li>📰 <b>Fresh news</b> — a dated headline in the last 4 days, freshest first.</li>'+
+    '<li>🎯 <b>On a catalyst</b> — only the catalyst pot (news / earnings / quant / IPO), dropping the wide technical scan.</li>'+
+    '<li>💎 <b>Undervalued</b> — high value score (P/E · P/B · PEG).</li>'+
+    '<li>🚫 <b>Exclude junk</b> — drops obvious no-gos: sub-2¢ artifacts, blow-off tops (RSI ≥ 90), and illiquid names below the daily $-volume floor.</li>'+
+    '</ul>'+
+    '<p class="infofoot">A rule only fires where we actually have the data — turning a filter on never wrongly empties the list. Tap any row to open the full card, where every column is broken down with its “why”.</p>'},
   risktol:{icon:'🎢',title:'Risk tolerance',body:
     '<p>Sets which of your own picks get flagged as riskier than you\'d like — every pick still shows, nothing\'s hidden, this just adds a ⚠️ note where it applies.</p>'+
     '<h4>How risk is measured</h4><p>Real volatility and price-extension signals — daily ATR% (typical swing), penny/micro price level, how stretched the RSI is, and whether the model itself already flagged the stock as overextended. <b>Not market cap</b> — this app has no data source for that, so it isn\'t faked.</p>'+
@@ -10243,7 +10255,7 @@ function fdrRailHtml(pool){
   h+='<div class="fdr-railbody'+(FDR_RAIL_OPEN?' open':'')+'">';
   // #345 — one-tap presets. "Coiled spring" configures the finder to surface flat-but-turning names (see
   // fdrSpringScore): turns on ONLY the spring lever and sorts by it, so the top of the list is the best setups.
-  h+='<div class="fdr-presets"><span class="fdr-presetl">One-tap '+infoBtn('finderPresets')+'</span>'+
+  h+='<div class="fdr-presets"><span class="fdr-presetl">One-tap</span>'+
     '<button class="fdr-preset'+(fdrLever('spring')&&fdrLever('spring').on?' on':'')+'" id="fdrSpringPreset" title="Flat / hasn’t run up, but starting to turn — squeeze · volume · MACD">🌱 Coiled spring</button>'+
     '<button class="fdr-preset'+(fdrLever('capMax')&&fdrLever('capMax').on?' on':'')+'" id="fdrSmallPreset" title="Small companies only (needs fundamentals — mostly catalyst-pot names)">🪙 Small caps</button>'+
     '<button class="fdr-preset'+(fdrLever('price')&&fdrLever('price').on?' on':'')+'" id="fdrPennyPreset" title="Low-priced / penny shares — share price ≤ $1 (needs a known price)">💰 Penny stocks</button>'+
