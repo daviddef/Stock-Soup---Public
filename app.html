@@ -5008,6 +5008,26 @@ function actionsHtml(D){
           '<div class="axwhy"><b>'+esc(e.sym)+'</b> '+when+(ttl?' — '+esc(ttl):'')+'. Results often swing the price 5–20% same-day — a known catalyst to decide on <b>before</b> it prints.</div></div>'});
       });
   })();
+  // 🔥 STRONGER THAN TONIGHT'S PICKS (19 Aug, user-caught: MHM deep-scored 83.8 Strong-Buy wasn't served while
+  // Watch/Pass names were). The served 3 come from the catalyst pot; the whole-market scan's deep Strong-Buys
+  // live in a separate track and can't win a T1 slot. Surface the deeply-scored candidate (real 🍒) that clearly
+  // out-scores every served pick, so the best deep name isn't hidden. Display-only — doesn't change the picks.
+  (function(){
+    var served={}, servedMax=0;
+    (D.regions||[]).forEach(function(rg){ if(rg.id!==MKT)return; (rg.picks||[]).forEach(function(p){ if(p.sym&&p.sym!=='NONE'){ served[p.sym]=1; var bn=(p.score||{}).buy_now; if(bn!=null&&bn>servedMax)servedMax=bn; } }); });
+    if(!servedMax) return;
+    var best=null;
+    (D.candidates||[]).forEach(function(c){ if((c.region||'us')!==MKT||!c.sym||c.sym==='NONE'||served[c.sym]) return;
+      var s=c.score||{}, bn=s.buy_now; if(bn==null||bn<servedMax+10) return;
+      if(!/(strong buy|buy)/i.test(s.band||'')) return;
+      var deep=false; try{ deep=!!overallScore(bn, signalRows(c,MKT)); }catch(e){}
+      if(deep && (!best||bn>best.score.buy_now)) best=c; });
+    if(!best) return;
+    var bn=Math.round(best.score.buy_now), chip=_axChip(best.sym,MKT), ex=_axExtras(best.sym,MKT);
+    items.push({r:2.0, b:'buy', h:'<div class="axcard ax-buy" data-up-sym="'+esc(best.sym)+'" data-up-region="'+esc(MKT)+'" role="button" tabindex="0" aria-label="Stronger than tonight’s picks: '+esc(best.sym)+'">'+
+      '<div class="axtop"><span class="axverb axv-buy">🔥 STRONGER THAN TONIGHT’S PICKS?</span><span class="axsym">'+esc(best.sym)+'</span>'+chip+ex.wb+'</div>'+ex.chart+
+      '<div class="axwhy"><b>'+esc(best.sym)+'</b> scores <b>'+bn+'/100 ('+esc(best.score.band||'')+')</b> on the full deep model — higher than any of tonight’s served picks. It came from the whole-market scan (not the catalyst nets), so it isn’t in the served 6, but on the numbers it out-ranks them. Tap for the full read.</div></div>'});
+  })();
   // Coming up — soonest catalysts on names we track
   var _cs={}; (D.regions||[]).forEach(function(rg){(rg.picks||[]).forEach(function(p){if(p.sym!=='NONE')_cs[p.sym]=1;});});
   var _wl={}; try{wlGet().forEach(function(w){_wl[w.sym]=1;});}catch(e){}
@@ -7865,6 +7885,18 @@ function happeningHtml(o){
   (o.news_top3||[]).forEach(function(n){ news.push({title:n.title||n.t, url:n.url||n.u, date:n.date||n.d, tone:n.tone}); });
   news.forEach(function(n){ if(!n.title) return; var k=keyOf(n.title); if(seen[k]) return; seen[k]=1;
     rows.push({kind:'news', title:n.title, url:n.url, date:n.date, tone:n.tone, why:''}); });
+  // #brk-overlay (19 Aug, user-caught: a fresh Motley Fool ILU article showed in "Just in" but not the card).
+  // The strip and this overlay drew from DIFFERENT sources — strip = the 10-min breaking RSS sweep, overlay =
+  // the ticker's stored news_line + filings — so a breaking article was missing here. Fold the breaking-sweep
+  // headlines for THIS ticker in too, deduped, tone-tagged from the headline lexicon.
+  try{ var _bk=(((LAST&&LAST.D)||{}).breaking||{}).items||[];
+    _bk.forEach(function(it){ if(!it||!it.headline) return;
+      if(String(it.sym||'').toUpperCase()!==String(o.sym||'').toUpperCase()) return;
+      if((it.region||'')!==(o.region||'us')) return;
+      var k=keyOf(it.headline); if(seen[k]) return; seen[k]=1;
+      var tn=_brkTone(it.headline), tone=tn==='pos'?'bullish':tn==='neg'?'bearish':'neutral';
+      rows.push({kind:'news', title:it.headline, url:it.url, date:it.at, tone:tone, why:''}); });
+  }catch(e){}
   // #bhp-fix (user ask) — surface an imminent scheduled RESULT as a row here, so "reports today/tomorrow" is
   // visible IN What's happening (not only as the card flag). Built from the earnings calendar (earnDays).
   var earnRow=null, _ed=earnDays(o.sym,o.region);
