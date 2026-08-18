@@ -5202,19 +5202,26 @@ function render(D,H){
   // current market from modelTiers, and lead the strip with them. No NEW/DROP diff — it's a fresh scan.
   function scanJcol(tierKey, tierNum){
     var mt=(D.modelTiers||{})[tierKey]||{}, picks=(mt[MKT]||[]).filter(function(p){return p&&p.sym&&p.sym!=='NONE';});
-    if(!picks.length) return '';
-    var stamp=String((D.modelTiers||{}).updatedAt||'').slice(0,10);
+    if(!picks.length) return null;
+    var upd=String((D.modelTiers||{}).updatedAt||''), stamp=upd.slice(0,10);
     var region=MKT, label=(MKT==='us'?'🇺🇸 US':'🇦🇺 AU');
     var rows=picks.slice(0,3).map(function(p,idx){ var sym=p.sym, bare=String(sym).replace(/\*$/,'').toUpperCase(),
         nm=jName(sym);
       if(nm&&nm.toUpperCase()===bare) nm='';   // scan picks carry the ticker as their "name" — don't print it twice
       return '<div class="jrow"><span class="jtf">'+(TFS[idx]||'')+'</span><span class="jinfo">'+qlink(sym,region)+(nm?'<span class="jname">'+esc(nm)+'</span>':'')+'</span>'+gradeBadge(sym)+'</div>'; });
-    return '<div class="jcol jcol-scan"><div class="jhead"><span class="when">Whole-market scan<small>'+esc(stamp)+' · daily</small></span>'+
+    return {ts:upd, html:'<div class="jcol jcol-scan"><div class="jhead"><span class="when">Whole-market scan<small>'+esc(stamp)+' · daily</small></span>'+
       '<span class="jhright"><span class="rltier rltier-'+tierNum+'" title="Type '+tierNum+' — whole-market technical scan">T'+tierNum+'</span></span></div>'+
-      '<div class="jgrp">'+label+'</div>'+rows.join('')+'</div>';
+      '<div class="jgrp">'+label+'</div>'+rows.join('')+'</div>'};
   }
-  var scanCols=(TIER==='type1'?(scanJcol('type2',2)+scanJcol('type3',3)):'');   // only lead with scan cards on the T1 view (the tier toggle already shows T2/T3 elsewhere)
-  var journeyCols=scanCols+ms.slice(0,8).map(function(m,i){return jcol(m,ms[i+1],i===0);}).join('');   // last 8 runs, 3 visible across
+  // #jorder (18 Aug 2026, user: "journey order is odd — yesterday, today, yesterday again") — the strip used
+  // to ALWAYS lead with the T2/T3 scan cards, so YESTERDAY's daily scan (dated by day) jumped in front of
+  // TODAY's menu run. Order every card by its real timestamp, newest-first, so the scans slot in by date
+  // instead of leaping the queue. The newest menu still gets the NOW badge (it's newer than any daily scan).
+  var cols=[];
+  if(TIER==='type1'){ [scanJcol('type2',2), scanJcol('type3',3)].forEach(function(c){ if(c) cols.push(c); }); }
+  ms.slice(0,8).forEach(function(m,i){ cols.push({ts:(m.iso||m.generated||m.stamp||''), html:jcol(m,ms[i+1],i===0)}); });   // last 8 runs
+  cols.sort(function(a,b){ var da=new Date(a.ts), db=new Date(b.ts); if(!isNaN(da)&&!isNaN(db)) return db-da; return String(b.ts).localeCompare(String(a.ts)); });
+  var journeyCols=cols.map(function(c){return c.html;}).join('');   // 3 visible across, newest-first
   var note="This is the first menu on record — the journey starts here.";
   if(ms.length>=2){
     var a=ms[0],b=ms[1];
