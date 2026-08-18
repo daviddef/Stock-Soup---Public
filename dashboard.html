@@ -1748,13 +1748,26 @@
   .newschart{width:100%;min-height:132px}
   .nc-load{color:var(--faint);font-size:12px;padding:40px 0;text-align:center}
   .nc-wrap{position:relative}
-  .nc-svg{width:100%;height:118px;display:block;touch-action:none;cursor:ew-resize}
+  .nc-svg{width:100%;height:var(--nch,118px);display:block;touch-action:none;cursor:ew-resize}
   /* #serve-marker (19 Aug) — a pulsing orange "our call" dot on the overlay chart at the serve date+price */
   @keyframes ncservepulse{0%{transform:scale(.5);opacity:.85}70%{transform:scale(2.9);opacity:0}100%{opacity:0}}
   .nc-servepulse{fill:var(--broth);transform-box:fill-box;transform-origin:center;animation:ncservepulse 1.9s ease-out infinite}
   .nc-servedot{fill:var(--broth);stroke:var(--surface);stroke-width:1.3}
   .nc-servelab{position:absolute;transform:translateX(-50%);font-size:9px;font-weight:800;color:#fff;background:var(--broth);border-radius:6px;padding:1px 5px;white-space:nowrap;pointer-events:none;box-shadow:0 1px 3px rgba(0,0,0,.28);z-index:3}
   @media (prefers-reduced-motion:reduce){.nc-servepulse{animation:none;opacity:.55}}
+  /* #bigchart — expand button on the chart header + the large zoomable modal chart */
+  .nc-block h4{display:flex;align-items:center;gap:8px}
+  .nc-expand{margin-left:auto;background:var(--surface-2);border:1px solid var(--line);color:var(--muted);border-radius:8px;width:30px;height:27px;font-size:15px;cursor:pointer;line-height:1;flex:none;transition:border-color .15s,color .15s}
+  .nc-expand:hover,.nc-expand:focus-visible{border-color:var(--broth);color:var(--broth)}
+  .bigchart{position:relative;margin:4px 0 2px}
+  .bigchart .nc-svg{height:320px;cursor:crosshair}
+  .bc-ctrls{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:2px 0 12px}
+  .bc-rg,.bc-z{background:var(--surface-2);border:1px solid var(--line);color:var(--muted);border-radius:8px;padding:5px 11px;font-size:12px;font-weight:800;cursor:pointer;font-family:var(--font)}
+  .bc-rg.on{background:var(--broth);color:#fff;border-color:var(--broth)}
+  .bc-rg:hover,.bc-z:hover{border-color:var(--broth)}
+  .bc-z{width:34px;padding:5px 0;font-size:16px;text-align:center}
+  .bc-zsp{flex:1}
+  .bc-hint{color:var(--muted);font-size:12px;margin:10px 0 0;text-align:center}
   .nc-dot{stroke:#0b0d10;stroke-width:1.8;paint-order:stroke}
   /* Low/High reference lines + pick buy-levels */
   .nc-ref{stroke:var(--line);stroke-width:1}
@@ -9584,8 +9597,9 @@ function ncEvents(o){
   return ev;
 }
 function newsChartSlot(sym,region,cur,o,opts){
-  var ev=ncEvents(o||{}); var k=NC_SEQ++; NC_CACHE[k]={ev:ev, opts:opts||{}};
-  return '<div class="viz nc-block"><h4>📊 The chart — price · range · news</h4>'+
+  var ev=ncEvents(o||{}); var k=NC_SEQ++; NC_CACHE[k]={ev:ev, opts:opts||{}, sym:sym, region:region, cur:cur, name:(o&&o.name)||''};
+  return '<div class="viz nc-block"><h4>📊 The chart — price · range · news'+
+    '<button class="nc-expand" data-ncbig="'+k+'" aria-label="Expand chart" title="Expand — zoom &amp; explore">⤢</button></h4>'+
     '<div class="newschart" data-newschart data-sym="'+esc(sym)+'" data-region="'+esc(region)+'" data-cur="'+esc(cur)+'" data-evk="'+k+'">'+
     '<div class="nc-load">···· loading the chart</div></div></div>';
 }
@@ -9608,7 +9622,7 @@ function hydrateNewsCharts(root){
 function drawNewsChart(slot, closes, dates, events, cur, opts){
   opts=opts||{};
   var n=closes.length, mn=Math.min.apply(null,closes), mx=Math.max.apply(null,closes), rng=(mx-mn)||1;
-  var W=320, H=118, padX=7, padT=11, padB=11;
+  var W=(opts.W||320), H=(opts.H||118), padX=7, padT=11, padB=11;   // #bigchart — size-flexible so the same renderer powers the expanded view
   function X(i){ return padX + (n<=1?0:i/(n-1))*(W-2*padX); }
   function Y(v){ return padT + (1-(v-mn)/rng)*(H-padT-padB); }
   var pts=closes.map(function(v,i){return X(i).toFixed(1)+','+Y(v).toFixed(1);}).join(' ');
@@ -9695,6 +9709,49 @@ function drawNewsChart(slot, closes, dates, events, cur, opts){
   svgEl.addEventListener('pointerup',function(){ dragging=false; });
   svgEl.addEventListener('pointercancel',function(){ dragging=false; });
   setIndex(n-1);   // start on the latest bar
+}
+// #bigchart (19 Aug 2026, user ask) — expand the overlay chart into a large, zoomable modal. Reuses
+// drawNewsChart verbatim (now size-flexible) — range presets + −/+ zoom just window the daily series,
+// so events, the Low/High/Now lines, the entry/stop/target levels and the 🎯 "our call" marker all carry
+// over, and the scrubber still reads price + headline at any point.
+document.addEventListener('click',function(e){
+  var b=e.target.closest('.nc-expand'); if(!b)return;
+  e.preventDefault(); e.stopPropagation(); openBigChart(+b.dataset.ncbig);
+},true);
+function openBigChart(k){
+  var c=NC_CACHE[k]; if(!c)return;
+  LASTFOCUS=document.activeElement;
+  var m=document.getElementById('modal'); m.className='modal';
+  m.innerHTML='<div class="mhead"><button class="mclose" id="mClose" aria-label="Close">✕</button><div class="mtf">📊 The chart — zoom &amp; explore</div>'+
+    '<div class="mtop"><div class="msym"><b style="font-size:21px">'+esc(c.sym)+'</b>'+(c.name?' <span style="font-size:14px;color:var(--muted);font-weight:700">'+esc(c.name)+'</span>':'')+'</div></div></div>'+
+    '<div class="mbody"><div class="bc-ctrls" id="bcCtrls"></div><div class="bigchart" id="bigChartSlot"><div class="nc-load">···· loading the chart</div></div>'+
+    '<p class="bc-hint">Pick a range, use −/+ to zoom, and drag across the line to read the price + any headline at that point.</p></div>';
+  var ov=document.getElementById('overlay'); ov.classList.add('open'); ov.setAttribute('aria-hidden','false');
+  document.getElementById('mClose').onclick=closeModal; document.getElementById('mClose').focus();
+  fetch(API_BASE+'/history?sym='+encodeURIComponent(c.sym)+'&region='+encodeURIComponent(c.region)).then(function(r){return r.ok?r.json():null;}).then(function(j){
+    var slot=document.getElementById('bigChartSlot'), ctrls=document.getElementById('bcCtrls');
+    if(!slot) return;
+    if(!j||!j.closes||j.closes.length<3){ slot.innerHTML='<div class="nc-load nc-empty">not enough daily history to chart yet</div>'; return; }
+    var closes=j.closes, dates=j.dates||[], n=closes.length;
+    var fullDays=(dates.length>1)?Math.max(7,Math.round((Date.now()-Date.parse((dates[0]||'')+'T00:00:00Z'))/864e5)):365;
+    var winDays=fullDays;   // start showing everything
+    function idxDaysAgo(days){ if(!dates.length)return 0; var cut=Date.now()-days*864e5,best=0,bd=1e15;
+      for(var i=0;i<dates.length;i++){var di=Math.abs(Date.parse(dates[i]+'T00:00:00Z')-cut);if(di<bd){bd=di;best=i;}} return best; }
+    function draw(){
+      var start=(winDays>=fullDays)?0:idxDaysAgo(winDays); if(start>n-3) start=Math.max(0,n-3);
+      var wc=closes.slice(start), wd=dates.slice(start);
+      var bopts={}; for(var kk in (c.opts||{})) bopts[kk]=c.opts[kk]; bopts.W=680; bopts.H=320;
+      try{ drawNewsChart(slot, wc, wd, c.ev, c.cur, bopts); }catch(err){ slot.innerHTML='<div class="nc-load nc-empty">chart unavailable</div>'; }
+    }
+    var presets=[['1M',30],['3M',90],['6M',180],['1Y',365],['All',fullDays]];
+    function paint(){ ctrls.querySelectorAll('.bc-rg').forEach(function(x){ x.classList.toggle('on', Math.abs((+x.dataset.days)-winDays)<1); }); }
+    ctrls.innerHTML=presets.map(function(p){return '<button class="bc-rg" data-days="'+p[1]+'">'+p[0]+'</button>';}).join('')+
+      '<span class="bc-zsp"></span><button class="bc-z" data-z="out" aria-label="Zoom out">−</button><button class="bc-z" data-z="in" aria-label="Zoom in">+</button>';
+    ctrls.querySelectorAll('.bc-rg').forEach(function(bt){ bt.onclick=function(){ winDays=+bt.dataset.days; paint(); draw(); }; });
+    ctrls.querySelectorAll('.bc-z').forEach(function(bt){ bt.onclick=function(){
+      winDays=(bt.dataset.z==='in')?Math.max(7,Math.round(winDays*0.6)):Math.min(fullDays,Math.round(winDays*1.7)); paint(); draw(); }; });
+    paint(); draw();
+  }).catch(function(){ var s=document.getElementById('bigChartSlot'); if(s) s.innerHTML='<div class="nc-load nc-empty">daily history unavailable</div>'; });
 }
 // #tickerdrag (user ask, 16 Aug) — the old-school ticker tapes were CSS marquees; make them GRABBABLE.
 // Replace the CSS keyframe crawl with a JS rAF scroll (so pausing/dragging is seamless — a CSS-keyframe pause
