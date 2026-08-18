@@ -9938,7 +9938,7 @@ function pushViewState(){
 // Replaces the Full Pot. Reads latest.finderUniverse (#337, the whole scored liquid market) unioned with
 // tonight's candidates/picks, and lets you pull levers for the stock you want. Fully guarded: any throw
 // is caught so a Finder bug can never blank the app (the #216 blank-page class).
-var FDR={mode:'flexible', view:'cards', sectorSet:null, commoditySet:[], toggles:{aboveMa:false}, sort:'match', xAxis:'rangePos', yAxis:'buyNow', query:'', catalystOnly:false, excludeJunk:false, built:false};
+var FDR={mode:'flexible', view:'cards', sectorSet:null, commoditySet:[], toggles:{aboveMa:false}, sort:'match', xAxis:'rangePos', yAxis:'buyNow', query:'', catalystOnly:false, excludeJunk:false, holdingsOnly:false, watchOnly:false, built:false};
 var FDR_RAIL_OPEN=false;   // #fdr-collapse — lever body collapsed by default on mobile
 var FDR_LEVERS=[
   {grp:'Scores', items:[
@@ -10193,6 +10193,13 @@ function fdrInScope(s){
     var _floor=(s.region==='us')?500000:50000;                     // same $-vol floor the scan itself uses
     if(s.dvol!=null && s.dvol<_floor) return false;                 // illiquid (only where $-volume is known)
   }
+  // #hold-lever (18 Aug, user ask) — narrow the pot to just names YOU own / watch, using the client-side
+  // watchlist store (wlOwns/wlHas). Works for any holding/watch name that's in the pot (a scored candidate OR
+  // a wide-scan row — so a big holding like CPU surfaces from the daily scan even if it wasn't a catalyst
+  // candidate). A holding that lives ONLY client-side and isn't in the pot at all still can't appear (there's
+  // nothing to filter to). Not exempting picks here — "my holdings" should mean exactly that.
+  if(FDR.holdingsOnly && !wlOwns(s.sym, s.region)) return false;
+  if(FDR.watchOnly && !wlHas(s.sym, s.region)) return false;
   // #23 — commodity filter: when commodities are chosen, a name must match at least one (by industry or name).
   if(s.src!=='pick' && FDR.commoditySet && FDR.commoditySet.length){
     var cok=false; for(var ci=0;ci<FDR.commoditySet.length;ci++){ if(fdrCommMatch(s,FDR.commoditySet[ci])){cok=true;break;} }
@@ -10256,6 +10263,8 @@ function fdrRailHtml(pool){
   // #345 — one-tap presets. "Coiled spring" configures the finder to surface flat-but-turning names (see
   // fdrSpringScore): turns on ONLY the spring lever and sorts by it, so the top of the list is the best setups.
   h+='<div class="fdr-presets"><span class="fdr-presetl">One-tap</span>'+
+    '<button class="fdr-preset'+(FDR.holdingsOnly?' on':'')+'" id="fdrHoldPreset" title="Only names you OWN — filters the pot to your holdings (from your watchlist’s ‘I own it’ flag). Surfaces even non-catalyst holdings from the daily scan.">📦 My holdings</button>'+
+    '<button class="fdr-preset'+(FDR.watchOnly?' on':'')+'" id="fdrWatchPreset" title="Only names on your watchlist — owned or just tracked.">⭐ My watchlist</button>'+
     '<button class="fdr-preset'+(fdrLever('spring')&&fdrLever('spring').on?' on':'')+'" id="fdrSpringPreset" title="Flat / hasn’t run up, but starting to turn — squeeze · volume · MACD">🌱 Coiled spring</button>'+
     '<button class="fdr-preset'+(fdrLever('capMax')&&fdrLever('capMax').on?' on':'')+'" id="fdrSmallPreset" title="Small companies only (needs fundamentals — mostly catalyst-pot names)">🪙 Small caps</button>'+
     '<button class="fdr-preset'+(fdrLever('price')&&fdrLever('price').on?' on':'')+'" id="fdrPennyPreset" title="Low-priced / penny shares — share price ≤ $1 (needs a known price)">💰 Penny stocks</button>'+
@@ -10489,7 +10498,7 @@ function fdrWire(root){
   root.querySelectorAll('[data-fmode]').forEach(function(b){b.onclick=function(){ FDR.mode=b.dataset.fmode; if(FDR.mode==='flexible')FDR.sort='match'; rerender(); };});
   root.querySelectorAll('[data-fview]').forEach(function(b){b.onclick=function(){ FDR.view=b.dataset.fview; rerender(); };});
   var ss=document.getElementById('fdrSort'); if(ss) ss.onchange=function(){ FDR.sort=ss.value; rerender(); };
-  var reset=document.getElementById('fdrReset'); if(reset) reset.onclick=function(){ FDR_LEVERS.forEach(function(g){g.items.forEach(function(l){ l.on=false; });}); FDR.sectorSet=[]; FDR.commoditySet=[]; FDR.toggles.aboveMa=false; FDR.catalystOnly=false; FDR.excludeJunk=false; FDR.sort='match'; rerender(); };
+  var reset=document.getElementById('fdrReset'); if(reset) reset.onclick=function(){ FDR_LEVERS.forEach(function(g){g.items.forEach(function(l){ l.on=false; });}); FDR.sectorSet=[]; FDR.commoditySet=[]; FDR.toggles.aboveMa=false; FDR.catalystOnly=false; FDR.excludeJunk=false; FDR.holdingsOnly=false; FDR.watchOnly=false; FDR.sort='match'; rerender(); };
   // #345/#2c — one-tap presets. They now STACK (user ask: "can I click penny stocks AND undervalued together?"):
   // each button toggles ONLY its own lever, leaving the others (and any sector/commodity chips) intact. Click a
   // preset again to clear just that one. In Best-match mode the categorical `req` levers (penny/small/undervalued)
@@ -10517,6 +10526,10 @@ function fdrWire(root){
   var mov=document.getElementById('fdrMoversPreset'); if(mov) mov.onclick=function(){ if(FDR.sort==='move'){ FDR.sort='match'; } else { FDR.sort='move'; FDR.mode='flexible'; } rerender(); };
   // 🚫 Obvious exclusions — a composable toggle (like "On a catalyst"), not a lever-preset. Stacks with everything.
   var junk=document.getElementById('fdrJunkPreset'); if(junk) junk.onclick=function(){ FDR.excludeJunk=!FDR.excludeJunk; rerender(); };
+  // #hold-lever — 📦 My holdings / ⭐ My watchlist. Composable toggles (like the others). They're mutually
+  // exclusive with each other (holdings ⊂ watchlist), so turning one on clears the other for a clean read.
+  var hold=document.getElementById('fdrHoldPreset'); if(hold) hold.onclick=function(){ FDR.holdingsOnly=!FDR.holdingsOnly; if(FDR.holdingsOnly) FDR.watchOnly=false; rerender(); };
+  var wtch=document.getElementById('fdrWatchPreset'); if(wtch) wtch.onclick=function(){ FDR.watchOnly=!FDR.watchOnly; if(FDR.watchOnly) FDR.holdingsOnly=false; rerender(); };
   // ⓘ on the one-tap row — the preset buttons are injected into the rail after boot's wireInfo() pass ran, so
   // bind their info buttons locally here (same reason the presets themselves are bound here, not globally).
   root.querySelectorAll('.fdr-presets .infobtn').forEach(function(b){ b.onclick=function(e){ e.stopPropagation(); openInfo(b.dataset.info); }; });
@@ -10551,7 +10564,7 @@ function fdrWire(root){
 function openStockPot(preset){
   try{
     FDR_LEVERS.forEach(function(g){g.items.forEach(function(l){ l.on=(l.k==='buyNow'||l.k==='news'||l.k==='rsi'); });});
-    FDR.sectorSet=[]; FDR.commoditySet=[]; FDR.toggles={aboveMa:false}; FDR.catalystOnly=false; FDR.excludeJunk=false; FDR.query=''; FDR.mode='flexible'; FDR.sort='match';
+    FDR.sectorSet=[]; FDR.commoditySet=[]; FDR.toggles={aboveMa:false}; FDR.catalystOnly=false; FDR.excludeJunk=false; FDR.holdingsOnly=false; FDR.watchOnly=false; FDR.query=''; FDR.mode='flexible'; FDR.sort='match';
     var on=function(k,v){ var l=fdrLever(k); if(l){ l.on=true; if(v!=null)l.val=v; } };
     if(preset==='spring'){ on('spring',55); FDR.sort='spring'; }
     else if(preset==='value'){ on('value',60); FDR.sort='value'; }
