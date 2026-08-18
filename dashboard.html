@@ -10647,7 +10647,9 @@ function fdrCardsHtml(rows){
       '<div class="fdr-ctop"><span class="fdr-csym">'+esc(s.sym)+'</span>'+fdrSrcBadge(s)+'<span class="fdr-cflag">'+(s.region==='au'?'ASX':'US')+'</span>'+
         '<button class="watchbtn iconwatch fdr-cwatch'+(wlHas(s.sym,s.region)?' on':'')+'" data-sym="'+esc(s.sym)+'" data-region="'+esc(s.region)+'"'+(s.name?' data-name="'+esc(s.name)+'"':'')+' aria-pressed="'+(wlHas(s.sym,s.region)?'true':'false')+'" title="Add to watchlist">'+(wlHas(s.sym,s.region)?'✓':'☆')+'</button></div>'+
       '<div class="fdr-cname">'+esc(s.name)+'</div>'+
-      '<div class="fdr-cscores"><span class="fdr-sc fdr-sc-o">🍊 '+(s.buyNow!=null?s.buyNow:'—')+'</span>'+
+      // #scan-label (19 Aug, user ask) — a scan-only 🍊 (no 🍒) is a shallow technicals+fundamentals score, NOT
+      // the deep-vetted number. Mark it with a ° + tooltip so it isn't visually equated with a fully-analysed one.
+      '<div class="fdr-cscores"><span class="fdr-sc fdr-sc-o'+(s.cherry==null?' fdr-sc-scan':'')+'"'+(s.cherry==null?' title="Scan-only score — technicals + fundamentals, not deep-vetted yet (that\'s why there\'s no 🍒). Watch it (☆) to get the full analysis."':'')+'>🍊 '+(s.buyNow!=null?s.buyNow:'—')+(s.cherry==null&&s.buyNow!=null?'°':'')+'</span>'+
         (s.cherry!=null?'<span class="fdr-sc fdr-sc-c">🍒 '+s.cherry+'</span>':'')+
         (showMatch?'<span class="fdr-mpill" style="--mc:'+fdrColor(o.m)+'" title="How well this name matches your filters">'+o.m+'% match</span>':'')+
         earnFlag(s.sym,s.region)+
