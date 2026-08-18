@@ -1242,24 +1242,31 @@
   .movercard{cursor:pointer;background:var(--surface);border:1px solid var(--line);border-radius:11px;padding:9px 10px;transition:border-color .12s,transform .05s}
   .movercard:hover{border-color:var(--broth)} .movercard:active{transform:scale(.98)}
   /* 🔴 "Just in" breaking-news strip — fresh headlines on tracked names, produced by the 10-min pulse */
-  .brkstrip{margin:0 0 16px;border:1px solid rgba(214,38,59,.28);border-radius:13px;overflow:hidden;background:rgba(214,38,59,.045)}
-  .brkhdr{display:flex;align-items:center;gap:8px;flex-wrap:nowrap;white-space:nowrap;padding:7px 12px;font-weight:800;letter-spacing:.02em;color:#d6263b;background:rgba(214,38,59,.09);font-size:13px}
-  .brkx{margin-left:auto;flex:0 0 auto;background:none;border:0;color:#d6263b;font-size:13px;font-weight:800;cursor:pointer;padding:3px 7px;border-radius:8px;line-height:1;opacity:.75}
-  .brkx:hover{opacity:1;background:rgba(214,38,59,.14)}
+  .brkstrip{margin:0 0 16px;border:1px solid var(--line);border-radius:13px;overflow:hidden;background:var(--surface-2)}
+  .brkhdr{display:flex;align-items:center;gap:8px;flex-wrap:nowrap;white-space:nowrap;padding:7px 12px;font-weight:800;letter-spacing:.02em;color:var(--ink);background:rgba(120,120,120,.06);font-size:13px}
+  .brkx{margin-left:auto;flex:0 0 auto;background:none;border:0;color:var(--muted);font-size:13px;font-weight:800;cursor:pointer;padding:3px 7px;border-radius:8px;line-height:1;opacity:.75}
+  .brkx:hover{opacity:1;background:var(--line)}
   .brkdot{width:8px;height:8px;border-radius:50%;background:#d6263b;box-shadow:0 0 0 0 rgba(214,38,59,.5);animation:brkpulse 2s infinite}
   @keyframes brkpulse{0%{box-shadow:0 0 0 0 rgba(214,38,59,.5)}70%{box-shadow:0 0 0 7px rgba(214,38,59,0)}100%{box-shadow:0 0 0 0 rgba(214,38,59,0)}}
   @media(prefers-reduced-motion:reduce){.brkdot{animation:none}}
-  .brkrow{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;width:100%;text-align:left;cursor:pointer;background:none;border:0;border-top:1px solid rgba(214,38,59,.14);padding:9px 12px;color:var(--ink)}
+  .brkrow{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;width:100%;text-align:left;cursor:pointer;background:none;border:0;border-top:1px solid var(--line);padding:9px 12px;color:var(--ink)}
   .brkrow:first-of-type{border-top:0}
-  .brkrow:hover{background:rgba(214,38,59,.06)} .brkrow:active{transform:scale(.995)}
-  .brksym{grid-row:1/3;align-self:center;font-weight:800;font-size:12px;color:#d6263b;background:rgba(214,38,59,.12);border-radius:7px;padding:3px 8px;white-space:nowrap}
+  .brkrow:hover{background:rgba(120,120,120,.06)} .brkrow:active{transform:scale(.995)}
+  .brksym{grid-row:1/3;align-self:center;font-weight:800;font-size:12px;color:var(--muted);background:var(--line);border-radius:7px;padding:3px 8px;white-space:nowrap}
   .brkhead{font-weight:650;font-size:13.5px;line-height:1.3}
   .brkhead a{color:var(--ink);text-decoration:none;border-bottom:1px solid var(--line)} .brkhead a:hover{border-color:var(--broth)}
   .brkmeta{font-size:11px;color:var(--muted)}
+  /* #brk-tone (19 Aug, user ask) — the strip is now NEUTRAL (it was blanket-red, which made EVERY headline
+     look like bad news). Each row carries its own sentiment: green good-news, red bad-news, grey neutral —
+     tone taken from the ticker's computed news sentiment when we have it, else a light headline lexicon. */
+  .brkrow.brk-t-pos .brksym{color:var(--buy);background:rgba(35,194,103,.14)}
+  .brkrow.brk-t-neg .brksym{color:#d6283c;background:rgba(214,40,60,.13)}
+  .brkrow.brk-t-pos{border-left:3px solid var(--buy)} .brkrow.brk-t-neg{border-left:3px solid var(--dont)} .brkrow.brk-t-neu{border-left:3px solid var(--line)}
   /* (user ask) "Just in" laid out ~3 across, and headlines on names you OWN highlighted with 📦 + brand tint */
   .brkgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,290px),1fr));gap:7px;padding:8px 10px}
-  .brkgrid .brkrow{border:1px solid rgba(214,38,59,.16);border-radius:10px}
-  .brkgrid .brkrow:first-of-type{border-top:1px solid rgba(214,38,59,.16)}   /* override the list-mode divider reset */
+  .brkgrid .brkrow{border:1px solid var(--line);border-radius:10px}
+  .brkgrid .brkrow.brk-t-pos{border-color:rgba(35,194,103,.4)} .brkgrid .brkrow.brk-t-neg{border-color:rgba(214,40,60,.4)}
+  .brkgrid .brkrow:first-of-type{border-top:1px solid var(--line)}   /* override the list-mode divider reset */
   .brkrow.brkown{background:rgba(255,107,26,.07);border-color:rgba(255,107,26,.36)}
   .brkrow.brkown .brksym{background:rgba(255,107,26,.16);color:var(--broth)}
   .brkownlbl{color:var(--broth);font-weight:800}
@@ -4287,6 +4294,18 @@ function picksLastSessionPct(D){
 // Honest by design: it's a keyword/ticker match on public RSS headlines (no LLM in the pulse loop), so it's
 // framed as "fresh headline — full read at next cook", not a re-scored verdict. Market-filtered; only shows
 // items from the last ~12h; tapping opens the ticker's real read. Renders '' when there's nothing fresh.
+// #brk-tone (19 Aug, user ask) — a light headline sentiment read for the "Just in" strip. Prefer the ticker's
+// already-computed news sentiment (deep newsflow / EODHD) when we have it, else fall back to a keyword lexicon
+// on the headline. Returns 'pos' | 'neg' | 'neu'.
+function _brkTone(t){ t=' '+String(t||'').toLowerCase()+' ';
+  var pos=/\b(beat|beats|upgrade[sd]?|record|surge[sd]?|soar[sed]*|jump[sed]*|rall(y|ies|ied)|gain[sed]*|profit|strong|win[s]?|contract|offtake|approval|breakthrough|higher|dividend|buyback|raises? (?:guidance|forecast|target)|outperform|rebound[sed]*|boom[sed]*|upbeat|tops?|expansion|milestone)\b/;
+  var neg=/\b(miss|misses|missed|downgrade[sd]?|loss(es)?|plunge[sd]?|slump[sed]*|cut[s]?|weak|warn(s|ing|ed)?|halt[sed]*|probe|lawsuit|resign[sed]*|delay[sed]*|write.?down|slash(es|ed)?|underperform|sink[s]?|tumble[sd]?|fall[s]?|drop[s]?|declin(e|es|ed|ing)|profit warning|guidance cut|writeoff|impairment)\b/;
+  var p=pos.test(t), n=neg.test(t); return (p&&!n)?'pos':(n&&!p)?'neg':'neu'; }
+function _brkItemTone(it){
+  try{ var c=_findNewsObj(it.sym,it.region); if(c){ var nf=c.newsflow;
+    if(nf&&nf.tone!=null) return nf.tone>=0.4?'pos':nf.tone<=-0.4?'neg':'neu';
+    if(c.news_sentiment!=null) return c.news_sentiment>=0.12?'pos':c.news_sentiment<=-0.12?'neg':'neu'; } }catch(e){}
+  return _brkTone(it.headline); }
 function breakingHtml(D){
   var b=D.breaking||{}, items=(b.items||[]).filter(function(it){
     if((it.region||'')!==MKT) return false;
@@ -4312,7 +4331,7 @@ function breakingHtml(D){
   var rows=items.map(function(it){
     var ago=timeAgo(it.at), url=it.url||'';
     var head=url?('<a href="'+esc(url)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()">'+esc(it.headline)+'</a>'):esc(it.headline);
-    return '<button class="brkrow'+(it._own?' brkown':'')+'" data-sym="'+esc(it.sym)+'" data-region="'+esc(it.region)+'"'+(it._own?' data-own="1"':'')+(it._watch?' data-watch="1"':'')+' title="Tap for '+esc(it.sym)+'’s full read">'+
+    return '<button class="brkrow brk-t-'+_brkItemTone(it)+(it._own?' brkown':'')+'" data-sym="'+esc(it.sym)+'" data-region="'+esc(it.region)+'"'+(it._own?' data-own="1"':'')+(it._watch?' data-watch="1"':'')+' title="Tap for '+esc(it.sym)+'’s full read">'+
              '<span class="brksym">'+(it._own?'📦 ':'')+esc(it.sym)+'</span>'+
              '<span class="brkhead">'+head+'</span>'+
              '<span class="brkmeta">'+(it._own?'<b class="brkownlbl">you own this</b> · ':'')+esc(it.source||'')+(ago?' · '+esc(ago):'')+'</span>'+
