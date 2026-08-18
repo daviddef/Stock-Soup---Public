@@ -1627,6 +1627,8 @@
   /* #ovhead — the promoted header signal row: verdict + 🍊/🍒 chips + ☆ watch, all inline at the top */
   .mheadrow{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:12px}
   .mheadrow .mverd{margin-top:0}
+  /* #pulse-health — a stalled/failed re-price gets a red-tinted chip so it can't read as a benign pause */
+  .pulsestat-bad{background:rgba(224,85,85,.12);border-radius:6px;padding:1px 7px}
   .callchips .juicebtn,.callchips .cherrybtn{font-size:14px;font-weight:800;padding:4px 12px;border-radius:22px}
   .callwatch{margin-left:2px}
   .callplan{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 4px;font-size:14.5px;font-weight:700;
@@ -7183,14 +7185,21 @@ function pulseStatusHtml(){
   var agoMin=lastAt?Math.round((Date.now()-new Date(lastAt).getTime())/60000):null;
   var agoTxt=agoMin==null?'':(agoMin<1?'just now':agoMin<60?agoMin+'m ago':Math.floor(agoMin/60)+'h ago');
   var stale=agoMin!=null&&agoMin>20;   // a pulse should land every ~10 min while a market's awake
-  var mark, col;
-  if(lastStatus==='fail'){ mark='✗ last failed'; col='var(--loss,#e05555)'; }
-  else if(stale){ mark='⏸ paused'; col='var(--warn,#d9a441)'; }
+  // #pulse-health (18 Aug, user: "why don't failures show in the kitchen?") — a stall only READ as a benign
+  // "⏸ paused" before, so a 13-hour awake-hours outage (KV read failing) looked exactly like the normal
+  // overnight lull and never rang an alarm. The re-price deliberately no-ops 17:00–22:59 AEST (ASX close →
+  // US open); OUTSIDE that window a stale/failed pulse is a real fault, shown in RED, not amber.
+  var aestH=null; try{ aestH=parseInt(new Date().toLocaleString('en-GB',{timeZone:'Australia/Sydney',hour:'2-digit',hour12:false}),10); }catch(e){}
+  var inLull=(aestH!=null&&aestH>=17&&aestH<=22);
+  var mark, col, alarm=false;
+  if(lastStatus==='fail'){ mark='✗ re-pricing failed'; col='var(--loss,#e05555)'; alarm=true; }
+  else if(stale&&!inLull){ mark='⚠️ re-pricing stalled'; col='var(--loss,#e05555)'; alarm=true; }   // should be live, isn't
+  else if(stale){ mark='⏸ paused · market lull'; col='var(--warn,#d9a441)'; }                        // 17:00–23:00 AEST, normal
   else { mark='✓ live'; col='var(--gain,#2ecc71)'; }
   var bits=['<b>'+ok+'</b> re-price'+(ok===1?'':'s')+' today'];
   if(fail) bits.push('<b style="color:var(--loss,#e05555)">'+fail+' failed</b>');
-  var tail='<span style="color:'+col+';font-weight:700">'+mark+'</span>'+(agoTxt?' · '+agoTxt:'');
-  return '<span class="pulsestat" title="'+esc(lastErr||('last re-price '+(agoTxt||'—')))+'">'+bits.join(' · ')+' · '+tail+'</span>';
+  var tail='<span style="color:'+col+';font-weight:'+(alarm?'800':'700')+'">'+mark+'</span>'+(agoTxt?' · last '+agoTxt:'');
+  return '<span class="pulsestat'+(alarm?' pulsestat-bad':'')+'" title="'+esc(lastErr||('last re-price '+(agoTxt||'—')))+'">'+bits.join(' · ')+' · '+tail+'</span>';
 }
 function runLogHtml(){
   var H=(LAST&&LAST.H)||{}, hh='font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--broth);font-weight:800;margin:18px 0 4px';
