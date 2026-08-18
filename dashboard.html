@@ -2350,6 +2350,20 @@
   .scorelegend i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px;vertical-align:middle}
   .scorelegend .pen{color:var(--dont)}
   .scorenum{font-size:13px;font-weight:800;color:var(--ink)}
+  /* #news-sentiment (18 Aug 2026) — the 📰 news icon is a tappable button that opens the sentiment read + score */
+  .newssentbtn{background:rgba(120,120,120,.12);border:1px solid var(--line);border-radius:6px;padding:0 5px;margin:0;cursor:pointer;font-size:inherit;line-height:1.35;vertical-align:baseline;transition:background .15s,transform .12s}
+  .newssentbtn:hover{background:rgba(120,120,120,.24);transform:translateY(-1px)}
+  .newssentbtn:active{transform:scale(.94)}
+  .newssentbtn:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+  .nsbig{font-size:20px;font-weight:800;margin:2px 0 8px}
+  .nsbig.pos{color:var(--buy)} .nsbig.neg{color:var(--dont)} .nsbig.mix{color:var(--muted)}
+  .nsscore{font-size:30px;font-weight:900;line-height:1;margin:4px 0 2px}
+  .nsscore span{font-size:12px;font-weight:700;color:var(--muted)}
+  .nsscore.pos{color:var(--buy)} .nsscore.neg{color:var(--dont)} .nsscore.mix{color:var(--muted)}
+  .nssub{font-size:13px;color:var(--muted);margin:2px 0 8px;max-width:54ch}
+  .nsmeta{font-size:12px;font-weight:700;color:var(--ink);margin:6px 0}
+  .nswhy{margin:6px 0 10px;padding-left:18px;font-size:13px;color:var(--ink)}
+  .nswhy li{margin:3px 0}
   .juicebtn{position:relative;overflow:visible;background:rgba(255,140,0,.14);color:#FF8C00;border:1px solid rgba(255,140,0,.4);border-radius:7px;font-size:10.5px;font-weight:800;padding:3px 8px;margin-left:8px;cursor:pointer;vertical-align:middle;transition:background .15s,transform .18s cubic-bezier(.34,1.6,.64,1)}
   .juicebtn:hover{background:rgba(255,140,0,.24)}
   /* a bit of fun (user ask) — a leaf sprouts + unfurls out of the 🍊 on hover/tap, and the chip gives a
@@ -6418,6 +6432,52 @@ document.addEventListener('click',function(e){
   setTimeout(function(){b.classList.remove('pop');},520);
   openJuice(+b.dataset.juiceId);
 },true);
+// #news-sentiment (18 Aug 2026, user ask) — the 📰 news icon opens a focused sentiment read + score.
+document.addEventListener('click',function(e){
+  var nb=e.target.closest('.newssentbtn'); if(!nb)return;
+  e.preventDefault(); e.stopPropagation();
+  openNewsSent(nb.dataset.nssym, nb.dataset.nsreg||'us');
+},true);
+function _nsEmo(t){ return t==='pos'?'😀':t==='neg'?'😟':'😐'; }
+function _findNewsObj(sym,region){
+  var D=(LAST&&LAST.D)||{}; sym=String(sym||'').toUpperCase(); region=region||'us';
+  function m(o){ return o && String(o.sym||'').toUpperCase()===sym && ((o.region||'us')===region); }
+  var i,j,arr=D.candidates||[]; for(i=0;i<arr.length;i++) if(m(arr[i])) return arr[i];
+  var rg=D.regions||[]; for(i=0;i<rg.length;i++){ var ps=(rg[i]&&rg[i].picks)||[]; for(j=0;j<ps.length;j++) if(m(ps[j])) return ps[j]; }
+  arr=D.defaultWatchlist||[]; for(i=0;i<arr.length;i++) if(m(arr[i])) return arr[i];
+  return null;
+}
+function openNewsSent(sym,region){
+  var o=_findNewsObj(sym,region)||{sym:sym,region:region};
+  LASTFOCUS=document.activeElement;
+  var nf=o.newsflow, sent=(o.news_sentiment!=null?o.news_sentiment:null), body='';
+  if(nf&&nf.score!=null){
+    var tv=(nf.tone!=null?nf.tone:nf.score);
+    var tone=tv>=0.4?'pos':tv<=-0.4?'neg':'mix';
+    var sc=Math.round(nf.score);
+    var lbl=tone==='pos'?'Positive':tone==='neg'?'Negative':'Neutral';
+    var meta=[]; if(nf.breadth!=null) meta.push(nf.breadth+' independent sources'); if(nf.n!=null) meta.push(nf.n+' headlines'); if(nf.stories!=null) meta.push(nf.stories+' distinct stories');
+    var why=(nf.why&&nf.why.length)?'<ul class="nswhy">'+nf.why.map(function(w){return '<li>'+esc(w)+'</li>';}).join('')+'</ul>':'';
+    body='<div class="nsbig '+tone+'">'+_nsEmo(tone)+' '+lbl+' news</div>'+
+      '<div class="nsscore '+tone+'">'+(sc>0?'+'+sc:''+sc)+' <span>points on the 0–100 score</span></div>'+
+      '<div class="nssub">'+(sc>0?'Fresh news is lifting this score.':sc<0?'Recent news is dragging this score down.':'The news is real but not directional — it makes no change to the score (e.g. an administrative announcement).')+'</div>'+
+      (meta.length?'<div class="nsmeta">'+esc(meta.join(' · '))+'</div>':'')+why+newsTop3Html(o.news_top3||[]);
+  } else if(sent!=null){
+    var tone2=sent>=0.12?'pos':sent<=-0.12?'neg':'mix';
+    var lbl2=tone2==='pos'?'Positive':tone2==='neg'?'Negative':'Mixed';
+    body='<div class="nsbig '+tone2+'">'+_nsEmo(tone2)+' '+lbl2+' news</div>'+
+      '<div class="nssub">Tone read from recent coverage ('+(sent>=0?'+':'')+(Math.round(sent*100)/100)+' on a −1…+1 scale). The model’s full −6…+6 news score refreshes on the next scheduled run.</div>'+
+      newsTop3Html(o.news_top3||[]);
+  } else {
+    body='<div class="nssub">No news-sentiment read yet for this ticker — it fills in on the next run.</div>'+newsTop3Html(o.news_top3||[]);
+  }
+  var m=document.getElementById('modal'); m.className='modal';
+  m.innerHTML='<div class="mhead"><button class="mclose" id="mClose" aria-label="Close">✕</button><div class="mtf">📰 News sentiment</div>'+
+    '<div class="mtop"><div class="msym"><b style="font-size:21px">'+esc(sym)+'</b>'+(o.name?' <span style="font-size:14px;color:var(--muted);font-weight:700">'+esc(o.name)+'</span>':'')+'</div></div></div>'+
+    '<div class="mbody">'+body+'</div>';
+  var ov=document.getElementById('overlay'); ov.classList.add('open'); ov.setAttribute('aria-hidden','false');
+  document.getElementById('mClose').onclick=closeModal; document.getElementById('mClose').focus();
+}
 // #243 — tap any run row (log OR scheduled) → "what this run does" + market context. Delegated + bubble
 // phase so it works for the re-rendered run-log rows without per-row wiring.
 document.addEventListener('click',function(e){
@@ -7754,7 +7814,11 @@ function newsLineHtml(news, newsUrl, newsDate, items, sym, region, name){
     var body=a.u?'<a href="'+esc(a.u)+'" target="_blank" rel="noopener">'+esc(a.t)+' ↗</a>':esc(a.t);
     return '<div class="mnews-item'+(days!=null&&days>7?' mnews-old':'')+'">'+body+(age?'<span class="mnews-age">'+age+'</span>':'')+'</div>'; }
   var lead=list[0], rest=list.slice(1,6);
-  var head='<div class="mnews'+(old?' mnews-old':'')+'">📰 <span class="lead">In the news'+(old?' ⚠️ OLD':'')+':</span> '+
+  // #news-sentiment (18 Aug 2026, user ask) — the 📰 icon is now a BUTTON that opens the sentiment read
+  // (tone + the ±6 score it moved) for this ticker. openNewsSent looks the object up in the live bundle,
+  // so no data needs threading through this function's many call sites.
+  var sbtn=(sym&&sym!=='NONE')?'<button class="newssentbtn" data-nssym="'+esc(sym)+'" data-nsreg="'+esc(region||'us')+'" aria-label="News sentiment" title="News sentiment — tap for the read + score">📰</button>':'📰';
+  var head='<div class="mnews'+(old?' mnews-old':'')+'">'+sbtn+' <span class="lead">In the news'+(old?' ⚠️ OLD':'')+':</span> '+
     (lead.u?'<a href="'+esc(lead.u)+'" target="_blank" rel="noopener">'+esc(lead.t)+' ↗</a>':esc(lead.t))+
     (ageOf(lead.d)!=null?'<span class="mnews-age">'+(ageOf(lead.d)<1?'today':ageOf(lead.d)===1?'1d ago':ageOf(lead.d)+'d ago')+'</span>':'')+'</div>';
   if(!rest.length) return head;
