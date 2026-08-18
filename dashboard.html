@@ -1770,6 +1770,8 @@
   .bc-z{width:34px;padding:5px 0;font-size:16px;text-align:center}
   .bc-zsp{flex:1}
   .bc-hint{color:var(--muted);font-size:12px;margin:10px 0 0;text-align:center}
+  .modal.modal-wide{max-width:min(960px,95vw);width:95vw}
+  .bigchart .nc-servelab{font-size:11px;padding:2px 7px}
   .nc-dot{stroke:#0b0d10;stroke-width:1.8;paint-order:stroke}
   /* Low/High reference lines + pick buy-levels */
   .nc-ref{stroke:var(--line);stroke-width:1}
@@ -9698,7 +9700,8 @@ function drawNewsChart(slot, closes, dates, events, cur, opts){
     if(_si>=0){ var _sx=X(_si), _sy=Y(closes[_si]);
       serveMark='<circle cx="'+_sx.toFixed(1)+'" cy="'+_sy.toFixed(1)+'" r="5" class="nc-servepulse"/>'+
                 '<circle cx="'+_sx.toFixed(1)+'" cy="'+_sy.toFixed(1)+'" r="3.4" class="nc-servedot"/>';
-      serveLab='<span class="nc-servelab" style="left:'+(_sx/W*100).toFixed(2)+'%;top:'+Math.max(1,_sy-23).toFixed(1)+'px">🎯 our call '+cur+closes[_si].toFixed(2)+'</span>';
+      var _spct=_sx/W*100, _stx=(_spct<14)?'0':(_spct>70)?'-100%':'-50%';   // edge-aware so "our call" never runs off the right
+      serveLab='<span class="nc-servelab" style="left:'+_spct.toFixed(2)+'%;top:'+Math.max(1,_sy-23).toFixed(1)+'px;transform:translateX('+_stx+')">🎯 our call '+cur+closes[_si].toFixed(2)+'</span>';
     }
   }
   var svg='<svg class="nc-svg" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" role="img" aria-label="Price, range and news timeline">'+
@@ -9740,7 +9743,7 @@ document.addEventListener('click',function(e){
 function openBigChart(k){
   var c=NC_CACHE[k]; if(!c)return;
   LASTFOCUS=document.activeElement;
-  var m=document.getElementById('modal'); m.className='modal';
+  var m=document.getElementById('modal'); m.className='modal modal-wide';
   m.innerHTML='<div class="mhead"><button class="mclose" id="mClose" aria-label="Close">✕</button><div class="mtf">📊 The chart — zoom &amp; explore</div>'+
     '<div class="mtop"><div class="msym"><b style="font-size:21px">'+esc(c.sym)+'</b>'+(c.name?' <span style="font-size:14px;color:var(--muted);font-weight:700">'+esc(c.name)+'</span>':'')+'</div></div></div>'+
     '<div class="mbody"><div class="bc-ctrls" id="bcCtrls"></div><div class="bigchart" id="bigChartSlot"><div class="nc-load">···· loading the chart</div></div>'+
