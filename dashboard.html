@@ -5992,13 +5992,13 @@ function kitchenScoreStory(D){
       +'.ks-fnbar{display:none;height:5px;border-radius:3px;background:var(--line);margin-top:7px;overflow:hidden}.ks-fnbar>i{display:block;height:100%;background:linear-gradient(90deg,var(--broth),rgba(232,102,42,.5))}'
       +'</style>';
     var funnel='<div class="ks-fn">'
-      +'<div class="ks-row ks-f0"><div class="ks-num">'+whole+'</div><div class="ks-meta"><div class="ks-ft">'+wholeName+'</div><div class="ks-fd">Every listed company — the whole market goes in the pot.</div><div class="ks-sbrow"><span class="ks-bdg ks-bn">no score yet</span><span class="ks-bdg ks-bn">not shown in the app</span></div><div class="ks-fnbar"><i style="width:100%"></i></div></div></div>'
+      +'<div class="ks-row ks-f0"><div class="ks-num">'+whole+'</div><div class="ks-meta"><div class="ks-ft">'+wholeName+' '+infoBtn('funWhole')+'</div><div class="ks-fd">Every listed company — the whole market goes in the pot.</div><div class="ks-sbrow"><span class="ks-bdg ks-bn">no score yet</span><span class="ks-bdg ks-bn">not shown in the app</span></div><div class="ks-fnbar"><i style="width:100%"></i></div></div></div>'
       +'<div class="ks-step"><span class="aw">▼</span><span class="lb"><b>Liquidity filter</b> — can you actually trade it?</span></div>'
-      +'<div class="ks-row ks-f1"><div class="ks-num">'+scanned+'</div><div class="ks-meta"><div class="ks-ft">🔬 Scanned for a signal</div><div class="ks-fd">The daily whole-market scan runs the technicals over every liquid name.</div><div class="ks-sbrow"><span class="ks-bdg ks-bn">technicals only · not all published</span></div><div class="ks-fnbar"><i style="width:82%"></i></div></div></div>'
+      +'<div class="ks-row ks-f1"><div class="ks-num">'+scanned+'</div><div class="ks-meta"><div class="ks-ft">🔬 Scanned for a signal '+infoBtn('funScan')+'</div><div class="ks-fd">The daily whole-market scan runs the technicals over every liquid name.</div><div class="ks-sbrow"><span class="ks-bdg ks-bn">technicals only · not all published</span></div><div class="ks-fnbar"><i style="width:82%"></i></div></div></div>'
       +'<div class="ks-step"><span class="aw">▼</span><span class="lb"><b style="color:var(--broth)">🍊 the Buy-Now model runs here</b> — only names with a real signal get scored &amp; published</span></div>'
-      +'<div class="ks-row ks-f2"><div class="ks-num">'+finderN+'</div><div class="ks-meta"><div class="ks-ft">🍲 The Stock Pot</div><div class="ks-fd">Every name we actually scored — the scan’s picks + the catalyst pot. Browse &amp; screen them all.</div><div class="ks-sbrow"><span class="ks-bdg ks-bo">🍊</span><span class="ks-bdg ks-bc">🍒</span><span class="ks-bdg ks-bn">both live on every name</span><span class="ks-bdg ks-bo">🔎 The Stock Pot tab</span></div><div class="ks-fnbar"><i style="width:58%"></i></div></div></div>'
+      +'<div class="ks-row ks-f2"><div class="ks-num">'+finderN+'</div><div class="ks-meta"><div class="ks-ft">🍲 The Stock Pot '+infoBtn('funPot')+'</div><div class="ks-fd">Every name we actually scored — the scan’s picks + the catalyst pot. Browse &amp; screen them all.</div><div class="ks-sbrow"><span class="ks-bdg ks-bo">🍊 on all</span><span class="ks-bdg ks-bc">🍒 deep-scored subset</span><span class="ks-bdg ks-bo">🔎 The Stock Pot tab</span></div><div class="ks-fnbar"><i style="width:58%"></i></div></div></div>'
       +'<div class="ks-step"><span class="aw">▼</span><span class="lb"><b>Fresh hard catalyst</b> — a beat, a contract, an upgrade <em>today</em></span></div>'
-      +'<div class="ks-row ks-f2b"><div class="ks-num">'+potN+'</div><div class="ks-meta"><div class="ks-ft">🎯 Caught on a catalyst</div><div class="ks-fd">The subset our news / earnings / quant / IPO nets surfaced tonight.</div><div class="ks-sbrow"><span class="ks-bdg ks-bo">📋 audit list ↓</span></div><div class="ks-fnbar"><i style="width:40%"></i></div></div></div>'
+      +'<div class="ks-row ks-f2b"><div class="ks-num">'+potN+'</div><div class="ks-meta"><div class="ks-ft">🎯 Caught on a catalyst '+infoBtn('funCatalyst')+'</div><div class="ks-fd">The subset our news / earnings / quant / IPO nets surfaced tonight.</div><div class="ks-sbrow"><span class="ks-bdg ks-bo">📋 audit list ↓</span></div><div class="ks-fnbar"><i style="width:40%"></i></div></div></div>'
       // #346 — the full audit grid (every scored name + 🍊 + which net found it), folded in here so the
       // "no black box" proof lives exactly where the catalyst count appears — replacing the separate,
       // overlapping "How we got here" section that used to repeat this funnel.
@@ -6738,6 +6738,30 @@ function openVerdictExplain(verdict){
 }
 // ---- Reusable ⓘ explainers (no black box) ----
 var INFO={
+  // #funnel-info (19 Aug 2026, user ask) — an ⓘ on each funnel block spelling out EXACTLY what goes in at
+  // that stage, so "technicals only" and "why no 🍒 here" are answerable in-app, not a mystery.
+  funWhole:{icon:'🇦🇺',title:'The whole market',body:
+    '<p>Every listed company on the exchange — roughly <b>2,000</b> on the ASX. At this stage they are just names: <b>no score yet</b>, and they don’t appear anywhere in the app.</p>'+
+    '<p>The steps below narrow this down — first to what you can actually <i>trade</i> (liquidity), then to what shows a real <i>signal</i>, then to the handful we score deeply and serve.</p>'},
+  funScan:{icon:'🔬',title:'“Technicals only” — what the daily scan uses',body:
+    '<p>Every liquid name (~1,270 on the ASX) is scanned once a day using only what’s computable from its own <b>price &amp; volume history</b> — no per-name news or analyst calls. That’s exactly what lets us cover the <i>whole market</i> cheaply. Specifically:</p>'+
+    '<ul class="infoul">'+
+    '<li><b>RSI</b> — 14-day momentum (oversold ↔ overbought).</li>'+
+    '<li><b>Moving-average position</b> — where price sits vs its 20 / 50 / 200-day averages.</li>'+
+    '<li><b>52-week range position</b> — near the year’s low or high.</li>'+
+    '<li><b>Momentum / trailing return</b> — including the 12-month-minus-1 factor.</li>'+
+    '<li><b>Volume &amp; dollar-liquidity</b> — can you actually trade it?</li>'+
+    '<li><b>“Coiled spring” setup</b> — Bollinger squeeze + MACD turning up + volume waking.</li>'+
+    '<li><b>Cheap bulk fundamentals</b> — market cap, value, quality, dividend, from a single whole-market call.</li>'+
+    '</ul>'+
+    '<p class="infofoot">It does <b>not</b> include the expensive per-ticker signals — news sentiment, insider trades, analyst revisions, money-flow, options, ASX announcements. Those are fetched only for the shortlist that clears this scan (the steps below). That’s why every name here has an <b>🍊</b> but not necessarily a <b>🍒</b> — the 🍒 needs that deeper signal set.</p>'},
+  funPot:{icon:'🍲',title:'The Stock Pot — what’s scored',body:
+    '<p>Everything we actually scored this run: the whole-market scan’s own standouts <b>plus</b> the catalyst pot (next step). Browse and screen them all in the <b>🔎 Stock Pot</b> tab.</p>'+
+    '<p><b>🍊 Buy-Now</b> is on <b>every</b> name here — it’s computable from price + fundamentals alone.</p>'+
+    '<p><b>🍒 Conviction</b> is on the <b>deeply-scored subset</b> — names that went through the full per-ticker signal set (news, insider, money-flow, analyst, options…). A scan-only name shows 🍊 alone until it’s promoted — e.g. the moment you <b>☆ watch</b> it, it folds into the deep pot next run and comes back with a 🍒.</p>'},
+  funCatalyst:{icon:'🎯',title:'Caught on a catalyst',body:
+    '<p>The subset our four discovery nets surfaced <i>tonight</i> — <b>news / macro</b>, the <b>whole-market quant</b> scan, the <b>earnings calendar</b>, and <b>new listings / IPOs</b>. These are the names with a fresh, datable reason to look now.</p>'+
+    '<p>Every one of these gets the <b>full</b> signal treatment (so both 🍊 and 🍒), and they’re the pool tonight’s 6 served picks are chosen from. Tap <b>📋 audit list</b> to see every scored name and which net found it — no black box.</p>'},
   finderPresets:{icon:'🎛️',title:'The one-tap filters',body:
     '<p>Each is a shortcut that flips one lever. They <b>stack</b> — tap two and you get names that satisfy <i>both</i> (e.g. 💰 Penny stocks + 💎 Undervalued = cheap-priced <i>and</i> cheap-on-fundamentals). Tap again to clear just that one; <b>Clear</b> resets all.</p>'+
     '<ul class="infoul">'+
