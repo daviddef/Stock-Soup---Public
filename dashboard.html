@@ -416,10 +416,12 @@
   .bmupd:hover{color:var(--broth)}
   .bmitem{display:flex;align-items:center;gap:9px;text-align:left;width:100%;border:0;background:transparent;color:var(--ink);font-family:var(--font);font-size:14px;font-weight:700;padding:10px 9px;border-radius:9px;cursor:pointer}
   .bmitem:hover{background:var(--surface-2)}
-  .tabhead{padding:16px 0 4px;margin-bottom:6px;border-bottom:1px solid var(--line)}
-  .tabhead .theyebrow{font-size:11px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--broth);margin-bottom:9px}
-  .tabhead .thead{font-size:clamp(23px,5vw,36px);line-height:1.04;letter-spacing:-.01em;margin:0 0 9px;text-wrap:balance}
-  .tabhead .tsub{font-size:14px;color:var(--muted);line-height:1.5;margin:0 0 13px;max-width:62ch}
+  /* #tabhead-width (19 Aug, user ask) — let the header + intro text use the FULL width so they take fewer
+     rows (the old 62ch cap on the sub wasted the right side and forced extra wrapped lines on every tab). */
+  .tabhead{padding:12px 0 4px;margin-bottom:6px;border-bottom:1px solid var(--line)}
+  .tabhead .theyebrow{font-size:11px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--broth);margin-bottom:7px}
+  .tabhead .thead{font-size:clamp(22px,4.6vw,34px);line-height:1.04;letter-spacing:-.01em;margin:0 0 7px;text-wrap:balance}
+  .tabhead .tsub{font-size:14px;color:var(--muted);line-height:1.45;margin:0 0 11px;max-width:none}
   .tabhead .tsub b{color:var(--ink)}
   /* #155 (user ask, caught via screenshot — a ragged pill-wrap of uneven widths) — a clean, evenly
      gridded "kanban card" layout instead: fixed 2-up on narrow screens (no more one lone pill per
@@ -4968,6 +4970,23 @@ function actionsHtml(D){
       '<div class="axtop"><span class="axverb axv-sell">🔄 COOLING OFF</span><span class="axsym">'+esc(pv.em)+' '+esc(pv.title)+'</span>'+chip+'</div>'+
       '<div class="axwhy">'+esc(pv.why)+' — was <b>'+esc(fromTag)+'</b>, now <b>'+esc(toTag)+'</b>.</div></div>'});
   });
+  // 📢 REPORTS SOON (19 Aug 2026, user ask: "ILU reports today and I want to see it") — a scheduled RESULT
+  // today or tomorrow is an imminent, high-impact catalyst. Surface EVERY such name (not just tracked ones),
+  // ranked near the top of the feed, each loud (🔴 today / 🟠 tomorrow).
+  (function(){
+    var seen={}, cnt=0;
+    (D.upcomingEarnings||[]).filter(function(e){return e&&!e.error&&e.sym&&(e.region||'us')===MKT;})
+      .map(function(e){ var d=(e.days_until!=null)?e.days_until:earnDays(e.sym,e.region); return {e:e,d:d}; })
+      .filter(function(x){return x.d!=null&&x.d<=1;})
+      .sort(function(a,b){return a.d-b.d;})
+      .forEach(function(x){ var e=x.e, d=x.d; if(seen[e.sym]||cnt>=5) return; seen[e.sym]=1; cnt++;
+        var ic=d===0?'🔴':'🟠', verb=d===0?'REPORTS TODAY':'REPORTS TOMORROW', when=d===0?'reports today':'reports tomorrow';
+        var chip=_axChip(e.sym,e.region||MKT), ex=_axExtras(e.sym,e.region||MKT), ttl=e.title||e.event||'';
+        items.push({r:2.2, b:'coming', h:'<div class="axcard axcoming ax-warn" data-up-sym="'+esc(e.sym)+'" data-up-region="'+esc(e.region||MKT)+'" role="button" tabindex="0" aria-label="'+esc(e.sym)+' '+when+'">'+
+          '<div class="axtop"><span class="axverb axv-warn">'+ic+' '+verb+'</span><span class="axsym">'+esc(e.sym)+'</span>'+chip+ex.wb+'</div>'+ex.chart+
+          '<div class="axwhy"><b>'+esc(e.sym)+'</b> '+when+(ttl?' — '+esc(ttl):'')+'. Results often swing the price 5–20% same-day — a known catalyst to decide on <b>before</b> it prints.</div></div>'});
+      });
+  })();
   // Coming up — soonest catalysts on names we track
   var _cs={}; (D.regions||[]).forEach(function(rg){(rg.picks||[]).forEach(function(p){if(p.sym!=='NONE')_cs[p.sym]=1;});});
   var _wl={}; try{wlGet().forEach(function(w){_wl[w.sym]=1;});}catch(e){}
@@ -6011,11 +6030,11 @@ function kitchenScoreStory(D){
       +'<div class="ks-step"><span class="aw">▼</span><span class="lb"><b style="color:var(--broth)">🍊 the Buy-Now model runs here</b> — only names with a real signal get scored &amp; published</span></div>'
       +'<div class="ks-row ks-f2"><div class="ks-num">'+finderN+'</div><div class="ks-meta"><div class="ks-ft">🍲 The Stock Pot '+infoBtn('funPot')+'</div><div class="ks-fd">Every name we actually scored — the scan’s picks + the catalyst pot. Browse &amp; screen them all.</div><div class="ks-sbrow"><span class="ks-bdg ks-bo">🍊 on all</span><span class="ks-bdg ks-bc">🍒 deep-scored subset</span><span class="ks-bdg ks-bo">🔎 The Stock Pot tab</span></div><div class="ks-fnbar"><i style="width:58%"></i></div></div></div>'
       +'<div class="ks-step"><span class="aw">▼</span><span class="lb"><b>Fresh hard catalyst</b> — a beat, a contract, an upgrade <em>today</em></span></div>'
-      +'<div class="ks-row ks-f2b"><div class="ks-num">'+potN+'</div><div class="ks-meta"><div class="ks-ft">🎯 Caught on a catalyst '+infoBtn('funCatalyst')+'</div><div class="ks-fd">The subset our news / earnings / quant / IPO nets surfaced tonight.</div><div class="ks-sbrow"><span class="ks-bdg ks-bo">📋 audit list ↓</span></div><div class="ks-fnbar"><i style="width:40%"></i></div></div></div>'
+      +'<div class="ks-row ks-f2b"><div class="ks-num">'+potN+'</div><div class="ks-meta"><div class="ks-ft">🎯 Caught on a catalyst '+infoBtn('funCatalyst')+'</div><div class="ks-fd">The subset our news / earnings / quant / IPO nets surfaced tonight.</div><div class="ks-fnbar"><i style="width:40%"></i></div></div></div>'
       // #346 — the full audit grid (every scored name + 🍊 + which net found it), folded in here so the
-      // "no black box" proof lives exactly where the catalyst count appears — replacing the separate,
-      // overlapping "How we got here" section that used to repeat this funnel.
-      +'<details class="ks-audit"><summary>📋 See all '+potN+' names we scored this run — every ticker, its 🍊 score &amp; which net found it</summary>'+(function(){try{return discoveryGridHtml(D);}catch(e){return '';}})()+'</details>'
+      // "no black box" proof lives exactly where the catalyst count appears. The "audit list" BADGE itself
+      // is now the toggle (user ask: drop the redundant long label, let the badge open it).
+      +'<details class="ks-audit"><summary class="ks-auditsum"><span class="ks-bdg ks-bo">📋 audit list — all '+potN+' scored names ↓</span></summary>'+(function(){try{return discoveryGridHtml(D);}catch(e){return '';}})()+'</details>'
       +'<div class="ks-step"><span class="aw">▼</span><span class="lb"><b style="color:var(--broth)">🍊 timing</b> picks the slot · <b style="color:#d6283c">🍒 conviction</b> confirms it’s strong — then <b>served at three risk levels</b></span></div>'
       +'</div>'   // close the funnel — the served level forks into three risk tiers below
       +'<div class="ks-served"><div class="ks-served-h">🥣 The served level — the <b>same pot</b>, three risk profiles. Switch with the <b>T1 / T2 / T3</b> chips at the top of the app.</div>'
@@ -10201,6 +10220,7 @@ var FDR_LEVERS=[
     {k:'ret1y', label:'1-yr change', min:-90,max:200,val:15,on:false, unit:'≤', dir:'max', fmt:'pct', help:'flat / hasn’t run up over the past year (≤ keeps the quiet ones)'},
     {k:'news', label:'Positive news', min:0,max:100,val:50,on:true, unit:'≥', help:'news sentiment positivity'},
     {k:'newsFresh', label:'📰 Fresh news', min:0,max:100,val:40,on:false, unit:'≥', help:'has a headline in the last ~3 days (higher = fresher)'},
+    {k:'earnDays', label:'📢 Reports soon', min:0,max:7,val:1,on:false, unit:'≤', dir:'max', req:true, help:'a scheduled result due in ≤ N days (1 = today/tomorrow)'},
     {k:'rsi', label:'RSI — not overbought', min:0,max:100,val:72,on:true, unit:'≤', dir:'max', help:'below the overheated/LATE zone'}
   ]},
   {grp:'Value & quality', items:[
