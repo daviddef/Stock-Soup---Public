@@ -3644,10 +3644,28 @@ function signalRows(p,region,opts){
       read:'±'+erx.typical_abs_pct+'% typical · '+erx.up+'/'+erx.n+' up · '+esc(erx.lean),
       explain:'What the stock actually did the day after each of its last '+erx.n+' earnings reports (moves measured across the report, close-to-close). Typical swing ±'+erx.typical_abs_pct+'%, averaging '+(erx.avg_pct>=0?'+':'')+erx.avg_pct+'%, biggest '+(erx.biggest_pct>=0?'+':'')+erx.biggest_pct+'%, up '+erx.up+' of '+erx.n+' times. This is a RISK read (how violent the move tends to be), not a prediction of direction. Source: report dates from a public earnings database + our own price history.'});
   }
-  if(p&&p.news_sentiment!=null){
+  // #news-sentiment (18 Aug 2026, user ask) — prefer the richer multi-source news-FLOW read (tone −3..+3 +
+  // the bounded −6..+6 score it actually contributed to buy_now) over the old single-vendor ±1 buzz.
+  var _nf=p&&p.newsflow;
+  if(_nf&&_nf.score!=null){
+    var tv=(_nf.tone!=null?_nf.tone:_nf.score);
+    var ntone=tv>=0.4?'pos':tv<=-0.4?'neg':'mix';
+    var nemo=ntone==='pos'?'😀':ntone==='neg'?'😟':'😐';
+    var nsc=Math.round(_nf.score);
+    var nlbl=ntone==='pos'?'Positive':ntone==='neg'?'Negative':'Neutral';
+    var nudge=nsc>0?(' · +'+nsc+' to the score'):(nsc<0?(' · '+nsc+' to the score'):' · neutral, no score change');
+    var nwhy=(_nf.why&&_nf.why.length)?(' Why: '+_nf.why.join('; ')+'.'):'';
+    rows.push({icon:'📰',label:'News sentiment',tone:ntone,
+      read:nemo+' '+nlbl+' coverage'+nudge,
+      explain:'How the recent news flow reads across multiple sources (Google News + Yahoo + Finnhub), turned into a bounded −6…+6 nudge on the score.'+
+        (_nf.breadth!=null?(' Breadth '+_nf.breadth+' independent sources'):'')+(_nf.n!=null?(', '+_nf.n+' headlines'):'')+(_nf.stories!=null?(', '+_nf.stories+' distinct stories.'):'.')+
+        nwhy+' A neutral 0 means the news is real but not directional (e.g. an administrative announcement) — not that news was ignored.',
+      diagram:newsTop3Html(p.news_top3)});
+  } else if(p&&p.news_sentiment!=null){
     var v=p.news_sentiment, tone=v>=0.12?'pos':v<=-0.12?'neg':'mix';
-    rows.push({icon:'📰',label:'News buzz',tone:tone,
-      read:tone==='pos'?'Positive coverage':tone==='neg'?'Negative coverage':'Mixed coverage',
+    var emo0=tone==='pos'?'😀':tone==='neg'?'😟':'😐';
+    rows.push({icon:'📰',label:'News sentiment',tone:tone,
+      read:emo0+' '+(tone==='pos'?'Positive coverage':tone==='neg'?'Negative coverage':'Mixed coverage'),
       explain:'The tone of recent news coverage — separate from the chart, this is what people are actually saying.',
       diagram:newsTop3Html(p.news_top3)});
   }
