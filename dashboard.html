@@ -1624,6 +1624,9 @@
   /* #323 P2 — "The call": the decision, gathered at the top (chips + plan + why) */
   .mcall{margin:2px 0 4px}
   .callchips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:11px}
+  /* #ovhead — the promoted header signal row: verdict + 🍊/🍒 chips + ☆ watch, all inline at the top */
+  .mheadrow{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:12px}
+  .mheadrow .mverd{margin-top:0}
   .callchips .juicebtn,.callchips .cherrybtn{font-size:14px;font-weight:800;padding:4px 12px;border-radius:22px}
   .callwatch{margin-left:2px}
   .callplan{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 4px;font-size:14.5px;font-weight:700;
@@ -6243,7 +6246,9 @@ function tickerModalHTML(o, region, cur, isPick){
     if(isFinite(_nEntry)&&isFinite(_nStop)&&isFinite(_nTarget)&&(_nEntry-_nStop)>0){ var _rr=(_nTarget-_nEntry)/(_nEntry-_nStop); if(_rr>0) _plan.push('<span class="plk">R:R</span> '+_rr.toFixed(1)+':1'); }
     if(_plan.length) planHtml='<div class="callplan">'+_plan.join('<span class="pldot">·</span>')+'</div>';
   }
-  var callHtml='<div class="mcall"><div class="callchips">'+chips+watchBtn+'</div>'+planHtml+(isPick&&o.chefTake?'<p class="callwhy">'+esc(o.chefTake)+'</p>':'')+'</div>';
+  // #ovhead — chips (🍊/🍒/☆) moved up into the header row; the body call block now carries just the
+  // pick plan line + chef take, and renders nothing at all for a plain candidate/analyst (no empty box).
+  var callHtml=(planHtml||(isPick&&o.chefTake))?('<div class="mcall">'+planHtml+(isPick&&o.chefTake?'<p class="callwhy">'+esc(o.chefTake)+'</p>':'')+'</div>'):'';
   // ONE chart (user ask, 16 Aug — merged the old separate "range" chart in here): the scrubbable multi-day
   // price+news timeline now ALSO carries the Low/High/Now lines and, for picks, the entry/target/stop levels.
   var chartH=newsChartSlot(o.sym,region,cur,o,{isPick:isPick, levels:{stop:_nStop,entry:_nEntry,target:_nTarget,now:_nNow}});
@@ -6287,12 +6292,17 @@ function tickerModalHTML(o, region, cur, isPick){
       : '<div class="mfoot"><button class="mbtn watchbtn" data-sym="'+esc(o.sym)+'" data-region="'+esc(region)+'"'+(o.name?' data-name="'+esc(o.name)+'"':'')+' aria-pressed="false">＋ Watch</button>'+
         '<button class="mbtn anbtn" data-sym="'+esc(o.sym)+'" data-region="'+esc(region)+'">🧠 What would you do?</button>'+
         '<a class="mbtn primary" href="'+yf(o.sym,region)+'" target="_blank" rel="noopener">📈 Yahoo ↗</a></div>');
+  // #ovhead (18 Aug, user ask) — the header used to carry a 📈 chart button that opened Yahoo, but the
+  // company name below ALSO links to Yahoo (the ↗), so it was two links to the same place. Dropped the
+  // chart button; kept 🔗 share + ✕ close. And the score signals (🍊 orange · 🍒 cherry · ☆ watch) that
+  // used to sit in a separate body row now ride up here in the header, next to the verdict — the key
+  // read-and-act controls in one place at the very top, saving the real estate below.
   return '<div class="mhead '+vclass+'"><button class="mclose" id="mClose" aria-label="Close">✕</button>'+
-    mYahooBtn(o.sym,region)+mShareBtn('sym/'+region+'/'+encodeURIComponent(o.sym),o.sym)+
+    mShareBtn('sym/'+region+'/'+encodeURIComponent(o.sym),o.sym)+
     '<div class="mtf">'+tfLabel+'</div>'+
     '<div class="mtop"><div><div class="msym" id="mTitle">'+esc(o.sym)+'</div><div class="mco">'+qlink(o.sym,region,o.name||o.sym)+' ↗</div></div>'+
       '<div class="mpx"><div class="mp mono">'+esc(pxDisp)+'</div>'+chgHtml+'</div></div>'+
-    verdictEl+'</div>'+
+    '<div class="mheadrow">'+verdictEl+chips+watchBtn+'</div></div>'+
     '<div class="mbody">'+
       callHtml+
       (o.plain?'<p class="mplain">'+esc(o.plain)+'</p>':'')+
@@ -6606,6 +6616,22 @@ var INFO={
     '<li>🚫 <b>Exclude junk</b> — a growing list of obvious no-gos, removed in combination with anything else: sub-2-cent price artifacts, blow-off tops (RSI ≥ 90), and <b>illiquid</b> names below the daily $-volume floor (~A$50k / US$500k a day).</li>'+
     '</ul>'+
     '<p class="infofoot">A rule only fires where we actually have the data — turning a filter on never wrongly empties the list. Liquidity is carried by the daily whole-market scan, so it bites hardest on the wide universe; the catalyst pot fills in as fundamentals arrive.</p>'},
+  finderCols:{icon:'📊',title:'What each column means',body:
+    '<p>Every number is 0–100 unless noted. A dash (—) just means we don’t have that data for this name yet — it fills in as the daily scan and fundamentals arrive.</p>'+
+    '<ul class="infoul">'+
+    '<li><b>Ticker</b> — the stock code and company name.</li>'+
+    '<li><b>Mkt</b> — which market: <b>ASX</b> (Australia) or <b>US</b>.</li>'+
+    '<li><b>Match</b> — how well this name fits <i>your</i> active levers. 100% = it satisfies every filter you’ve set; with no levers on, everything is 100%.</li>'+
+    '<li>🍊 <b>Orange (Buy-Now)</b> — the model’s “how good a buy <i>right now</i>” score: catalyst + technicals + fundamentals rolled into one. Higher is stronger.</li>'+
+    '<li>🍒 <b>Cherry</b> — the blended overall read: the orange score tempered by the full signal picture. This is the headline number on the card face.</li>'+
+    '<li><b>Range</b> — where the price sits in its 1-year range: 0 = at the year’s low, 100 = at the year’s high.</li>'+
+    '<li><b>Value</b> — how <i>cheap</i> it is on the fundamentals (P/E · P/B · PEG). Higher = better value.</li>'+
+    '<li><b>Qual</b> — business quality (return on equity/assets, margins, balance sheet). Higher = stronger business.</li>'+
+    '<li><b>RSI</b> — 14-day momentum gauge. Around 30 = oversold (beaten down), around 70+ = overbought (run hot).</li>'+
+    '<li><b>Cap</b> — market value (company size), e.g. $137B.</li>'+
+    '<li><b>Div%</b> — trailing dividend yield. A dash means no dividend.</li>'+
+    '</ul>'+
+    '<p class="infofoot">Tap any row to open the full card, where every one of these is broken down with its “why”.</p>'},
   risktol:{icon:'🎢',title:'Risk tolerance',body:
     '<p>Sets which of your own picks get flagged as riskier than you\'d like — every pick still shows, nothing\'s hidden, this just adds a ⚠️ note where it applies.</p>'+
     '<h4>How risk is measured</h4><p>Real volatility and price-extension signals — daily ATR% (typical swing), penny/micro price level, how stretched the RSI is, and whether the model itself already flagged the stock as overextended. <b>Not market cap</b> — this app has no data source for that, so it isn\'t faked.</p>'+
@@ -10047,9 +10073,24 @@ function fdrNormFU(r){
     div:(r.divYield!=null)?Math.round(r.divYield*1000)/10:null,
     aboveMa:((r.aboveEma20!=null||r.aboveEma50!=null)?!!(r.aboveEma20&&r.aboveEma50):null), src:'wide'};
 }
+// #fu-fund (18 Aug, user-caught "LMT has RANGE but VALUE/QUAL/CAP blank while Yahoo has $137B"): the whole-
+// market wide scan (finderUniverse) carries fundamentals (cap/value/quality/div, filled by tv_scan), but a
+// candidate for the SAME ticker often DOESN'T (the pot is frequently scored with fundamentals off). Candidates
+// win the sym dedupe, so a candidate's blank fundamentals hid the finderUniverse twin's real ones — the exact
+// mirror of the #pick-fund bug below, one layer up. Fill any null cap/value/quality/growth/div/mcap on a
+// pick/candidate row from its wide-scan twin. Non-fundamental fields (score/rsi/ranges/news) stay the row's own.
+function fdrBackfillFund(o, fu){
+  if(!o||!fu) return o;
+  ['mcap','value','quality','growth','div','sector','industry'].forEach(function(k){
+    if(o[k]==null && fu[k]!=null) o[k]=fu[k];
+  });
+  return o;
+}
 function fdrPool(D){
   var mkt=MKT, byKey={}, order=[];
   function put(o){ if(!o||!o.sym||o.sym==='NONE')return; if((o.region||'us')!==mkt)return; if(byKey[o.sym])return; byKey[o.sym]=o; order.push(o.sym); }
+  // Normalized wide-scan rows by sym — the fundamentals source-of-truth to backfill picks/candidates from.
+  var _fuNorm={}; (((D.finderUniverse||{})[mkt])||[]).forEach(function(r){ try{ var fo=fdrNormFU(r); if(fo&&fo.sym&&!_fuNorm[fo.sym]) _fuNorm[fo.sym]=fo; }catch(e){} });
   // Tonight's served PICKS go in first (richest, and they must ALWAYS be findable — user: "should at
   // minimum find our picks"). Tagged src:'pick' so fdrInScope never filters them out by sector.
   // #pick-fund (17 Aug, user-caught: "GWA/BSL/AMC show no market cap"): a served pick is HAND-BUILT and
@@ -10059,9 +10100,9 @@ function fdrPool(D){
   var _candBySym={}; (D.candidates||[]).forEach(function(c){ if(c&&c.sym&&!_candBySym[c.sym]) _candBySym[c.sym]=c; });
   (D.regions||[]).forEach(function(rg){ (rg.picks||[]).forEach(function(p){ try{
     var src=p, cand=_candBySym[p.sym]; if(cand) src=Object.assign({}, cand, p);   // candidate base (fundamentals/ranges) + pick's live fields
-    var o=fdrNormCand(src); o.src='pick'; put(o);
+    var o=fdrNormCand(src); o.src='pick'; put(fdrBackfillFund(o, _fuNorm[o.sym]));
   }catch(e){} }); });
-  (D.candidates||[]).forEach(function(c){ try{ put(fdrNormCand(c)); }catch(e){} });   // rich next — win dedupe over the wide scan
+  (D.candidates||[]).forEach(function(c){ try{ var o=fdrNormCand(c); put(fdrBackfillFund(o, _fuNorm[o.sym])); }catch(e){} });   // rich next — win dedupe over the wide scan
   var fu=((D.finderUniverse||{})[mkt])||[];
   fu.forEach(function(r){ try{ put(fdrNormFU(r)); }catch(e){} });
   return order.map(function(k){return byKey[k];});
@@ -10180,7 +10221,7 @@ function fdrRailHtml(pool){
   // #fdr-collapse (17 Aug, user ask) — on MOBILE the whole lever body (presets + sectors + sliders) eats too
   // much vertical space, so it's collapsed by default behind a "▾ Filters" toggle in the header. Desktop
   // always shows it (CSS hides the toggle + forces the body open). State persists in FDR_RAIL_OPEN.
-  var h='<div class="fdr-railhead"><b>Your levers</b>'+
+  var h='<div class="fdr-railhead"><b>Your levers</b> '+infoBtn('finderCols')+
     '<button class="fdr-railtog" id="fdrRailTog" aria-expanded="'+(FDR_RAIL_OPEN?'true':'false')+'">'+(FDR_RAIL_OPEN?'▴ Hide filters':'▾ Filters &amp; sectors')+'</button>'+
     '<button class="fdr-reset" id="fdrReset">Clear</button></div>';
   h+='<div class="fdr-railbody'+(FDR_RAIL_OPEN?' open':'')+'">';
