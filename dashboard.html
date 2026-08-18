@@ -4118,14 +4118,30 @@ function hydrateRanges(root){
 }
 // #news-worker — fill a client-side holding's blank news line from GET /news (Finnhub US; AU degrades to
 // nothing, no CF-reachable free ASX news). Mirrors hydrateRanges. Fires once per slot.
+// #news-queue (18 Aug 2026, user's architecture) — the durable news path. Google/Yahoo answer the user's
+// Mac, not Cloudflare, so the Mac sources ALL news and writes it into the bundle (latest.newsCache); the
+// cloud only ever serves. For a ticker the bundle doesn't have yet (an on-the-fly lookup), the client asks
+// the Mac to source it via POST /news-request; the next ~10-min pulse drains the queue into newsCache and
+// the card fills itself in on the following bundle load. requestNews is session-deduped.
+var _newsReq={};
+function requestNews(sym,region,name){
+  if(!sym||sym==='NONE') return; var k=String(sym).toUpperCase()+':'+(region||'us'); if(_newsReq[k]) return; _newsReq[k]=1;
+  try{ fetch(API_BASE+'/news-request',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sym:sym,region:region||'us',name:name||''})}); }catch(e){}
+}
+function newsCacheGet(sym,region){ var c=((LAST&&LAST.D)||{}).newsCache||{}; return c[String(sym).toUpperCase()+':'+(region||'us')]||null; }
 function hydrateNews(root){
   (root||document).querySelectorAll('.news-lazy[data-nsym]').forEach(function(slot){
     if(slot.dataset.done) return; slot.dataset.done='1';
     var sym=slot.dataset.nsym, reg=slot.dataset.nregion||'us', nm=slot.dataset.nname||'';
+    // 1) Mac-sourced cache already in the bundle (works for AU too — the durable path).
+    var nc=newsCacheGet(sym,reg);
+    if(nc&&nc.headline){ try{ slot.outerHTML=newsLineHtml(nc.headline,nc.url,nc.date,nc.top3,sym,reg,nm); }catch(e){ slot.remove(); } return; }
+    // 2) Ask the Mac to source it (drains on the next pulse), and try the cloud /news now (US via Finnhub).
+    requestNews(sym,reg,nm);
     fetch(API_BASE+'/news?sym='+encodeURIComponent(sym)+'&region='+encodeURIComponent(reg)+(nm?'&name='+encodeURIComponent(nm):''))
       .then(function(r){return r.ok?r.json():null;}).then(function(j){
-        if(j&&j.headline){ try{ slot.outerHTML=newsLineHtml(j.headline,j.url,j.date,j.top3); }catch(e){ slot.remove(); } }
-        else slot.remove();   // no news reachable (esp. AU) — drop the placeholder cleanly
+        if(j&&j.headline){ try{ slot.outerHTML=newsLineHtml(j.headline,j.url,j.date,j.top3,sym,reg,nm); }catch(e){ slot.remove(); } }
+        else { slot.innerHTML='<span class="lead" style="color:var(--muted)">📰 sourcing the latest news… fills within ~10&nbsp;min</span>'; }   // queued to the Mac; self-heals next bundle load
       }).catch(function(){ slot.remove(); });
   });
 }
@@ -8175,6 +8191,14 @@ function renderAnalyst(a){
       (a.risks&&a.risks.length?'<h4 style="margin-top:10px">⚠️ Watch out for</h4><ul class="mcat">'+a.risks.map(function(r){return '<li>'+esc(String(r).replace(/<[^>]+>/g,''))+'</li>';}).join('')+'</ul>':'')+
     '</div>';
   }
+  // #news-queue — the /analyst endpoint runs on Cloudflare, which Google News blocks, so v.headlines is often
+  // empty for ASX names. Ask the Mac to source it, and use any Mac-sourced cache we already have so the news
+  // section fills from the bundle rather than dead-ending. Self-heals within ~10 min for a first-time lookup.
+  var _anTop3=(v.headlines&&v.headlines.length)?v.headlines.map(function(h){return {title:h.title,url:h.url||null,date:h.date||null,tone:h.tone};}):null;
+  if(!_anTop3){ try{ requestNews(a.sym,region,a.name); }catch(e){}
+    var _nc=newsCacheGet(a.sym,region);
+    if(_nc){ var _t=(_nc.top3&&_nc.top3.length)?_nc.top3:(_nc.headline?[{title:_nc.headline,url:_nc.url,date:_nc.date}]:[]);
+      if(_t.length) _anTop3=_t.map(function(h){return {title:h.title||h.t,url:h.url||h.u||null,date:h.date||h.d||null,tone:null};}); } }
   var o={
     sym:a.sym, region:region, name:a.name||null, isAnalyst:true,
     price:a.price, nNow:_p,
@@ -8183,7 +8207,7 @@ function renderAnalyst(a){
     rsi:(s.rsi!=null?s.rsi:null),
     trend:(s.adx!=null?{adx:s.adx}:null),
     news_sentiment:(v.sentiment!=null?v.sentiment:null),
-    news_top3:(v.headlines&&v.headlines.length)?v.headlines.map(function(h){return {title:h.title,url:h.url||null,date:h.date||null,tone:h.tone};}):null,
+    news_top3:_anTop3,
     foundVia:'🧠 Live analyst read — computed on the spot from price history',
     extraHtml:zones+street+dr
   };
