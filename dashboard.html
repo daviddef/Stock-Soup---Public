@@ -4078,6 +4078,19 @@ function hydrateRanges(root){
       }).catch(function(){ var box=slot.querySelector('.pxranges'); if(box) box.innerHTML='<div class="pxr-load">range unavailable</div>'; });
   });
 }
+// #news-worker — fill a client-side holding's blank news line from GET /news (Finnhub US; AU degrades to
+// nothing, no CF-reachable free ASX news). Mirrors hydrateRanges. Fires once per slot.
+function hydrateNews(root){
+  (root||document).querySelectorAll('.news-lazy[data-nsym]').forEach(function(slot){
+    if(slot.dataset.done) return; slot.dataset.done='1';
+    var sym=slot.dataset.nsym, reg=slot.dataset.nregion||'us', nm=slot.dataset.nname||'';
+    fetch(API_BASE+'/news?sym='+encodeURIComponent(sym)+'&region='+encodeURIComponent(reg)+(nm?'&name='+encodeURIComponent(nm):''))
+      .then(function(r){return r.ok?r.json():null;}).then(function(j){
+        if(j&&j.headline){ try{ slot.outerHTML=newsLineHtml(j.headline,j.url,j.date,j.top3); }catch(e){ slot.remove(); } }
+        else slot.remove();   // no news reachable (esp. AU) — drop the placeholder cleanly
+      }).catch(function(){ slot.remove(); });
+  });
+}
 // Market-aware header: prefer a per-market headline/chef when the run provides one
 // (D.headline[MKT] / D.chefByMkt[MKT]), else fall back to the single shared version.
 function hdl(D,k){var h=(D&&D.headline)||{}; if(h[MKT]&&h[MKT][k]!=null)return h[MKT][k]; return h[k]!=null?h[k]:'';}
@@ -6340,6 +6353,7 @@ function wireTickerModal(m, o, region, isPick){
   try{ hydrateMissCharts(m); }catch(e){}
   try{ hydrateNewsCharts(m); }catch(e){}
   try{ hydrateRanges(m); }catch(e){}   // #ranges — fill the 3-slider from /ranges when the pipeline left it null
+  try{ hydrateNews(m); }catch(e){}     // #news-worker — fill a blank news line from /news (client-side holdings)
 }
 function openModal(p,region,cur){
   LASTFOCUS=document.activeElement;
@@ -7697,8 +7711,14 @@ function happeningHtml(o){
   if(rest.length) out+='<details class="newsmore"><summary>Show '+rest.length+' more →</summary>'+rest.map(row).join('')+'</details>';
   return out+'</div>';
 }
-function newsLineHtml(news, newsUrl, newsDate, items){
-  if(!news && !(items&&items.length)) return '';
+function newsLineHtml(news, newsUrl, newsDate, items, sym, region, name){
+  // #news-worker self-heal — a client-side-only holding (never scored) has no bundle news. When there's a
+  // ticker but no news, emit a lazy slot that fetches GET /news (Finnhub-backed for US; AU has no CF-reachable
+  // free source, so it degrades to nothing). hydrateNews() fills it. No slot when we already have news.
+  if(!news && !(items&&items.length)){
+    if(sym && sym!=='NONE') return '<div class="mnews news-lazy" data-nsym="'+esc(sym)+'" data-nregion="'+esc(region||'us')+'"'+(name?' data-nname="'+esc(name)+'"':'')+'><span class="lead" style="color:var(--muted)">📰 checking the news…</span></div>';
+    return '';
+  }
   function ageOf(d){ var days=null; if(d){ try{ days=Math.floor((Date.now()-new Date(d).getTime())/86400000); }catch(e){} } return days; }
   // Build a deduped list: the lead headline + any extra items we already fetched (news_top3 and beyond),
   // dropping near-duplicate titles (the same story syndicated across outlets).
@@ -8702,7 +8722,9 @@ function renderWatchlist(){
     var addedLine = w.addedAt?'<div class="wc-added">added '+esc(new Date(w.addedAt).toLocaleDateString('en-AU',{day:'numeric',month:'short'}))+'</div>':'';
     // #wl-std (17 Aug) — one-line latest-news headline right on the card, same treatment as the Stock Pot
     // cards (newsLineHtml → 📰 In the news: … + age, ⚠️ OLD >7d). r.news = {h,u,d} from wlBuildRows.
-    var newsLn = (r.news&&r.news.h)?newsLineHtml(r.news.h, r.news.u, r.news.d):'';
+    // #news-worker — pass sym/region/name so a holding with NO bundle news (a client-side-only name the
+    // pipeline never scored, e.g. CPU) self-heals its news line from GET /news instead of showing nothing.
+    var newsLn = newsLineHtml((r.news&&r.news.h)||null, (r.news&&r.news.u)||null, (r.news&&r.news.d)||null, null, w.sym, w.region, r.name||it.name);
     // #282 (12 Aug 2026) — AU CGT holding-period hint. AU gives a 50% capital-gains-tax discount on assets
     // held >12 months. Only for OWNED ASX holdings. Counts from when it was added here (a proxy for the buy
     // date — we don't capture a real purchase date), stated plainly in the tooltip; general info, not tax advice.
@@ -8747,6 +8769,7 @@ function renderWatchlist(){
   el.innerHTML=group('🧠 Smart watching','These are in tonight\'s picks or full-pot scan, so we have a <b>live scored read</b> — buy zone, target, verdict, trend.',smart)+
                group('📌 Also tracked','On your list but <b>not in tonight\'s scan yet</b> — we watch the price and give it the full scored read the moment it resurfaces.',plain);
   hydrateMissCharts(el);   // #wl-chart — fetch the lazy mini-charts for watchlist cards without a pre-fetched spark
+  try{ hydrateNews(el); }catch(e){}   // #news-worker — fill blank news lines (client-side holdings) from /news
   el.querySelectorAll('.wrm').forEach(function(b){b.addEventListener('click',function(e){e.stopPropagation();wlRemove(b.dataset.sym,b.dataset.region);renderWatchlist();syncWatchButtons();});});
   el.querySelectorAll('.wown').forEach(function(b){b.addEventListener('click',function(e){e.stopPropagation();var on=wlToggleOwn(b.dataset.sym,b.dataset.region);b.classList.toggle('owned',on);b.setAttribute('title',on?'You own this ✓ — tap to unflag':'I own it');renderWatchlist();updateOwnCount();});});
   el.querySelectorAll('.wan').forEach(function(b){b.addEventListener('click',function(e){e.stopPropagation();openTicker(b.dataset.sym,b.dataset.region);});});
