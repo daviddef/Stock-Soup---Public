@@ -1749,6 +1749,12 @@
   .nc-load{color:var(--faint);font-size:12px;padding:40px 0;text-align:center}
   .nc-wrap{position:relative}
   .nc-svg{width:100%;height:118px;display:block;touch-action:none;cursor:ew-resize}
+  /* #serve-marker (19 Aug) — a pulsing orange "our call" dot on the overlay chart at the serve date+price */
+  @keyframes ncservepulse{0%{transform:scale(.5);opacity:.85}70%{transform:scale(2.9);opacity:0}100%{opacity:0}}
+  .nc-servepulse{fill:var(--broth);transform-box:fill-box;transform-origin:center;animation:ncservepulse 1.9s ease-out infinite}
+  .nc-servedot{fill:var(--broth);stroke:var(--surface);stroke-width:1.3}
+  .nc-servelab{position:absolute;transform:translateX(-50%);font-size:9px;font-weight:800;color:#fff;background:var(--broth);border-radius:6px;padding:1px 5px;white-space:nowrap;pointer-events:none;box-shadow:0 1px 3px rgba(0,0,0,.28);z-index:3}
+  @media (prefers-reduced-motion:reduce){.nc-servepulse{animation:none;opacity:.55}}
   .nc-dot{stroke:#0b0d10;stroke-width:1.8;paint-order:stroke}
   /* Low/High reference lines + pick buy-levels */
   .nc-ref{stroke:var(--line);stroke-width:1}
@@ -6327,7 +6333,12 @@ function tickerModalHTML(o, region, cur, isPick){
   var callHtml=(planHtml||(isPick&&o.chefTake))?('<div class="mcall">'+planHtml+(isPick&&o.chefTake?'<p class="callwhy">'+esc(o.chefTake)+'</p>':'')+'</div>'):'';
   // ONE chart (user ask, 16 Aug — merged the old separate "range" chart in here): the scrubbable multi-day
   // price+news timeline now ALSO carries the Low/High/Now lines and, for picks, the entry/target/stop levels.
-  var chartH=newsChartSlot(o.sym,region,cur,o,{isPick:isPick, levels:{stop:_nStop,entry:_nEntry,target:_nTarget,now:_nNow}});
+  // #serve-marker — pass the serve date so the chart can pulse "our call" on the line. Gate on it actually
+  // being a served pick (isPick, or servedPickTf finds it among tonight's picks even when opened as a candidate)
+  // so pickServedISO's D.generated fallback never paints a "call" on a name we never recommended.
+  var _isServed=isPick||(function(){try{return !!servedPickTf(o.sym,region);}catch(e){return false;}})();
+  var _serveISO=_isServed?(function(){try{return pickServedISO(o.sym,region);}catch(e){return null;}})():null;
+  var chartH=newsChartSlot(o.sym,region,cur,o,{isPick:isPick, serveISO:_serveISO, levels:{stop:_nStop,entry:_nEntry,target:_nTarget,now:_nNow}});
   // RSI + P/E + timing + the 🍒 cherry signal read (all shown when data exists)
   var rsiInner = (rsi!=null)
       ? '<h4'+(isPick?' style="margin-top:0"':'')+'>How hot is it right now? · RSI</h4>'+
@@ -9621,13 +9632,25 @@ function drawNewsChart(slot, closes, dates, events, cur, opts){
   var lbls='<span class="nc-plbl nc-phi" style="top:'+ly[0].toFixed(1)+'px">High '+cur+mx.toFixed(2)+'</span>'+
     '<span class="nc-plbl nc-pnow" style="top:'+ly[1].toFixed(1)+'px">Now '+cur+closes[n-1].toFixed(2)+'</span>'+
     '<span class="nc-plbl nc-plo" style="top:'+ly[2].toFixed(1)+'px">Low '+cur+mn.toFixed(2)+'</span>';
+  // #serve-marker (19 Aug 2026, user ask) — if this is a name WE recommended (a served pick), pulse a marker
+  // at the serve date on the line, so "this is where we called it, at this price" is visible against the whole
+  // trajectory. Uses the close on the serve date as the call price (an honest "the stock was ~here then").
+  var serveMark='', serveLab='';
+  if(opts.serveISO){
+    var _si=idxForDate(String(opts.serveISO).slice(0,10));
+    if(_si>=0){ var _sx=X(_si), _sy=Y(closes[_si]);
+      serveMark='<circle cx="'+_sx.toFixed(1)+'" cy="'+_sy.toFixed(1)+'" r="5" class="nc-servepulse"/>'+
+                '<circle cx="'+_sx.toFixed(1)+'" cy="'+_sy.toFixed(1)+'" r="3.4" class="nc-servedot"/>';
+      serveLab='<span class="nc-servelab" style="left:'+(_sx/W*100).toFixed(2)+'%;top:'+Math.max(1,_sy-23).toFixed(1)+'px">🎯 our call '+cur+closes[_si].toFixed(2)+'</span>';
+    }
+  }
   var svg='<svg class="nc-svg" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" role="img" aria-label="Price, range and news timeline">'+
     refs+vlines+
     '<polygon class="nc-area" points="'+area+'" fill="'+lineCol+'" fill-opacity="0.10"/>'+
-    '<polyline points="'+pts+'" fill="none" stroke="'+lineCol+'" stroke-width="1.8" stroke-linejoin="round"/>'+dots+
+    '<polyline points="'+pts+'" fill="none" stroke="'+lineCol+'" stroke-width="1.8" stroke-linejoin="round"/>'+dots+serveMark+
     '<line class="nc-scrub" x1="0" y1="'+padT+'" x2="0" y2="'+(H-padB)+'" stroke="var(--ink)" stroke-width="1" opacity="0"/>'+
     '<circle class="nc-sdot" r="4.2" fill="none" stroke="var(--ink)" stroke-width="2" opacity="0"/></svg>';
-  slot.innerHTML='<div class="nc-wrap" style="--nch:'+H+'px">'+svg+'<div class="nc-lbls">'+lbls+'</div><div class="nc-vlabs">'+vlabs+'</div>'+
+  slot.innerHTML='<div class="nc-wrap" style="--nch:'+H+'px">'+svg+'<div class="nc-lbls">'+lbls+serveLab+'</div><div class="nc-vlabs">'+vlabs+'</div>'+
     '<div class="nc-read"><b class="nc-rdate">← slide across</b><b class="nc-rpx"></b></div>'+
     '<div class="nc-rhead" style="display:none"></div>'+leg+'</div>';
   var svgEl=slot.querySelector('.nc-svg'), scrub=slot.querySelector('.nc-scrub'), sdot=slot.querySelector('.nc-sdot'),
@@ -9743,7 +9766,7 @@ function hydrateMissCharts(root){
         flagLbl='<div class="misschart-flag" style="left:'+mpct.toFixed(1)+'%;transform:translateX('+tx+')">'+mlab+' '+markWhen+since+'</div>';
       }
       slot.innerHTML='<div class="misschart-wrap">'+missSparkSVG(vals,markIdx)+flagLbl+'</div>'+
-        '<div class="misschart-mm"><span>'+cur+mn.toFixed(2)+'</span><span class="misschart-now">'+rightLbl+'</span><span>'+cur+mx.toFixed(2)+'</span></div>';
+        '<div class="misschart-mm"><span>Low '+cur+mn.toFixed(2)+'</span><span class="misschart-now">'+rightLbl+'</span><span>High '+cur+mx.toFixed(2)+'</span></div>';   // #chart-lbl (19 Aug) — label the ends Low/High so the right-hand number reads as the period HIGH, not "the price at the right edge" (user-caught on BSL: now=low made the High look like a wrong min)
     }).catch(function(){ slot.innerHTML=''; });
   });
 }
