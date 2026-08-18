@@ -79,7 +79,8 @@
   /* #hero-prom (18 Aug, user ask) — the brand was smaller than the section headings below it. Make it the
      most prominent thing on the page: a big display title and a larger bobbing pot whose steam rises well
      above the cap height, reading across the header rather than sitting cramped on one line. */
-  .brand{display:flex;align-items:center;gap:13px;font-family:var(--disp);font-style:italic;font-weight:800;font-size:clamp(26px,6.6vw,36px);letter-spacing:-.015em;line-height:1.02}
+  .brand{display:flex;align-items:center;gap:12px;font-family:var(--disp);font-style:italic;font-weight:800;font-size:clamp(24px,5.2vw,32px);letter-spacing:-.012em;line-height:1.04;min-width:0}
+  .brandtxt{overflow-wrap:break-word;min-width:0}
   .hpot{position:relative;display:inline-flex;font-size:clamp(30px,7vw,40px);line-height:1;animation:hbob 4.2s ease-in-out infinite;transform-origin:50% 90%}
   .hpotbowl{filter:drop-shadow(0 5px 8px rgba(225,77,11,.34))}
   .hsteam{position:absolute;left:50%;top:-13px;transform:translateX(-50%);width:30px;height:24px;pointer-events:none}
@@ -392,7 +393,7 @@
   /* #hero (user ask, 13 Aug) — burger pinned to the hero's top-right corner, out of the filter row.
      Reserve room on the brandrow so the desktop tier row doesn't slide under it. */
   .heroburg{position:absolute;top:clamp(11px,1.5vw,16px);right:clamp(11px,1.5vw,16px);z-index:6;display:flex;align-items:center;gap:8px}
-  .brandrow{padding-right:clamp(56px,17vw,172px)}   /* reserve room on row 1 (brand) for the wider absolute chrome cluster */
+  .brandrow{padding-right:clamp(122px,17vw,172px)}   /* reserve room on row 1 (brand) for the wider absolute chrome cluster — min must clear all 3 buttons so the bigger title never underlaps/clips (#hero-prom 18 Aug) */
   @media(max-width:560px){ .runico-t{display:none} }   /* on a phone, run-status shows the 🍳 icon only so the cluster stays narrow */
   .burger{width:38px;height:38px;border-radius:11px;border:1.5px solid var(--line);background:var(--surface-2);color:var(--ink);font-size:18px;line-height:1;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;padding:0}
   .burger:hover{border-color:var(--broth)}
@@ -5383,7 +5384,7 @@ function render(D,H){
   // wordmark (+ burger, absolute top-right). Row 2 = [AU⇄US toggle w/ the open-countdown INSIDE it] · [T1·T2·T3
   // segmented] · [ⓘ] · [grid/list view-switch icon, no word/emoji]. The market bar is now ONE toggle chip
   // (was two flag circles + a separate countdown line), the view switch is a clean SVG glyph (was 📋 Full ⇄).
-  '<header class="hero"><div class="brandrow"><div class="hleft"><div class="brand"><span class="hpot hpot-lg"><span class="hsteam"><i></i><i></i><i></i></span><span class="hpotbowl">🍲</span></span> The&nbsp;Stock&nbsp;Soup</div></div>'+
+  '<header class="hero"><div class="brandrow"><div class="hleft"><div class="brand"><span class="hpot hpot-lg"><span class="hsteam"><i></i><i></i><i></i></span><span class="hpotbowl">🍲</span></span> <span class="brandtxt">The Stock Soup</span></div></div>'+
     '<div class="toprail">'+mktBarHtml(D)+tierBarHtml()+
     '</div></div>'+   // close .toprail + .brandrow — the chrome controls (view-switch · run-status · menu) sit absolute in the hero's top-right corner
       // Chrome controls clustered top-right on ONE row so line 2 stays a clean market+tier row (no wrapped 3rd row on mobile).
