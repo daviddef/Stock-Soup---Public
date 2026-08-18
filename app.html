@@ -2364,6 +2364,8 @@
   .nsmeta{font-size:12px;font-weight:700;color:var(--ink);margin:6px 0}
   .nswhy{margin:6px 0 10px;padding-left:18px;font-size:13px;color:var(--ink)}
   .nswhy li{margin:3px 0}
+  .stnewslink{display:inline-flex;align-items:center;gap:6px;margin-top:10px;background:var(--surface-2);border:1px solid var(--line);color:var(--broth);font-weight:800;font-size:13px;padding:8px 13px;border-radius:10px;text-decoration:none}
+  .stnewslink:hover{border-color:var(--broth)}
   .juicebtn{position:relative;overflow:visible;background:rgba(255,140,0,.14);color:#FF8C00;border:1px solid rgba(255,140,0,.4);border-radius:7px;font-size:10.5px;font-weight:800;padding:3px 8px;margin-left:8px;cursor:pointer;vertical-align:middle;transition:background .15s,transform .18s cubic-bezier(.34,1.6,.64,1)}
   .juicebtn:hover{background:rgba(255,140,0,.24)}
   /* a bit of fun (user ask) — a leaf sprouts + unfurls out of the 🍊 on hover/tap, and the chip gives a
@@ -8082,6 +8084,7 @@ function streetHtml(a){
   if(v.headlines&&v.headlines.length){
     parts.push('<div class="sthl">'+v.headlines.map(function(h){ if(!h.title) return ''; var dot='<span class="stdot '+(h.tone>0.05?'up':h.tone<-0.05?'down':'flat')+'"></span>'; var ttl=h.url?('<a class="sthlt" href="'+esc(h.url)+'" target="_blank" rel="noopener">'+esc(h.title)+'</a>'):('<span class="sthlt">'+esc(h.title)+'</span>'); return '<div class="sthli">'+dot+ttl+(h.date?'<span class="sthld">'+esc(h.date)+'</span>':'')+'</div>'; }).join('')+'</div>');
   }
+  if(v.newsUrl) parts.push('<a class="stnewslink" href="'+esc(v.newsUrl)+'" target="_blank" rel="noopener">📰 See the latest news ↗</a>');
   return '<div class="stblock"><h4>🗣️ Word on the street <span class="sthint">— what everyone else reckons</span></h4>'+
     (a.streetSummary?'<p class="stsum">'+a.streetSummary+'</p>':'')+parts.join('')+'</div>';
 }
@@ -8159,7 +8162,10 @@ function renderAnalyst(a){
     if(v.targetMean!=null) sc.push('<span class="anchip"><span class="ank">Avg target</span> '+esc(cur+v.targetMean)+(upside!=null?' <b class="'+(upside>=0?'up':'down')+'">'+(upside>=0?'+':'')+upside+'%</b>':'')+'</span>');
     if(v.sentiment!=null){ var t=v.sentiment>0.15?'upbeat 🟢':v.sentiment<-0.15?'gloomy 🔴':'mixed ⚪'; sc.push('<span class="anchip '+(v.sentiment>0.15?'gd':v.sentiment<-0.15?'bd':'')+'"><span class="ank">News mood</span> '+t+'</span>'); }
     if(sc.length) sp.push('<div class="anchips" style="margin:9px 0 0">'+sc.join('')+'</div>');
-    street='<div class="viz stblock"><h4>🗣️ Word on the street <span class="sthint">— what everyone else reckons</span></h4>'+(a.streetSummary?'<p class="stsum">'+a.streetSummary+'</p>':'')+sp.join('')+'</div>';
+    // #snx2 (18 Aug 2026) — always offer a one-tap link to the live news search (the user's browser CAN reach
+    // Google News even though our server can't for ASX), so "no coverage" never dead-ends.
+    var newsLink=v.newsUrl?'<a class="stnewslink" href="'+esc(v.newsUrl)+'" target="_blank" rel="noopener">📰 See the latest news ↗</a>':'';
+    street='<div class="viz stblock"><h4>🗣️ Word on the street <span class="sthint">— what everyone else reckons</span></h4>'+(a.streetSummary?'<p class="stsum">'+a.streetSummary+'</p>':'')+sp.join('')+newsLink+'</div>';
   }
   // Why / Watch-out
   var dr='';
