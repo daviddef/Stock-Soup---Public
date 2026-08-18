@@ -73,18 +73,21 @@
      padding — they don't, they use .tabhead) but right that .hero itself was too generous for what
      it actually contains on every tab, not just the light ones. */
   .hero{background:radial-gradient(120% 140% at 100% 0%, rgba(255,107,26,.16), transparent 55%),var(--surface);
-    border:1px solid var(--line);border-radius:20px;padding:clamp(11px,1.5vw,16px);position:relative;overflow:hidden}
+    border:1px solid var(--line);border-radius:20px;padding:clamp(15px,2vw,22px) clamp(13px,1.7vw,20px);position:relative;overflow:hidden}
   .brandrow{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}
-  .hleft{display:flex;align-items:center;gap:12px;flex-wrap:wrap;min-width:0}
-  .brand{display:flex;align-items:center;gap:10px;font-family:var(--disp);font-style:italic;font-weight:800;font-size:21px;letter-spacing:-.01em}
-  .hpot{position:relative;display:inline-flex;font-size:24px;line-height:1;animation:hbob 4.2s ease-in-out infinite;transform-origin:50% 90%}
-  .hpotbowl{filter:drop-shadow(0 4px 6px rgba(225,77,11,.3))}
-  .hsteam{position:absolute;left:50%;top:-7px;transform:translateX(-50%);width:20px;height:14px;pointer-events:none}
-  .hsteam i{position:absolute;bottom:0;width:3px;height:12px;border-radius:50%;background:linear-gradient(to top,rgba(255,180,120,0),rgba(255,190,130,.85));filter:blur(1.6px);opacity:0;animation:hsteam 3s ease-in-out infinite}
-  .hsteam i:nth-child(1){left:4px;animation-delay:0s}
-  .hsteam i:nth-child(2){left:9px;height:15px;animation-delay:.65s}
-  .hsteam i:nth-child(3){left:14px;animation-delay:1.3s}
-  @keyframes hsteam{0%{opacity:0;transform:translateY(3px) scaleX(1)}30%{opacity:.8}60%{transform:translateY(-8px) scaleX(1.4)}100%{opacity:0;transform:translateY(-15px) scaleX(.7)}}
+  .hleft{display:flex;align-items:center;gap:14px;flex-wrap:wrap;min-width:0}
+  /* #hero-prom (18 Aug, user ask) — the brand was smaller than the section headings below it. Make it the
+     most prominent thing on the page: a big display title and a larger bobbing pot whose steam rises well
+     above the cap height, reading across the header rather than sitting cramped on one line. */
+  .brand{display:flex;align-items:center;gap:13px;font-family:var(--disp);font-style:italic;font-weight:800;font-size:clamp(26px,6.6vw,36px);letter-spacing:-.015em;line-height:1.02}
+  .hpot{position:relative;display:inline-flex;font-size:clamp(30px,7vw,40px);line-height:1;animation:hbob 4.2s ease-in-out infinite;transform-origin:50% 90%}
+  .hpotbowl{filter:drop-shadow(0 5px 8px rgba(225,77,11,.34))}
+  .hsteam{position:absolute;left:50%;top:-13px;transform:translateX(-50%);width:30px;height:24px;pointer-events:none}
+  .hsteam i{position:absolute;bottom:0;width:4px;height:20px;border-radius:50%;background:linear-gradient(to top,rgba(255,180,120,0),rgba(255,190,130,.9));filter:blur(1.7px);opacity:0;animation:hsteam 3s ease-in-out infinite}
+  .hsteam i:nth-child(1){left:6px;animation-delay:0s}
+  .hsteam i:nth-child(2){left:13px;height:24px;animation-delay:.65s}
+  .hsteam i:nth-child(3){left:20px;animation-delay:1.3s}
+  @keyframes hsteam{0%{opacity:0;transform:translateY(4px) scaleX(1)}30%{opacity:.85}60%{transform:translateY(-13px) scaleX(1.45)}100%{opacity:0;transform:translateY(-24px) scaleX(.7)}}
   @keyframes hbob{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-2.5px) rotate(2deg)}}
   @media (prefers-reduced-motion:reduce){.hpot{animation:none}.hsteam{display:none}}
   .bowl{width:38px;height:38px;border-radius:50%;background:conic-gradient(from 200deg,var(--broth),#FFB061,var(--broth));
@@ -982,7 +985,7 @@
   .mktog-alt{font-size:11px;opacity:.5;margin-left:1px;white-space:nowrap}
   .vtico{width:34px;height:34px;padding:0;border-radius:50%;border:1.5px solid var(--line);background:var(--surface-2);color:var(--muted);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;transition:border-color .12s,color .12s;flex:0 0 auto}
   .vtico:hover{border-color:var(--broth);color:var(--broth)}
-  .hpot-lg{transform:scale(1.28);transform-origin:left center;margin-right:6px}
+  .hpot-lg{transform:scale(1.08);transform-origin:left center;margin-right:8px}
   @media(max-width:400px){ .mktog-alt{display:none} .tkf{width:30px;height:30px;font-size:11.5px} .vtico{width:30px;height:30px} }
   .tiersub{font-size:12px;color:var(--muted);margin:2px 0 10px;font-style:italic}
   .risktolwarn{background:rgba(255,197,61,.14);border:1px solid rgba(255,197,61,.4);color:var(--hold);border-radius:8px;padding:6px 10px;font-size:12px;font-weight:800;margin:0 0 8px}
@@ -1825,7 +1828,7 @@
   /* one-line news on a watchlist card sits a touch tighter than the overlay version */
   .wcard .mnews{margin-top:8px;font-size:12.5px;padding:9px 11px}
   /* #365 — Stock-Pot card face on watchlist cards: chip row + compact RSI meter */
-  .wc-pot{display:block}
+  .wc-tag.wc-pot{display:block}
   .wc-potchips{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
   .rsibar.wc-rsi{margin:18px 0 4px;height:7px}
   .wc-trendnote{font-size:11.5px;color:var(--muted);margin-top:6px}
@@ -9574,16 +9577,23 @@ function hydrateMissCharts(root){
       if(!j||!j.closes||j.closes.length<2){ slot.innerHTML='<span class="misschart-load misschart-empty">chart appears after the next re-price</span>'; return; }
       var vals=j.closes, times=j.timestamps||[], mn=Math.min.apply(null,vals), mx=Math.max.apply(null,vals);
       var lastSec=times.length?times[times.length-1]:null;
-      var markIdx=null;
+      var markIdx=null, preWindow=false;
       if(checkTs&&times.length){
         var target=Math.round(checkTs/1000);
-        // Only draw the marker if the confirm/flag time actually falls within this chart's window
+        // Only clamp the marker to a real bar if the serve time falls within this chart's window
         // (with ~1h grace). A pick served days ago would otherwise clamp to the chart start and
-        // mislabel it as "served 09:30" — better to show no marker than a wrong one. (#212)
+        // mislabel it as "served 09:30" — that was the #212 concern. (#212)
         if(target>=times[0]-3600){
           var best=0, bestDiff=Infinity;
           times.forEach(function(t,i){ var diff=Math.abs(t-target); if(diff<bestDiff){bestDiff=diff;best=i;} });
           markIdx=best;
+        } else if((slot.dataset.markLabel||'')==='served'){
+          // #served-pulse (user ask, 18 Aug) — the pick was served BEFORE this session's intraday
+          // window (held since yesterday / an earlier run). The old code showed NO marker at all, so
+          // every held pick had a blank "since we served" chart. The whole visible session IS
+          // "since we served it", so anchor the pulse marker at the LEFT edge and label it with the
+          // real serve DATE (a truthful "served Mon", NOT the bogus intraday time #212 rightly feared).
+          markIdx=0; preWindow=true;
         }
       }
       var isLive=lastSec&&(Date.now()/1000-lastSec)<20*60;   // last bar is fresh → really "now"; else say when it's from
@@ -9616,7 +9626,8 @@ function hydrateMissCharts(root){
         if(mlab==='served' && !atEdge){ var sv=vals[markIdx], nv=vals[vals.length-1];   // growth/fall since the serve
           if(sv){ var sp=(nv-sv)/sv*100; since=' · <span class="mchk-since '+(sp>=0?'up':'down')+'">'+(sp>=0?'+':'')+sp.toFixed(1)+'%</span>'; } }
         else if(mlab==='served' && atEdge){ since=' · <span class="mchk-since" style="color:var(--muted)">'+(justNow?'just served':'no moves since')+'</span>'; }
-        flagLbl='<div class="misschart-flag" style="left:'+mpct.toFixed(1)+'%;transform:translateX('+tx+')">'+mlab+' '+_timeHM(times[markIdx])+since+'</div>';
+        var markWhen=preWindow?(function(){try{return new Date(checkTs).toLocaleDateString('en-AU',{day:'numeric',month:'short'});}catch(e){return 'earlier';}})():_timeHM(times[markIdx]);
+        flagLbl='<div class="misschart-flag" style="left:'+mpct.toFixed(1)+'%;transform:translateX('+tx+')">'+mlab+' '+markWhen+since+'</div>';
       }
       slot.innerHTML='<div class="misschart-wrap">'+missSparkSVG(vals,markIdx)+flagLbl+'</div>'+
         '<div class="misschart-mm"><span>'+cur+mn.toFixed(2)+'</span><span class="misschart-now">'+rightLbl+'</span><span>'+cur+mx.toFixed(2)+'</span></div>';
@@ -10279,7 +10290,7 @@ function fdrRailHtml(pool){
   // #fdr-collapse (17 Aug, user ask) — on MOBILE the whole lever body (presets + sectors + sliders) eats too
   // much vertical space, so it's collapsed by default behind a "▾ Filters" toggle in the header. Desktop
   // always shows it (CSS hides the toggle + forces the body open). State persists in FDR_RAIL_OPEN.
-  var h='<div class="fdr-railhead"><b>Your levers</b> '+infoBtn('finderCols')+
+  var h='<div class="fdr-railhead">'+infoBtn('finderCols')+
     '<button class="fdr-railtog" id="fdrRailTog" aria-expanded="'+(FDR_RAIL_OPEN?'true':'false')+'">'+(FDR_RAIL_OPEN?'▴ Hide filters':'▾ Filters &amp; sectors')+'</button>'+
     '<button class="fdr-reset" id="fdrReset">Clear</button></div>';
   h+='<div class="fdr-railbody'+(FDR_RAIL_OPEN?' open':'')+'">';
