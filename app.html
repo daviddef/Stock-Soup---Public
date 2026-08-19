@@ -1698,7 +1698,7 @@
   .tl-cc-px{font-weight:800;font-size:13.5px;color:var(--ink);font-variant-numeric:tabular-nums}
   .tl-cc-chg{font-size:11px;font-weight:700;font-variant-numeric:tabular-nums} .tl-cc-chg.up{color:var(--buy)} .tl-cc-chg.down{color:var(--dont)}
   .tl-tkcard .rsibar.wc-rsi{margin:16px 0 3px}
-  .tlwrap[data-flt="news"] .tlrow:not([data-k="news"]),.tlwrap[data-flt="filing"] .tlrow:not([data-k="filing"]),.tlwrap[data-flt="event"] .tlrow:not([data-k="event"]),.tlwrap[data-flt="coming"] .tlrow:not([data-k="coming"]){display:none}
+  .tlwrap[data-flt="news"] .tlrow:not([data-k="news"]),.tlwrap[data-flt="filing"] .tlrow:not([data-k="filing"]),.tlwrap[data-flt="event"] .tlrow:not([data-k="event"]),.tlwrap[data-flt="coming"] .tlrow:not([data-k="coming"]),.tlwrap[data-flt="ipo"] .tlrow:not([data-k="ipo"]){display:none}
   /* a group heading whose rows are all filtered out would dangle — hide the two headings when a non-'all' filter is active */
   .tlwrap[data-flt="news"] .tl-grp,.tlwrap[data-flt="filing"] .tl-grp,.tlwrap[data-flt="event"] .tl-grp,.tlwrap[data-flt="coming"] .tl-grp{display:none}
   .fdr-cpx{margin-left:auto;font-weight:800;font-size:13px;font-variant-numeric:tabular-nums}
@@ -5159,7 +5159,9 @@ function marketTimelineHtml(D){
   (D.upcomingEarnings||[]).forEach(function(e){ if(!e||!e.sym||(e.region||'us')!==MKT)return; items.push({k:'coming',earn:true,t:ts(e.date),date:e.date,tone:'neutral',head:e.sym+' reports its results',why:'Prices often swing 5–20% on the result — a known catalyst to pre-position for.',syms:[{sym:e.sym,region:e.region}]}); });
   var _dv=D.upcomingDividends; var _dvi=(_dv&&_dv.items)||(Array.isArray(_dv)?_dv:[]);
   _dvi.forEach(function(d){ if(!d||!d.sym||(d.region||'au')!==MKT)return; var dt=d.exDate||d.ex_date||d.date; items.push({k:'coming',t:ts(dt),date:dt,tone:'neutral',head:d.sym+' goes ex-dividend',why:'Own it the day before the ex-date to receive the payout.',syms:[{sym:d.sym,region:d.region}]}); });
-  (D.upcomingIPOs||[]).forEach(function(i){ if(!i)return; if((i.region||'au')!==MKT)return; items.push({k:'coming',t:ts(i.date),date:i.date,tone:'neutral',head:(i.name||i.sym||'New listing')+' lists on the ASX',why:i.note||'A fresh listing — no trading history yet, so treat with care.',syms:i.sym?[{sym:i.sym,region:i.region}]:[]}); });
+  // #ipopill (20 Aug 2026, user ask) — IPOs get their OWN kind (k:'ipo') + pill, instead of being bundled into
+  // "Coming up" with earnings/dividends. They still sit in the time-ordered future column; the pill just filters.
+  (D.upcomingIPOs||[]).forEach(function(i){ if(!i)return; if((i.region||'au')!==MKT)return; items.push({k:'ipo',t:ts(i.date),date:i.date,tone:'neutral',head:(i.name||i.sym||'New listing')+' lists on '+(MKT==='au'?'the ASX':'the market'),why:i.note||'A fresh listing — no trading history yet, so treat with care.',syms:i.sym?[{sym:i.sym,region:i.region}]:[]}); });
   (D.upcomingEcon||[]).forEach(function(e){ if(!e||!e.event)return; items.push({k:'coming',t:ts(e.date),date:e.date,tone:'neutral',head:(e.country?e.country+': ':'')+e.event,why:'A macro data point that can move the whole market.',syms:[]}); });
   if(!items.length) return '';
   // #357 — TWO columns by time direction (user ask): LEFT = today & earlier news/filings/events, newest first;
@@ -5189,7 +5191,7 @@ function marketTimelineHtml(D){
     if(c&&c.score&&c.score.buy_now!=null){ try{ var ov=overallScore(c.score.buy_now, signalRows(c,c.region||'us')); if(ov&&ov.score!=null) v=Math.round(ov.score); }catch(e){} }
     _chMemo[key]=v; return v; }
   var TONE={bullish:{ic:'📈',cls:'ann-bull'},bearish:{ic:'📉',cls:'ann-bear'},neutral:{ic:'',cls:'ann-neu'}};
-  var KND={news:'📰 News',filing:'📢 Filing',event:'🌐 Big picture',coming:'📅 Coming up'};
+  var KND={news:'📰 News',filing:'📢 Filing',event:'🌐 Big picture',coming:'📅 Coming up',ipo:'🆕 IPO'};
   // #367 (user ask, images 1↔2) — bring the Stock Pot card FACE to the timeline: each referenced ticker that
   // we've SCORED renders as a mini pot-card (🍊/🍒 dual-chip → juice breakdown, name, price/change, RSI meter),
   // reusing the exact same shared components (dualChip/signalRows/wlRsiMeter) the Full-Pot + watchlist cards use.
@@ -5234,7 +5236,7 @@ function marketTimelineHtml(D){
       '<div class="tl-headw">'+(tn.ic?tn.ic+' ':'')+head+'</div>'+
       (x.why?'<div class="tl-why">'+esc(x.why)+'</div>':'')+
       (x.syms&&x.syms.length?'<div class="tl-tks tl-tkcards">'+tkchips(x.syms)+'</div>':'')+'</div>'; }
-  var FILT=[['all','Everything'],['coming','📅 Coming up'],['news','📰 News'],['filing','📢 Filings'],['event','🌐 Big picture']];
+  var FILT=[['all','Everything'],['coming','📅 Coming up'],['ipo','🆕 IPOs'],['news','📰 News'],['filing','📢 Filings'],['event','🌐 Big picture']];
   var chips=FILT.map(function(f){ return '<button class="tlchip'+(MKTF===f[0]?' on':'')+'" data-tlf="'+f[0]+'">'+f[1]+'</button>'; }).join('');
   var leftBody=recent.length?recent.map(row).join(''):'<div class="tl-empty">No recent news or filings.</div>';
   if(older.length) leftBody+='<details class="tlolder"><summary>Show '+older.length+' older (over 24h ago) →</summary><div class="tlcol" style="margin-top:10px">'+older.map(row).join('')+'</div></details>';
