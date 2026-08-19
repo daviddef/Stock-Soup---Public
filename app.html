@@ -1398,6 +1398,24 @@
   .hapmood.bd .hapmwhy.stale,.hapmwhy.stale{color:var(--dont);font-weight:700}
   .hapmlink{margin-left:auto;font-size:11.5px;font-weight:800;color:var(--broth);text-decoration:none;white-space:nowrap}
   .hapmlink:hover{text-decoration:underline}
+  /* #iponet — the full upcoming-IPO calendar view */
+  .ipo-grp{margin-top:4px} .ipo-more{margin-top:10px}
+  .ipo-more>summary{cursor:pointer;font-weight:800;font-size:12.5px;color:var(--muted);padding:6px 0;list-style:none}
+  .ipo-more>summary::-webkit-details-marker{display:none}
+  .ipo-more>summary:hover{color:var(--broth)}
+  .ipo-row{padding:8px 10px;border:1px solid var(--line);border-radius:9px;margin:6px 0;background:var(--surface)}
+  .ipo-row.ipo-tap{cursor:pointer;transition:border-color .12s,background .12s}
+  .ipo-row.ipo-tap:hover{border-color:var(--broth);background:var(--surface-2)}
+  .ipo-row.ipo-tap:focus-visible{outline:2px solid var(--broth);outline-offset:1px}
+  .ipo-main{display:flex;align-items:baseline;gap:7px;flex-wrap:wrap}
+  .ipo-sym{font-weight:900;color:var(--ink)} .ipo-nm{color:var(--muted);font-size:12.5px}
+  .ipo-noticker{font-weight:700;color:var(--ink)}
+  .ipo-b{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;padding:1px 6px;border-radius:5px;white-space:nowrap}
+  .ipo-b-soon{background:rgba(232,102,42,.14);color:var(--broth)}
+  .ipo-b-fl{background:var(--surface-2);color:var(--muted);border:1px solid var(--line)}
+  .ipo-b-pr{background:rgba(35,194,103,.14);color:var(--buy,#23c267)}
+  .ipo-meta{display:flex;gap:10px;flex-wrap:wrap;margin-top:3px;font-size:11.5px}
+  .ipo-when{font-weight:800;color:var(--ink)} .ipo-facts{color:var(--muted)}
   .hapmove.up{color:var(--buy)}.hapmove.down{color:var(--dont)}
   .annchip{flex:0 0 auto}   /* #news-ticker — 🍊 score chip beside a news headline that names a ticker */
   .annspark{margin:7px 0 2px} .annspark .spark{height:28px;width:100%;display:block}
@@ -3312,6 +3330,35 @@ function upcomingHtml(D){
     (DIV.usUnavailable&&MKT==='us'?'<p class="upgap">'+esc(DIV.usUnavailable)+'</p>':'')+
   '</section>';
 }
+// # iponet (19 Aug 2026, user ask "show ALL upcoming IPOs, don't filter them out") — a dedicated, comprehensive
+// view of every IPO heading to market for the selected exchange: UPCOMING (dated, soonest first), the in-
+// registration PIPELINE, and just-PRICED listings. Built from latest.upcomingIPOs (ipo-net.py: keyless nasdaq +
+// Finnhub + smallcaps). Each name with a ticker taps to its read; a fresh listing carries ⚠️ no-history.
+function ipoSectionHtml(D){
+  var all=(D.upcomingIPOs||[]).filter(function(i){return i&&(i.region||'us')===MKT;});
+  if(!all.length) return '';
+  function fmtD(s){ if(!s) return ''; var d=new Date(s); if(isNaN(d.getTime())) return String(s);
+    var WD=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],MO=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return WD[d.getDay()]+' '+d.getDate()+' '+MO[d.getMonth()]; }
+  function daysTo(s){ if(!s) return null; var d=new Date(s); if(isNaN(d.getTime())) return null; return Math.round((d.getTime()-Date.now())/86400000); }
+  function row(i){
+    var sym=i.sym||'', dt=daysTo(i.date);
+    var whenTxt = i.status==='filed' ? 'in registration' : (i.date? (dt===0?'lists today':dt===1?'lists tomorrow':dt>0?('in '+dt+'d · '+fmtD(i.date)):(i.status==='priced'?('listed '+fmtD(i.date)):fmtD(i.date))) : 'date TBA');
+    var meta=[]; if(i.exchange) meta.push(esc(i.exchange));
+    if(i.priceRange) meta.push((MKT==='us'?'$':'')+esc(i.priceRange)); if(i.raise) meta.push('raise '+esc(i.raise));
+    var badge = i.status==='priced'?'<span class="ipo-b ipo-b-pr">just listed</span>' : i.status==='filed'?'<span class="ipo-b ipo-b-fl">filed</span>' : (dt!=null&&dt>=0&&dt<=5?'<span class="ipo-b ipo-b-soon">soon</span>':'');
+    var head = sym ? ('<b class="ipo-sym">'+esc(sym)+'</b> <span class="ipo-nm">'+esc(i.name||'')+'</span>') : ('<span class="ipo-nm ipo-noticker">'+esc(i.name||'')+'</span>');
+    var tap = sym ? ' ipo-tap" data-ipo-sym="'+esc(sym)+'" data-ipo-region="'+esc(i.region||MKT)+'" role="button" tabindex="0' : '';
+    return '<div class="ipo-row'+tap+'"><div class="ipo-main">'+head+badge+'</div>'+
+      '<div class="ipo-meta"><span class="ipo-when">'+esc(whenTxt)+'</span>'+(meta.length?'<span class="ipo-facts">'+meta.join(' · ')+'</span>':'')+'</div></div>';
+  }
+  var up=all.filter(function(i){return i.status==='upcoming';}), fl=all.filter(function(i){return i.status==='filed';}), pr=all.filter(function(i){return i.status==='priced';});
+  var out='<p class="sec-sub">Every IPO heading to the '+(MKT==='us'?'US market':'ASX')+' — <b>'+up.length+'</b> coming up'+(fl.length?', <b>'+fl.length+'</b> in the pipeline':'')+(pr.length?', <b>'+pr.length+'</b> just listed':'')+'. Not curated — the full calendar. A fresh listing has <b>no trading history</b> yet, so treat with care.</p>';
+  if(up.length) out+='<div class="ipo-grp"><div class="eyebrow">🔔 Coming up</div>'+up.map(row).join('')+'</div>';
+  if(fl.length) out+='<details class="ipo-more"><summary>🗂️ In registration — '+fl.length+' filed (date TBA)</summary>'+fl.map(row).join('')+'</details>';
+  if(pr.length) out+='<details class="ipo-more"><summary>✅ Just listed — '+pr.length+' recently priced</summary>'+pr.map(row).join('')+'</details>';
+  return out;
+}
 // #95 — Top Movers: the whole market's real gainers/losers/volume leaders, not just tonight's 26-46
 // candidates. Refreshed on FULL runs (agent-driven Yahoo gainers/losers fetch, same pattern as the
 // econ calendar — no keyless top-movers API exists for a pure-script pulse cycle to hit every 10min).
@@ -4968,7 +5015,9 @@ function marketContextHtml(D, bargainCards, lines){   // `lines` is a render-loc
     // (they're the thematic, non-time-based half — #348 merges those two next).
     ['timeline','📅 Timeline', marketTimelineHtml(D)],
     // #348 — Sectors + Commodities merged into ONE balanced "Sectors & commodities" panel.
-    ['sectors','🍳 Sectors &amp; commodities', sectorsCommodSec]
+    ['sectors','🍳 Sectors &amp; commodities', sectorsCommodSec],
+    // #iponet (19 Aug) — the full, uncurated IPO calendar for this market (upcoming + pipeline + just-listed).
+    ['ipos','🔔 IPOs', ipoSectionHtml(D)]
   ];
   if(bargainCards) tabs.push(['bargains','🛍️ Bargains',
     '<p class="sec-sub">Genuinely cheap right now — oversold, not in freefall, and nothing actively wrong that we can see. <b>Tap any for the full read.</b></p><div class="pot">'+bargainCards+'</div>']);
@@ -10085,6 +10134,8 @@ function wire(D){
   if(!window._jtapWired){ window._jtapWired=1;
     document.addEventListener('click',function(e){ var t=e.target.closest?e.target.closest('.jtap[data-jsym]'):null; if(!t||e.target.closest('a'))return; var s=t.dataset.jsym; if(s&&s!=='NONE'){ try{ openTicker(s,t.dataset.jregion||MKT); }catch(err){} } });
     document.addEventListener('keydown',function(e){ if(e.key!=='Enter'&&e.key!==' ')return; var t=e.target.closest?e.target.closest('.jtap[data-jsym]'):null; if(!t)return; e.preventDefault(); var s=t.dataset.jsym; if(s&&s!=='NONE'){ try{ openTicker(s,t.dataset.jregion||MKT); }catch(err){} } });
+    // #iponet — an IPO row with a ticker taps to its per-ticker read (openTicker → pick/candidate, else analyst).
+    document.addEventListener('click',function(e){ var t=e.target.closest?e.target.closest('.ipo-tap[data-ipo-sym]'):null; if(!t)return; var s=t.dataset.ipoSym; if(s){ try{ openTicker(s,t.dataset.ipoRegion||MKT); }catch(err){} } });
   }
   try{ linkifyChef(); }catch(e){}   // #327 — make ticker mentions in the chef note tappable (post-render, text-node safe)
   document.getElementById('themeBtn').addEventListener('click',function(){
