@@ -1153,6 +1153,24 @@
   .jrow.keep{background:rgba(35,194,103,.13)}
   .jrow.drop{background:rgba(255,77,77,.10)}
   .jrow.drop .jinfo a{color:var(--muted);text-decoration:line-through}
+  /* #jrow (19 Aug 2026) — tappable ticker rows (→ overlay) + "% since this run" mini-chart */
+  .jrowwrap{margin:0}
+  .jsym{font-weight:800;color:var(--ink)}
+  .jrow.drop .jsym{color:var(--muted);text-decoration:line-through}
+  .jrow.jtap{cursor:pointer;border-radius:7px;transition:background .12s}
+  .jrow.jtap:hover{background:var(--surface-2)}
+  .jrow.keep.jtap:hover{background:rgba(35,194,103,.2)}
+  .jrow.jtap:focus-visible{outline:2px solid var(--broth);outline-offset:1px}
+  .jchart{display:flex;align-items:center;gap:7px;padding:1px 0 5px 26px;min-height:16px}
+  .jchart-pct{font-size:11.5px;font-weight:900;flex:0 0 auto}
+  .jchart-pct.up{color:var(--buy)} .jchart-pct.down{color:var(--dont)}
+  .jchart-spark{flex:1 1 auto;min-width:0;max-width:120px;height:16px;display:block}
+  .jchart-spark svg{width:100%;height:16px;display:block}
+  .jchart-spark.up svg path,.jchart-spark.up svg polyline{stroke:var(--buy)}
+  .jchart-spark.down svg path,.jchart-spark.down svg polyline{stroke:var(--dont)}
+  .jchart-since{font-size:9.5px;color:var(--faint);font-weight:700;white-space:nowrap}
+  .jchart-load{font-size:10px;color:var(--faint);letter-spacing:2px;padding-left:26px}
+  .jchart-empty{letter-spacing:0;font-weight:600}
 
   .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:16px}
   @media(max-width:760px){.grid2{grid-template-columns:1fr}}
@@ -3135,6 +3153,35 @@ function missChartSlot(sym,region,cur,checkStamp){
 function servedChartSlot(sym,region,cur,iso){
   var ts=iso?Date.parse(iso):NaN;
   return '<div class="misschart" data-hydrate-chart data-sym="'+esc(sym)+'" data-region="'+esc(region)+'" data-cur="'+esc(cur)+'"'+(ts?' data-check-ts="'+ts+'" data-mark-label="served"':'')+'><span class="misschart-load">····· since we served it</span></div>';
+}
+// #jrow (19 Aug 2026, user ask) — a Journey row's compact "% move since THIS run + mini-sparkline". Unlike
+// the served card (intraday, one session), a Journey run can be days old, so this uses WINDOWED DAILY history
+// (/history → closes/dates) anchored at the run's date: % = last close vs the first close on/after the run day.
+function journeyChartSlot(sym,region,cur,runISO){
+  if(!sym||sym==='NONE') return '';
+  return '<div class="jchart" data-jhydrate data-sym="'+esc(sym)+'" data-region="'+esc(region)+'" data-cur="'+esc(cur||'')+'" data-run="'+esc(runISO||'')+'"><span class="jchart-load">·····</span></div>';
+}
+function hydrateJourneyCharts(root){
+  (root||document).querySelectorAll('.jchart[data-jhydrate]').forEach(function(slot){
+    slot.removeAttribute('data-jhydrate');
+    var sym=slot.dataset.sym, reg=slot.dataset.region, runDay=(slot.dataset.run||'').slice(0,10);
+    fetch(API_BASE+'/history?sym='+encodeURIComponent(sym)+'&region='+encodeURIComponent(reg)).then(function(r){return r.ok?r.json():null;}).then(function(h){
+      if(!h||!h.closes||h.closes.length<2){ slot.innerHTML='<span class="jchart-load jchart-empty">chart fills after the next re-price</span>'; return; }
+      var closes=h.closes, dates=h.dates||[];
+      // window = daily bars on/after the run day. i0<0 means the run is NEWER than the latest completed daily
+      // bar (a run earlier TODAY) — show "no session yet", NOT the whole 60-day series mislabelled "since run".
+      var i0=(runDay&&dates.length)?-1:0;
+      if(runDay&&dates.length){ for(var i=0;i<dates.length;i++){ if(dates[i]>=runDay){ i0=i; break; } } }
+      if(i0<0){ slot.innerHTML='<span class="jchart-load jchart-empty">no full session since this run yet</span>'; return; }
+      var wc=closes.slice(i0);
+      if(wc.length<2){ slot.innerHTML='<span class="jchart-load jchart-empty">no move since this run yet</span>'; return; }
+      var first=wc[0], last=wc[wc.length-1], pct=first?((last-first)/first*100):0;
+      var up=pct>=0;
+      slot.innerHTML='<span class="jchart-pct '+(up?'up':'down')+'">'+(up?'+':'')+pct.toFixed(1)+'%</span>'+
+        '<span class="jchart-spark '+(up?'up':'down')+'">'+sparkSVG(wc)+'</span>'+
+        '<span class="jchart-since">since this run</span>';
+    }).catch(function(){ slot.innerHTML='<span class="jchart-load jchart-empty">chart unavailable</span>'; });
+  });
 }
 // Earliest ISO of the current UNBROKEN run of menus that still contain this ticker in this region —
 // i.e. "we've served this continuously since HH:MM". menus[0] is newest; walk older until the streak
@@ -5367,17 +5414,24 @@ function render(D,H){
   function jcol(m,older,isNow){
     function grp(label,arr,region){
       var olderSet=older?older[region]:null;
+      // #jrow (19 Aug 2026, user ask) — every ticker line now (1) taps to the standard overlay (openTicker,
+      // via the delegated .jtap listener) instead of a dead Yahoo link, and (2) carries a compact "% move
+      // since THIS run + a mini-sparkline" (journeyChartSlot → windowed daily history), so the card shows how
+      // the run's picks have actually performed from then until now.
+      var runISO=m.iso||m.generated||m.stamp||'', cur=(region==='us')?'$':'A$';
       var rows=(arr||[]).map(function(sym,idx){
         var isNew=olderSet?olderSet.indexOf(sym)<0:false;
         var nm=jName(sym);
         var rowcls='jrow'+(olderSet&&!isNew?' keep':'');
         var badge=(olderSet&&isNew)?'<span class="jb jb-new">NEW</span>':'';
-        return '<div class="'+rowcls+'"><span class="jtf">'+(TFS[idx]||'')+'</span><span class="jinfo">'+qlink(sym,region)+(nm?'<span class="jname">'+esc(nm)+'</span>':'')+'</span>'+gradeBadge(sym)+badge+'</div>';   // #290 — guard TFS[idx]: a run with >3 rows made it undefined → literal "undefined" text
+        var tap=(sym&&sym!=='NONE')?' jtap" data-jsym="'+esc(sym)+'" data-jregion="'+esc(region)+'" role="button" tabindex="0':'';
+        return '<div class="jrowwrap"><div class="'+rowcls+tap+'"><span class="jtf">'+(TFS[idx]||'')+'</span><span class="jinfo"><b class="jsym">'+esc(sym)+'</b>'+(nm?'<span class="jname">'+esc(nm)+'</span>':'')+'</span>'+gradeBadge(sym)+badge+'</div>'+journeyChartSlot(sym,region,cur,runISO)+'</div>';   // #290 — guard TFS[idx]: a run with >3 rows made it undefined → literal "undefined" text
       });
       if(olderSet){
         olderSet.filter(function(s){return (arr||[]).indexOf(s)<0;}).forEach(function(sym){
           var nm=jName(sym);
-          rows.push('<div class="jrow drop"><span class="jtf">×</span><span class="jinfo">'+qlink(sym,region)+(nm?'<span class="jname">'+esc(nm)+'</span>':'')+'</span>'+gradeBadge(sym)+'<span class="jb jb-drop">DROP</span></div>');
+          var tap=(sym&&sym!=='NONE')?' jtap" data-jsym="'+esc(sym)+'" data-jregion="'+esc(region)+'" role="button" tabindex="0':'';   // dropped names are tappable too, but carry no "since this run" chart
+          rows.push('<div class="jrow drop'+tap+'"><span class="jtf">×</span><span class="jinfo"><b class="jsym">'+esc(sym)+'</b>'+(nm?'<span class="jname">'+esc(nm)+'</span>':'')+'</span>'+gradeBadge(sym)+'<span class="jb jb-drop">DROP</span></div>');
         });
       }
       return '<div class="jgrp">'+label+'</div>'+rows.join('');
@@ -10000,6 +10054,13 @@ function hydrateMissCharts(root){
 function wire(D){
   var root=document.documentElement;
   hydrateMissCharts();
+  try{ hydrateJourneyCharts(); }catch(e){}   // #jrow — Journey rows' "% since this run" mini-charts
+  // #jrow — a Journey ticker line taps to the standard overlay (openTicker). Document-level + guarded so it's
+  // registered ONCE (the Journey re-renders on every market switch; a per-render bind would stack listeners).
+  if(!window._jtapWired){ window._jtapWired=1;
+    document.addEventListener('click',function(e){ var t=e.target.closest?e.target.closest('.jtap[data-jsym]'):null; if(!t||e.target.closest('a'))return; var s=t.dataset.jsym; if(s&&s!=='NONE'){ try{ openTicker(s,t.dataset.jregion||MKT); }catch(err){} } });
+    document.addEventListener('keydown',function(e){ if(e.key!=='Enter'&&e.key!==' ')return; var t=e.target.closest?e.target.closest('.jtap[data-jsym]'):null; if(!t)return; e.preventDefault(); var s=t.dataset.jsym; if(s&&s!=='NONE'){ try{ openTicker(s,t.dataset.jregion||MKT); }catch(err){} } });
+  }
   try{ linkifyChef(); }catch(e){}   // #327 — make ticker mentions in the chef note tappable (post-render, text-node safe)
   document.getElementById('themeBtn').addEventListener('click',function(){
     var cur=root.getAttribute('data-theme')||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');
