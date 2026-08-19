@@ -1561,6 +1561,15 @@
   .brd-track i{display:block;height:100%;border-radius:5px}
   .brd-pct{flex:0 0 auto;width:38px;text-align:right;font-weight:800;font-size:13px;font-variant-numeric:tabular-nums}
   .brd-note{color:var(--muted);font-size:12px;line-height:1.45;margin:11px 0 0}
+  /* #target — analyst price-target range bar */
+  .atb-head{font-size:13px;margin:2px 0 12px;color:var(--muted)}
+  .atb-track{position:relative;height:10px;border-radius:6px;background:var(--surface-2);border:1px solid var(--line);margin:16px 0 4px}
+  .atb-range{position:absolute;top:-1px;bottom:-1px;border-radius:6px;background:linear-gradient(90deg,rgba(232,102,42,.25),rgba(35,194,103,.28))}
+  .atb-tgt{position:absolute;top:50%;width:12px;height:12px;background:var(--ink);transform:translate(-50%,-50%) rotate(45deg);border:2px solid var(--surface);border-radius:2px;box-shadow:0 0 0 1px var(--line)}
+  .atb-now{position:absolute;top:50%;width:15px;height:15px;border-radius:50%;background:var(--broth);transform:translate(-50%,-50%);border:3px solid var(--surface);box-shadow:0 0 0 1px var(--broth),0 0 8px 1px rgba(232,102,42,.5)}
+  .atb-labs{display:flex;justify-content:space-between;font-size:11px;font-weight:700;color:var(--faint);margin-top:8px}
+  .atb-labs .atb-cons{color:var(--ink);font-weight:800}
+  .atb-note{color:var(--muted);font-size:12px;line-height:1.45;margin:9px 0 0}.atb-note b{color:var(--ink)}
   /* #ownbadge — a small 📦 on cards for tickers you own */
   .ownbadge{display:inline-flex;align-items:center;font-size:12px;padding:2px 6px;border-radius:8px;background:rgba(35,194,103,.16);border:1px solid rgba(35,194,103,.4);line-height:1;cursor:help;flex:0 0 auto}
   .fdr-ownbadge{font-size:11px;padding:1px 4px;margin-left:4px}
@@ -6636,6 +6645,37 @@ function breadthWeather(D,region){
         :s>=40?{emoji:'⛅',word:'mixed',sub:'Only '+Math.round(s)+'% of the market is above its trend — a patchy, selective market.'}
         :{emoji:'🌧️',word:'narrow / weak',sub:'Just '+Math.round(s)+'% of the market is above its trend — a narrow, fragile tape; be picky.'};
 }
+// #target (20 Aug 2026, competitive-research idea — MarketBeat/Robinhood's hero visual) — the analyst
+// price-target RANGE (low · consensus · high) with a "you are here" marker + upside %. We already carry the
+// data (fundamentals.analyst); this is the visual. Upside is computed from target-vs-LIVE-price, not the
+// stored upside_pct (which is sometimes misscaled — AVH showed 0.1 when it's really ~−18%).
+function analystTargetBar(o,region){
+  var an=(o&&o.fundamentals||{}).analyst;
+  if(!an||an.target==null||(an.n||0)<3) return '';
+  var cur=region==='au'?'A$':'$';
+  var px=numLevel(o.nNow!=null?o.nNow:o.price);
+  var tgt=+an.target, lo=(an.low!=null?+an.low:null), hi=(an.high!=null?+an.high:null);
+  if(lo==null||hi==null){ var b=[tgt]; if(isFinite(px))b.push(px); var m=Math.min.apply(null,b),M=Math.max.apply(null,b); if(lo==null)lo=m*0.92; if(hi==null)hi=M*1.08; }
+  if(!(tgt>0)||!(hi>lo)) return '';
+  var vals=[lo,hi,tgt]; if(isFinite(px))vals.push(px);
+  var mn=Math.min.apply(null,vals), mx=Math.max.apply(null,vals), rng=(mx-mn)||1;
+  function p(v){return Math.max(0,Math.min(100,(v-mn)/rng*100));}
+  var up=(isFinite(px)&&px>0)?Math.round((tgt-px)/px*1000)/10:null;
+  var uptone=up==null?'var(--muted)':up>=8?'var(--buy)':up<=-8?'var(--dont)':'#e8a020';
+  var rate=(an.rating||'').replace(/^\w/,function(c){return c.toUpperCase();});
+  var head=(up!=null?'<b style="color:'+uptone+'">'+(up>=0?'+':'')+up+'%</b> '+(up>=0?'upside to':'above')+' consensus · ':'')+esc(rate)+' ('+an.n+' analyst'+(an.n===1?'':'s')+')';
+  return '<div class="viz"><h4>🎯 What the pros think it’s worth</h4>'+
+    '<div class="atb-head">'+head+'</div>'+
+    '<div class="atb-track">'+
+      '<div class="atb-range" style="left:'+p(lo).toFixed(1)+'%;right:'+(100-p(hi)).toFixed(1)+'%"></div>'+
+      '<div class="atb-tgt" style="left:'+p(tgt).toFixed(1)+'%" title="Average 12-month target '+cur+tgt.toFixed(2)+'"></div>'+
+      (isFinite(px)?'<div class="atb-now" style="left:'+p(px).toFixed(1)+'%" title="Trades now at '+cur+px.toFixed(2)+'"></div>':'')+
+    '</div>'+
+    '<div class="atb-labs"><span>low '+cur+lo.toFixed(2)+'</span><span class="atb-cons">◆ '+cur+tgt.toFixed(2)+'</span><span>high '+cur+hi.toFixed(2)+'</span></div>'+
+    '<p class="atb-note">The average 12-month price target from '+an.n+' analyst'+(an.n===1?'':'s')+' (◆), with today’s price (●) marked. '+
+      (up!=null&&up<-2?'It already trades <b>above</b> the average target — the pros see it as fully (or over-) priced.':up!=null&&up>=15?'Analysts see <b>meaningful room</b> above today’s price.':'Today’s price sits close to the consensus target.')+
+      ' A target is an opinion, not a promise.</p></div>';
+}
 function breadthPanelHtml(D,region){
   var b=marketBreadth(D,region); if(!b) return '';
   var mkt=region==='au'?'ASX':'US';
@@ -7182,6 +7222,7 @@ function tickerModalHTML(o, region, cur, isPick){
       (function(){try{return snowflakeCard(o);}catch(e){return '';}})()+   // ❄️ the 5-axis "shape of it"
       rangesHtml+
       (function(){try{return valBandHtml(o,cur);}catch(e){return '';}})()+
+      (function(){try{return analystTargetBar(o,region);}catch(e){return '';}})()+   // 🎯 analyst target range bar
       rsiBlock+
       (function(){try{return bullBearHtml(o,region);}catch(e){return '';}})()+   // ⚖️ the case, both ways
       (o.extraHtml||'')+   // analyst-only: 'Word on the street' consensus + Why/Watch-out (empty for picks/candidates)
