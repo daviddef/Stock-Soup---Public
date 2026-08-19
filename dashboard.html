@@ -2225,6 +2225,98 @@
   .rev.in{opacity:1;transform:none}
   .rev.d1{transition-delay:.1s}.rev.d2{transition-delay:.22s}.rev.d3{transition-delay:.34s}.rev.d4{transition-delay:.46s}
   @media(prefers-reduced-motion:reduce){.rev{opacity:1;transform:none;transition:none}}
+
+  /* #kitchen (19 Aug 2026) — the Simple view as ONE scannable "Tonight's Kitchen" poster. Fun, quirky, warm. */
+  .skwrap{max-width:640px;margin:0 auto;padding:8px 15px 60px;display:flex;flex-direction:column;gap:20px}
+  .skwrap .sksec{display:flex;flex-direction:column;gap:11px}
+  .skh{font-family:var(--display,inherit);font-weight:800;font-size:clamp(20px,5vw,25px);margin:2px 0 0;letter-spacing:-.01em}
+  .sksub{color:var(--muted);font-size:13.5px;line-height:1.45;margin:-4px 0 2px}
+  .skcard{background:var(--surface);border:1px solid var(--line);border-radius:22px;box-shadow:var(--shadow);padding:18px}
+  /* mood / weather banner */
+  .skmood{display:flex;align-items:center;gap:16px;padding:20px 18px;border-radius:24px;
+    background:linear-gradient(135deg,rgba(232,102,42,.14),rgba(240,190,20,.10) 60%,rgba(35,194,103,.10));
+    border:1px solid rgba(232,102,42,.3)}
+  .skmood-emo{font-size:clamp(46px,13vw,64px);line-height:1;flex:0 0 auto;filter:drop-shadow(0 3px 6px rgba(0,0,0,.18));animation:skbob 3.4s ease-in-out infinite}
+  @keyframes skbob{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-5px) rotate(2deg)}}
+  @media(prefers-reduced-motion:reduce){.skmood-emo{animation:none}}
+  .skeye{font-size:11.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--broth)}
+  .skmood-t h1{font-family:var(--display,inherit);font-weight:800;font-size:clamp(22px,6vw,30px);line-height:1.05;margin:3px 0 5px;letter-spacing:-.02em}
+  .skmood-t p{color:var(--muted);font-size:13.5px;line-height:1.4;margin:0}
+  /* dish of the day */
+  .skdish{background:linear-gradient(180deg,var(--surface),color-mix(in srgb,var(--broth) 5%,var(--surface)));border-color:rgba(232,102,42,.32)}
+  .skdish-tag{font-size:11.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--broth);margin-bottom:9px}
+  .skdish-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}
+  .skdish-id{display:flex;flex-direction:column;min-width:0}
+  .sksym{font-family:var(--display,inherit);font-weight:800;font-size:clamp(30px,8vw,42px);line-height:1;letter-spacing:-.02em}
+  .skco{color:var(--muted);font-size:13.5px;font-weight:600;margin-top:2px}
+  .skstamp{font-size:12.5px;font-weight:800;padding:6px 11px;border-radius:999px;white-space:nowrap;flex:0 0 auto}
+  .skstamp.sk-go{background:rgba(35,194,103,.16);color:var(--buy);border:1px solid rgba(35,194,103,.4)}
+  .skstamp.sk-wait{background:rgba(232,140,40,.16);color:#c47a1e;border:1px solid rgba(232,140,40,.4)}
+  .skstamp.sk-hold{background:rgba(240,190,20,.16);color:#a88400;border:1px solid rgba(240,190,20,.4)}
+  /* the four fruit chips, blown up for Simple (reusing Full's tappable chips) */
+  .skfruits{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 2px}
+  .skfruits .juicebtn,.skfruits .cherrybtn,.skfruits .banbtn,.skfruits .saladbadge{font-size:16px;font-weight:800;padding:8px 13px;border-radius:14px;line-height:1}
+  .skfruits .saladbadge{font-size:19px}
+  .skdish-line{font-size:15.5px;line-height:1.5;color:var(--ink);margin:14px 0 0}
+  .skdish-chart{margin:15px 0 4px;border-radius:14px;overflow:hidden}
+  .skdish-chart svg{display:block;width:100%;height:auto}
+  .skplan{display:flex;gap:9px;flex-wrap:wrap;margin-top:14px}
+  .skp{flex:1 1 30%;min-width:96px;display:flex;flex-direction:column;gap:2px;padding:10px 12px;border-radius:13px;background:var(--surface-2);border:1px solid var(--line);font-weight:800;font-size:15px}
+  .skp small{font-weight:700;font-size:10.5px;color:var(--faint);text-transform:uppercase;letter-spacing:.04em}
+  .skp.buy{border-color:rgba(35,194,103,.4)}.skp.stop{border-color:rgba(214,40,60,.4)}.skp.tgt{border-color:rgba(232,102,42,.4)}
+  .skbtns{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap}
+  .skbtn{flex:1 1 auto;padding:13px 16px;border-radius:14px;font-weight:800;font-size:14.5px;cursor:pointer;border:1px solid var(--line);background:var(--surface-2);color:var(--ink);transition:transform .12s}
+  .skbtn:active{transform:scale(.97)}
+  .skbtn.primary{background:var(--broth);border-color:var(--broth);color:#fff}
+  .skbtn.ghost{background:transparent}
+  .skempty{color:var(--muted);font-size:14.5px;line-height:1.5;text-align:center;padding:8px 4px}
+  /* the menu — plates */
+  .skplates{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:11px}
+  .skplate{text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:13px 13px 15px;cursor:pointer;box-shadow:var(--shadow);transition:transform .12s,border-color .2s}
+  .skplate:active{transform:scale(.98)}.skplate:hover{border-color:var(--broth)}
+  .skpl-top{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:9px}
+  .skpl-top .skstamp{font-size:11px;padding:4px 8px}
+  .skpl-tf{font-size:10.5px;font-weight:800;color:var(--muted)}
+  .skpl-sym{font-family:var(--display,inherit);font-weight:800;font-size:22px;line-height:1}
+  .skpl-co{color:var(--muted);font-size:11.5px;margin:1px 0 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .skplate .skfruits{margin:11px 0 0;gap:6px}
+  .skplate .skfruits .juicebtn,.skplate .skfruits .cherrybtn,.skplate .skfruits .banbtn{font-size:12.5px;padding:4px 8px;border-radius:9px}
+  .skplate .skfruits .saladbadge{font-size:14px}
+  .skswitch{align-self:flex-start;margin-top:3px;background:transparent;border:1px dashed var(--line);border-radius:12px;padding:9px 14px;font-weight:800;font-size:13px;color:var(--broth);cursor:pointer}
+  /* kitchen heat (risk) */
+  .skheat{display:flex;align-items:center;gap:15px}
+  .skheat-face{font-size:44px;line-height:1;flex:0 0 auto}
+  .skheat-body{flex:1;min-width:0}
+  .skheat-t{font-weight:800;font-size:15.5px;margin-bottom:9px}
+  .skheat-track{position:relative;height:10px;border-radius:6px;background:linear-gradient(90deg,#ff4d4d,#f2a33d,#1fb862)}
+  .skheat-dot{position:absolute;top:50%;width:18px;height:18px;border-radius:50%;transform:translate(-50%,-50%);border:3px solid var(--surface);box-shadow:0 0 0 2px rgba(0,0,0,.15),0 0 12px 2px var(--rcp,rgba(242,163,61,.6))}
+  .skheat-ends{display:flex;justify-content:space-between;font-size:10.5px;font-weight:700;color:var(--faint);margin-top:6px;text-transform:uppercase;letter-spacing:.04em}
+  .skheat-s{color:var(--muted);font-size:13px;line-height:1.45;margin:9px 0 0}
+  /* fresh gossip */
+  .skgossip{display:flex;gap:11px;padding:13px 15px;border-radius:15px;background:var(--surface);border:1px solid var(--line);border-left-width:4px}
+  .skgossip.sk-bull{border-left-color:var(--buy)}.skgossip.sk-bear{border-left-color:var(--dont)}.skgossip.sk-neu{border-left-color:var(--faint)}
+  .skg-ic{font-size:20px;flex:0 0 auto}
+  .skg-h{font-weight:700;font-size:14px;line-height:1.35}.skg-h a{color:var(--ink);text-decoration:none}.skg-h a:hover{text-decoration:underline}
+  .skg-w{color:var(--muted);font-size:12.5px;line-height:1.4;margin-top:3px}
+  /* your plate */
+  .skminewrap{display:flex;flex-wrap:wrap;gap:8px}
+  .skmine{background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:9px 13px;font-weight:800;font-size:13.5px;cursor:pointer;color:var(--ink)}
+  .skmine:active{transform:scale(.96)}
+  /* fruit family legend */
+  .skfam{display:flex;flex-direction:column;gap:2px}
+  .skfam-row{display:flex;align-items:center;gap:13px;padding:11px 4px;border-bottom:1px dashed var(--line)}
+  .skfam-row:last-child{border-bottom:0}
+  .skfam-e{font-size:28px;flex:0 0 auto;width:34px;text-align:center}
+  .skfam-row b{font-size:14.5px}.skfam-row small{display:block;color:var(--muted);font-size:12.5px;line-height:1.35;margin-top:1px}
+  .skfam-salad{background:linear-gradient(90deg,rgba(232,102,42,.06),rgba(240,190,20,.07));border-radius:12px;padding-left:10px;padding-right:10px}
+  /* scoreboard */
+  .skboard{text-align:center;background:linear-gradient(135deg,rgba(35,194,103,.08),rgba(214,40,60,.06))}
+  .skboard-nums{font-family:var(--display,inherit);font-weight:800;font-size:46px;line-height:1;letter-spacing:-.02em}
+  .skboard-nums .w{color:var(--buy)}.skboard-nums .l{color:var(--dont)}.skboard-nums .x{color:var(--faint);margin:0 8px}
+  .skboard-lbl{color:var(--muted);font-size:12.5px;line-height:1.45;margin-top:10px;max-width:44ch;margin-left:auto;margin-right:auto}
+  .skcta{text-align:center;display:flex;flex-direction:column;gap:12px;margin-top:4px}
+  .skcta .skbtn{flex:0 1 auto;align-self:center;padding:13px 22px}
+  .skfoot{color:var(--faint);font-size:11.5px;line-height:1.4;margin:0}
   .s2cue{margin-top:36px;color:var(--faint);font-size:13px;font-weight:700;display:flex;align-items:center;gap:8px}
   .s2cue .arw{display:inline-block;animation:s2bob 1.6s ease-in-out infinite}
   @keyframes s2bob{0%,100%{transform:translateY(0)}50%{transform:translateY(5px)}}
@@ -11867,9 +11959,136 @@ function openOnboarding(){
 }
 function closeOnboarding(){ var el=document.getElementById('onboard'); if(el){ el.classList.remove('open'); el.innerHTML=''; } document.body.style.overflow=''; }
 function maybeOnboard(){ if(window._obTried) return; window._obTried=1; try{ if(localStorage.getItem('soup_onboarded')) return; }catch(e){ return; } setTimeout(function(){ try{ openOnboarding(); }catch(e){} }, 800); }
+// #kitchen (19 Aug 2026, user ask — "total overhaul… a simple way to SEE what's going on… fun, quirky but
+// simple") — the Simple view reborn as ONE scannable poster: the whole app at a glance instead of a long
+// single-pick scroll story. Sections: the kitchen mood, tonight's dish (top pick), the menu (all picks as
+// plates), how hot the kitchen is (risk), fresh gossip (news), your plate (tracked names), the fruit family
+// (score legend), and the honest scoreboard. Every pick/chip taps through to the SAME canonical overlays as
+// Full view (reusing juicebtn/cherrybtn/banbtn/saladbtn classes → the global delegated listeners fire for free).
+function skPicks(D,region){
+  var rg=(D.regions||[]).filter(function(x){return (x.id||x.region)===region;})[0];
+  return rg?(rg.picks||[]).filter(function(p){return p&&p.sym&&p.sym!=='NONE'&&p.score&&p.score.buy_now!=null;})
+    .sort(function(a,b){return b.score.buy_now-a.score.buy_now;}):[];
+}
+function skMood(D,region){
+  var picks=skPicks(D,region), strong=picks.filter(function(p){return p.score.buy_now>=60;}).length;
+  var lvl=(D.risk&&D.risk.level!=null)?+D.risk.level:50;
+  var place=region==='au'?'the ASX':'the U.S.';
+  if(!picks.length) return {emoji:'😴',title:'A quiet night in the kitchen',sub:'Nothing on '+place+' is worth chasing right now — and we won’t invent a reason. Try the other market ↑.'};
+  if(strong>=2&&lvl>=55) return {emoji:'🔥',title:'The kitchen’s on fire',sub:strong+' strong ideas on '+place+' tonight, and the market’s in the mood to buy.'};
+  if(strong>=1) return {emoji:'🍲',title:'Something’s cooking',sub:'We found '+(strong>1?strong+' strong ideas':'a real idea')+' on '+place+' worth a proper look tonight.'};
+  return {emoji:'😌',title:'A gentle simmer',sub:'A calm night on '+place+' — a few things worth watching, nothing screaming “buy me”.'};
+}
+// the four fruits, rendered BIG + friendly for Simple, but as the SAME tappable chips Full view uses.
+function skFruitRow(p,region){
+  var rows=''; try{ rows=signalRows(p,region); }catch(e){ rows=[]; }
+  var out='';
+  try{ out+=juiceChip(p.score,p.sym,p.name,rows); }catch(e){}
+  try{ out+=cherryChip(p.score,p.sym,p.name,rows); }catch(e){}
+  try{ out+=bananaChip(p.sym,region,p); }catch(e){}
+  try{ out+=saladBadge(p.sym,region,p); }catch(e){}
+  return out?'<div class="skfruits">'+out+'</div>':'';
+}
+function skVerdictStamp(p){
+  var v=String(p.verdict||'').toLowerCase();
+  var cls=/get in|buy/.test(v)?'sk-go':/wait|late|hold|skip|avoid|pass|steer|chase/.test(v)?'sk-wait':'sk-hold';
+  var ic=cls==='sk-go'?'🟢':cls==='sk-wait'?'🟠':'🟡';
+  return '<span class="skstamp '+cls+'">'+ic+' '+esc(p.verdict||'Have a look')+'</span>';
+}
+function skHero(D,region,p){
+  var m=skMood(D,region), flag=region==='au'?'🇦🇺':'🇺🇸';
+  var head='<div class="skmood rev"><div class="skmood-emo">'+m.emoji+'</div><div class="skmood-t"><div class="skeye">'+flag+' Tonight in the kitchen</div><h1>'+esc(m.title)+'</h1><p>'+esc(m.sub)+'</p></div></div>';
+  if(!p) return head+'<div class="skcard skdish rev d1"><div class="skempty">🍽️ No dish of the day on '+(region==='au'?'the ASX':'the U.S.')+' — the menu’s quiet. Tap 🇦🇺/🇺🇸 up top to check the other market, or open the full menu below.</div></div>';
+  var cur=region==='au'?'A$':'$';
+  var _nStop=numLevel(p.nStop),_nEntry=numLevel(p.nEntry),_nTarget=numLevel(p.nTarget),_nNow=numLevel(p.nNow!=null?p.nNow:p.price);
+  var chart=(p.spark&&p.spark.length>2)?levelChartSVG(p.spark,{stop:_nStop,entry:_nEntry,target:_nTarget,now:_nNow},cur):'';
+  var line=firstSentence(p.plain||p.chefTake||'')||'';
+  var plan='';
+  if(p.nEntry) plan+='<span class="skp buy"><small>Buy zone</small>'+esc(String(p.nEntry))+'</span>';
+  if(isFinite(_nStop)) plan+='<span class="skp stop"><small>Bail if it hits</small>'+money(cur,_nStop)+'</span>';
+  if(isFinite(_nTarget)) plan+='<span class="skp tgt"><small>Aiming for</small>'+money(cur,_nTarget)+'</span>';
+  return head+
+    '<div class="skcard skdish rev d1">'+
+      '<div class="skdish-tag">🍽️ Tonight’s dish of the day</div>'+
+      '<div class="skdish-head"><div class="skdish-id"><span class="sksym">'+esc(p.sym)+'</span><span class="skco">'+esc(p.name||'')+'</span></div>'+skVerdictStamp(p)+'</div>'+
+      skFruitRow(p,region)+
+      (line?'<p class="skdish-line">'+esc(line)+'</p>':'')+
+      (chart?'<div class="skdish-chart">'+chart+'</div>':'')+
+      (plan?'<div class="skplan">'+plan+'</div>':'')+
+      '<div class="skbtns"><button class="skbtn primary s2see" data-sym="'+esc(p.sym)+'" data-region="'+esc(region)+'">See the full card →</button>'+
+        '<button class="skbtn ghost watchbtn" data-sym="'+esc(p.sym)+'" data-region="'+esc(region)+'"'+(p.name?' data-name="'+esc(p.name)+'"':'')+(p.nEntry!=null?' data-entry="'+p.nEntry+'"':'')+' aria-pressed="false">☆ Watch</button></div>'+
+    '</div>';
+}
+function skMenu(D,region){
+  var picks=skPicks(D,region); if(picks.length<2) return '';   // the hero already covers the single top pick
+  var plates=picks.map(function(p){
+    var tf=p.tf?('<span class="skpl-tf">'+esc(tfBW?tfBW(p.tf):p.tf)+'</span>'):'';
+    return '<button class="skplate s2see" data-sym="'+esc(p.sym)+'" data-region="'+esc(region)+'">'+
+      '<div class="skpl-top">'+skVerdictStamp(p)+tf+'</div>'+
+      '<div class="skpl-sym">'+esc(p.sym)+'</div><div class="skpl-co">'+esc(p.name||'')+'</div>'+
+      skFruitRow(p,region)+'</button>';
+  }).join('');
+  var other=region==='au'?'us':'au', on=skPicks(D,other).length;
+  return '<div class="sksec rev"><h2 class="skh">🍜 On the menu tonight</h2>'+
+    '<p class="sksub">All '+picks.length+' ideas we’re serving '+(region==='au'?'🇦🇺 Australia':'🇺🇸 the U.S.')+' — tap any plate for the full read.</p>'+
+    '<div class="skplates">'+plates+'</div>'+
+    (on?'<button class="skswitch" data-mkt="'+other+'">'+(other==='au'?'🇦🇺':'🇺🇸')+' '+on+' more on '+(other==='au'?'the ASX':'the U.S.')+' →</button>':'')+'</div>';
+}
+function skHeat(D){
+  var r=D.risk||{}, lvl=(r.level!=null)?+r.level:50;
+  var mood=lvl>=67?{e:'�horn',t:'Risk-on — the market’s hungry',s:'Buyers are confident. Good ideas tend to get rewarded — but don’t chase.'}:
+           lvl>=34?{e:'😐',t:'Neutral — a steady kitchen',s:'No strong push either way. Pick quality and be patient.'}:
+           {e:'🧊',t:'Risk-off — the market’s nervous',s:'Money’s hiding. Be pickier; smaller bets, tighter bail-outs.'};
+  var e=lvl>=67?'🤑':lvl>=34?'😐':'😨';
+  return '<div class="sksec rev"><h2 class="skh">🌡️ How hot’s the kitchen?</h2>'+
+    '<div class="skcard skheat"><div class="skheat-face">'+e+'</div>'+
+      '<div class="skheat-body"><div class="skheat-t">'+esc(mood.t)+'</div>'+
+        '<div class="skheat-track"><span class="skheat-dot" id="skHeatDot"></span></div>'+
+        '<div class="skheat-ends"><span>hide the cash</span><span>send it</span></div>'+
+        '<p class="skheat-s">'+esc(mood.s)+'</p></div></div></div>';
+}
+function skGossip(D,region){
+  var items=(D.topNews||[]).filter(function(n){return n&&n.headline&&(!n.region||n.region===region);}).slice(0,3);
+  if(!items.length) return '';
+  var rows=items.map(function(n){
+    var tc=n.tone==='bullish'?'sk-bull':n.tone==='bearish'?'sk-bear':'sk-neu';
+    var ic=n.tone==='bullish'?'📈':n.tone==='bearish'?'📉':'📰';
+    var h=n.url?'<a href="'+esc(n.url)+'" target="_blank" rel="noopener">'+esc(n.headline)+' ↗</a>':esc(n.headline);
+    return '<div class="skgossip '+tc+'"><span class="skg-ic">'+ic+'</span><div><div class="skg-h">'+h+'</div>'+(n.why?'<div class="skg-w">'+esc(n.why)+'</div>':'')+'</div></div>';
+  }).join('');
+  return '<div class="sksec rev"><h2 class="skh">🗞️ Fresh gossip</h2>'+
+    '<p class="sksub">The headlines actually moving things '+(region==='au'?'🇦🇺':'🇺🇸')+' right now.</p>'+rows+'</div>';
+}
+function skPlate(D,region){
+  var wl=[]; try{ wl=wlGet().filter(function(w){return (w.region||'us')===region;}); }catch(e){}
+  if(!wl.length) return '';
+  var owned=wl.filter(function(w){return w.own;}).length, watched=wl.length-owned;
+  var chips=wl.slice(0,8).map(function(w){ return '<button class="skmine s2see" data-sym="'+esc(w.sym)+'" data-region="'+esc(w.region||region)+'">'+(w.own?'📦':'☆')+' '+esc(w.sym)+'</button>'; }).join('');
+  return '<div class="sksec rev"><h2 class="skh">🍴 Your plate</h2>'+
+    '<p class="sksub">'+(owned?owned+' you own':'')+(owned&&watched?' · ':'')+(watched?watched+' on your watchlist':'')+' '+(region==='au'?'🇦🇺':'🇺🇸')+' — tap to check in.</p>'+
+    '<div class="skminewrap">'+chips+'</div></div>';
+}
+function skLegend(){
+  return '<div class="sksec rev"><h2 class="skh">🧑‍🍳 Meet the fruit family</h2>'+
+    '<p class="sksub">Four little scores tell you almost everything. Tap any fruit on a card for the full breakdown.</p>'+
+    '<div class="skfam">'+
+      '<div class="skfam-row"><span class="skfam-e">🍊</span><div><b>Orange — timing</b><small>Is <i>now</i> a good moment to get in?</small></div></div>'+
+      '<div class="skfam-row"><span class="skfam-e">🍒</span><div><b>Cherry — conviction</b><small>How strong is the idea overall, once every signal votes?</small></div></div>'+
+      '<div class="skfam-row"><span class="skfam-e">🍌</span><div><b>Banana — fresh news</b><small>Good news the price <i>hasn’t</i> chased yet — you’re early.</small></div></div>'+
+      '<div class="skfam-row skfam-salad"><span class="skfam-e">🥗</span><div><b>Fruit salad — the trifecta</b><small>All three high at once. Rare, and the real sweet spot.</small></div></div>'+
+    '</div></div>';
+}
+function skScore(D){
+  if(!(OUTCOMES&&OUTCOMES.outcomes)) return '';
+  var rec=(OUTCOMES.record||'').split(/[–-]/), w=(rec[0]||'0').trim(), l=(rec[1]||'0').trim();
+  return '<div class="sksec rev"><h2 class="skh">🏅 The honest scoreboard</h2>'+
+    '<div class="skcard skboard"><div class="skboard-nums"><span class="w">'+esc(w)+'</span><span class="x">–</span><span class="l">'+esc(l)+'</span></div>'+
+    '<div class="skboard-lbl">wins – losses · <b>every</b> graded call, winners <i>and</i> losers. Anyone who only shows winners is selling you something.</div></div></div>';
+}
 function renderSimple(D){
-  var region=s2Region(), p=s2TopPick(D,region);
+  var region=s2Region();
   try{ document.body.classList.toggle('mkt-au', region==='au'); document.body.classList.toggle('mkt-us', region!=='au'); }catch(e){}   // 🎨 market-themed backdrop
+  var top=skPicks(D,region)[0]||null;
   document.getElementById('app').innerHTML =
     '<div class="s2prog" id="s2prog"></div>'+
     '<div class="s2top">'+
@@ -11891,10 +12110,16 @@ function renderSimple(D){
           '<button class="bmitem" id="adminBtnS" role="menuitem" style="display:none">🛠 Admin tools</button>'+
         '</div></div>'+
     '</div>'+
-    '<div class="s2wrap">'+
-      s2Story(D,region,p)+
-      s2Trust(D)+
-      (p?s2Close(p,region):'<section class="s2scene s2end"><div class="s2btns"><button class="s2btn ghost" id="viewFull3">🔍 See the full menu</button></div></section>')+
+    '<div class="skwrap">'+
+      skHero(D,region,top)+
+      skMenu(D,region)+
+      skHeat(D)+
+      skGossip(D,region)+
+      skPlate(D,region)+
+      skLegend(D)+
+      skScore(D)+
+      '<div class="skcta rev"><button class="skbtn ghost" id="viewFull3">🔍 Open the full kitchen →</button>'+
+        '<p class="skfoot">Not financial advice — a friendly kitchen guide. The call is always yours.</p></div>'+
     '</div>';
   wireSimple(D);
 }
@@ -11923,10 +12148,13 @@ function wireSimple(D){
   // scene reveal on scroll
   var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting)e.target.classList.add('in');});},{threshold:.16});
   document.querySelectorAll('.rev').forEach(function(el){io.observe(el);});
-  // "See the full card" → the #318 canonical overlay
+  // "See the full card" / plates / your-plate chips → the #318 canonical overlay
   document.querySelectorAll('.s2see[data-sym]').forEach(function(b){ b.onclick=function(){ openTicker(b.dataset.sym,b.dataset.region); }; });
   document.querySelectorAll('.watchbtn[data-sym]').forEach(function(b){ b.addEventListener('click',function(e){e.preventDefault();e.stopPropagation();watchToggleFromEl(b);}); });
   syncWatchButtons();
+  // #kitchen — the risk "heat" dot uses the shared needle placement; the "N more on the other market" switch
+  document.querySelectorAll('.skswitch[data-mkt]').forEach(function(b){ b.onclick=function(){ if(b.dataset.mkt===MKT)return; MKT=b.dataset.mkt; try{pushViewState();}catch(e){} window.scrollTo(0,0); renderSimple(D); }; });
+  try{ var _rl=(D.risk&&D.risk.level!=null)?+D.risk.level:50; requestAnimationFrame(function(){ placeNeedle('skHeatDot',_rl); }); }catch(e){}
 }
 
 function flashToast(msg){
