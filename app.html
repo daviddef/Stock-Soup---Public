@@ -679,6 +679,16 @@
   .docpage code{background:var(--surface-2);border-radius:5px;padding:1px 6px;font-size:12.5px}
   .docsload{padding:44px 20px;text-align:center;color:var(--muted)}
   .anload{padding:34px 6px;text-align:center;color:var(--muted);font-size:14px}
+  /* #ancook (19 Aug, user ask) — a "cooking" wait state while the analyst reads the tape: a bobbing pot + steam */
+  .ancook{display:flex;flex-direction:column;align-items:center;gap:12px}
+  .ancook .pot{position:relative;font-size:46px;line-height:1;animation:anbob 2.4s ease-in-out infinite}
+  .ancook .steam{position:absolute;left:50%;top:-10px;transform:translateX(-50%);width:28px;height:22px;pointer-events:none}
+  .ancook .steam i{position:absolute;bottom:0;width:4px;height:16px;border-radius:50%;background:linear-gradient(to top,rgba(255,180,120,0),rgba(255,190,130,.85));filter:blur(1.6px);opacity:0;animation:hsteam 2.6s ease-in-out infinite}
+  .ancook .steam i:nth-child(1){left:5px;animation-delay:0s}
+  .ancook .steam i:nth-child(2){left:12px;height:20px;animation-delay:.6s}
+  .ancook .steam i:nth-child(3){left:19px;animation-delay:1.2s}
+  @keyframes anbob{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-5px) rotate(2deg)}}
+  @media (prefers-reduced-motion:reduce){.ancook .pot{animation:none}.ancook .steam{display:none}}
   .anchips{display:flex;flex-wrap:wrap;gap:7px;margin:2px 0 10px}
   .anchip{display:inline-flex;align-items:center;gap:5px;background:var(--surface-2);border:1px solid var(--line);border-radius:9px;padding:6px 10px;font-size:12px;font-weight:800;color:var(--ink)}
   .anchip .ank{color:var(--muted);font-weight:700}
@@ -8423,7 +8433,7 @@ function openAnalyst(sym,region){
   var m=document.getElementById('modal'); m.className='modal';
   m.innerHTML='<div class="mhead v-hold"><button class="mclose" id="mClose" aria-label="Close">✕</button>'+mYahooBtn(sym,region)+'<div class="mtf">🧠 What would you do?</div>'+
     '<div class="mtop"><div><div class="msym">'+esc(sym)+'</div><div class="mco">the analyst is reading the tape…</div></div></div></div>'+
-    '<div class="mbody"><div class="anload">Crunching trend (ADX), momentum (RSI), volatility (ATR) &amp; the buy/sell zones…</div></div>';
+    '<div class="mbody"><div class="anload"><div class="ancook"><div class="pot">🍲<span class="steam"><i></i><i></i><i></i></span></div><div>Crunching trend (ADX), momentum (RSI), volatility (ATR) &amp; the buy/sell zones…</div></div></div></div>';
   var ov=document.getElementById('overlay'); ov.classList.add('open'); ov.setAttribute('aria-hidden','false');
   document.getElementById('mClose').onclick=closeModal;
   fetch(API_BASE+'/analyst?sym='+encodeURIComponent(sym)+'&region='+encodeURIComponent(region),{headers:{'Authorization':'Bearer '+sessGet()}})
