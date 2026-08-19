@@ -10518,11 +10518,12 @@ function fdrSentFallback(c){
   var growth=parseFloat(String(c.change==null?'':c.change).replace(/[^0-9.\-]/g,''))||0;   // rough proxy: today's move
   var U=Math.max(0,Math.min(1,1-Math.max(0,growth)/10));
   function daysAgo(d){ if(!d) return null; try{ return Math.floor((Date.now()-new Date(d).getTime())/86400000); }catch(e){ return null; } }
-  // A) news-scored candidate — proper newsflow tone (-3..+3), one-sided, ≤7-day
+  // A) news-scored candidate — proper newsflow tone (-3..+3), one-sided, ≤7-day. #sentlim: `limited` (single
+  // story) still counts (a fresh bullish announcement is the signal) — just damp the strength for thin coverage.
   var nf=c.newsflow;
-  if(nf && !nf.limited && nf.tone!=null && nf.tone>0){
+  if(nf && nf.tone!=null && nf.tone>0){
     var age=daysAgo(c.news_date); if(age==null||age>7) return null;
-    var S=Math.max(0,Math.min(1,nf.tone/2));
+    var S=Math.max(0,Math.min(1,nf.tone/2)); if(nf.limited) S*=0.75;
     return {score:Math.round(100*S*U), why:'Positive news ~'+age+'d ago (rough read — refines on the next run).'};
   }
   // B) #restone (19 Aug 2026, user-caught: QML) — a SCAN name (no newsflow) that DOES have Mac-sourced news in
