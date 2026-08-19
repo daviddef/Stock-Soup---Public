@@ -1534,6 +1534,21 @@
   .sal-gauge.sal-o i{background:var(--broth)} .sal-gauge.sal-c i{background:#d6283c} .sal-gauge.sal-b i{background:#d4a017}
   .sal-gread{font-size:11.5px;color:var(--muted);line-height:1.4;margin-bottom:9px}
   .sal-glab{display:flex;justify-content:space-between;font-size:12px;font-weight:800;margin-top:8px}
+  /* #snowflake — the 5-axis radar "shape" */
+  .snowwrap{text-align:center}
+  .snowflake{margin:4px auto 2px}
+  .snowcap{font-size:12.5px;color:var(--muted);line-height:1.45;margin:6px auto 0;max-width:42ch}.snowcap b{color:var(--ink)}
+  /* #bullbear — two-column case */
+  .bbgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:2px}
+  @media(max-width:520px){.bbgrid{grid-template-columns:1fr}}
+  .bb-col{border:1px solid var(--line);border-radius:13px;padding:11px 12px;background:var(--surface-2)}
+  .bb-col.bb-bull{border-color:rgba(35,194,103,.4);background:linear-gradient(180deg,rgba(35,194,103,.07),transparent)}
+  .bb-col.bb-bear{border-color:rgba(214,40,60,.4);background:linear-gradient(180deg,rgba(214,40,60,.06),transparent)}
+  .bb-head{font-weight:800;font-size:13px;margin-bottom:8px}
+  .bb-bull .bb-head{color:var(--buy)}.bb-bear .bb-head{color:var(--dont)}
+  .bb-row{padding:6px 0;border-top:1px dashed var(--line);font-size:12.5px;line-height:1.35}.bb-row:first-of-type{border-top:0}
+  .bb-row b{display:block;font-weight:800}.bb-row span{color:var(--muted);font-size:11.5px}
+  .bb-empty{color:var(--faint);font-size:12px;font-style:italic;padding:6px 0}
   /* #ownbadge — a small 📦 on cards for tickers you own */
   .ownbadge{display:inline-flex;align-items:center;font-size:12px;padding:2px 6px;border-radius:8px;background:rgba(35,194,103,.16);border:1px solid rgba(35,194,103,.4);line-height:1;cursor:help;flex:0 0 auto}
   .fdr-ownbadge{font-size:11px;padding:1px 4px;margin-left:4px}
@@ -2259,6 +2274,8 @@
   .skfruits .juicebtn,.skfruits .cherrybtn,.skfruits .banbtn,.skfruits .saladbadge{font-size:16px;font-weight:800;padding:8px 13px;border-radius:14px;line-height:1}
   .skfruits .saladbadge{font-size:19px}
   .skdish-line{font-size:15.5px;line-height:1.5;color:var(--ink);margin:14px 0 0}
+  .skdish-snow{margin:14px 0 2px;text-align:center}
+  .skdish-snowcap{font-size:11.5px;color:var(--muted);margin-top:2px}
   .skdish-chart{margin:15px 0 4px;border-radius:14px;overflow:hidden}
   .skdish-chart svg{display:block;width:100%;height:auto}
   .skplan{display:flex;gap:9px;flex-wrap:wrap;margin-top:14px}
@@ -6517,6 +6534,65 @@ function overallScore(buyNow, rows){
   var thin=tot<4;   // #257 coverage-honesty: flag when few signals actually back the number
   return {score:overall,verdict:verdict,vcls:vcls,buy:buyNow,pos:pos,neg:neg,total:tot,thin:thin,consensus:Math.round(consensus)};
 }
+// #snowflake (20 Aug 2026, competitive-research idea — Simply Wall St's signature) — a 5-axis "shape" per
+// stock you learn to read at a glance: 💰Value · 🏆Quality · 📈Growth · 🍊Timing · 🍌Buzz. All five from data
+// we already carry. Big + green + even = strong all-rounder; a spiky sliver = one-dimensional. Zero new data.
+function snowflakeAxes(o){
+  var fd=(o&&o.fundamentals)||{};
+  var buzz=(o&&o.sentimentScore&&o.sentimentScore.score!=null)?o.sentimentScore.score:null;
+  return [
+    {k:'value',label:'Value',emoji:'💰',v:(fd.value_score!=null?Math.round(fd.value_score):null)},
+    {k:'quality',label:'Quality',emoji:'🏆',v:(fd.quality_score!=null?Math.round(fd.quality_score):null)},
+    {k:'growth',label:'Growth',emoji:'📈',v:(fd.growth_score!=null?Math.round(fd.growth_score):null)},
+    {k:'timing',label:'Timing',emoji:'🍊',v:(o&&o.score&&o.score.buy_now!=null?Math.round(o.score.buy_now):null)},
+    {k:'buzz',label:'Buzz',emoji:'🍌',v:buzz}
+  ];
+}
+function snowflakeSVG(o){
+  var ax=snowflakeAxes(o), have=ax.filter(function(a){return a.v!=null;});
+  if(have.length<3) return '';   // need a real shape, not a line
+  var avg=Math.round(have.reduce(function(s,a){return s+a.v;},0)/have.length);
+  var col=avg>=60?'var(--buy)':avg>=40?'#e8a020':'var(--dont)';
+  var cx=100,cy=104,R=68;
+  function pt(i,val){ var ang=(-90+i*72)*Math.PI/180, r=R*Math.max(0,Math.min(100,val))/100; return [cx+r*Math.cos(ang),cy+r*Math.sin(ang)]; }
+  function ring(f){ return ax.map(function(a,i){var p=pt(i,f);return p[0].toFixed(1)+','+p[1].toFixed(1);}).join(' '); }
+  var grid=''; [25,50,75,100].forEach(function(f){ grid+='<polygon points="'+ring(f)+'" fill="none" stroke="var(--line)" stroke-width="1"/>'; });
+  var spokes='',labels='';
+  ax.forEach(function(a,i){ var e=pt(i,100); spokes+='<line x1="'+cx+'" y1="'+cy+'" x2="'+e[0].toFixed(1)+'" y2="'+e[1].toFixed(1)+'" stroke="var(--line)" stroke-width="1"/>';
+    var lp=pt(i,127), anchor=Math.abs(lp[0]-cx)<10?'middle':(lp[0]>cx?'start':'end');
+    labels+='<text x="'+lp[0].toFixed(1)+'" y="'+(lp[1]+3).toFixed(1)+'" font-size="9.5" font-weight="800" fill="var(--muted)" text-anchor="'+anchor+'">'+a.emoji+' '+(a.v!=null?a.v:'—')+'</text>';
+  });
+  var polyPts=ax.map(function(a,i){var p=pt(i,a.v!=null?a.v:4);return p[0].toFixed(1)+','+p[1].toFixed(1);}).join(' ');
+  var dots=ax.map(function(a,i){if(a.v==null)return '';var p=pt(i,a.v);return '<circle cx="'+p[0].toFixed(1)+'" cy="'+p[1].toFixed(1)+'" r="2.6" fill="'+col+'"/>';}).join('');
+  return '<svg class="snowflake" viewBox="0 0 200 212" width="100%" style="max-width:270px;display:block;margin:0 auto" aria-hidden="true">'+
+    grid+spokes+'<polygon points="'+polyPts+'" fill="'+col+'" fill-opacity="0.26" stroke="'+col+'" stroke-width="2" stroke-linejoin="round"/>'+dots+labels+'</svg>';
+}
+function snowflakeCard(o){
+  var svg=snowflakeSVG(o); if(!svg) return '';
+  var have=snowflakeAxes(o).filter(function(a){return a.v!=null;});
+  var avg=Math.round(have.reduce(function(s,a){return s+a.v;},0)/have.length);
+  var read=avg>=60?'A strong all-rounder — big and fairly even across the board.':avg>=40?'A mixed shape — strong on some axes, weaker on others.':'A thin shape — weak across most axes right now.';
+  return '<div class="viz snowwrap"><h4>❄️ The shape of it</h4>'+svg+
+    '<p class="snowcap">Bigger, greener &amp; more even = stronger all-round. <b>'+esc(read)+'</b> Each point is 0–100.</p></div>';
+}
+// #bullbear (20 Aug 2026, research idea) — the SAME signals, split into a plain-English "why it's tempting"
+// (green) vs "why to be careful" (red). Reuses signalRows' tones + the model's real penalty triggers. No new data.
+function bullBearHtml(o,region){
+  var rows=[]; try{ rows=signalRows(o,region); }catch(e){}
+  var bulls=[],bears=[],seen={};
+  rows.forEach(function(r){ if(r.tone==='pos') bulls.push({t:r.icon+' '+r.label,d:r.read}); else if(r.tone==='neg'){ bears.push({t:r.icon+' '+r.label,d:r.read}); seen[(r.label||'').toLowerCase()]=1; } });
+  var pd=(o&&o.score&&o.score.detail&&o.score.detail.penalty_detail)||[];
+  pd.forEach(function(p){ if(p&&p.why&&(p.pts||0)!==0) bears.push({t:'⚠️ Watch-out',d:p.why}); });
+  if(!bulls.length&&!bears.length) return '';
+  function colH(items,cls,head,empty){
+    return '<div class="bb-col '+cls+'"><div class="bb-head">'+head+'</div>'+
+      (items.length?items.slice(0,6).map(function(x){return '<div class="bb-row"><b>'+esc(x.t)+'</b>'+(x.d?'<span>'+esc(x.d)+'</span>':'')+'</div>';}).join(''):'<div class="bb-empty">'+empty+'</div>')+'</div>';
+  }
+  return '<div class="viz"><h4>⚖️ The case, both ways</h4><div class="bbgrid">'+
+    colH(bulls,'bb-bull','👍 Reasons it’s tempting','Nothing strongly in favour right now.')+
+    colH(bears,'bb-bear','👎 Reasons to be careful','No red flags jumping out.')+
+    '</div></div>';
+}
 // #kitchen-story (user ask) — "One pot, two scores": the live funnel (real per-run counts) + where each
 // score attaches + a worked example pulled from tonight's real pot. Lives in Inside the Kitchen.
 function kitchenScoreStory(D){
@@ -7046,9 +7122,11 @@ function tickerModalHTML(o, region, cur, isPick){
       callHtml+
       (o.plain?'<p class="mplain">'+esc(o.plain)+'</p>':'')+
       chartH+
+      (function(){try{return snowflakeCard(o);}catch(e){return '';}})()+   // ❄️ the 5-axis "shape of it"
       rangesHtml+
       (function(){try{return valBandHtml(o,cur);}catch(e){return '';}})()+
       rsiBlock+
+      (function(){try{return bullBearHtml(o,region);}catch(e){return '';}})()+   // ⚖️ the case, both ways
       (o.extraHtml||'')+   // analyst-only: 'Word on the street' consensus + Why/Watch-out (empty for picks/candidates)
       happeningHtml(o)+
       earningsCallLink(o.sym,region)+
@@ -12053,6 +12131,7 @@ function skHero(D,region,p){
       '<div class="skdish-head"><div class="skdish-id"><span class="sksym">'+esc(p.sym)+'</span><span class="skco">'+esc(p.name||'')+'</span></div>'+skVerdictStamp(p)+'</div>'+
       skFruitRow(p,region)+
       (line?'<p class="skdish-line">'+esc(line)+'</p>':'')+
+      (function(){try{var sf=snowflakeSVG(p);return sf?'<div class="skdish-snow">'+sf+'<div class="skdish-snowcap">❄️ its shape — bigger &amp; greener = stronger all-round</div></div>':'';}catch(e){return '';}})()+
       (chart?'<div class="skdish-chart">'+chart+'</div>':'')+
       (plan?'<div class="skplan">'+plan+'</div>':'')+
       '<div class="skbtns"><button class="skbtn primary s2see" data-sym="'+esc(p.sym)+'" data-region="'+esc(region)+'">See the full card →</button>'+
