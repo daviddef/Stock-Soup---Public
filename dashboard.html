@@ -7309,6 +7309,7 @@ var INFO={
     '<li>🍊 <b>Orange (Buy-Now)</b> — the model’s “how good a buy <i>right now</i>” score: catalyst + technicals + fundamentals rolled into one. Higher is stronger.</li>'+
     '<li>🍒 <b>Cherry</b> — the blended overall read: the orange score tempered by the full signal picture. This is the headline number on the card face.</li>'+
     '<li>🍌 <b>Sentiment</b> — a pure <i>news</i> read: <b>positive recent news the price hasn’t chased yet</b>. High = fresh bullish coverage (last ~7 days) on a name that <i>hasn’t</i> run up on it — a not-yet-priced-in candidate; it falls as the price rises on that news (past ~10% up = mostly priced in). Positive-news-only — quiet or negative names sit at 0, and a name with no recent news shows a dash. Sort by 🍌 to float fresh-news candidates to the top.</li>'+
+    '<li>🥗 <b>Fruit salad</b> — the <b>trifecta</b>: it shows the <i>weakest</i> of the three fruits (🍊/🍒/🍌). When all three are ≥ 60 it lights up as <b>🥗 N</b> — a rare sweet spot: a great setup (🍊), everything agrees (🍒), <b>and</b> there’s fresh news you’re early to (🍌). Otherwise it’s the plain weakest-fruit number (or — if a fruit is missing). Sort by 🥗 to rank every name by that weakest fruit, so only a true trifecta tops the list. Tap the 🥗 badge on any card for the full read.</li>'+
     '<li><b>Range</b> — where the price sits in its 1-year range: 0 = at the year’s low, 100 = at the year’s high.</li>'+
     '<li><b>Value</b> — how <i>cheap</i> it is on the fundamentals (P/E · P/B · PEG). Higher = better value.</li>'+
     '<li><b>Qual</b> — business quality (return on equity/assets, margins, balance sheet). Higher = stronger business.</li>'+
@@ -11230,13 +11231,19 @@ function fdrScatterHtml(rows){
 function fdrAxisRow(){ return '<div class="fdr-axrow"><label>X: '+fdrAxisSel('fdrX',FDR.xAxis)+'</label><label>Y: '+fdrAxisSel('fdrY',FDR.yAxis)+'</label></div>'; }
 function fdrTableHtml(rows){
   if(!rows.length) return fdrEmpty();
-  var cols=[['sym','Ticker'],['region','Mkt'],['m','Match'],['buyNow','🍊'],['cherry','🍒'],['sentiment','🍌'],['rangePos','Range'],['value','Value'],['quality','Qual'],['rsi','RSI'],['mcap','Cap'],['div','Div%']];
+  var cols=[['sym','Ticker'],['region','Mkt'],['m','Match'],['buyNow','🍊'],['cherry','🍒'],['sentiment','🍌'],['salad','🥗'],['rangePos','Range'],['value','Value'],['quality','Qual'],['rsi','RSI'],['mcap','Cap'],['div','Div%']];
   var head=cols.map(function(c){return '<th data-sk="'+c[0]+'">'+c[1]+'</th>';}).join('');
   var body=rows.slice(0,150).map(function(o){var s=o.s;
     return '<tr data-sym="'+esc(s.sym)+'" data-region="'+esc(s.region)+'" style="cursor:pointer">'+
       '<td><span class="fdr-tsym">'+esc(s.sym)+'</span> <span style="color:var(--muted)">'+esc(s.name)+'</span></td>'+
       '<td>'+(s.region==='au'?'ASX':'US')+'</td><td style="color:'+fdrColor(o.m)+';font-weight:800">'+o.m+'%</td>'+
-      '<td>'+(s.buyNow!=null?s.buyNow:'—')+'</td><td>'+(s.cherry!=null?s.cherry:'—')+'</td><td>'+(s.sentiment!=null?s.sentiment:'—')+'</td><td>'+(s.rangePos!=null?s.rangePos:'—')+'</td>'+
+      '<td>'+(s.buyNow!=null?s.buyNow:'—')+'</td><td>'+(s.cherry!=null?s.cherry:'—')+'</td><td>'+(s.sentiment!=null?s.sentiment:'—')+'</td>'+
+      (function(){ // 🥗 min-of-three; a full trifecta (all ≥ SALAD_MIN) is highlighted, else the plain weakest-fruit value / dash
+        if(s.buyNow==null||s.cherry==null||s.sentiment==null) return '<td style="color:var(--faint)">—</td>';
+        var mn=Math.min(s.buyNow,s.cherry,s.sentiment);
+        return mn>=SALAD_MIN ? '<td style="font-weight:800;color:var(--broth)">🥗 '+mn+'</td>' : '<td style="color:var(--muted)">'+mn+'</td>';
+      })()+
+      '<td>'+(s.rangePos!=null?s.rangePos:'—')+'</td>'+
       '<td>'+(s.value!=null?s.value:'—')+'</td><td>'+(s.quality!=null?s.quality:'—')+'</td><td>'+(s.rsi!=null?s.rsi:'—')+'</td>'+
       '<td>'+fdrMcap(s.mcap)+'</td><td>'+(s.div!=null?s.div:'—')+'</td></tr>';
   }).join('');
