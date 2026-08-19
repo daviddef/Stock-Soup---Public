@@ -8852,32 +8852,9 @@ function wlStatBlock(rows,title,icon,emptyMsg){
 // 📦 (user ask) — "today's movement card for the things I own": each owned holding with its TODAY move
 // (the existing stat cards above show since-FLAGGED %; this is today's session). All owned holdings with a
 // live change, biggest mover first, each tappable to its full read. Renders '' if nothing owned has a change.
-// (user ask) "Just in" for MY names — a consolidation of holdings-today + fresh news. Each holding shows its
-// today's move AND its own news headline (carried per-item through wlBuildRows via the #245 pulse enrichment,
-// so it never says "0" like the whole-market breaking sweep can); watch-only names with news follow below.
-function ownedMovesHtml(rows){
-  function pc(r){ var c=parseFloat(String(r.change||'').replace(/[^0-9.\-]/g,'')); return isFinite(c)?c:0; }
-  function newsBit(r){ var n=r.news; if(!n||!n.h) return '';
-    var old=''; try{ if(n.d && (Date.now()-new Date(n.d).getTime())/864e5>7) old='⚠️ '; }catch(e){}
-    var age=''; try{ if(n.d) age='<span class="fjn-age">'+esc(timeAgo(n.d))+'</span>'; }catch(e){}
-    var head=n.u?('<a href="'+esc(n.u)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()">'+esc(n.h)+'</a>'):esc(n.h);
-    return '<div class="fjn-news"><span class="fjn-dot"></span><span class="fjn-h">'+old+head+'</span>'+age+'</div>';
-  }
-  function row(r,ic){
-    var chg=(r.change!=null&&r.change!=='')?('<span class="fjn-chg '+(r.up?'up':'down')+'">'+(r.up?'▲':'▼')+' '+esc(r.change)+'</span>'):'';
-    return '<button class="fjn-row" data-sym="'+esc(r.w.sym)+'" data-region="'+esc(r.w.region)+'" title="Tap for '+esc(r.w.sym)+'’s full read">'+
-      '<div class="fjn-top"><span class="fjn-sym">'+ic+' '+esc(r.w.sym)+'</span><span class="fjn-name">'+esc(r.name||'')+'</span>'+chg+'</div>'+newsBit(r)+'</button>';
-  }
-  var owned=rows.filter(function(r){return r.w.own;});
-  var watch=rows.filter(function(r){return !r.w.own && r.news && r.news.h;});   // watch-only names that have fresh news
-  if(!owned.length && !watch.length) return '';
-  owned.sort(function(a,b){ return Math.abs(pc(b))-Math.abs(pc(a)); });   // biggest mover first
-  var up=owned.filter(function(r){return r.up===true;}).length, dn=owned.filter(function(r){return r.up===false;}).length;
-  var ownH=owned.length? '<div class="omvgrid">'+owned.map(function(r){return row(r,'📦');}).join('')+'</div>'
-                       : '<div class="pxr-load">Flag something as owned (📦 on a card) to see it here.</div>';
-  var watchH=watch.length? '<h4 style="margin-top:15px">👀 On your watchlist — fresh news</h4><div class="omvgrid">'+watch.map(function(r){return row(r,'👀');}).join('')+'</div>' : '';
-  return '<div class="viz omvcard"><h4>📦 Your holdings — today &amp; what\'s new'+(owned.length?' <span class="omv-tally">'+up+' up · '+dn+' down</span>':'')+'</h4>'+ownH+watchH+'</div>';
-}
+// #wl-std (17 Aug) — the separate "Your holdings — today & what's new" + "On your watchlist — fresh news"
+// grids (ownedMovesHtml) were removed as clutter (user ask): every watchlist/holding card now carries its own
+// one-line latest-news headline inline (newsLineHtml in card()), so a second stacked news list was redundant.
 function renderWlSummary(rows){
   var el=document.getElementById('wlSummary'); if(!el) return;
   if(!rows.length){ el.innerHTML=''; return; }
