@@ -2375,6 +2375,15 @@
   .skweather{display:flex;align-items:center;gap:12px;margin-top:11px;padding:12px 14px;border-radius:15px;background:var(--surface-2);border:1px solid var(--line)}
   .skwx-e{font-size:30px;line-height:1;flex:0 0 auto}
   .skweather b{font-size:14px}.skweather small{display:block;color:var(--muted);font-size:12px;line-height:1.4;margin-top:2px}
+  /* #onepager — the unified winners' board */
+  .ug-grid{display:flex;flex-direction:column;gap:6px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:12px 10px;box-shadow:var(--shadow);overflow-x:auto}
+  .ug-row{display:grid;grid-template-columns:74px repeat(var(--ugcols,4),minmax(60px,1fr));gap:6px;align-items:stretch}
+  .ug-head .ug-th{text-align:center;padding:2px 0}.ug-th b{font-size:13px;display:block}.ug-th small{font-size:9.5px;color:var(--faint);text-transform:uppercase;letter-spacing:.03em}
+  .ug-rl{display:flex;align-items:center;gap:5px;font-size:11.5px;font-weight:800;color:var(--muted)}.ug-fe{font-size:16px}
+  .ug-cell{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;background:var(--surface-2);border:1px solid var(--line);border-radius:11px;padding:7px 4px;cursor:pointer;position:relative;min-height:52px}
+  .ug-cell:active{transform:scale(.97)}.ug-cell.ug-empty{color:var(--faint);cursor:default;font-weight:800}
+  .ug-flag{font-size:10px;line-height:1}.ug-sym{font-weight:800;font-size:13px;line-height:1.1}.ug-v{font-weight:800;font-size:15px;line-height:1}
+  .ug-salad{position:absolute;top:2px;right:3px;font-size:11px}
   /* fresh gossip */
   .skgossip{display:flex;gap:11px;padding:13px 15px;border-radius:15px;background:var(--surface);border:1px solid var(--line);border-left-width:4px}
   .skgossip.sk-bull{border-left-color:var(--buy)}.skgossip.sk-bear{border-left-color:var(--dont)}.skgossip.sk-neu{border-left-color:var(--faint)}
@@ -12334,6 +12343,52 @@ function skPicks(D,region){
   return rg?(rg.picks||[]).filter(function(p){return p&&p.sym&&p.sym!=='NONE'&&p.score&&p.score.buy_now!=null;})
     .sort(function(a,b){return b.score.buy_now-a.score.buy_now;}):[];
 }
+// #onepager (20 Aug 2026, user idea) — the UNIFIED one-glance grid: rows = the three fruits (🍊 timing ·
+// 🍒 conviction · 🍌 news), columns = the tiers (T1 catalyst · T2 balanced · T3 aggressive · ⭐ Overall pot),
+// each cell = the TOP name for that fruit×tier across BOTH markets (a 🇦🇺/🇺🇸 flag on each). One board that
+// answers "what's the single best timing / conviction / fresh-news play at each risk level, right now?".
+function _tierPool(D,tier){
+  var out=[];
+  if(tier==='t1'){ (D.regions||[]).forEach(function(r){(r.picks||[]).forEach(function(p){ if(p&&p.sym&&p.sym!=='NONE'&&p.score&&p.score.buy_now!=null){ p.__reg=r.id||p.region||'us'; out.push(p);} });}); }
+  else if(tier==='overall'){ (D.candidates||[]).forEach(function(c){ if(c&&c.sym&&c.sym!=='NONE'&&c.score&&c.score.buy_now!=null){ c.__reg=c.region||'us'; out.push(c);} }); }
+  else { var mt=D.modelTiers||{}, key=tier==='t2'?'type2':'type3'; ['au','us'].forEach(function(m){ (((mt[key]||{})[m])||[]).forEach(function(p){ if(p&&p.sym&&p.sym!=='NONE'&&p.score&&p.score.buy_now!=null){ p.__reg=p.region||m; out.push(p);} }); }); }
+  return out;
+}
+var _uniScoreMemo={};
+function _uniScores(p){
+  var key=p.sym+'|'+(p.__reg||p.region||'us'); if(_uniScoreMemo[key]) return _uniScoreMemo[key];
+  var reg=p.__reg||p.region||'us';
+  var timing=Math.round(p.score.buy_now), conviction=null, news=null;
+  try{ var ov=overallScore(p.score.buy_now, signalRows(p,reg)); if(ov&&ov.score!=null) conviction=ov.score; }catch(e){}
+  try{ var b=_sentResolve(p.sym,reg,p); if(b&&b.score!=null) news=b.score; }catch(e){}
+  var r={timing:timing,conviction:conviction,news:news,reg:reg}; _uniScoreMemo[key]=r; return r;
+}
+function unifiedGridHtml(D){
+  _uniScoreMemo={};
+  var tiers=[['t1','T1','catalyst'],['t2','T2','balanced'],['t3','T3','wild'],['overall','⭐','whole pot']];
+  tiers=tiers.filter(function(t){ return _tierPool(D,t[0]).length>0; });
+  if(tiers.length<2) return '';
+  var fruits=[['timing','🍊','Timing'],['conviction','🍒','Conviction'],['news','🍌','News']];
+  function topCell(tier,fruit){
+    var pool=_tierPool(D,tier), best=null, bv=-1;
+    pool.forEach(function(p){ var v=_uniScores(p)[fruit]; if(v!=null&&v>bv){ bv=v; best=p; } });
+    if(!best||bv<0) return '<div class="ug-cell ug-empty">—</div>';
+    var reg=best.__reg||best.region||'us', c=bv>=62?'var(--buy)':bv>=45?'#c47a1e':'var(--dont)';
+    var sal=''; try{ var si=saladInfo(best.sym,reg,best); if(si&&si.min>=SALAD_MIN) sal='<span class="ug-salad">🥗</span>'; }catch(e){}
+    return '<button class="ug-cell s2see" data-sym="'+esc(best.sym)+'" data-region="'+esc(reg)+'">'+
+      '<span class="ug-flag">'+(reg==='au'?'🇦🇺':'🇺🇸')+'</span><span class="ug-sym">'+esc(best.sym)+'</span>'+sal+
+      '<span class="ug-v" style="color:'+c+'">'+bv+'</span></button>';
+  }
+  var head='<div class="ug-row ug-head"><div class="ug-rl"></div>'+tiers.map(function(t){return '<div class="ug-th"><b>'+esc(t[1])+'</b><small>'+esc(t[2])+'</small></div>';}).join('')+'</div>';
+  var body=fruits.map(function(f){
+    return '<div class="ug-row"><div class="ug-rl"><span class="ug-fe">'+f[1]+'</span>'+esc(f[2])+'</div>'+
+      tiers.map(function(t){return topCell(t[0],f[0]);}).join('')+'</div>';
+  }).join('');
+  return '<div class="sksec rev"><h2 class="skh">🏆 The winners’ board</h2>'+
+    '<p class="sksub">The <b>top name</b> for each lens (🍊 timing · 🍒 conviction · 🍌 fresh news) at each risk level — both markets 🇦🇺🇺🇸 in one view. Tap any to open it.</p>'+
+    '<div class="ug-grid" style="--ugcols:'+tiers.length+'">'+head+body+'</div>'+
+    '<p class="skfoot" style="margin-top:8px">T1 = tonight’s catalyst picks · T2/T3 = the whole-market scan (balanced → wild) · ⭐ = the whole pot. 🥗 = strong on all three at once.</p></div>';
+}
 function skMood(D,region){
   var picks=skPicks(D,region), strong=picks.filter(function(p){return p.score.buy_now>=60;}).length;
   var lvl=(D.risk&&D.risk.level!=null)?+D.risk.level:50;
@@ -12481,6 +12536,7 @@ function renderSimple(D){
     '</div>'+
     '<div class="skwrap">'+
       skHero(D,region,top)+
+      (function(){try{return unifiedGridHtml(D);}catch(e){return '';}})()+   // 🏆 unified winners' board (all fruits × tiers × markets)
       skMenu(D,region)+
       skHeat(D)+
       skGossip(D,region)+
