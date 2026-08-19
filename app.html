@@ -3228,8 +3228,12 @@ function trailDerived(D){
   var served=regions.reduce(function(n,rg){return n+(rg.picks||[]).filter(function(p){return p.sym&&p.sym!=='NONE';}).length;},0);
   var listedN=shortlisted;
   var forWhere = MKT==='au' ? 'for 🇦🇺 Australia' : 'for 🇺🇸 the US';
-  // a real, current example: the most-overheated candidate we docked (not a stale hardcoded name)
-  var hot=cands.filter(function(c){return c&&c.score&&(c.score.heat||0)>3;}).sort(function(a,b){return (b.score.heat||0)-(a.score.heat||0);})[0];
+  // a real, current example: the most-overheated candidate we docked (not a stale hardcoded name).
+  // BUG FIXED (20 Aug audit): keyed off `c.score.heat` which never existed (score has no `heat`; the string
+  // heat is on the candidate, `c.heat`) so this example was always unreachable. The real heat PENALTY is
+  // `score.detail.penalties.heat` (P_heat).
+  function _heatPen(c){ return (((c.score||{}).detail||{}).penalties||{}).heat||0; }
+  var hot=cands.filter(function(c){return c&&c.score&&_heatPen(c)>3;}).sort(function(a,b){return _heatPen(b)-_heatPen(a);})[0];
   var hotEg = hot ? ('E.g. <b>'+esc(hot.sym)+'</b> was docked for running hot.') : 'Overheated names get docked so we don’t chase what already ran.';
   return [
     {n:'01',text:'<b>Scanned the market</b> — a wide net across news, market movers and analyst actions, then shortlisted the strongest.',note:'A live read — a different-sized net every run, depending on the day’s news.',jump:'howfunnel',jumpLabel:'see all '+listedN+' '+forWhere+' →'},
@@ -11831,60 +11835,10 @@ function boot(D,H){
 }
 var BIG = {"Day":"⚡ TODAY","Week":"📅 THIS WEEK","Long":"📈 LONG GAME"};
 
-// #146 (user ask, "Villager View") — Simple view reworked to be "so dumb and stupid any 3 year old
-// can pick it up... funny as hell... none of the technical stuff." No RSI/score/signal numbers on
-// the card face — those still exist one tap away via openModal (same real data, #54's transparency
-// rule still holds, just not thrust at you first). Every line below is a genuine translation of a
-// real field (verdict/rsi/up-down/hot-tags), not made-up flavor text disconnected from the data.
-var VILLAGER_MASCOTS=['🐷','🐢','🦁','🦊','🐸','🦉','🐨','🐙','🐝','🦄','🐻','🐰'];
-function villagerMascot(sym){
-  var h=0; for(var i=0;i<(sym||'').length;i++) h=(h*31+sym.charCodeAt(i))>>>0;
-  return VILLAGER_MASCOTS[h%VILLAGER_MASCOTS.length];
-}
-function villagerSticker(p){
-  var v=(p.verdict||'').toLowerCase();
-  if(p.sym==='NONE') return {word:'ZZZ',cls:'v-zzz',emoji:'😴'};
-  if(/wait|late|hold|skip|avoid|pass|don.t|steer/.test(v)) return {word:'NAH',cls:'v-nah',emoji:'🙅'};
-  if(/get in|buy/.test(v)) return {word:'YUM!',cls:'v-yum',emoji:'🥣'};
-  return {word:'HMM',cls:'v-hmm',emoji:'🤔'};
-}
-function villagerLine(p){
-  if(p.sym==='NONE') return 'Nothing to serve here right now — check back soon! 👀';
-  var v=(p.verdict||'').toLowerCase(), buy=/get in|buy/.test(v);
-  if(buy&&p.rsi!=null&&p.rsi>=70) return 'On a hot streak — might need a little nap, but still tasty!';
-  if(buy&&p.rsi!=null&&p.rsi<=35) return 'Total bargain right now — like a sale on your favourite snack!';
-  if(buy) return 'Steady as she goes — quietly doing its thing.';
-  return 'Sitting this one out for now — already had its big moment today.';
-}
-function villagerCard(p,rid,idx){
-  var s=villagerSticker(p), line=villagerLine(p);
-  if(p.sym==='NONE'){
-    return '<article class="vcard vcard-zzz" tabindex="0" role="button" data-region="'+rid+'" data-idx="'+idx+'" aria-label="No pick this run"><div class="vmasc">😴</div><div class="vsticker '+s.cls+'">'+s.emoji+' '+s.word+'</div><div class="vline">'+esc(line)+'</div></article>';
-  }
-  return '<article class="vcard" tabindex="0" role="button" data-region="'+rid+'" data-idx="'+idx+'" aria-label="Details for '+esc(p.sym)+'">'+
-    '<button class="watchbtn iconwatch vwatch" data-sym="'+esc(p.sym)+'" data-region="'+esc(rid)+'" data-name="'+esc(p.name)+'"'+(p.nEntry!=null?' data-entry="'+p.nEntry+'"':'')+' aria-pressed="false" title="Keep an eye on it">☆</button>'+
-    '<div class="vmasc">'+villagerMascot(p.sym)+'</div>'+
-    '<div class="vsym">'+esc(p.sym)+'</div>'+
-    (p.name?'<div class="vname">'+esc(p.name)+'</div>':'')+
-    '<div class="vsticker '+s.cls+'">'+s.emoji+' '+s.word+'</div>'+
-    '<div class="vprice">'+esc(p.price||'')+' <span class="'+chgTone(p.change,p.up)+'">'+chgArrow(chgTone(p.change,p.up))+' '+esc(p.change||'')+'</span></div>'+
-    '<div class="vline">'+esc(line)+'</div></article>';
-}
-function villagerMood(r){
-  var off=r.label&&r.label.indexOf('OFF')>=0, on=r.label&&r.label.indexOf('ON')>=0;
-  if(off) return {emoji:'🙈',word:'HIDE!',line:'Markets are grumpy today — playing it safe.'};
-  if(on) return {emoji:'🚀',word:'GO TIME!',line:'Markets are happy — good day to be brave.'};
-  return {emoji:'😌',word:'CHILL',line:'Nothing wild happening — just a normal day.'};
-}
-function villagerThemeLine(D){
-  var parts=(D.hotTags||'').split('·').map(function(s){return s.trim();}).filter(Boolean);
-  var gold=false, rest=[];
-  parts.forEach(function(t){ if(/\bgold\b/i.test(t)) gold=true; else rest.push(t); });
-  var names=rest.map(stripHeatWord).filter(Boolean);
-  if(gold) names.unshift('Gold');
-  if(!names.length) return '';
-  return names.slice(0,3).join(', ')+' '+(names.length>1?'are':'is')+' the popular kid'+(names.length>1?'s':'')+' at school today! 🌟';
-}
+// #146 Villager view REMOVED (20 Aug 2026 audit cleanup) — the old villagerCard/Mascot/Sticker/Line/Mood/
+// ThemeLine cluster was fully superseded by the sk* "Tonight's Kitchen" Simple view and was dead code (only
+// ever referenced within itself). It also still carried the pre-#216 unguarded `(D.hotTags||'').split('·')`
+// landmine that once blanked the whole page — so it's a real risk to keep dormant. Deleted.
 // #172 (RE-BUILT 10 Aug 2026 — was wrongly marked done; the tier concept had only become header pills).
 // User's real ask: "a fun matrix of tier 3 on the risk side, then tier 2, then 1, and show D/W/M as 3 in
 // a column for each — a 3x3 fun view." Columns = Tier 3 (wildest/whole-market) → Tier 2 → Tier 1 (safest/
