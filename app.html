@@ -6059,8 +6059,14 @@ function bananaChip(sym, region, obj){
 var SALAD_MIN=60;
 function saladInfo(sym, region, obj){
   region=region||'us';
-  var o=obj;
-  if(!o||!o.score||o.score.buy_now==null){ try{ o=((LAST&&LAST.D||{}).candidates||[]).filter(function(x){return x.sym===sym&&(x.region||'us')===region;})[0]; }catch(e){} }
+  // #salad-reconcile — compute ALL THREE fruits from the CANONICAL pot candidate (by sym,region) whenever one
+  // exists, NOT the passed pick/card object. A pick and its pot candidate carry different signal fields, so
+  // overallScore(🍒) lands differently on each (BHP: 66 in the pot vs 58 on the action card) — which meant the
+  // same name read as a 🥗 salad on one surface and not another. Resolving from the candidate makes the salad
+  // verdict identical everywhere. The passed obj is only a fallback for an off-pot name with no candidate row.
+  var o=null;
+  try{ o=((LAST&&LAST.D||{}).candidates||[]).filter(function(x){return x.sym===sym&&(x.region||'us')===region;})[0]; }catch(e){}
+  if(!o||!o.score||o.score.buy_now==null) o=obj;
   if(!o||!o.score||o.score.buy_now==null) return null;
   var orange=Math.round(o.score.buy_now), cherry=null;
   try{ var ov=overallScore(o.score.buy_now, signalRows(o,region||'us')); if(ov&&ov.score!=null) cherry=Math.round(ov.score); }catch(e){}
