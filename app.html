@@ -1519,6 +1519,9 @@
   .banchip{display:inline-flex;align-items:center;gap:2px;font-size:12px;font-weight:800;padding:2px 8px;border-radius:8px;background:rgba(240,190,20,.20);color:#a37a00;cursor:pointer;white-space:nowrap;border:0;font-family:var(--font)}
   :root[data-theme="dark"] .banchip, :root:not([data-theme="light"]) .banchip{color:#e8c34a}
   .banbtn{transition:transform .12s} .banbtn:hover{filter:brightness(1.05)} .banbtn.pop{animation:pop .5s}
+  /* #ownbadge — a small 📦 on cards for tickers you own */
+  .ownbadge{display:inline-flex;align-items:center;font-size:12px;padding:2px 6px;border-radius:8px;background:rgba(35,194,103,.16);border:1px solid rgba(35,194,103,.4);line-height:1;cursor:help;flex:0 0 auto}
+  .fdr-ownbadge{font-size:11px;padding:1px 4px;margin-left:4px}
   /* #banana-overlay — the 🍌 breakdown modal */
   .bansum-lead{font-size:14px;line-height:1.5;margin:0} .bansum-why{margin:9px 0 0;font-size:13px;font-weight:700;color:var(--broth)}
   .banirow{display:flex;gap:11px;align-items:flex-start;padding:9px 0;border-top:1px solid var(--line)}
@@ -5469,7 +5472,7 @@ function render(D,H){
           /* #orange-top (user ask) — the 🍊 score chip now leads the header, next to the + watch button,
              instead of only appearing lower by the score bar. Same chip/behaviour: tap → the full breakdown
              (juice modal) when we have the detail, else a plain 🍊 score badge. */
-          dualChip(p.score,p.sym,p.name,signalRows(p,rg.id))+bananaChip(p.sym,rg.id,p)+   /* #banana — news-Sentiment 🍌 on the served pick card */
+          dualChip(p.score,p.sym,p.name,signalRows(p,rg.id))+bananaChip(p.sym,rg.id,p)+ownBadge(p.sym,rg.id)+   /* #banana + #ownbadge on the served pick card */
           '<button class="watchbtn iconwatch" data-sym="'+esc(p.sym)+'" data-region="'+esc(rg.id)+'" data-name="'+esc(p.name)+'"'+(p.nEntry!=null?' data-entry="'+p.nEntry+'"':'')+' aria-pressed="false" title="Add to watchlist">☆</button><span class="verdict '+esc(p.vclass)+'">'+esc(p.verdict)+'</span></span></div>'+
         replNote+
         '<div class="tick"><span class="symwrap"><span class="sym">'+qlink(p.sym,rg.id)+'</span><span class="co">'+qlink(p.sym,rg.id,p.name)+' ↗</span></span>'+
@@ -6009,6 +6012,12 @@ function bananaChip(sym, region, obj){
   if(sc==null) return '';
   return '<button class="banbtn banchip" data-ban-sym="'+esc(sym)+'" data-ban-region="'+esc(region)+'" title="Sentiment — tap for the full breakdown">🍌 '+sc+'</button>';
 }
+// #ownbadge (19 Aug 2026, user ask) — a small 📦 on any card for a ticker you OWN (a holding), so your own
+// positions are obvious at a glance. Reads the per-device watchlist's `own` flag (wlOwns). Client-side.
+function ownBadge(sym, region){
+  try{ if(wlOwns(sym, region||'us')) return '<span class="ownbadge" title="You own this — it’s one of your holdings">📦</span>'; }catch(e){}
+  return '';
+}
 // #banana-overlay (19 Aug 2026, user ask) — the 🍌 opens the SAME kind of breakdown modal the 🍊/🍒 do, and
 // accurately describes what the banana stands for. It resolves the full sentiment object (score + why + the
 // three ingredients: news tone, growth-since-the-news, freshness) and explains, crucially, that this is a PURE
@@ -6051,7 +6060,7 @@ function openBanana(sym, region){
         ing('⏱️','How fresh the news is', frVal, frRead)+
         '<p class="banformula">Score = <b>news positivity</b> × <b>how little it’s grown since</b>. Positive news only (neutral/negative = 0), last 7 days, and past ~10% up on the news it’s treated as priced-in.</p>'+
       '</div>'+
-      '<div class="viz banfit"><h4>Where it fits</h4><p>The 🍌 is <b>deliberately separate</b> from the 🍊 <b>Buy-now</b> (timing) and the 🍒 <b>Conviction</b> (all signals blended). It is <b>NOT folded into either score</b> — it’s its own lens so you can hunt for fresh-news candidates directly (sort the Stock Pot by 🍌). The <i>earnings/news signals that DO move the 🍊</i> — the EPS beat/miss (PEAD) and news-flow nudge — live inside the orange; the banana is the standalone news-timing view.</p></div>'+
+      '<div class="viz banfit"><h4>Where it fits</h4><p>The 🍌 is <b>deliberately separate</b> from the 🍊 <b>Buy-now</b> (timing) and the 🍒 <b>Conviction</b> (all signals blended). It is <b>NOT folded into either score</b> — it’s its own lens so you can hunt for fresh-news candidates directly (sort the Stock Pot by 🍌). The <i>earnings/news signals that DO move the 🍊</i> — the EPS beat/miss (PEAD), EPS <i>growth</i> (forward vs trailing), and the news-flow nudge — live inside the orange; the banana is the standalone news-timing view.</p></div>'+
     '</div>';
   var ov=document.getElementById('overlay'); if(ov){ ov.classList.add('open'); ov.setAttribute('aria-hidden','false'); }
   var mc=document.getElementById('mClose'); if(mc){ mc.onclick=closeModal; mc.focus(); }
@@ -6670,6 +6679,7 @@ function tickerModalHTML(o, region, cur, isPick){
     try{ chips+=cherryChip(o.score,o.sym,o.name,signalRows(o,region)); }catch(e){}
   }
   try{ chips+=bananaChip(o.sym,region,o); }catch(e){}   // #banana — news-Sentiment 🍌 chip in the overlay header
+  try{ chips+=ownBadge(o.sym,region); }catch(e){}   // #ownbadge — 📦 if you own it
   try{ chips+=earnFlag(o.sym,region); }catch(e){}   // #bhp-fix — loud "🔴 reports tomorrow" flag in the overlay too
   var watchBtn='<button class="watchbtn iconwatch callwatch" data-sym="'+esc(o.sym)+'" data-region="'+esc(region)+'"'+(o.name?' data-name="'+esc(o.name)+'"':'')+(isPick&&o.nEntry!=null?' data-entry="'+o.nEntry+'"':'')+' aria-pressed="false" title="Add to watchlist">☆</button>';
   var planHtml='';
@@ -10989,7 +10999,7 @@ function fdrCardsHtml(rows){
   return '<div class="fdr-grid">'+rows.slice(0,80).map(function(o){var s=o.s;
     return '<div class="fdr-card" data-sym="'+esc(s.sym)+'" data-region="'+esc(s.region)+'" role="button" tabindex="0" aria-label="'+esc(s.sym)+'">'+
       '<span class="fdr-stripe" style="background:'+(showMatch?fdrColor(o.m):'var(--broth)')+'"></span>'+
-      '<div class="fdr-ctop"><span class="fdr-csym">'+esc(s.sym)+'</span>'+fdrSrcBadge(s)+'<span class="fdr-cflag">'+(s.region==='au'?'ASX':'US')+'</span>'+
+      '<div class="fdr-ctop"><span class="fdr-csym">'+esc(s.sym)+'</span>'+fdrSrcBadge(s)+ownBadge(s.sym,s.region)+'<span class="fdr-cflag">'+(s.region==='au'?'ASX':'US')+'</span>'+
         '<button class="watchbtn iconwatch fdr-cwatch'+(wlHas(s.sym,s.region)?' on':'')+'" data-sym="'+esc(s.sym)+'" data-region="'+esc(s.region)+'"'+(s.name?' data-name="'+esc(s.name)+'"':'')+' aria-pressed="'+(wlHas(s.sym,s.region)?'true':'false')+'" title="Add to watchlist">'+(wlHas(s.sym,s.region)?'✓':'☆')+'</button></div>'+
       '<div class="fdr-cname">'+esc(s.name)+'</div>'+
       // #scan-label (19 Aug, user ask) — a scan-only 🍊 (no 🍒) is a shallow technicals+fundamentals score, NOT
