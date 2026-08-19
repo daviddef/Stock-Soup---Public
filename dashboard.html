@@ -3894,6 +3894,17 @@ function signalRows(p,region,opts){
       explain:'Momentum gauge, 0–100. Above 70 = overbought (often pulls back); below 35 = oversold (often bounces).',
       diagram:sigDiagRSI(rsi)});
   }
+  // #rvol (19 Aug 2026, competitive-research idea) — relative volume is one of the most intuitive early-move
+  // tells for a layperson ("trading 3× its usual pace = something's happening"). We already compute volume_ratio
+  // (today's volume ÷ 20-day average) — surface it. DISPLAY-ONLY (tone 'mix', casts no 🍒 vote, so it can't
+  // change any score; the vol category already feeds the 🍊). Honest EOD caveat in the explain.
+  var _vr=(p&&p.volume_ratio!=null)?p.volume_ratio:(((p&&p.score&&p.score.detail&&p.score.detail.raw)||{}).volume_ratio);
+  if(_vr!=null&&_vr>=1.5){
+    var _vx=Math.round(_vr*10)/10;
+    rows.push({icon:'🔊',label:_vx+'× volume',tone:'mix',
+      read:_vr>=3?'Trading '+_vx+'× its usual pace — a big crowd showed up':'Busier than usual — '+_vx+'× its normal volume',
+      explain:'How today\'s trading volume compares to its 20-day average. '+_vx+'× means '+_vx+' times the usual number of shares changed hands — a spike in participation that often precedes or confirms a real move (it already lifts the 🍊 timing score). Note: this is END-OF-DAY volume, so an intraday surge only shows once that day\'s bar closes.'});
+  }
   var t=p&&p.trend;
   if(t&&(t.adx!=null||t.macd_pos!=null)){
     var strong=t.adx!=null&&t.adx>=25, tone,read;
