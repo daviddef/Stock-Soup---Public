@@ -6140,12 +6140,12 @@ function ownBadge(sym, region){
 // NEWS lens — deliberately SEPARATE from the 🍊 buy-now and 🍒 conviction scores, not folded into either.
 function openBanana(sym, region){
   region=region||'us';
-  var sc=null, nm=sym;
+  var sc=null, nm=sym, srcObj=null;
   function resolve(o){ if(!o) return false; nm=o.name||nm;
-    if(o.sentimentScore && o.sentimentScore.score!=null){ sc=o.sentimentScore;
+    if(o.sentimentScore && o.sentimentScore.score!=null){ sc=o.sentimentScore; srcObj=o;
       if(sc.tone==null && o.newsflow && o.newsflow.tone!=null) sc=Object.assign({tone:o.newsflow.tone, stories:o.newsflow.stories, limited:o.newsflow.limited}, sc);
       return true; }
-    try{ var f=fdrSentFallback(o); if(f){ sc=f; return true; } }catch(e){}
+    try{ var f=fdrSentFallback(o); if(f){ sc=f; srcObj=o; return true; } }catch(e){}
     return false; }
   try{
     var D=(LAST&&LAST.D)||{};
@@ -6171,6 +6171,25 @@ function openBanana(sym, region){
   var frRead = age==null?'—':age<=1?'Broke in the last day.':age<=3?'A few days old.':'Within the last week (past ~7 days = too stale to count).';
   var frVal = age==null?null:(Math.round(age)+'d ago');
   var band = score>=60?'a strong fresh-news candidate':score>=40?'warming — worth a look':score>=20?'a soft/early read':'quiet or already priced in';
+  // #banana-news (19 Aug 2026, user ask) — show the ACTUAL headlines from the last 3 days that this read is
+  // built on. Gathered from the resolved object's news_top3 + lead headline AND the Mac-sourced newsCache,
+  // deduped by title, filtered to items dated ≤3 days (undated dropped — we can't prove they're fresh).
+  var newsBlock=(function(){
+    var seen={}, out=[];
+    function add(title,url,date){ if(!title) return; var k=String(title).toLowerCase().replace(/[^a-z0-9]+/g,' ').trim().slice(0,80); if(!k||seen[k]) return; seen[k]=1;
+      var days=null; if(date){ try{ days=Math.floor((Date.now()-new Date(date).getTime())/86400000); }catch(e){} }
+      out.push({title:title,url:url,days:days}); }
+    try{ if(srcObj){
+      if(srcObj.news) add(srcObj.news, srcObj.news_url, srcObj.news_date);
+      (srcObj.news_top3||[]).forEach(function(n){ add(n.title||n.t, n.url||n.u, n.date||n.d); });
+    } }catch(e){}
+    try{ var nc=newsCacheGet(sym,region); if(nc){ if(nc.headline) add(nc.headline, nc.url, nc.date); (nc.top3||[]).forEach(function(n){ add(n.title||n.t, n.url||n.u, n.date||n.d); }); } }catch(e){}
+    var fresh=out.filter(function(x){ return x.days!=null && x.days<=3; }).sort(function(a,b){ return (a.days||0)-(b.days||0); });
+    if(!fresh.length) return '<div class="viz"><h4>📰 Headlines · last 3 days</h4><p class="banformula" style="margin-top:0">No dated headlines in the last 3 days for '+esc(sym)+' — the score above uses whatever recent coverage we have (see the freshness ingredient).</p></div>';
+    var rows=fresh.slice(0,6).map(function(a){ var age=a.days<1?'today':a.days===1?'1d ago':a.days+'d ago';
+      return '<div class="nt3row">'+(a.url?'<a href="'+esc(a.url)+'" target="_blank" rel="noopener">'+esc(a.title)+' ↗</a>':esc(a.title))+'<span class="nt3age">'+age+'</span></div>'; }).join('');
+    return '<div class="viz"><h4>📰 Headlines · last 3 days</h4><div class="nt3list">'+rows+'</div></div>';
+  })();
   m.innerHTML='<div class="mhead"><button class="mclose" id="mClose" aria-label="Close">✕</button><div class="mtf">🍌 Sentiment — fresh news the price hasn’t chased</div>'+
     '<div class="mtop"><div class="msym" style="line-height:1.25"><b style="font-size:21px">'+esc(sym)+'</b>'+(nm&&nm!==sym?' <span style="font-size:14px;color:var(--muted);font-weight:700">'+esc(nm)+'</span>':'')+
       '<br><span style="font-size:16px;font-weight:800">'+(score!=null?score:'—')+'/100</span>'+(label?' <span style="font-size:13px;color:var(--muted);font-weight:700">· '+esc(label)+'</span>':'')+'</div></div></div>'+
@@ -6183,6 +6202,7 @@ function openBanana(sym, region){
         ing('⏱️','How fresh the news is', frVal, frRead)+
         '<p class="banformula">Score = <b>news positivity</b> × <b>how little it’s grown since</b>. Positive news only (neutral/negative = 0), last 7 days, and past ~10% up on the news it’s treated as priced-in.</p>'+
       '</div>'+
+      newsBlock+
       '<div class="viz banfit"><h4>Where it fits</h4><p>The 🍌 is <b>deliberately separate</b> from the 🍊 <b>Buy-now</b> (timing) and the 🍒 <b>Conviction</b> (all signals blended). It is <b>NOT folded into either score</b> — it’s its own lens so you can hunt for fresh-news candidates directly (sort the Stock Pot by 🍌). The <i>earnings/news signals that DO move the 🍊</i> — the EPS beat/miss (PEAD), EPS <i>growth</i> (forward vs trailing), and the news-flow nudge — live inside the orange; the banana is the standalone news-timing view.</p></div>'+
     '</div>';
   var ov=document.getElementById('overlay'); if(ov){ ov.classList.add('open'); ov.setAttribute('aria-hidden','false'); }
