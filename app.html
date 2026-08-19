@@ -12164,7 +12164,7 @@ function wireSimple(D){
   var lbS=document.getElementById('learnBtnS'); if(lbS) lbS.onclick=function(){openLearn('simple');};   // #300 unified Learn
   var tbS=document.getElementById('tourBtnS'); if(tbS) tbS.onclick=openOnboarding;
   // market switch → re-render the story for the other market
-  document.querySelectorAll('.s2mkt button[data-mkt]').forEach(function(b){ b.onclick=function(){ if(b.dataset.mkt===MKT)return; MKT=b.dataset.mkt; try{pushViewState();}catch(e){} window.scrollTo(0,0); renderSimple(D); }; });
+  document.querySelectorAll('.s2mkt button[data-mkt]').forEach(function(b){ b.onclick=function(){ if(b.dataset.mkt===MKT)return; MKT=b.dataset.mkt; try{pushViewState();}catch(e){} window.scrollTo(0,0); try{ renderSimple(D); }catch(e){ try{console.error('renderSimple(mkt) threw',e);}catch(_){} try{flashToast('⚠️ Couldn’t switch — please refresh');}catch(_){} } }; });
   // scroll progress bar (single listener, replaced each render so it never accumulates)
   var prog=document.getElementById('s2prog');
   var onScroll=function(){ var h=document.documentElement; var mx=h.scrollHeight-h.clientHeight; if(prog) prog.style.width=(mx>0?(h.scrollTop/mx*100):0).toFixed(1)+'%'; };
@@ -12179,7 +12179,7 @@ function wireSimple(D){
   document.querySelectorAll('.watchbtn[data-sym]').forEach(function(b){ b.addEventListener('click',function(e){e.preventDefault();e.stopPropagation();watchToggleFromEl(b);}); });
   syncWatchButtons();
   // #kitchen — the risk "heat" dot uses the shared needle placement; the "N more on the other market" switch
-  document.querySelectorAll('.skswitch[data-mkt]').forEach(function(b){ b.onclick=function(){ if(b.dataset.mkt===MKT)return; MKT=b.dataset.mkt; try{pushViewState();}catch(e){} window.scrollTo(0,0); renderSimple(D); }; });
+  document.querySelectorAll('.skswitch[data-mkt]').forEach(function(b){ b.onclick=function(){ if(b.dataset.mkt===MKT)return; MKT=b.dataset.mkt; try{pushViewState();}catch(e){} window.scrollTo(0,0); try{ renderSimple(D); }catch(e){ try{console.error('renderSimple(mkt) threw',e);}catch(_){} try{flashToast('⚠️ Couldn’t switch — please refresh');}catch(_){} } }; });
   try{ var _rl=(D.risk&&D.risk.level!=null)?+D.risk.level:50; requestAnimationFrame(function(){ placeNeedle('skHeatDot',_rl); }); }catch(e){}
 }
 
