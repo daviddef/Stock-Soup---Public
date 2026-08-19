@@ -1609,6 +1609,7 @@
   .dvb-yield{font-weight:800;font-size:20px;letter-spacing:-.01em}
   .dvb-safe{font-size:12.5px;font-weight:800;margin-top:1px}
   .dvb-pay{font-size:10.5px;color:var(--faint);margin-top:2px}
+  .mnews-sourcing{color:var(--muted);font-size:12.5px;line-height:1.5;margin:0 0 10px}.mnews-sourcing b{color:var(--ink)}
   /* #ownbadge — a small 📦 on cards for tickers you own */
   .ownbadge{display:inline-flex;align-items:center;font-size:12px;padding:2px 6px;border-radius:8px;background:rgba(35,194,103,.16);border:1px solid rgba(35,194,103,.4);line-height:1;cursor:help;flex:0 0 auto}
   .fdr-ownbadge{font-size:11px;padding:1px 4px;margin-left:4px}
@@ -6805,8 +6806,22 @@ function analystTargetBar(o,region){
 // both markets). Only shows a buy-by when the ex-date is in the FUTURE (yfinance sometimes returns the LAST one).
 function _divDate(iso){ try{ var d=new Date(iso+'T00:00:00'); if(isNaN(d)) return iso;
   return ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getDay()]+' '+d.getDate()+' '+['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getMonth()]; }catch(e){ return iso; } }
-function dividendCardHtml(o,region){
+// resolve a dividend for a ticker: the rich yfinance snapshot (fundamentals.dividend) first, else the
+// consolidated board (latest.dividendBoard — investsmart for AU, carries franking + ex-date) so an on-the-fly
+// analyst card (a name not in the pot, e.g. ORA) still SUBSTANTIATES the yield the Dividends board shows.
+function _divOf(o,region){
   var d=((o&&o.fundamentals)||{}).dividend;
+  if(d&&d.yield!=null&&d.yield>0) return d;
+  try{ var sym=(o&&o.sym);
+    var r=(((LAST&&LAST.D||{}).dividendBoard||{}).rows||[]).filter(function(x){return x.sym===sym&&(x.region||'us')===region;})[0];
+    if(r&&r.yield!=null) return {yield:r.yield, rate:r.rate, payout:r.payout, ex_date:r.exDate, pay_date:r.payDate,
+      franking:r.franking, amount:r.amount, avg5y_yield:r.avg5y_yield,
+      safety:(r.safety!=null?{score:r.safety, verdict:r.verdict, why:r.why||[]}:null)};
+  }catch(e){}
+  return null;
+}
+function dividendCardHtml(o,region){
+  var d=_divOf(o,region);
   if(!d||d.yield==null||d.yield<=0) return '';
   var cur=region==='au'?'A$':'$', sf=d.safety||{}, sv=sf.verdict;
   var svEmoji=sv==='secure'?'🟢':sv==='watch'?'🟡':sv==='at risk'?'🔴':'⚪';
@@ -6817,7 +6832,8 @@ function dividendCardHtml(o,region){
     var ex=new Date(d.ex_date+'T00:00:00'), today=new Date(); today.setHours(0,0,0,0);
     if(!isNaN(ex)&&ex>=today){ exFuture=true; var bb=new Date(ex); do{ bb.setDate(bb.getDate()-1); }while(bb.getDay()===0||bb.getDay()===6); buyby=_divDate(bb.toISOString().slice(0,10)); }
   }
-  var rows='<div class="dvrow"><span class="dvk">Yield</span><span class="dvv"><b>'+d.yield.toFixed(2)+'%</b> a year'+(d.rate?' · '+cur+d.rate+'/share':'')+(d.avg5y_yield?' <span class="dvsub">(5-yr avg '+d.avg5y_yield.toFixed(1)+'%)</span>':'')+'</span></div>';
+  var rows='<div class="dvrow"><span class="dvk">Yield</span><span class="dvv"><b>'+d.yield.toFixed(2)+'%</b> a year'+((d.rate||d.amount)?' · '+(d.rate?cur+d.rate:esc(d.amount))+'/share':'')+(d.avg5y_yield?' <span class="dvsub">(5-yr avg '+d.avg5y_yield.toFixed(1)+'%)</span>':'')+'</span></div>';
+  if(d.franking!=null) rows+='<div class="dvrow"><span class="dvk">🇦🇺 Franking</span><span class="dvv"><b>'+d.franking+'%</b>'+(d.franking>=100?' — fully franked (a tax bonus on top of the yield)':d.franking>0?' — partly franked':' — unfranked')+'</span></div>';
   if(exFuture&&buyby){
     rows+='<div class="dvrow dvbuy"><span class="dvk">🛒 Buy by</span><span class="dvv"><b>'+esc(buyby)+'</b> — the last day to own it and still collect this dividend</span></div>';
     rows+='<div class="dvrow"><span class="dvk">Ex-date</span><span class="dvv">'+esc(_divDate(d.ex_date))+' — from this day it trades <i>without</i> the dividend</span></div>';
@@ -8860,7 +8876,16 @@ function happeningHtml(o){
     var _el=_ed===0?'Reports its results TODAY':_ed===1?'Reports its results TOMORROW':'Reports its results in '+_ed+' days';
     earnRow={kind:'earn', title:_el, why:'A scheduled earnings result — expect a bigger-than-usual move. A known catalyst you can pre-position for.', age:(_ed===0?'today':_ed===1?'tomorrow':'in '+_ed+'d')};
   }
-  if(!rows.length && !earnRow) return '';
+  // #news-always (20 Aug 2026, user-caught: ORA showed NO news section while Google had pages of it) — never
+  // dead-end. When we have no stored headlines yet (e.g. an on-the-fly analyst lookup whose Mac-sourced news
+  // hasn't drained), still render the section with a browser-openable Google-News link (the browser reaches
+  // Google even though our Cloudflare Worker's egress is blocked from it) + an honest "sourcing…" note.
+  if(!rows.length && !earnRow){
+    var _nu0=''; try{ _nu0=newsSearchUrl(o.sym,o.region,o.name); }catch(e){}
+    return '<div class="viz"><h4>📣 What’s happening — news &amp; filings</h4>'+
+      '<p class="mnews-sourcing">No stored headlines for <b>'+esc(o.sym)+'</b> yet — we’re sourcing them now (a first-time lookup fills within ~10 min). Meanwhile, see them straight from the source:</p>'+
+      (_nu0?'<a class="stnewslink" href="'+esc(_nu0)+'" target="_blank" rel="noopener">📰 See the latest '+esc(o.sym)+' news ↗</a>':'')+'</div>';
+  }
   // newest-first (undated last)
   rows.sort(function(a,b){ var da=a.date?Date.parse(String(a.date).slice(0,10)):-1, db=b.date?Date.parse(String(b.date).slice(0,10)):-1; return db-da; });
   if(earnRow) rows.unshift(earnRow);   // the imminent result always leads
@@ -8889,6 +8914,8 @@ function happeningHtml(o){
   var top=rows.slice(0,6), rest=rows.slice(6,20);
   var out='<div class="viz"><h4>📣 What’s happening — news &amp; filings</h4>'+moodHeaderHtml(o,rows)+top.map(row).join('');
   if(rest.length) out+='<details class="newsmore"><summary>Show '+rest.length+' more →</summary>'+rest.map(row).join('')+'</details>';
+  var _nu1=''; try{ _nu1=newsSearchUrl(o.sym,o.region,o.name); }catch(e){}
+  if(_nu1) out+='<a class="stnewslink" style="margin-top:10px" href="'+esc(_nu1)+'" target="_blank" rel="noopener">📰 See all the latest '+esc(o.sym)+' news ↗</a>';   // always give a live Google-News escape hatch
   return out+'</div>';
 }
 // #news-consolidate (19 Aug 2026, user ask) — the "News mood" chip used to live in "Word on the street",
