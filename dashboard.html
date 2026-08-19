@@ -1516,8 +1516,20 @@
   .fdr-sc-s{background:rgba(240,190,20,.20);color:#a37a00;cursor:help} /* #sentcand — 🍌 sentiment-candidate chip (banana) */
   :root[data-theme="dark"] .fdr-sc-s, :root:not([data-theme="light"]) .fdr-sc-s{color:#e8c34a}
   /* #banana — the sentiment 🍌 chip on pick cards + overlays (matches the Finder's .fdr-sc-s) */
-  .banchip{display:inline-flex;align-items:center;gap:2px;font-size:12px;font-weight:800;padding:2px 8px;border-radius:8px;background:rgba(240,190,20,.20);color:#a37a00;cursor:help;white-space:nowrap;border:0;font-family:var(--font)}
+  .banchip{display:inline-flex;align-items:center;gap:2px;font-size:12px;font-weight:800;padding:2px 8px;border-radius:8px;background:rgba(240,190,20,.20);color:#a37a00;cursor:pointer;white-space:nowrap;border:0;font-family:var(--font)}
   :root[data-theme="dark"] .banchip, :root:not([data-theme="light"]) .banchip{color:#e8c34a}
+  .banbtn{transition:transform .12s} .banbtn:hover{filter:brightness(1.05)} .banbtn.pop{animation:pop .5s}
+  /* #banana-overlay — the 🍌 breakdown modal */
+  .bansum-lead{font-size:14px;line-height:1.5;margin:0} .bansum-why{margin:9px 0 0;font-size:13px;font-weight:700;color:var(--broth)}
+  .banirow{display:flex;gap:11px;align-items:flex-start;padding:9px 0;border-top:1px solid var(--line)}
+  .banirow:first-of-type{border-top:0}
+  .banic{font-size:20px;flex:0 0 auto;line-height:1.2}
+  .banit{min-width:0;flex:1}
+  .banih{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap} .banih b{font-size:13.5px}
+  .banv{font-size:13px;font-weight:900;color:#a37a00} :root[data-theme="dark"] .banv,:root:not([data-theme="light"]) .banv{color:#e8c34a}
+  .banird{font-size:12.5px;color:var(--muted);margin-top:2px}
+  .banformula{margin:11px 0 0;font-size:12px;color:var(--muted);line-height:1.5;padding-top:9px;border-top:1px solid var(--line)}
+  .banfit p{font-size:13px;line-height:1.5;margin:0;color:var(--ink)}
   .fdr-mpill{font-size:11px;font-weight:800;border-radius:8px;padding:3px 8px;color:var(--mc);background:color-mix(in srgb,var(--mc) 16%,transparent);white-space:nowrap}
   /* #bhp-fix — imminent-earnings flag: a dated result ≤3 days out gets a loud chip so a mega-cap's report can't hide in a calendar list */
   .earnflag{display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:800;border-radius:8px;padding:2px 7px;white-space:nowrap}
@@ -5993,7 +6005,54 @@ function bananaChip(sym, region, obj){
     try{ var c=((LAST&&LAST.D||{}).candidates||[]).filter(function(x){return x.sym===sym&&(x.region||'us')===region;})[0]; take(c); }catch(e){}
   }
   if(sc==null) return '';
-  return '<span class="banchip" title="'+esc(why||'Sentiment — positive recent news the price hasn’t chased yet (banana = fresh, not-yet-priced-in)')+'">🍌 '+sc+'</span>';
+  return '<button class="banbtn banchip" data-ban-sym="'+esc(sym)+'" data-ban-region="'+esc(region)+'" title="Sentiment — tap for the full breakdown">🍌 '+sc+'</button>';
+}
+// #banana-overlay (19 Aug 2026, user ask) — the 🍌 opens the SAME kind of breakdown modal the 🍊/🍒 do, and
+// accurately describes what the banana stands for. It resolves the full sentiment object (score + why + the
+// three ingredients: news tone, growth-since-the-news, freshness) and explains, crucially, that this is a PURE
+// NEWS lens — deliberately SEPARATE from the 🍊 buy-now and 🍒 conviction scores, not folded into either.
+function openBanana(sym, region){
+  region=region||'us';
+  var sc=null, nm=sym;
+  try{
+    var c=((LAST&&LAST.D||{}).candidates||[]).filter(function(x){return x.sym===sym&&(x.region||'us')===region;})[0];
+    if(c){ nm=c.name||sym;
+      if(c.sentimentScore&&c.sentimentScore.score!=null) sc=c.sentimentScore;
+      else { var f=fdrSentFallback(c); if(f) sc=f; }
+      if(sc && sc.tone==null && c.newsflow && c.newsflow.tone!=null) sc=Object.assign({tone:c.newsflow.tone, stories:c.newsflow.stories, limited:c.newsflow.limited}, sc);
+    }
+  }catch(e){}
+  if(!sc){ return; }
+  LASTFOCUS=document.activeElement;
+  var m=document.getElementById('modal'); if(!m) return; m.className='modal';
+  var score=sc.score, why=sc.why||'', label=sc.label||'', growth=sc.growth, age=sc.freshAgeDays, tone=sc.tone;
+  // the three ingredients, each with a plain-English read of its actual value
+  function ing(ic, name, val, read){
+    return '<div class="banirow"><span class="banic">'+ic+'</span><div class="banit"><div class="banih"><b>'+name+'</b>'+(val!=null?'<span class="banv">'+val+'</span>':'')+'</div><div class="banird">'+read+'</div></div></div>';
+  }
+  var toneRead = tone==null?'No directional news read available.':tone>=2?'Strongly positive coverage.':tone>0?'Leaning positive.':'Not positive — so the score is 0.';
+  var toneVal = tone==null?null:(tone>0?'+':'')+ (Math.round(tone*10)/10);
+  var grRead = growth==null?'—':growth>10?'Already run up hard since the news — mostly priced in.':growth>3?'Some early move already — partly priced in.':growth<0?'Actually dipped since the news — plenty of room.':'Barely moved on the news yet — room to run.';
+  var grVal = growth==null?null:(growth>0?'+':'')+growth+'%';
+  var frRead = age==null?'—':age<=1?'Broke in the last day.':age<=3?'A few days old.':'Within the last week (past ~7 days = too stale to count).';
+  var frVal = age==null?null:(Math.round(age)+'d ago');
+  var band = score>=60?'a strong fresh-news candidate':score>=40?'warming — worth a look':score>=20?'a soft/early read':'quiet or already priced in';
+  m.innerHTML='<div class="mhead"><button class="mclose" id="mClose" aria-label="Close">✕</button><div class="mtf">🍌 Sentiment — fresh news the price hasn’t chased</div>'+
+    '<div class="mtop"><div class="msym" style="line-height:1.25"><b style="font-size:21px">'+esc(sym)+'</b>'+(nm&&nm!==sym?' <span style="font-size:14px;color:var(--muted);font-weight:700">'+esc(nm)+'</span>':'')+
+      '<br><span style="font-size:16px;font-weight:800">'+(score!=null?score:'—')+'/100</span>'+(label?' <span style="font-size:13px;color:var(--muted);font-weight:700">· '+esc(label)+'</span>':'')+'</div></div></div>'+
+    '<div class="mbody">'+
+      '<div class="viz bansum"><p class="bansum-lead">The 🍌 is a <b>pure news read</b>: <b>positive recent news the price hasn’t chased yet</b>. High = fresh bullish coverage on a name that <i>hasn’t</i> moved on it — a not-yet-priced-in opportunity. It falls as the price runs up on that news. At <b>'+(score!=null?score:'—')+'/100</b>, '+esc(sym)+' reads as <b>'+band+'</b>.</p>'+
+        (why?'<p class="bansum-why">'+esc(why)+'</p>':'')+'</div>'+
+      '<div class="viz"><h4>What’s in it — three ingredients</h4>'+
+        ing('🗞️','How positive the news is', toneVal, toneRead)+
+        ing('📈','How much it’s already grown', grVal, grRead)+
+        ing('⏱️','How fresh the news is', frVal, frRead)+
+        '<p class="banformula">Score = <b>news positivity</b> × <b>how little it’s grown since</b>. Positive news only (neutral/negative = 0), last 7 days, and past ~10% up on the news it’s treated as priced-in.</p>'+
+      '</div>'+
+      '<div class="viz banfit"><h4>Where it fits</h4><p>The 🍌 is <b>deliberately separate</b> from the 🍊 <b>Buy-now</b> (timing) and the 🍒 <b>Conviction</b> (all signals blended). It is <b>NOT folded into either score</b> — it’s its own lens so you can hunt for fresh-news candidates directly (sort the Stock Pot by 🍌). The <i>earnings/news signals that DO move the 🍊</i> — the EPS beat/miss (PEAD) and news-flow nudge — live inside the orange; the banana is the standalone news-timing view.</p></div>'+
+    '</div>';
+  var ov=document.getElementById('overlay'); if(ov){ ov.classList.add('open'); ov.setAttribute('aria-hidden','false'); }
+  var mc=document.getElementById('mClose'); if(mc){ mc.onclick=closeModal; mc.focus(); }
 }
 function juiceChip(score,sym,name,sigRows){
   // #orange-top fix (11 Aug 2026) — was requiring score.detail, so a pick WITHOUT detail (e.g. CPU) fell to
@@ -6742,6 +6801,11 @@ document.addEventListener('keydown',function(e){
 // (#173 face chip), so stopPropagation in the bubble phase would be too late. Capturing + stopPropagation
 // intercepts the click cleanly for every card type at once, no per-card guard needed.
 document.addEventListener('click',function(e){
+  var bn=e.target.closest('.banbtn');   // #banana — 🍌 sentiment chip → its own breakdown overlay (like 🍊/🍒)
+  if(bn){ e.preventDefault(); e.stopPropagation();
+    bn.classList.remove('pop'); void bn.offsetWidth; bn.classList.add('pop');
+    setTimeout(function(){bn.classList.remove('pop');},520);
+    openBanana(bn.dataset.banSym, bn.dataset.banRegion); return; }
   var cb=e.target.closest('.cherrybtn');
   if(cb){ e.preventDefault(); e.stopPropagation();
     cb.classList.remove('pop'); void cb.offsetWidth; cb.classList.add('pop');
