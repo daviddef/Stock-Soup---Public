@@ -1513,7 +1513,11 @@
   .fdr-cscores{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:9px}
   .fdr-sc{font-size:12px;font-weight:800;border-radius:8px;padding:3px 8px}
   .fdr-sc-o{background:rgba(232,102,42,.12);color:var(--broth)} .fdr-sc-c{background:rgba(196,40,71,.12);color:var(--cherry,#c42847)}
-  .fdr-sc-s{background:rgba(37,140,120,.14);color:#1f8f78;cursor:help} /* #sentcand — 💬 sentiment-candidate chip */
+  .fdr-sc-s{background:rgba(240,190,20,.20);color:#a37a00;cursor:help} /* #sentcand — 🍌 sentiment-candidate chip (banana) */
+  :root[data-theme="dark"] .fdr-sc-s, :root:not([data-theme="light"]) .fdr-sc-s{color:#e8c34a}
+  /* #banana — the sentiment 🍌 chip on pick cards + overlays (matches the Finder's .fdr-sc-s) */
+  .banchip{display:inline-flex;align-items:center;gap:2px;font-size:12px;font-weight:800;padding:2px 8px;border-radius:8px;background:rgba(240,190,20,.20);color:#a37a00;cursor:help;white-space:nowrap;border:0;font-family:var(--font)}
+  :root[data-theme="dark"] .banchip, :root:not([data-theme="light"]) .banchip{color:#e8c34a}
   .fdr-mpill{font-size:11px;font-weight:800;border-radius:8px;padding:3px 8px;color:var(--mc);background:color-mix(in srgb,var(--mc) 16%,transparent);white-space:nowrap}
   /* #bhp-fix — imminent-earnings flag: a dated result ≤3 days out gets a loud chip so a mega-cap's report can't hide in a calendar list */
   .earnflag{display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:800;border-radius:8px;padding:2px 7px;white-space:nowrap}
@@ -5451,7 +5455,7 @@ function render(D,H){
           /* #orange-top (user ask) — the 🍊 score chip now leads the header, next to the + watch button,
              instead of only appearing lower by the score bar. Same chip/behaviour: tap → the full breakdown
              (juice modal) when we have the detail, else a plain 🍊 score badge. */
-          dualChip(p.score,p.sym,p.name,signalRows(p,rg.id))+
+          dualChip(p.score,p.sym,p.name,signalRows(p,rg.id))+bananaChip(p.sym,rg.id,p)+   /* #banana — news-Sentiment 🍌 on the served pick card */
           '<button class="watchbtn iconwatch" data-sym="'+esc(p.sym)+'" data-region="'+esc(rg.id)+'" data-name="'+esc(p.name)+'"'+(p.nEntry!=null?' data-entry="'+p.nEntry+'"':'')+' aria-pressed="false" title="Add to watchlist">☆</button><span class="verdict '+esc(p.vclass)+'">'+esc(p.verdict)+'</span></span></div>'+
         replNote+
         '<div class="tick"><span class="symwrap"><span class="sym">'+qlink(p.sym,rg.id)+'</span><span class="co">'+qlink(p.sym,rg.id,p.name)+' ↗</span></span>'+
@@ -5974,6 +5978,22 @@ function dualChip(score,sym,name,sigRows){
   if(lead==='orange') return j||c;
   if(lead==='both') return j+c;
   return c||j;   // 'cherry' (default) — 🍒 leads, fall back to 🍊 if conviction can't be computed
+}
+// #banana (19 Aug 2026, user ask) — surface the news-Sentiment score (positive news the price hasn't chased
+// yet) as a 🍌 chip on pick cards + overlays too, not just the Finder. Resolves the score from the matching
+// scored candidate (the pipeline value), then a client fallback, so it works for picks that carry no sentiment
+// field of their own. `obj` is an optional pick/candidate object to check directly first.
+function bananaChip(sym, region, obj){
+  var sc=null, why=null; region=region||'us';
+  function take(o){ if(!o) return false;
+    if(o.sentimentScore && o.sentimentScore.score!=null){ sc=o.sentimentScore.score; why=o.sentimentScore.why; return true; }
+    try{ var f=fdrSentFallback(o); if(f){ sc=f.score; why=f.why; return true; } }catch(e){}
+    return false; }
+  if(!take(obj)){
+    try{ var c=((LAST&&LAST.D||{}).candidates||[]).filter(function(x){return x.sym===sym&&(x.region||'us')===region;})[0]; take(c); }catch(e){}
+  }
+  if(sc==null) return '';
+  return '<span class="banchip" title="'+esc(why||'Sentiment — positive recent news the price hasn’t chased yet (banana = fresh, not-yet-priced-in)')+'">🍌 '+sc+'</span>';
 }
 function juiceChip(score,sym,name,sigRows){
   // #orange-top fix (11 Aug 2026) — was requiring score.detail, so a pick WITHOUT detail (e.g. CPU) fell to
@@ -6588,6 +6608,7 @@ function tickerModalHTML(o, region, cur, isPick){
       chips+='<button class="juicebtn callchip" data-juice-id="'+_jid+'" title="Buy-now score — tap for the full breakdown">🍊 '+Math.round(o.score.buy_now)+'</button>'; }
     try{ chips+=cherryChip(o.score,o.sym,o.name,signalRows(o,region)); }catch(e){}
   }
+  try{ chips+=bananaChip(o.sym,region,o); }catch(e){}   // #banana — news-Sentiment 🍌 chip in the overlay header
   try{ chips+=earnFlag(o.sym,region); }catch(e){}   // #bhp-fix — loud "🔴 reports tomorrow" flag in the overlay too
   var watchBtn='<button class="watchbtn iconwatch callwatch" data-sym="'+esc(o.sym)+'" data-region="'+esc(region)+'"'+(o.name?' data-name="'+esc(o.name)+'"':'')+(isPick&&o.nEntry!=null?' data-entry="'+o.nEntry+'"':'')+' aria-pressed="false" title="Add to watchlist">☆</button>';
   var planHtml='';
@@ -7054,7 +7075,7 @@ var INFO={
     '<li><b>Match</b> — how well this name fits <i>your</i> active levers. 100% = it satisfies every filter you’ve set; with no levers on, everything is 100%.</li>'+
     '<li>🍊 <b>Orange (Buy-Now)</b> — the model’s “how good a buy <i>right now</i>” score: catalyst + technicals + fundamentals rolled into one. Higher is stronger.</li>'+
     '<li>🍒 <b>Cherry</b> — the blended overall read: the orange score tempered by the full signal picture. This is the headline number on the card face.</li>'+
-    '<li>💬 <b>Sentiment</b> — a pure <i>news</i> read: <b>positive recent news the price hasn’t chased yet</b>. High = fresh bullish coverage (last ~7 days) on a name that <i>hasn’t</i> run up on it — a not-yet-priced-in candidate; it falls as the price rises on that news (past ~10% up = mostly priced in). Positive-news-only — quiet or negative names sit at 0, and a name with no recent news shows a dash. Sort by 💬 to float fresh-news candidates to the top.</li>'+
+    '<li>🍌 <b>Sentiment</b> — a pure <i>news</i> read: <b>positive recent news the price hasn’t chased yet</b>. High = fresh bullish coverage (last ~7 days) on a name that <i>hasn’t</i> run up on it — a not-yet-priced-in candidate; it falls as the price rises on that news (past ~10% up = mostly priced in). Positive-news-only — quiet or negative names sit at 0, and a name with no recent news shows a dash. Sort by 🍌 to float fresh-news candidates to the top.</li>'+
     '<li><b>Range</b> — where the price sits in its 1-year range: 0 = at the year’s low, 100 = at the year’s high.</li>'+
     '<li><b>Value</b> — how <i>cheap</i> it is on the fundamentals (P/E · P/B · PEG). Higher = better value.</li>'+
     '<li><b>Qual</b> — business quality (return on equity/assets, margins, balance sheet). Higher = stronger business.</li>'+
@@ -10492,7 +10513,7 @@ var FDR_LEVERS=[
   {grp:'Scores', items:[
     {k:'buyNow', label:'🍊 Buy-now', min:0,max:100,val:55,on:true, unit:'≥', help:'our momentum/timing score — Buy band'},
     {k:'cherry', label:'🍒 Conviction', min:0,max:100,val:0,on:false, unit:'≥', help:'how all signals line up (scored names only)'},
-    {k:'sentiment', label:'💬 Sentiment', min:0,max:100,val:50,on:false, unit:'≥', req:true, help:'positive recent news the price hasn’t chased yet — fresh, not-yet-priced-in (news-scored names)'}
+    {k:'sentiment', label:'🍌 Sentiment', min:0,max:100,val:50,on:false, unit:'≥', req:true, help:'positive recent news the price hasn’t chased yet — fresh, not-yet-priced-in (news-scored names)'}
   ]},
   {grp:'Momentum & timing', items:[
     {k:'rangePos', label:'Range position', min:0,max:100,val:0,on:false, unit:'≥', help:'how high in its 1-yr range'},
@@ -10521,7 +10542,7 @@ var FDR_LEVERS=[
 ];
 var FDR_AXES=[['value','Value (cheap →)'],['rangePos','Range position →'],['quality','Quality →'],
   ['growth','Growth →'],['buyNow','🍊 Buy-now →'],['cherry','🍒 Conviction →'],['rsi','RSI →'],['news','Positive news →'],['spring','🌱 Coiled spring →']];
-var FDR_SORTS=[['match','Best match'],['buyNow','🍊 Buy-now'],['cherry','🍒 Conviction'],['sentiment','💬 Sentiment'],['spring','🌱 Coiled spring'],['newsFresh','📰 Freshest news'],
+var FDR_SORTS=[['match','Best match'],['buyNow','🍊 Buy-now'],['cherry','🍒 Conviction'],['sentiment','🍌 Sentiment'],['spring','🌱 Coiled spring'],['newsFresh','📰 Freshest news'],
   ['move','🚀 Today’s move'],['rangePos','Range position'],['value','Value'],['quality','Quality'],['mcap','Market cap'],['div','Dividend']];
 function fdrSent100(s){ return s==null?null:Math.round((Math.max(-1,Math.min(1,+s))+1)/2*100); }
 // #sentcand — client fallback for the Sentiment-Candidate score when the pipeline hasn't rescored yet. The
@@ -10909,7 +10930,7 @@ function fdrCardsHtml(rows){
       // the deep-vetted number. Mark it with a ° + tooltip so it isn't visually equated with a fully-analysed one.
       '<div class="fdr-cscores"><span class="fdr-sc fdr-sc-o'+(s.cherry==null?' fdr-sc-scan':'')+'"'+(s.cherry==null?' title="Scan-only score — technicals + fundamentals, not deep-vetted yet (that\'s why there\'s no 🍒). Watch it (☆) to get the full analysis."':'')+'>🍊 '+(s.buyNow!=null?s.buyNow:'—')+(s.cherry==null&&s.buyNow!=null?'°':'')+'</span>'+
         (s.cherry!=null?'<span class="fdr-sc fdr-sc-c">🍒 '+s.cherry+'</span>':'')+
-        (s.sentiment!=null?'<span class="fdr-sc fdr-sc-s" title="'+esc(s.sentimentWhy||'Sentiment candidate — positive recent news the price hasn’t chased yet')+'">💬 '+s.sentiment+'</span>':'')+   // #sentcand
+        (s.sentiment!=null?'<span class="fdr-sc fdr-sc-s" title="'+esc(s.sentimentWhy||'Sentiment candidate — positive recent news the price hasn’t chased yet')+'">🍌 '+s.sentiment+'</span>':'')+   // #sentcand
         (showMatch?'<span class="fdr-mpill" style="--mc:'+fdrColor(o.m)+'" title="How well this name matches your filters">'+o.m+'% match</span>':'')+
         earnFlag(s.sym,s.region)+
         '<span class="fdr-cpx">'+(s.price!=null?fdrCur(s.region)+s.price:'')+'</span></div>'+
@@ -10970,7 +10991,7 @@ function fdrScatterHtml(rows){
 function fdrAxisRow(){ return '<div class="fdr-axrow"><label>X: '+fdrAxisSel('fdrX',FDR.xAxis)+'</label><label>Y: '+fdrAxisSel('fdrY',FDR.yAxis)+'</label></div>'; }
 function fdrTableHtml(rows){
   if(!rows.length) return fdrEmpty();
-  var cols=[['sym','Ticker'],['region','Mkt'],['m','Match'],['buyNow','🍊'],['cherry','🍒'],['sentiment','💬'],['rangePos','Range'],['value','Value'],['quality','Qual'],['rsi','RSI'],['mcap','Cap'],['div','Div%']];
+  var cols=[['sym','Ticker'],['region','Mkt'],['m','Match'],['buyNow','🍊'],['cherry','🍒'],['sentiment','🍌'],['rangePos','Range'],['value','Value'],['quality','Qual'],['rsi','RSI'],['mcap','Cap'],['div','Div%']];
   var head=cols.map(function(c){return '<th data-sk="'+c[0]+'">'+c[1]+'</th>';}).join('');
   var body=rows.slice(0,150).map(function(o){var s=o.s;
     return '<tr data-sym="'+esc(s.sym)+'" data-region="'+esc(s.region)+'" style="cursor:pointer">'+
