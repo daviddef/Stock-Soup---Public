@@ -4234,6 +4234,20 @@ function hydrateRanges(root){
 var _newsReq={};
 function requestNews(sym,region,name){
   if(!sym||sym==='NONE') return; var k=String(sym).toUpperCase()+':'+(region||'us'); if(_newsReq[k]) return; _newsReq[k]=1;
+  // #kvwrite (19 Aug 2026) — persist the dedupe across tabs/reloads in localStorage with a 24h TTL, so the SAME
+  // ticker isn't re-POSTed to /news-request every new session. Each POST is a KV read (+ a write for a not-yet-
+  // queued key) on the `newsq` key — the news-queue launch + heavy reloads spiked daily KV writes toward the
+  // free cap. The news still gets sourced + cached exactly as now (the pulse's own age-gated enrichment for
+  // pot/watchlist names is separate and unchanged); this only drops redundant queue writes for a ticker already
+  // requested today on this device.
+  try{
+    var reqK='soup_newsreq', now=Date.now(), TTL=24*3600*1000, m={};
+    try{ m=JSON.parse(localStorage.getItem(reqK)||'{}'); }catch(e){}
+    if(m[k] && (now-m[k])<TTL) return;                 // requested this ticker within 24h → skip the POST entirely
+    m[k]=now;
+    var keys=Object.keys(m); if(keys.length>400){ keys.sort(function(a,b){return m[a]-m[b];}); for(var i=0;i<keys.length-400;i++) delete m[keys[i]]; }   // prune oldest, cap size
+    try{ localStorage.setItem(reqK, JSON.stringify(m)); }catch(e){}
+  }catch(e){}
   try{ fetch(API_BASE+'/news-request',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sym:sym,region:region||'us',name:name||''})}); }catch(e){}
 }
 function newsCacheGet(sym,region){ var c=((LAST&&LAST.D)||{}).newsCache||{}; return c[String(sym).toUpperCase()+':'+(region||'us')]||null; }
