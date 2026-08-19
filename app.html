@@ -1379,6 +1379,8 @@
   .anntag.at-bear{background:var(--dont);color:#2a0505}
   /* kind chip in the merged news+filings feed */
   .hapkind{display:inline-flex;align-items:center;font-size:9.5px;font-weight:800;letter-spacing:.03em;text-transform:uppercase;padding:2px 6px;border-radius:6px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted);white-space:nowrap}
+  /* #abn-press — muted "press" tag on promotional press-wire (ABN Newswire) items, inline with the other news */
+  .happress{display:inline-flex;align-items:center;font-size:9px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;padding:1px 5px;margin-left:5px;border-radius:5px;background:var(--surface-2);border:1px dashed var(--line);color:var(--faint);white-space:nowrap;cursor:help}
   .anntop{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
   .annic{font-size:13px}
   .annhead{flex:1;font-size:13px;color:var(--ink);text-decoration:none}
@@ -7991,7 +7993,7 @@ function happeningHtml(o){
   // announcements (price-sensitive ASX filings)
   (o.announcements||[]).forEach(function(a){
     if(!a||!a.headline) return; var k=keyOf(a.headline); if(seen[k]) return; seen[k]=1;
-    rows.push({kind:'ann', title:a.headline, url:a.link, date:a.date, tone:a.tone,
+    rows.push({kind:'ann', title:a.headline, url:a.link, date:a.date, tone:a.tone, source:a.source,
       why:a.deepRead||a.why||((a.tone==='neutral'||!a.tone)&&annDeeper(a.headline))||'', deep:!!a.deepRead});
   });
   // news headlines — the lead + the widened multi-source list (news_top3), each tone-tagged
@@ -8035,7 +8037,11 @@ function happeningHtml(o){
     }
     var t=TONE[r.tone]||TONE.neutral;
     var old=false; if(r.date){ try{ old=(Date.now()-new Date(r.date).getTime())/86400000>7; }catch(e){} }
-    var kindchip='<span class="hapkind">'+(r.kind==='ann'?'📢 Filing':'📰 News')+'</span>';
+    // #abn-press (19 Aug 2026, user ask) — ABN Newswire items are company-issued PRESS RELEASES (promotional
+    // wire), not verified exchange filings; tag them "press" so they're distinguishable inline from real ASX
+    // filings, without pulling them into a separate section. `source` is carried from score-pot's announcements[].
+    var press=(r.source==='abnnewswire')?'<span class="happress" title="A company press release carried on a wire (ABN Newswire) — a real event, but promotional; not a verified exchange filing">press</span>':'';
+    var kindchip='<span class="hapkind">'+(r.kind==='ann'?'📢 Filing':'📰 News')+'</span>'+press;
     var head=r.url?'<a class="annhead" href="'+esc(r.url)+'" target="_blank" rel="noopener">'+esc(r.title)+' ↗</a>':'<span class="annhead">'+esc(r.title)+'</span>';
     var age=ageStr(r.date);
     var deep=r.deep?'<div class="anndeep">🔍 <b>The detail:</b> '+esc(r.why)+'</div>':(r.why?'<div class="annwhy">'+esc(r.why)+'</div>':'');
