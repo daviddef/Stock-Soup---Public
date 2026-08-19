@@ -1579,6 +1579,16 @@
   .atb-labs{display:flex;justify-content:space-between;font-size:11px;font-weight:700;color:var(--faint);margin-top:8px}
   .atb-labs .atb-cons{color:var(--ink);font-weight:800}
   .atb-note{color:var(--muted);font-size:12px;line-height:1.45;margin:9px 0 0}.atb-note b{color:var(--ink)}
+  /* #dividend */
+  .dvrows{display:flex;flex-direction:column;gap:1px}
+  .dvrow{display:flex;gap:10px;padding:8px 0;border-bottom:1px dashed var(--line);font-size:13px;line-height:1.4}.dvrow:last-child{border-bottom:0}
+  .dvk{flex:0 0 84px;font-weight:800;color:var(--muted)}.dvv{flex:1;min-width:0}.dvv b{font-weight:800}.dvsub{color:var(--faint);font-size:11.5px}
+  .dvrow.dvbuy{background:rgba(35,194,103,.08);border-radius:10px;padding:10px 12px;margin:2px 0;border:1px solid rgba(35,194,103,.35)}
+  .dvrow.dvbuy .dvk{color:var(--buy)}
+  .dvsafe{border:1px solid var(--line);border-left-width:4px;border-radius:12px;padding:11px 13px;margin:12px 0 0;background:var(--surface-2)}
+  .dvsafe-h{display:flex;justify-content:space-between;gap:8px;font-size:14px}.dvsafe-h span{font-weight:800;color:var(--muted);font-variant-numeric:tabular-nums}
+  .dvsafe-why{margin:8px 0 0;padding-left:18px;color:var(--muted);font-size:12px;line-height:1.5}
+  .dvfrank{color:var(--muted);font-size:12px;line-height:1.45;margin:11px 0 0;padding:9px 11px;background:rgba(35,194,103,.07);border-radius:10px}.dvfrank b{color:var(--ink)}
   /* #ownbadge — a small 📦 on cards for tickers you own */
   .ownbadge{display:inline-flex;align-items:center;font-size:12px;padding:2px 6px;border-radius:8px;background:rgba(35,194,103,.16);border:1px solid rgba(35,194,103,.4);line-height:1;cursor:help;flex:0 0 auto}
   .fdr-ownbadge{font-size:11px;padding:1px 4px;margin-left:4px}
@@ -2250,7 +2260,8 @@
      Uses the app's theme vars so it works in light + dark. */
   .s2prog{position:fixed;top:0;left:0;height:3px;width:0;background:linear-gradient(90deg,var(--broth),var(--dont));z-index:60;transition:width .1s linear}
   .s2top{position:sticky;top:0;z-index:40;display:flex;align-items:center;gap:8px;padding:11px 15px;background:var(--surface);border-bottom:1px solid var(--line)}
-  .s2brand{font-family:var(--disp);font-style:italic;font-weight:800;font-size:15.5px;white-space:nowrap;display:flex;align-items:center;gap:7px}
+  .s2brand{font-family:var(--disp);font-style:italic;font-weight:800;font-size:21px;white-space:nowrap;display:flex;align-items:center;gap:8px}
+  .s2brand .hpotbowl{font-size:24px}
   .s2mkt{display:inline-flex;background:var(--surface-2);border:1px solid var(--line);border-radius:99px;padding:3px;margin-left:auto;gap:2px}
   .s2mkt button{border:0;background:transparent;font-size:15px;padding:5px 12px;border-radius:99px;cursor:pointer;line-height:1;color:var(--muted);font-weight:800}
   .s2mkt button.on{background:var(--broth);color:#fff}
@@ -6736,6 +6747,38 @@ function analystTargetBar(o,region){
       (up!=null&&up<-2?'It already trades <b>above</b> the average target — the pros see it as fully (or over-) priced.':up!=null&&up>=15?'Analysts see <b>meaningful room</b> above today’s price.':'Today’s price sits close to the consensus target.')+
       ' A target is an opinion, not a promise.</p></div>';
 }
+// #dividend (20 Aug 2026, user ask) — the dividend read: yield, the SAFETY of the payout (likely to hold?),
+// and — the key ask — the "buy-by" date: the last day you can OWN it and still be eligible (= the trading day
+// BEFORE the ex-dividend date; buy ON the ex-date and you miss it). Data from fundamentals.dividend (yfinance,
+// both markets). Only shows a buy-by when the ex-date is in the FUTURE (yfinance sometimes returns the LAST one).
+function _divDate(iso){ try{ var d=new Date(iso+'T00:00:00'); if(isNaN(d)) return iso;
+  return ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getDay()]+' '+d.getDate()+' '+['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getMonth()]; }catch(e){ return iso; } }
+function dividendCardHtml(o,region){
+  var d=((o&&o.fundamentals)||{}).dividend;
+  if(!d||d.yield==null||d.yield<=0) return '';
+  var cur=region==='au'?'A$':'$', sf=d.safety||{}, sv=sf.verdict;
+  var svEmoji=sv==='secure'?'🟢':sv==='watch'?'🟡':sv==='at risk'?'🔴':'⚪';
+  var svLabel=sv==='secure'?'Looks secure':sv==='watch'?'Stretched — worth watching':sv==='at risk'?'At risk (possible cut)':'';
+  var svColor=sv==='secure'?'var(--buy)':sv==='watch'?'#c47a1e':sv==='at risk'?'var(--dont)':'var(--muted)';
+  var exFuture=false, buyby='';
+  if(d.ex_date){
+    var ex=new Date(d.ex_date+'T00:00:00'), today=new Date(); today.setHours(0,0,0,0);
+    if(!isNaN(ex)&&ex>=today){ exFuture=true; var bb=new Date(ex); do{ bb.setDate(bb.getDate()-1); }while(bb.getDay()===0||bb.getDay()===6); buyby=_divDate(bb.toISOString().slice(0,10)); }
+  }
+  var rows='<div class="dvrow"><span class="dvk">Yield</span><span class="dvv"><b>'+d.yield.toFixed(2)+'%</b> a year'+(d.rate?' · '+cur+d.rate+'/share':'')+(d.avg5y_yield?' <span class="dvsub">(5-yr avg '+d.avg5y_yield.toFixed(1)+'%)</span>':'')+'</span></div>';
+  if(exFuture&&buyby){
+    rows+='<div class="dvrow dvbuy"><span class="dvk">🛒 Buy by</span><span class="dvv"><b>'+esc(buyby)+'</b> — the last day to own it and still collect this dividend</span></div>';
+    rows+='<div class="dvrow"><span class="dvk">Ex-date</span><span class="dvv">'+esc(_divDate(d.ex_date))+' — from this day it trades <i>without</i> the dividend</span></div>';
+  } else if(d.ex_date){
+    rows+='<div class="dvrow"><span class="dvk">Last ex-date</span><span class="dvv">'+esc(_divDate(d.ex_date))+' — the next one isn’t confirmed yet</span></div>';
+  }
+  if(d.pay_date) rows+='<div class="dvrow"><span class="dvk">💵 Paid</span><span class="dvv">'+esc(_divDate(d.pay_date))+'</span></div>';
+  var safe = sf.score!=null ? '<div class="dvsafe" style="border-color:'+svColor+'"><div class="dvsafe-h"><b style="color:'+svColor+'">'+svEmoji+' Dividend safety — '+svLabel+'</b><span>'+sf.score+'/100</span></div>'+
+    ((sf.why&&sf.why.length)?'<ul class="dvsafe-why">'+sf.why.slice(0,3).map(function(w){return '<li>'+esc(w)+'</li>';}).join('')+'</ul>':'')+'</div>' : '';
+  return '<div class="viz"><h4>💰 Dividend</h4><div class="dvrows">'+rows+'</div>'+safe+
+    (region==='au'?'<p class="dvfrank">🇦🇺 ASX dividends often carry <b>franking credits</b> — a tax offset that can make the after-tax return meaningfully higher than the headline yield.</p>':'')+
+    '<p class="atb-note">A dividend is never guaranteed — the safety read is about how <b>durable</b> today’s payout looks (payout ratio + whether the yield is out of line with its own history), not a promise.</p></div>';
+}
 function breadthPanelHtml(D,region){
   var b=marketBreadth(D,region); if(!b) return '';
   var mkt=region==='au'?'ASX':'US';
@@ -7283,6 +7326,7 @@ function tickerModalHTML(o, region, cur, isPick){
       rangesHtml+
       (function(){try{return valBandHtml(o,cur);}catch(e){return '';}})()+
       (function(){try{return analystTargetBar(o,region);}catch(e){return '';}})()+   // 🎯 analyst target range bar
+      (function(){try{return dividendCardHtml(o,region);}catch(e){return '';}})()+   // 💰 dividend: yield · safety · buy-by date
       rsiBlock+
       (function(){try{return bullBearHtml(o,region);}catch(e){return '';}})()+   // ⚖️ the case, both ways
       (o.extraHtml||'')+   // analyst-only: 'Word on the street' consensus + Why/Watch-out (empty for picks/candidates)
@@ -12258,7 +12302,7 @@ function skHero(D,region,p){
 function skMenu(D,region){
   var picks=skPicks(D,region); if(picks.length<2) return '';   // the hero already covers the single top pick
   var plates=picks.map(function(p){
-    var tf=p.tf?('<span class="skpl-tf">'+esc(tfBW?tfBW(p.tf):p.tf)+'</span>'):'';
+    var tf=p.tf?('<span class="skpl-tf">'+(tfBW?tfBW(p.tf):esc(p.tf))+'</span>'):'';   // tfBW returns HTML — do NOT esc() it (that shows raw tags)
     // a DIV, not a <button> — the fruit chips inside are themselves <button>s, and nested buttons are invalid
     // HTML (they break layout + swallow the inner taps). The .s2see class + role/tabindex make it tappable.
     return '<div class="skplate s2see" role="button" tabindex="0" data-sym="'+esc(p.sym)+'" data-region="'+esc(region)+'" aria-label="'+esc(p.sym)+' — see the full card">'+
@@ -12357,7 +12401,7 @@ function renderSimple(D){
       skGossip(D,region)+
       skPlate(D,region)+
       skLegend(D)+
-      skScore(D)+
+      /* skScore (honest scoreboard) removed from Simple view (user ask, 20 Aug) — it lives in Dinner Reviews / Full view */
       '<div class="skcta rev"><button class="skbtn ghost" id="viewFull3">🔍 Open the full kitchen →</button>'+
         '<p class="skfoot">Not financial advice — a friendly kitchen guide. The call is always yours.</p></div>'+
     '</div>';
