@@ -5409,12 +5409,18 @@ function render(D,H){
   // instead of leaping the queue. The newest menu still gets the NOW badge (it's newer than any daily scan).
   var cols=[];
   if(TIER==='type1'){ [scanJcol('type2',2), scanJcol('type3',3)].forEach(function(c){ if(c) cols.push(c); }); }
-  ms.slice(0,8).forEach(function(m,i){ cols.push({ts:(m.iso||m.generated||m.stamp||''), html:jcol(m,ms[i+1],i===0)}); });   // last 8 runs
+  // #jmarket (19 Aug 2026, user: "3 runs look identical, no NEW/removed") — a split run (#222) produces picks
+  // for ONE market only; the OTHER market's picks are frozen carry-over. Rendering a card for every run in the
+  // AU tab meant each US run re-showed the same frozen AU picks with no diff — 3-4 identical-looking cards.
+  // Show only runs that belong to the selected market (legacy market-less runs kept), and diff each against the
+  // previous SAME-MARKET run, so every Journey card is a real change for THIS market.
+  var _mkRuns=ms.filter(function(m){ return !m.market || m.market===MKT; });
+  _mkRuns.slice(0,8).forEach(function(m,i){ cols.push({ts:(m.iso||m.generated||m.stamp||''), html:jcol(m,_mkRuns[i+1],i===0)}); });   // last 8 same-market runs
   cols.sort(function(a,b){ var da=new Date(a.ts), db=new Date(b.ts); if(!isNaN(da)&&!isNaN(db)) return db-da; return String(b.ts).localeCompare(String(a.ts)); });
   var journeyCols=cols.map(function(c){return c.html;}).join('');   // 3 visible across, newest-first
   var note="This is the first menu on record — the journey starts here.";
-  if(ms.length>=2){
-    var a=ms[0],b=ms[1];
+  if(_mkRuns.length>=2){
+    var a=_mkRuns[0],b=_mkRuns[1];   // #jmarket — compare the two most recent SAME-MARKET runs, not a US run against an AU one
     // market-aware: this tab shows ONLY the selected market's diff (AU or US), never both
     var mineNow=MKT==='us'?(a.us||[]):(a.au||[]), minePrev=MKT==='us'?(b.us||[]):(b.au||[]);
     var ch=mineNow.filter(function(s){return minePrev.indexOf(s)<0;}).length;
