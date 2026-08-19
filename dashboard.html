@@ -1520,6 +1520,12 @@
   .banchip{display:inline-flex;align-items:center;gap:2px;font-size:12px;font-weight:800;padding:2px 8px;border-radius:8px;background:rgba(240,190,20,.20);color:#a37a00;cursor:pointer;white-space:nowrap;border:0;font-family:var(--font)}
   :root[data-theme="dark"] .banchip, :root:not([data-theme="light"]) .banchip{color:#e8c34a}
   .banbtn{transition:transform .12s} .banbtn:hover{filter:brightness(1.05)} .banbtn.pop{animation:pop .5s}
+  /* #salad — the 🥗 fruit-salad trifecta badge (strong on all three fruits) */
+  .saladbadge{display:inline-flex;align-items:center;font-size:13px;padding:2px 7px;border-radius:999px;line-height:1;cursor:help;flex:0 0 auto;
+    background:linear-gradient(90deg,rgba(232,102,42,.2),rgba(196,40,71,.18),rgba(240,190,20,.22));border:1px solid rgba(232,102,42,.45);
+    box-shadow:0 0 0 0 rgba(232,102,42,.5);animation:saladpulse 2.6s ease-in-out infinite}
+  @keyframes saladpulse{0%,100%{box-shadow:0 0 0 0 rgba(232,102,42,.35)}50%{box-shadow:0 0 0 4px rgba(232,102,42,0)}}
+  @media(prefers-reduced-motion:reduce){.saladbadge{animation:none}}
   /* #ownbadge — a small 📦 on cards for tickers you own */
   .ownbadge{display:inline-flex;align-items:center;font-size:12px;padding:2px 6px;border-radius:8px;background:rgba(35,194,103,.16);border:1px solid rgba(35,194,103,.4);line-height:1;cursor:help;flex:0 0 auto}
   .fdr-ownbadge{font-size:11px;padding:1px 4px;margin-left:4px}
@@ -4997,6 +5003,7 @@ function marketTimelineHtml(D){
     var dc=''; try{ dc=dualChip(o.score,s.sym,name,srows); }catch(e){}
     var ban=''; try{ ban=bananaChip(s.sym,region,o); }catch(e){}   // #banana — 🍌 sentiment on timeline mini-cards
     var ownb=''; try{ ownb=ownBadge(s.sym,region); }catch(e){}     // #ownbadge — 📦 if owned
+    var sal=''; try{ sal=saladBadge(s.sym,region,o); }catch(e){}    // #salad — 🥗 trifecta on timeline mini-cards
     var rsi=(o.rsi!=null?o.rsi:(o.rsi14!=null?o.rsi14:null));
     // #dbl$ (19 Aug, user-caught "$$215.64") — cleanPrice can return a value that ALREADY carries a currency
     // symbol; strip a leading $ / A$ before prepending fdrCur so it isn't doubled.
@@ -5005,7 +5012,7 @@ function marketTimelineHtml(D){
     var chg=o.change?'<span class="tl-cc-chg '+(o.up?'up':'down')+'">'+(o.up?'▲':'▼')+' '+esc(o.change)+'</span>':'';
     var role=s.role==='at-risk'?'<span class="tl-role dn">▼ at risk</span>':(s.role==='beneficiary'?'<span class="tl-role up">▲ set to gain</span>':'');
     return '<div class="tl-tk tl-tkcard '+band+'" data-sym="'+esc(s.sym)+'" data-region="'+esc(region)+'" role="button" tabindex="0" aria-label="'+esc(s.sym)+' — tap for the full read">'+
-      '<div class="tl-cc-top"><span class="tl-cc-sym">'+esc(s.sym)+'</span><span class="tl-cc-flag">'+(region==='au'?'AU':'US')+'</span>'+(dc?'<span class="tl-cc-chip">'+dc+'</span>':'')+'</div>'+
+      '<div class="tl-cc-top"><span class="tl-cc-sym">'+esc(s.sym)+'</span><span class="tl-cc-flag">'+(region==='au'?'AU':'US')+'</span>'+(dc?'<span class="tl-cc-chip">'+dc+'</span>':'')+(ban?'<span class="tl-cc-chip">'+ban+'</span>':'')+sal+ownb+'</div>'+
       (role?'<div class="tl-cc-role">'+role+'</div>':'')+
       (name?'<div class="tl-cc-name">'+esc(name)+'</div>':'')+
       ((px||chg)?'<div class="tl-cc-pxr">'+px+chg+'</div>':'')+
@@ -5481,7 +5488,7 @@ function render(D,H){
           /* #orange-top (user ask) — the 🍊 score chip now leads the header, next to the + watch button,
              instead of only appearing lower by the score bar. Same chip/behaviour: tap → the full breakdown
              (juice modal) when we have the detail, else a plain 🍊 score badge. */
-          dualChip(p.score,p.sym,p.name,signalRows(p,rg.id))+bananaChip(p.sym,rg.id,p)+ownBadge(p.sym,rg.id)+   /* #banana + #ownbadge on the served pick card */
+          dualChip(p.score,p.sym,p.name,signalRows(p,rg.id))+bananaChip(p.sym,rg.id,p)+saladBadge(p.sym,rg.id,p)+ownBadge(p.sym,rg.id)+   /* #banana + #salad + #ownbadge on the served pick card */
           '<button class="watchbtn iconwatch" data-sym="'+esc(p.sym)+'" data-region="'+esc(rg.id)+'" data-name="'+esc(p.name)+'"'+(p.nEntry!=null?' data-entry="'+p.nEntry+'"':'')+' aria-pressed="false" title="Add to watchlist">☆</button><span class="verdict '+esc(p.vclass)+'">'+esc(p.verdict)+'</span></span></div>'+
         replNote+
         '<div class="tick"><span class="symwrap"><span class="sym">'+qlink(p.sym,rg.id)+'</span><span class="co">'+qlink(p.sym,rg.id,p.name)+' ↗</span></span>'+
@@ -6009,17 +6016,49 @@ function dualChip(score,sym,name,sigRows){
 // yet) as a 🍌 chip on pick cards + overlays too, not just the Finder. Resolves the score from the matching
 // scored candidate (the pipeline value), then a client fallback, so it works for picks that carry no sentiment
 // field of their own. `obj` is an optional pick/candidate object to check directly first.
+// resolve the Sentiment-Candidate score for a ticker: from the object, else the matching candidate, else the
+// whole-market scan universe. Returns {score, why} or null. Shared by bananaChip / openBanana / the 🥗 salad.
+function _sentResolve(sym, region, obj){
+  region=region||'us';
+  function take(o){ if(!o) return null;
+    if(o.sentimentScore && o.sentimentScore.score!=null) return {score:o.sentimentScore.score, why:o.sentimentScore.why};
+    try{ var f=fdrSentFallback(o); if(f) return {score:f.score, why:f.why}; }catch(e){}
+    return null; }
+  var r=take(obj); if(r) return r;
+  try{ var D=(LAST&&LAST.D)||{};
+    r=take((D.candidates||[]).filter(function(x){return x.sym===sym&&(x.region||'us')===region;})[0]); if(r) return r;
+    return take(((D.finderUniverse||{})[region]||[]).filter(function(x){return String(x.sym||'').toUpperCase()===String(sym).toUpperCase();})[0]);
+  }catch(e){ return null; }
+}
 function bananaChip(sym, region, obj){
-  var sc=null, why=null; region=region||'us';
-  function take(o){ if(!o) return false;
-    if(o.sentimentScore && o.sentimentScore.score!=null){ sc=o.sentimentScore.score; why=o.sentimentScore.why; return true; }
-    try{ var f=fdrSentFallback(o); if(f){ sc=f.score; why=f.why; return true; } }catch(e){}
-    return false; }
-  if(!take(obj)){
-    try{ var c=((LAST&&LAST.D||{}).candidates||[]).filter(function(x){return x.sym===sym&&(x.region||'us')===region;})[0]; take(c); }catch(e){}
-  }
-  if(sc==null) return '';
-  return '<button class="banbtn banchip" data-ban-sym="'+esc(sym)+'" data-ban-region="'+esc(region)+'" title="Sentiment — tap for the full breakdown">🍌 '+sc+'</button>';
+  region=region||'us';
+  var r=_sentResolve(sym,region,obj); if(!r||r.score==null) return '';
+  return '<button class="banbtn banchip" data-ban-sym="'+esc(sym)+'" data-ban-region="'+esc(region)+'" title="Sentiment — tap for the full breakdown">🍌 '+r.score+'</button>';
+}
+// #salad (19 Aug 2026, user idea) — the "fruit salad" trifecta: a name strong on ALL THREE at once — 🍊 timing,
+// 🍒 conviction, AND 🍌 fresh-news. Rare + meaningful: the banana rewards a name that HASN'T moved yet, so all
+// three high = a great setup everything agrees on WITH a fresh catalyst you're early to. Min-of-three ≥ SALAD_MIN.
+var SALAD_MIN=60;
+function saladInfo(sym, region, obj){
+  region=region||'us';
+  var o=obj;
+  if(!o||!o.score||o.score.buy_now==null){ try{ o=((LAST&&LAST.D||{}).candidates||[]).filter(function(x){return x.sym===sym&&(x.region||'us')===region;})[0]; }catch(e){} }
+  if(!o||!o.score||o.score.buy_now==null) return null;
+  var orange=Math.round(o.score.buy_now), cherry=null;
+  try{ var ov=overallScore(o.score.buy_now, signalRows(o,region||'us')); if(ov&&ov.score!=null) cherry=Math.round(ov.score); }catch(e){}
+  var b=_sentResolve(sym,region,o); var banana=(b&&b.score!=null)?b.score:null;
+  if(cherry==null||banana==null) return null;
+  return {orange:orange, cherry:cherry, banana:banana, min:Math.min(orange,cherry,banana)};
+}
+function saladBadge(sym, region, obj){
+  var s=saladInfo(sym,region,obj);
+  if(!s) return '';
+  return saladBadgeFrom(s.orange,s.cherry,s.banana);
+}
+function saladBadgeFrom(orange, cherry, banana){
+  if(orange==null||cherry==null||banana==null) return '';
+  var mn=Math.min(orange,cherry,banana); if(mn<SALAD_MIN) return '';
+  return '<span class="saladbadge" title="🥗 Fruit salad — the trifecta: strong on ALL three at once. 🍊 '+Math.round(orange)+' timing · 🍒 '+Math.round(cherry)+' conviction · 🍌 '+Math.round(banana)+' fresh-news. Rare — a great setup everything agrees on, PLUS a fresh catalyst the price hasn’t chased yet.">🥗</span>';
 }
 // #ownbadge (19 Aug 2026, user ask) — a small 📦 on any card for a ticker you OWN (a holding), so your own
 // positions are obvious at a glance. Reads the per-device watchlist's `own` flag (wlOwns). Client-side.
@@ -6695,6 +6734,7 @@ function tickerModalHTML(o, region, cur, isPick){
     try{ chips+=cherryChip(o.score,o.sym,o.name,signalRows(o,region)); }catch(e){}
   }
   try{ chips+=bananaChip(o.sym,region,o); }catch(e){}   // #banana — news-Sentiment 🍌 chip in the overlay header
+  try{ chips+=saladBadge(o.sym,region,o); }catch(e){}   // #salad — 🥗 trifecta badge when all three fruits are strong
   try{ chips+=ownBadge(o.sym,region); }catch(e){}   // #ownbadge — 📦 if you own it
   try{ chips+=earnFlag(o.sym,region); }catch(e){}   // #bhp-fix — loud "🔴 reports tomorrow" flag in the overlay too
   var watchBtn='<button class="watchbtn iconwatch callwatch" data-sym="'+esc(o.sym)+'" data-region="'+esc(region)+'"'+(o.name?' data-name="'+esc(o.name)+'"':'')+(isPick&&o.nEntry!=null?' data-entry="'+o.nEntry+'"':'')+' aria-pressed="false" title="Add to watchlist">☆</button>';
@@ -7319,12 +7359,13 @@ function wlCard(c){
   var spk=(c.spark&&c.spark.length>2)?'<div class="pmc-spark">'+sparkSVG(c.spark.slice(-30))+'</div>':'';
   var verd=(c.score&&c.score.verdict)?'<span class="wic vd '+(/get in|buy/i.test(c.score.verdict)?'v-buy':/late|wait|skip/i.test(c.score.verdict)?'v-dont':'v-hold')+'">'+esc(c.score.verdict)+'</span>':'';
   var ban=''; try{ ban=bananaChip(c.sym,reg,c); }catch(e){}   // #banana — 🍌 sentiment on favourite/watchlist cards
+  var sal=''; try{ sal=saladBadge(c.sym,reg,c); }catch(e){}   // #salad — 🥗 trifecta on favourite/watchlist cards
   return '<div class="wrow wcard wlcard" data-wlsym="'+esc(c.sym)+'" data-wlregion="'+esc(reg)+'" role="button" tabindex="0" aria-label="Details for '+esc(c.sym)+'">'+
     '<div class="wc-head"><a class="wsym" href="'+yf(c.sym,reg)+'" target="_blank" rel="noopener">'+esc(c.sym)+' <span class="wflag">'+(reg==='au'?'AU':'US')+'</span></a>'+
       '<span class="wc-btns"><button class="watchbtn iconwatch" data-sym="'+esc(c.sym)+'" data-region="'+esc(reg)+'"'+(c.name?' data-name="'+esc(c.name)+'"':'')+' aria-pressed="false" title="Add to watchlist">☆</button></span></div>'+
     (c.name?'<div class="pmc-name">'+esc(c.name)+'</div>':'')+
     '<div class="wc-px">'+(c.price?'<span class="pmc-price">'+esc(cleanPrice(c.price))+'</span>':'')+chg+'</div>'+spk+
-    ((jc||verd||ban)?'<div class="wc-tag">'+(jc||verd)+ban+'</div>':'')+'</div>';
+    ((jc||verd||ban||sal)?'<div class="wc-tag">'+(jc||verd)+ban+sal+'</div>':'')+'</div>';
 }
 function etoroWL(title,emoji,wl,shared){
   if(!wl||!wl.items||!wl.items.length) return '';
@@ -10635,7 +10676,7 @@ var FDR_LEVERS=[
 ];
 var FDR_AXES=[['value','Value (cheap →)'],['rangePos','Range position →'],['quality','Quality →'],
   ['growth','Growth →'],['buyNow','🍊 Buy-now →'],['cherry','🍒 Conviction →'],['rsi','RSI →'],['news','Positive news →'],['spring','🌱 Coiled spring →']];
-var FDR_SORTS=[['match','Best match'],['buyNow','🍊 Buy-now'],['cherry','🍒 Conviction'],['sentiment','🍌 Sentiment'],['spring','🌱 Coiled spring'],['newsFresh','📰 Freshest news'],
+var FDR_SORTS=[['match','Best match'],['salad','🥗 Fruit salad'],['buyNow','🍊 Buy-now'],['cherry','🍒 Conviction'],['sentiment','🍌 Sentiment'],['spring','🌱 Coiled spring'],['newsFresh','📰 Freshest news'],
   ['move','🚀 Today’s move'],['rangePos','Range position'],['value','Value'],['quality','Quality'],['mcap','Market cap'],['div','Dividend']];
 function fdrSent100(s){ return s==null?null:Math.round((Math.max(-1,Math.min(1,+s))+1)/2*100); }
 // #sentcand — client fallback for the Sentiment-Candidate score when the pipeline hasn't rescored yet. The
@@ -10924,7 +10965,11 @@ function fdrCurrent(D){
   if(FDR.mode==='strict') out=pool.filter(fdrPass).map(function(s){return {s:s,m:fdrMatch(s)};});
   else out=pool.filter(fdrReqGate).map(function(s){return {s:s,m:fdrMatch(s)};});
   var key=FDR.sort;
+  // #salad — rank by the WEAKEST of the three fruits (all three must be present + strong to top the list);
+  // a name missing any fruit sinks below every complete trifecta.
+  function _saladVal(s){ if(s.buyNow==null||s.cherry==null||s.sentiment==null) return -1; return Math.min(s.buyNow,s.cherry,s.sentiment); }
   out.sort(function(a,b){ if(key==='match') return b.m-a.m || (b.s.buyNow||0)-(a.s.buyNow||0);
+    if(key==='salad') return _saladVal(b.s)-_saladVal(a.s) || (b.s.buyNow||0)-(a.s.buyNow||0);
     return (b.s[key]||0)-(a.s[key]||0); });
   // #343 (user ask) — how many actually PASS every active lever, computed live even in Best-match mode (where
   // levers rank rather than filter). Lets the header show a number that shrinks as you drag a lever.
@@ -11016,7 +11061,7 @@ function fdrCardsHtml(rows){
   return '<div class="fdr-grid">'+rows.slice(0,80).map(function(o){var s=o.s;
     return '<div class="fdr-card" data-sym="'+esc(s.sym)+'" data-region="'+esc(s.region)+'" role="button" tabindex="0" aria-label="'+esc(s.sym)+'">'+
       '<span class="fdr-stripe" style="background:'+(showMatch?fdrColor(o.m):'var(--broth)')+'"></span>'+
-      '<div class="fdr-ctop"><span class="fdr-csym">'+esc(s.sym)+'</span>'+fdrSrcBadge(s)+ownBadge(s.sym,s.region)+'<span class="fdr-cflag">'+(s.region==='au'?'ASX':'US')+'</span>'+
+      '<div class="fdr-ctop"><span class="fdr-csym">'+esc(s.sym)+'</span>'+fdrSrcBadge(s)+saladBadgeFrom(s.buyNow,s.cherry,s.sentiment)+ownBadge(s.sym,s.region)+'<span class="fdr-cflag">'+(s.region==='au'?'ASX':'US')+'</span>'+
         '<button class="watchbtn iconwatch fdr-cwatch'+(wlHas(s.sym,s.region)?' on':'')+'" data-sym="'+esc(s.sym)+'" data-region="'+esc(s.region)+'"'+(s.name?' data-name="'+esc(s.name)+'"':'')+' aria-pressed="'+(wlHas(s.sym,s.region)?'true':'false')+'" title="Add to watchlist">'+(wlHas(s.sym,s.region)?'✓':'☆')+'</button></div>'+
       '<div class="fdr-cname">'+esc(s.name)+'</div>'+
       // #scan-label (19 Aug, user ask) — a scan-only 🍊 (no 🍒) is a shallow technicals+fundamentals score, NOT
