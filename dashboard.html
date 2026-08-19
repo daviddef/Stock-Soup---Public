@@ -5134,7 +5134,10 @@ function actionsHtml(D){
   ready.sort(function(a,b){return (a.p.nNow/a.p.nEntry)-(b.p.nNow/b.p.nEntry);});
   var _readySet={};
   ready.slice(0,3).forEach(function(it){ _readySet[it.p.sym]=1;
-    var p=it.p, cur=it.rg.cur||'$', why=(p.catalysts&&p.catalysts[0])||p.news||'', chip=(p.score?'<span class="axchip">'+dualChip(p.score,p.sym,p.name,signalRows(p,it.rg.id))+'</span>':''), ex=_axExtras(p.sym,it.rg.id);
+    var p=it.p, cur=it.rg.cur||'$', why=(p.catalysts&&p.catalysts[0])||p.news||'', ex=_axExtras(p.sym,it.rg.id);
+    var _rdbn=''; try{_rdbn=bananaChip(p.sym,it.rg.id,p);}catch(e){}
+    var _rdsl=''; try{_rdsl=saladBadge(p.sym,it.rg.id,p);}catch(e){}
+    var chip=(p.score?'<span class="axchip">'+dualChip(p.score,p.sym,p.name,signalRows(p,it.rg.id))+'</span>':'')+_rdbn+_rdsl;
     items.push({r:2, b:'getin', h:'<div class="axcard" data-region="'+esc(it.rg.id)+'" data-idx="'+it.idx+'" role="button" tabindex="0" aria-label="Buy '+esc(p.sym)+'">'+
       '<div class="axtop"><span class="axverb axv-buy">🟢 BUY TARGET</span>'+tfBW(p.tf)+'<span class="axsym">'+esc(p.sym)+'</span>'+chip+'<span class="axpx mono">'+esc(p.price)+'</span>'+ex.wb+'</div>'+ex.chart+
       '<div class="axprice">✓ At your price — ideal buy ~'+esc(cur)+esc(p.nEntry)+'</div>'+
@@ -5187,7 +5190,9 @@ function actionsHtml(D){
   // Tonight's picks (the tier buys) — GET IN, or ⏳ for a wait-verdict pick (ranked lower)
   (D.regions||[]).forEach(function(rg){ if(rg.id!==MKT) return;
     (rg.picks||[]).forEach(function(p,idx){ if(p.sym==='NONE'||_readySet[p.sym]||_chasedSet[p.sym]) return;
-      var chip=(p.score?'<span class="axchip">'+dualChip(p.score,p.sym,p.name,signalRows(p,rg.id))+'</span>':''), ex=_axExtras(p.sym,rg.id);
+      var _axbn=''; try{_axbn=bananaChip(p.sym,rg.id,p);}catch(e){}   // 🍌 sentiment on the GET IN action card
+      var _axsl=''; try{_axsl=saladBadge(p.sym,rg.id,p);}catch(e){}   // 🥗 trifecta on the GET IN action card
+      var chip=(p.score?'<span class="axchip">'+dualChip(p.score,p.sym,p.name,signalRows(p,rg.id))+'</span>':'')+_axbn+_axsl, ex=_axExtras(p.sym,rg.id);
       var wait=/wait|late|hold|skip|avoid|pass|don.t|steer/i.test(p.verdict||'');
       items.push({r:wait?6:4, b:wait?'wait':'getin', h:'<div class="axcard axtier ax-'+(wait?'warn':'buy')+'" data-region="'+esc(rg.id)+'" data-idx="'+idx+'" role="button" tabindex="0" aria-label="'+esc(p.sym)+'">'+
         '<div class="axtop"><span class="axverb '+(wait?'axv-warn':'axv-buy')+'">'+(wait?'⏳':'🟢')+' '+esc((p.verdict||'GET IN').toUpperCase())+'</span>'+tfBW(p.tf)+'<span class="axsym">'+esc(p.sym)+'</span>'+chip+(p.price?'<span class="axpx mono">'+esc(p.price)+'</span>':'')+ex.wb+'</div>'+ex.chart+
