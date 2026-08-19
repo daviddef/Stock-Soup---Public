@@ -6032,11 +6032,16 @@ function _sentResolve(sym, region, obj){
     if(o.sentimentScore && o.sentimentScore.score!=null) return {score:o.sentimentScore.score, why:o.sentimentScore.why};
     try{ var f=fdrSentFallback(o); if(f) return {score:f.score, why:f.why}; }catch(e){}
     return null; }
-  var r=take(obj); if(r) return r;
+  // #salad-reconcile (19 Aug 2026, user ask) — resolve the CANONICAL candidate / scan-universe value for this
+  // (sym,region) FIRST, so a pick, the pot, the watchlist and the tap-through overlay all show the SAME 🍌 for a
+  // ticker. Previously the pick's own (possibly staler) sentimentScore won on the pick card while openBanana/the
+  // pot used the candidate — so a name could be a 🥗 salad on its pick card but not in the pot. The passed obj is
+  // only the fallback now (for an off-pot / scan-only name with no candidate row).
   try{ var D=(LAST&&LAST.D)||{};
-    r=take((D.candidates||[]).filter(function(x){return x.sym===sym&&(x.region||'us')===region;})[0]); if(r) return r;
-    return take(((D.finderUniverse||{})[region]||[]).filter(function(x){return String(x.sym||'').toUpperCase()===String(sym).toUpperCase();})[0]);
-  }catch(e){ return null; }
+    var r=take((D.candidates||[]).filter(function(x){return x.sym===sym&&(x.region||'us')===region;})[0]); if(r) return r;
+    r=take(((D.finderUniverse||{})[region]||[]).filter(function(x){return String(x.sym||'').toUpperCase()===String(sym).toUpperCase();})[0]); if(r) return r;
+  }catch(e){}
+  return take(obj);
 }
 function bananaChip(sym, region, obj){
   region=region||'us';
@@ -11371,9 +11376,10 @@ function fdrWire(root){
   // exclusive with each other (holdings ⊂ watchlist), so turning one on clears the other for a clean read.
   var hold=document.getElementById('fdrHoldPreset'); if(hold) hold.onclick=function(){ FDR.holdingsOnly=!FDR.holdingsOnly; if(FDR.holdingsOnly) FDR.watchOnly=false; rerender(); };
   var wtch=document.getElementById('fdrWatchPreset'); if(wtch) wtch.onclick=function(){ FDR.watchOnly=!FDR.watchOnly; if(FDR.watchOnly) FDR.holdingsOnly=false; rerender(); };
-  // ⓘ on the one-tap row — the preset buttons are injected into the rail after boot's wireInfo() pass ran, so
-  // bind their info buttons locally here (same reason the presets themselves are bound here, not globally).
-  root.querySelectorAll('.fdr-presets .infobtn').forEach(function(b){ b.onclick=function(e){ e.stopPropagation(); openInfo(b.dataset.info); }; });
+  // ⓘ anywhere in the Finder — the whole rail (presets AND the .fdr-railhead ⓘ next to "▾ Filters & sectors")
+  // is injected AFTER boot's wireInfo() pass, so bind EVERY info button in here locally. (Was only .fdr-presets,
+  // so the railhead 'finderCols' ⓘ did nothing — real user-caught bug, 19 Aug 2026.)
+  root.querySelectorAll('.infobtn').forEach(function(b){ b.onclick=function(e){ e.preventDefault(); e.stopPropagation(); openInfo(b.dataset.info); }; });
   // #3 — exact-ticker search. oninput does the LIGHT re-render (results + count) so the input keeps focus while
   // typing; the ✕ clear does a full re-render so the box repaints without it.
   var srch=document.getElementById('fdrSearch'); if(srch){ srch.oninput=function(){ FDR.query=srch.value; fdrRenderView(); }; srch.onkeydown=function(e){ if(e.key==='Enter') e.preventDefault(); }; }
