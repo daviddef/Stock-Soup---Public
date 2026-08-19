@@ -1526,6 +1526,14 @@
     box-shadow:0 0 0 0 rgba(232,102,42,.5);animation:saladpulse 2.6s ease-in-out infinite}
   @keyframes saladpulse{0%,100%{box-shadow:0 0 0 0 rgba(232,102,42,.35)}50%{box-shadow:0 0 0 4px rgba(232,102,42,0)}}
   @media(prefers-reduced-motion:reduce){.saladbadge{animation:none}}
+  button.saladbtn{cursor:pointer;font-family:inherit}
+  .saladbtn.pop{animation:none;transform:scale(1.25);transition:transform .18s}
+  /* #salad — the trifecta modal gauges */
+  .sal-gauge{height:9px;border-radius:5px;background:var(--line);overflow:hidden;margin:3px 0 2px}
+  .sal-gauge i{display:block;height:100%}
+  .sal-gauge.sal-o i{background:var(--broth)} .sal-gauge.sal-c i{background:#d6283c} .sal-gauge.sal-b i{background:#d4a017}
+  .sal-gread{font-size:11.5px;color:var(--muted);line-height:1.4;margin-bottom:9px}
+  .sal-glab{display:flex;justify-content:space-between;font-size:12px;font-weight:800;margin-top:8px}
   /* #ownbadge — a small 📦 on cards for tickers you own */
   .ownbadge{display:inline-flex;align-items:center;font-size:12px;padding:2px 6px;border-radius:8px;background:rgba(35,194,103,.16);border:1px solid rgba(35,194,103,.4);line-height:1;cursor:help;flex:0 0 auto}
   .fdr-ownbadge{font-size:11px;padding:1px 4px;margin-left:4px}
@@ -5860,8 +5868,8 @@ function render(D,H){
     // "How we got here" now sits above "The Archive".
     '<section id="runsched"><div class="sec-head"><h2 class="display"><span class="k">01</span> ⏱️ Run schedule</h2>'+infoBtn('schedule')+'</div>'+runGanttHtml()+runLogHtml()+'</section>'+
     // #351 (user ask) — "One pot, two scores" moved here, BELOW the Run schedule (was Tonight's Menu §03).
-    '<section id="fullpot" class="scorestorysec"><div class="sec-head"><h2 class="display"><span class="k">02</span> 🍲 One pot, two scores</h2></div>'+
-      '<p class="sec-sub">The whole market simmered down to a few picks — then rated twice: 🍊 for timing, 🍒 for conviction. Real numbers from tonight’s run · browse the full pot in <b>The Stock Pot</b> tab.</p>'+
+    '<section id="fullpot" class="scorestorysec"><div class="sec-head"><h2 class="display"><span class="k">02</span> 🍲 One pot, three scores</h2></div>'+
+      '<p class="sec-sub">The whole market simmered down to a few picks — then rated three ways: 🍊 for timing, 🍒 for conviction, 🍌 for fresh news. Line up all three and you get a 🥗 <b>fruit salad</b>. Real numbers from tonight’s run · browse the full pot in <b>The Stock Pot</b> tab.</p>'+
       kitchenScoreStory(D)+'</section>'+
     /* #346 — "How we got here" retired: its unique audit grid is now folded into "One pot, two scores"
        (Tonight's Menu §3, kitchenScoreStory), so the funnel + 01-04 narrative no longer repeat across two tabs. */
@@ -6053,12 +6061,49 @@ function saladInfo(sym, region, obj){
 function saladBadge(sym, region, obj){
   var s=saladInfo(sym,region,obj);
   if(!s) return '';
-  return saladBadgeFrom(s.orange,s.cherry,s.banana);
+  return saladBadgeFrom(s.orange,s.cherry,s.banana,sym,region);
 }
-function saladBadgeFrom(orange, cherry, banana){
+function saladBadgeFrom(orange, cherry, banana, sym, region){
   if(orange==null||cherry==null||banana==null) return '';
   var mn=Math.min(orange,cherry,banana); if(mn<SALAD_MIN) return '';
-  return '<span class="saladbadge" title="🥗 Fruit salad — the trifecta: strong on ALL three at once. 🍊 '+Math.round(orange)+' timing · 🍒 '+Math.round(cherry)+' conviction · 🍌 '+Math.round(banana)+' fresh-news. Rare — a great setup everything agrees on, PLUS a fresh catalyst the price hasn’t chased yet.">🥗</span>';
+  var tip='🥗 Fruit salad — the trifecta: strong on ALL three at once. 🍊 '+Math.round(orange)+' timing · 🍒 '+Math.round(cherry)+' conviction · 🍌 '+Math.round(banana)+' fresh-news. Rare — a great setup everything agrees on, PLUS a fresh catalyst the price hasn’t chased yet. Tap for the full read.';
+  if(sym) return '<button class="saladbadge saladbtn" data-salad-sym="'+esc(sym)+'" data-salad-region="'+esc(region||'us')+'" title="'+esc(tip)+'">🥗</button>';
+  return '<span class="saladbadge" title="'+esc(tip)+'">🥗</span>';
+}
+// #salad — the trifecta breakdown modal (mirrors openBanana): the three fruit gauges + why all-three is special.
+function openSalad(sym, region){
+  region=region||'us';
+  var s=null; try{ s=saladInfo(sym,region,null); }catch(e){}
+  var nm=sym; try{ var c=((LAST&&LAST.D||{}).candidates||[]).filter(function(x){return x.sym===sym&&(x.region||'us')===region;})[0]; if(c&&c.name) nm=c.name; }catch(e){}
+  if(!s) return;
+  LASTFOCUS=document.activeElement;
+  var m=document.getElementById('modal'); if(!m) return; m.className='modal';
+  function gauge(cls,ic,lab,val,read){
+    return '<div class="sal-glab"><span>'+ic+' '+lab+'</span><span>'+Math.round(val)+'</span></div>'+
+      '<div class="sal-gauge '+cls+'"><i style="width:'+Math.max(3,Math.min(100,val))+'%"></i></div>'+
+      '<div class="sal-gread">'+read+'</div>';
+  }
+  var isSalad=s.min>=SALAD_MIN;
+  var weakest=(s.orange<=s.cherry&&s.orange<=s.banana)?'🍊 timing':(s.cherry<=s.banana?'🍒 conviction':'🍌 fresh-news');
+  m.innerHTML='<div class="mhead"><button class="mclose" id="mClose" aria-label="Close">✕</button><div class="mtf">🥗 Fruit salad — the trifecta</div>'+
+    '<div class="mtop"><div class="msym" style="line-height:1.25"><b style="font-size:21px">'+esc(sym)+'</b>'+(nm&&nm!==sym?' <span style="font-size:14px;color:var(--muted);font-weight:700">'+esc(nm)+'</span>':'')+
+      '<br><span style="font-size:15px;font-weight:800">'+(isSalad?'🥗 A fruit salad':'Not a full salad yet')+'</span> <span style="font-size:13px;color:var(--muted);font-weight:700">· weakest fruit: '+weakest+' ('+s.min+')</span></div></div></div>'+
+    '<div class="mbody">'+
+      '<div class="viz bansum"><p class="bansum-lead">A <b>fruit salad</b> is a name that scores high on <b>all three fruits at once</b> — 🍊, 🍒 <b>and</b> 🍌. It’s a genuine sweet spot, not just cute:</p>'+
+        '<p class="bansum-why" style="margin-top:8px">'+
+        '<b>🍊 high</b> = the model likes the <b>timing / setup right now</b>.<br>'+
+        '<b>🍒 high</b> = <b>every signal independently agrees</b> — broad conviction, not one lucky factor.<br>'+
+        '<b>🍌 high</b> = there’s <b>fresh bullish news the price hasn’t chased yet</b> — you’re early.</p></div>'+
+      '<div class="viz"><h4>'+esc(sym)+'’s three fruits</h4>'+
+        gauge('sal-o','🍊','Timing (Buy-Now)',s.orange, s.orange>=60?'The setup looks good right now.':'Timing is only middling.')+
+        gauge('sal-c','🍒','Conviction (Overall)',s.cherry, s.cherry>=60?'The signals broadly agree it’s strong.':'The signals are split.')+
+        gauge('sal-b','🍌','Fresh news',s.banana, s.banana>=60?'Fresh bullish news it hasn’t run on yet.':'No strong fresh-news edge.')+
+        '<p class="banformula">A salad needs <b>all three ≥ '+SALAD_MIN+'</b>. '+esc(sym)+'’s weakest is '+weakest+' at <b>'+s.min+'</b>'+(isSalad?' — so it clears the bar. 🥗':' — just below, so not a full salad yet.')+'</p>'+
+      '</div>'+
+      '<div class="viz banfit"><h4>Why it’s special</h4><p>The 🍌 is the key twist: it rewards a name that <b>hasn’t moved yet</b>. So a name that’s <b>also</b> high on 🍊 and 🍒 means “great setup, everything agrees, <b>and</b> there’s a fresh catalyst you’re not late to.” That’s the genuine <b>“get in before it runs”</b> corner — and it’s <b>rare</b>, because momentum names (high 🍊) have usually already moved (low 🍌). Sort <b>The Stock Pot</b> by <b>🥗 Fruit salad</b> to rank every name by its weakest fruit.</p></div>'+
+    '</div>';
+  var ov=document.getElementById('overlay'); if(ov){ ov.classList.add('open'); ov.setAttribute('aria-hidden','false'); }
+  var mc=document.getElementById('mClose'); if(mc){ mc.onclick=closeModal; mc.focus(); }
 }
 // #ownbadge (19 Aug 2026, user ask) — a small 📦 on any card for a ticker you OWN (a holding), so your own
 // positions are obvious at a glance. Reads the per-device watchlist's `own` flag (wlOwns). Client-side.
@@ -6381,8 +6426,13 @@ function kitchenScoreStory(D){
       +'.ks-svsub{background:var(--surface);border:1px solid var(--line);border-radius:9px;padding:6px 3px}.ks-svsub.e{opacity:.45}'
       +'.ks-svsl{display:block;font-size:9px;font-weight:800;color:var(--faint);letter-spacing:.03em}.ks-svst{display:block;font-weight:800;font-size:12.5px;margin-top:2px}'
       +'.ks-audit{margin:4px 0 2px}.ks-audit>summary{cursor:pointer;font-weight:800;font-size:12.5px;color:var(--broth);padding:7px 2px;list-style:none}.ks-audit>summary::-webkit-details-marker{display:none}.ks-audit .dvlist{margin-top:9px}'
-      +'.ks-lanes{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:16px}@media(max-width:640px){.ks-lanes{grid-template-columns:1fr}}'
-      +'.ks-lane{background:var(--surface-2);border:1px solid var(--line);border-radius:14px;padding:15px 16px}.ks-lane.o{border-top:3px solid var(--broth)}.ks-lane.c{border-top:3px solid #d6283c}'
+      +'.ks-lanes{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:16px}@media(max-width:860px){.ks-lanes{grid-template-columns:1fr}}'
+      +'.ks-lane{background:var(--surface-2);border:1px solid var(--line);border-radius:14px;padding:15px 16px}.ks-lane.o{border-top:3px solid var(--broth)}.ks-lane.c{border-top:3px solid #d6283c}.ks-lane.b{border-top:3px solid #d4a017}'
+      +'.ks-salad{margin-top:16px;border:1px solid rgba(232,102,42,.4);border-radius:16px;padding:18px 18px 16px;background:linear-gradient(135deg,rgba(232,102,42,.08),rgba(196,40,71,.06),rgba(240,190,20,.09))}'
+      +'.ks-salad h4{font-weight:800;font-size:16px;margin:0 0 4px;display:flex;align-items:center;gap:8px}.ks-salad p{color:var(--muted);font-size:13px;line-height:1.55;margin:8px 0 0}.ks-salad p b{color:var(--ink)}'
+      +'.ks-sal3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px}@media(max-width:560px){.ks-sal3{grid-template-columns:1fr}}'
+      +'.ks-sal3 div{background:var(--surface);border:1px solid var(--line);border-radius:11px;padding:10px 12px;font-size:12.5px;line-height:1.4}.ks-sal3 b{display:block;font-size:13.5px;margin-bottom:2px}'
+      +'.ks-saltag{margin-top:13px;font-size:13px;font-weight:700;color:var(--broth);display:flex;align-items:center;gap:7px}'
       +'.ks-lq{font-weight:800;font-size:16px;margin:6px 0 2px}.ks-lsub{color:var(--muted);font-size:12.5px;line-height:1.4}'
       +'.ks-ll{font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);font-weight:800;margin:12px 0 7px}'
       +'.ks-ing{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px dashed var(--line);font-size:13px}.ks-ing:last-child{border-bottom:0}'
@@ -6427,7 +6477,7 @@ function kitchenScoreStory(D){
           +'<div class="ks-sv r-md"><div class="ks-svhead"><span class="ks-tchip t2">T2</span> Balanced</div><div class="ks-svrisk">🟡 Medium risk</div><div class="ks-svn">'+t2+'</div><div class="ks-svlab">served</div><div class="ks-svd">From scanning the <b>whole market</b> for the strongest-looking charts — solid stocks quietly setting up to break out, no news needed yet. Good setups, a little more judgement than T1.</div>'+ksLanes(t2list)+'</div>'
           +'<div class="ks-sv r-hi"><div class="ks-svhead"><span class="ks-tchip t3">T3</span> Aggressive</div><div class="ks-svrisk">🔴 Higher risk</div><div class="ks-svn">'+t3+'</div><div class="ks-svlab">served</div><div class="ks-svd">The bolder names from that same market-wide scan — smaller and faster-moving, less proven. Bigger swings both ways. <b>Only money you can afford to lose.</b></div>'+ksLanes(t3list)+'</div>'
         +'</div>'
-        +'<div class="ks-servnote">Every served pick carries 🍊 + 🍒 and shows in 🥣 the Menu &amp; 🗺️ the Journey.</div>'
+        +'<div class="ks-servnote">Every served pick carries 🍊 + 🍒 + 🍌 (and a 🥗 when all three are strong) and shows in 🥣 the Menu &amp; 🗺️ the Journey.</div>'
       +'</div>'
       +'<p class="ks-note"><b>None of these are scores</b> — they’re counts of stocks. 🍊 attaches at the scan→pot step: the <b>'+finderN+' scored names carry both 🍊 and 🍒</b> and are exactly what you browse in <b>The Stock Pot</b> tab (the '+scanned+' scanned names aren’t all published — only the scored ones are). Of those, <b>'+potN+'</b> hit a fresh catalyst (“How we got here”).</p>';
     var lanes='<div class="ks-lanes">'
@@ -6454,6 +6504,22 @@ function kitchenScoreStory(D){
         +'<div class="ks-ing"><span class="e">📰</span><span class="n">News buzz</span><span class="ks-v ks-vu">for</span></div>'
         +'<div class="ks-ing"><span class="e">💧</span><span class="n">Money-flow</span><span class="ks-v ks-vu">for</span></div>'
         +'<div class="ks-pills"><span class="ks-mini">tally the votes → conviction. A stock can be <b>strong</b> (high 🍒) yet a <b>poor entry today</b> (low 🍊)</span></div></div>'
+      +'<div class="ks-lane b"><div class="ks-lq">🍌 "Is there <em>fresh news</em> it hasn’t chased?"</div><div class="ks-lsub">Pure <b>news &amp; sentiment</b> — bullish flow, how one-sided it is, and crucially how little the price has moved on it. Rewards a name that <b>hasn’t run yet</b>. 0–100.</div>'
+        +'<div class="ks-ll">Three ingredients</div>'
+        +'<div class="ks-ing"><span class="e">📰</span><span class="n">News tone <small>bullish &amp; one-sided beats mixed</small></span><span class="ks-v ks-vu">for</span></div>'
+        +'<div class="ks-ing"><span class="e">📈</span><span class="n">Growth since the news <small>already run up = lower score</small></span><span class="ks-v ks-vn">gate</span></div>'
+        +'<div class="ks-ing"><span class="e">⏱️</span><span class="n">Freshness <small>last ~7 days only</small></span><span class="ks-v ks-vn">gate</span></div>'
+        +'<div class="ks-pills"><span class="ks-mini">the <b>“you’re early”</b> signal — high 🍌 = a fresh catalyst you’re <b>not late to</b>. Kept <b>separate</b> from 🍊/🍒 on purpose.</span></div></div>'
+      +'</div>'
+      +'<div class="ks-salad"><h4>🥗 The fruit salad — when all three line up</h4>'
+        +'<p>A name is a <b>fruit salad</b> when it scores high on <b>all three at once</b>. That’s a genuine sweet spot, not just cute:</p>'
+        +'<div class="ks-sal3">'
+          +'<div><b>🍊 high</b>the model likes the <b>timing / setup</b> right now</div>'
+          +'<div><b>🍒 high</b><b>every signal independently agrees</b> — broad conviction, not one lucky factor</div>'
+          +'<div><b>🍌 high</b><b>fresh bullish news the price hasn’t chased</b> — you’re early</div>'
+        +'</div>'
+        +'<p>The 🍌 is the key twist: it rewards a name that <b>hasn’t moved yet</b>. So a name that’s <b>also</b> high on 🍊 and 🍒 means “great setup, everything agrees, <b>and</b> there’s a fresh catalyst you’re not late to.” That’s the genuine <b>“get in before it runs”</b> corner — and it’s <b>rare</b>, because momentum names (high 🍊) have usually already moved (low 🍌). When all three line up, it’s special.</p>'
+        +'<div class="ks-saltag">🥗 Sort <b>The Stock Pot</b> by <b>Fruit salad</b> to rank names by their weakest fruit — only a true trifecta tops the list.</div>'
       +'</div>';
     return '<div class="ks-wrap">'+css+funnel+lanes+examples+'</div>';
   }catch(e){ try{console.error('kitchenScoreStory',e);}catch(_){}; return ''; }
@@ -6869,6 +6935,11 @@ document.addEventListener('keydown',function(e){
 // (#173 face chip), so stopPropagation in the bubble phase would be too late. Capturing + stopPropagation
 // intercepts the click cleanly for every card type at once, no per-card guard needed.
 document.addEventListener('click',function(e){
+  var sb=e.target.closest('.saladbtn');   // #salad — 🥗 trifecta badge → its own breakdown overlay
+  if(sb){ e.preventDefault(); e.stopPropagation();
+    sb.classList.remove('pop'); void sb.offsetWidth; sb.classList.add('pop');
+    setTimeout(function(){sb.classList.remove('pop');},520);
+    openSalad(sb.dataset.saladSym, sb.dataset.saladRegion); return; }
   var bn=e.target.closest('.banbtn');   // #banana — 🍌 sentiment chip → its own breakdown overlay (like 🍊/🍒)
   if(bn){ e.preventDefault(); e.stopPropagation();
     bn.classList.remove('pop'); void bn.offsetWidth; bn.classList.add('pop');
@@ -7186,6 +7257,24 @@ var INFO={
   funCatalyst:{icon:'🎯',title:'Caught on a catalyst',body:
     '<p>The subset our four discovery nets surfaced <i>tonight</i> — <b>news / macro</b>, the <b>whole-market quant</b> scan, the <b>earnings calendar</b>, and <b>new listings / IPOs</b>. These are the names with a fresh, datable reason to look now.</p>'+
     '<p>Every one of these gets the <b>full</b> signal treatment (so both 🍊 and 🍒), and they’re the pool tonight’s 6 served picks are chosen from. Tap <b>📋 audit list</b> to see every scored name and which net found it — no black box.</p>'},
+  banana:{icon:'🍌',title:'🍌 Sentiment — fresh news the price hasn’t chased',body:
+    '<p>A pure <b>news-and-sentiment</b> score, 0–100 — deliberately separate from the 🍊 timing and 🍒 conviction scores. It answers one question: <b>is there fresh bullish news that the price hasn’t run on yet?</b></p>'+
+    '<p>Three ingredients:</p>'+
+    '<ul class="infoul">'+
+    '<li>📰 <b>News tone</b> — how bullish the recent flow is, and how <i>one-sided</i> it is (all-good beats mixed).</li>'+
+    '<li>📈 <b>Growth since the news</b> — has the price already moved a lot on it? A name that has <b>not</b> chased the story scores higher — that’s the whole point.</li>'+
+    '<li>⏱️ <b>Freshness</b> — the catalyst is recent (last ~7 days), not last month’s story.</li>'+
+    '</ul>'+
+    '<p class="infofoot">The twist: 🍌 rewards a name that <b>hasn’t moved yet</b>. So it’s the “you’re early” signal — high 🍌 means a fresh catalyst you’re <i>not</i> late to. It does <b>not</b> feed the 🍊 or 🍒 numbers; it’s its own read you can sort and filter on in <b>The Stock Pot</b>.</p>'},
+  salad:{icon:'🥗',title:'🥗 The fruit salad — the trifecta',body:
+    '<p>A name is a <b>fruit salad</b> when it scores high on <b>all three fruits at once</b> — 🍊, 🍒 <i>and</i> 🍌 each ≥ 60. Why that’s a genuine sweet spot, not just cute:</p>'+
+    '<ul class="infoul">'+
+    '<li>🍊 <b>high</b> = the model likes the <b>timing / setup right now</b>.</li>'+
+    '<li>🍒 <b>high</b> = <b>every signal independently agrees</b> — broad conviction, not one lucky factor.</li>'+
+    '<li>🍌 <b>high</b> = there’s <b>fresh bullish news the price hasn’t chased yet</b> — you’re early.</li>'+
+    '</ul>'+
+    '<p>The 🍌 is the key twist: it rewards a name that hasn’t moved yet. So a name that’s <b>also</b> high on 🍊 and 🍒 means “great setup, everything agrees, <b>and</b> there’s a fresh catalyst you’re not late to.” That’s the genuine <b>“get in before it runs”</b> corner.</p>'+
+    '<p class="infofoot">It’s <b>rare</b> — momentum names (high 🍊) have usually already moved (low 🍌), so all three rarely line up. When they do, it’s special. Sort by <b>🥗 Fruit salad</b> in The Stock Pot to see them ranked by their <i>weakest</i> fruit (all three must be strong to top the list).</p>'},
   finderPresets:{icon:'🎛️',title:'The one-tap filters',body:
     '<p>Each is a shortcut that flips one lever. They <b>stack</b> — tap two and you get names that satisfy <i>both</i> (e.g. 💰 Penny stocks + 💎 Undervalued = cheap-priced <i>and</i> cheap-on-fundamentals). Tap again to clear just that one; <b>Clear</b> resets all.</p>'+
     '<ul class="infoul">'+
@@ -11061,7 +11150,7 @@ function fdrCardsHtml(rows){
   return '<div class="fdr-grid">'+rows.slice(0,80).map(function(o){var s=o.s;
     return '<div class="fdr-card" data-sym="'+esc(s.sym)+'" data-region="'+esc(s.region)+'" role="button" tabindex="0" aria-label="'+esc(s.sym)+'">'+
       '<span class="fdr-stripe" style="background:'+(showMatch?fdrColor(o.m):'var(--broth)')+'"></span>'+
-      '<div class="fdr-ctop"><span class="fdr-csym">'+esc(s.sym)+'</span>'+fdrSrcBadge(s)+saladBadgeFrom(s.buyNow,s.cherry,s.sentiment)+ownBadge(s.sym,s.region)+'<span class="fdr-cflag">'+(s.region==='au'?'ASX':'US')+'</span>'+
+      '<div class="fdr-ctop"><span class="fdr-csym">'+esc(s.sym)+'</span>'+fdrSrcBadge(s)+saladBadgeFrom(s.buyNow,s.cherry,s.sentiment,s.sym,s.region)+ownBadge(s.sym,s.region)+'<span class="fdr-cflag">'+(s.region==='au'?'ASX':'US')+'</span>'+
         '<button class="watchbtn iconwatch fdr-cwatch'+(wlHas(s.sym,s.region)?' on':'')+'" data-sym="'+esc(s.sym)+'" data-region="'+esc(s.region)+'"'+(s.name?' data-name="'+esc(s.name)+'"':'')+' aria-pressed="'+(wlHas(s.sym,s.region)?'true':'false')+'" title="Add to watchlist">'+(wlHas(s.sym,s.region)?'✓':'☆')+'</button></div>'+
       '<div class="fdr-cname">'+esc(s.name)+'</div>'+
       // #scan-label (19 Aug, user ask) — a scan-only 🍊 (no 🍒) is a shallow technicals+fundamentals score, NOT
