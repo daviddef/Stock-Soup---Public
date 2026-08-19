@@ -3016,6 +3016,7 @@ var TIER='type1';   // #152 — selected model tier: type1 (production, default)
 var POTLENS='timing';   // #273 — Full Pot ranking lens: 'timing' (🍊 buy-now) or 'conviction' (🍒 overall). Flips sort + heat-band grouping so you see the same shortlist ranked either way, no duplicate grids.
 var POTVIEW='bands';    // #296 — Full Pot layout: 'bands' (grouped by heat) or 'board' (flat 1..N leaderboard). One surface, two skins — retires the old separate "Stock Pot Top 20".
 var MCTX='timeline';    // #299/#350 — which "Market backdrop" panel is showing. After the #350/#348 merges the tabs are: timeline / sectors&commodities (+ bargains when present). Remembered across re-renders; auto-resets if it points at a dropped id.
+var MCTX_USER=false;    // #mctx-default (20 Aug 2026, user-caught: it kept defaulting to Sectors) — only TRUE once the user explicitly taps a tab. Until then the panel always defaults to Timeline (when present), so a transient empty-timeline for one market can't permanently stick the default on Sectors.
 // #152 — the ONE place that resolves "which picks array is this region actually showing right now."
 // Global (not nested in render()) because click handlers outside render() (openFromEl, ruCard, etc.)
 // need the exact same resolution to correctly index into whichever array built the card the user
@@ -5324,7 +5325,10 @@ function marketContextHtml(D, bargainCards, lines){   // `lines` is a render-loc
     '<p class="sec-sub">Genuinely cheap right now — oversold, not in freefall, and nothing actively wrong that we can see. <b>Tap any for the full read.</b></p><div class="pot">'+bargainCards+'</div>']);
   tabs=tabs.filter(function(t){ return String(t[2]||'').trim()!==''; });   // drop a chip whose panel has no content this run
   if(!tabs.length) return '';
-  if(!tabs.some(function(t){return t[0]===MCTX;})) MCTX=tabs[0][0];        // keep MCTX pointing at a real tab
+  // Until the user explicitly taps a tab, always default to Timeline when it's present (else the first tab) —
+  // so a market whose Timeline is momentarily empty can't reset+stick the default onto Sectors.
+  if(!MCTX_USER){ MCTX = tabs.some(function(t){return t[0]==='timeline';}) ? 'timeline' : tabs[0][0]; }
+  else if(!tabs.some(function(t){return t[0]===MCTX;})) MCTX=tabs[0][0];    // user's pick was dropped → fall back
   var nav=tabs.map(function(t){ var sp=t[1].indexOf(' '); var ic=sp<0?'':t[1].slice(0,sp), lb=sp<0?t[1]:t[1].slice(sp+1);
     return '<button class="mctxbtn'+(t[0]===MCTX?' on':'')+'" data-mctx="'+t[0]+'" role="tab" aria-selected="'+(t[0]===MCTX)+'"><span class="mci">'+ic+'</span><span class="mcl">'+lb+'</span></button>';}).join('');
   var panels=tabs.map(function(t){return '<div class="mctx-panel" data-panel="'+t[0]+'"'+(t[0]===MCTX?'':' hidden')+'>'+t[2]+'</div>';}).join('');
@@ -11037,7 +11041,7 @@ function wire(D){
   // #299 — Market context chip nav: swap the visible panel IN PLACE (no full re-render, preserves scroll).
   // MCTX is remembered so a pulse re-render keeps the panel you were reading.
   document.querySelectorAll('.mctxbtn[data-mctx]').forEach(function(b){ b.onclick=function(){
-    var id=b.dataset.mctx, sec=b.closest('#mktctx'); if(!sec||id===MCTX) return; MCTX=id;
+    var id=b.dataset.mctx, sec=b.closest('#mktctx'); if(!sec||id===MCTX) return; MCTX=id; MCTX_USER=true;
     sec.querySelectorAll('.mctxbtn').forEach(function(x){ var on=x.dataset.mctx===id; x.classList.toggle('on',on); x.setAttribute('aria-selected',on?'true':'false'); });
     sec.querySelectorAll('.mctx-panel').forEach(function(p){ if(p.dataset.panel===id) p.removeAttribute('hidden'); else p.setAttribute('hidden',''); });
     try{ var nv=b.parentNode; nv.scrollTo({left:b.offsetLeft-(nv.clientWidth-b.clientWidth)/2,behavior:'smooth'}); }catch(e){}   // centre the active chip by scrolling the NAV only — never the page (so tapping never hijacks vertical scroll)
@@ -11193,7 +11197,7 @@ function wire(D){
   document.querySelectorAll('.axcard[data-backdrop]').forEach(function(c){
     c.addEventListener('click',function(e){ if(e.target.closest('a,button'))return;
       var tab=c.dataset.backdrop, d=document.getElementById('mktctx'); if(!d)return;  // #mktctx is now a section (was a <details>)
-      if(tab){ MCTX=tab;
+      if(tab){ MCTX=tab; MCTX_USER=true;
         d.querySelectorAll('.mctxbtn').forEach(function(b){ var on=b.dataset.mctx===tab; b.classList.toggle('on',on); b.setAttribute('aria-selected',on); });
         d.querySelectorAll('.mctx-panel').forEach(function(p){ p.hidden=p.dataset.panel!==tab; }); }
       try{ d.scrollIntoView({behavior:'smooth',block:'start'}); }catch(_){}
