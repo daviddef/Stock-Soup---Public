@@ -1888,7 +1888,8 @@
   .bc-ctrls{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:2px 0 12px}
   .bc-rg,.bc-z{background:var(--surface-2);border:1px solid var(--line);color:var(--muted);border-radius:8px;padding:5px 11px;font-size:12px;font-weight:800;cursor:pointer;font-family:var(--font)}
   .bc-rg.on{background:var(--broth);color:#fff;border-color:var(--broth)}
-  .bc-rg:hover,.bc-z:hover{border-color:var(--broth)}
+  .bc-rg.bc-dead{opacity:.35;cursor:not-allowed}
+  .bc-rg:not(.bc-dead):hover,.bc-z:hover{border-color:var(--broth)}
   .bc-z{width:34px;padding:5px 0;font-size:16px;text-align:center}
   .bc-zsp{flex:1}
   .bc-hint{color:var(--muted);font-size:12px;margin:10px 0 0;text-align:center}
@@ -10427,7 +10428,7 @@ function openBigChart(k){
     '<p class="bc-hint">Pick a range, use −/+ to zoom, and drag across the line to read the price + any headline at that point.</p></div>';
   var ov=document.getElementById('overlay'); ov.classList.add('open'); ov.setAttribute('aria-hidden','false');
   document.getElementById('mClose').onclick=closeModal; document.getElementById('mClose').focus();
-  fetch(API_BASE+'/history?sym='+encodeURIComponent(c.sym)+'&region='+encodeURIComponent(c.region)).then(function(r){return r.ok?r.json():null;}).then(function(j){
+  fetch(API_BASE+'/history?sym='+encodeURIComponent(c.sym)+'&region='+encodeURIComponent(c.region)+'&days=520').then(function(r){return r.ok?r.json():null;}).then(function(j){
     var slot=document.getElementById('bigChartSlot'), ctrls=document.getElementById('bcCtrls');
     if(!slot) return;
     if(!j||!j.closes||j.closes.length<3){ slot.innerHTML='<div class="nc-load nc-empty">not enough daily history to chart yet</div>'; return; }
@@ -10444,9 +10445,14 @@ function openBigChart(k){
     }
     var presets=[['1M',30],['3M',90],['6M',180],['1Y',365],['All',fullDays]];
     function paint(){ ctrls.querySelectorAll('.bc-rg').forEach(function(x){ x.classList.toggle('on', Math.abs((+x.dataset.days)-winDays)<1); }); }
-    ctrls.innerHTML=presets.map(function(p){return '<button class="bc-rg" data-days="'+p[1]+'">'+p[0]+'</button>';}).join('')+
+    // A preset longer than the history we actually have would just show the same 'All' view, so DISABLE it
+    // (dimmed + a plain title) rather than letting it silently do nothing — the "can't change to 6M" confusion.
+    ctrls.innerHTML=presets.map(function(p){
+      var dead=(p[0]!=='All' && p[1] > fullDays+5);
+      return '<button class="bc-rg'+(dead?' bc-dead':'')+'" data-days="'+p[1]+'"'+(dead?' disabled title="Only ~'+Math.round(fullDays/30)+' months of history for this stock"':'')+'>'+p[0]+'</button>';
+    }).join('')+
       '<span class="bc-zsp"></span><button class="bc-z" data-z="out" aria-label="Zoom out">−</button><button class="bc-z" data-z="in" aria-label="Zoom in">+</button>';
-    ctrls.querySelectorAll('.bc-rg').forEach(function(bt){ bt.onclick=function(){ winDays=+bt.dataset.days; paint(); draw(); }; });
+    ctrls.querySelectorAll('.bc-rg:not(.bc-dead)').forEach(function(bt){ bt.onclick=function(){ winDays=+bt.dataset.days; paint(); draw(); }; });
     ctrls.querySelectorAll('.bc-z').forEach(function(bt){ bt.onclick=function(){
       winDays=(bt.dataset.z==='in')?Math.max(7,Math.round(winDays*0.6)):Math.min(fullDays,Math.round(winDays*1.7)); paint(); draw(); }; });
     paint(); draw();
