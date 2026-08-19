@@ -6067,13 +6067,20 @@ function saladBadgeFrom(orange, cherry, banana, sym, region){
   if(orange==null||cherry==null||banana==null) return '';
   var mn=Math.min(orange,cherry,banana); if(mn<SALAD_MIN) return '';
   var tip='🥗 Fruit salad — the trifecta: strong on ALL three at once. 🍊 '+Math.round(orange)+' timing · 🍒 '+Math.round(cherry)+' conviction · 🍌 '+Math.round(banana)+' fresh-news. Rare — a great setup everything agrees on, PLUS a fresh catalyst the price hasn’t chased yet. Tap for the full read.';
-  if(sym) return '<button class="saladbadge saladbtn" data-salad-sym="'+esc(sym)+'" data-salad-region="'+esc(region||'us')+'" title="'+esc(tip)+'">🥗</button>';
+  if(sym) return '<button class="saladbadge saladbtn" data-salad-sym="'+esc(sym)+'" data-salad-region="'+esc(region||'us')+'" data-salad-o="'+Math.round(orange)+'" data-salad-c="'+Math.round(cherry)+'" data-salad-b="'+Math.round(banana)+'" title="'+esc(tip)+'">🥗</button>';
   return '<span class="saladbadge" title="'+esc(tip)+'">🥗</span>';
 }
 // #salad — the trifecta breakdown modal (mirrors openBanana): the three fruit gauges + why all-three is special.
-function openSalad(sym, region){
+function openSalad(sym, region, ds){
   region=region||'us';
-  var s=null; try{ s=saladInfo(sym,region,null); }catch(e){}
+  var s=null;
+  // Prefer the exact scores the tapped badge was rendered from (carried on the button) so the modal can never
+  // disagree with the badge; fall back to a fresh resolve if they're absent.
+  if(ds&&ds.saladO!=null&&ds.saladC!=null&&ds.saladB!=null){
+    var o=+ds.saladO, c=+ds.saladC, b=+ds.saladB;
+    if(o===o&&c===c&&b===b) s={orange:o,cherry:c,banana:b,min:Math.min(o,c,b)};
+  }
+  if(!s){ try{ s=saladInfo(sym,region,null); }catch(e){} }
   var nm=sym; try{ var c=((LAST&&LAST.D||{}).candidates||[]).filter(function(x){return x.sym===sym&&(x.region||'us')===region;})[0]; if(c&&c.name) nm=c.name; }catch(e){}
   if(!s) return;
   LASTFOCUS=document.activeElement;
@@ -6939,7 +6946,7 @@ document.addEventListener('click',function(e){
   if(sb){ e.preventDefault(); e.stopPropagation();
     sb.classList.remove('pop'); void sb.offsetWidth; sb.classList.add('pop');
     setTimeout(function(){sb.classList.remove('pop');},520);
-    openSalad(sb.dataset.saladSym, sb.dataset.saladRegion); return; }
+    openSalad(sb.dataset.saladSym, sb.dataset.saladRegion, sb.dataset); return; }
   var bn=e.target.closest('.banbtn');   // #banana — 🍌 sentiment chip → its own breakdown overlay (like 🍊/🍒)
   if(bn){ e.preventDefault(); e.stopPropagation();
     bn.classList.remove('pop'); void bn.offsetWidth; bn.classList.add('pop');
