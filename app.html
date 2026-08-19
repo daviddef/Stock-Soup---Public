@@ -5513,7 +5513,11 @@ function isBargain(c){
 }
 // Global market switch — the whole full view follows. Used by the header flag toggle and any
 // "see your other-market names" affordance (#206). Preserves scroll position across the re-render.
-function setMkt(m){ if(!m||m===MKT)return; MKT=m; try{pushViewState();}catch(e){} var sc=window.pageYOffset; render(LAST.D,LAST.H); window.scrollTo(0,sc); }
+function setMkt(m){ if(!m||m===MKT)return; MKT=m; try{pushViewState();}catch(e){} var sc=window.pageYOffset;
+  // audit #3 (19 Aug 2026) — a re-render throw used to fail silently (render build-then-swaps, so the OLD
+  // market's view just stayed and the toggle looked dead). Surface it instead of swallowing it.
+  try{ render(LAST.D,LAST.H); }catch(e){ try{console.error('render(setMkt) threw',e);}catch(_){} try{flashToast('⚠️ Couldn’t switch — please refresh');}catch(_){} }
+  window.scrollTo(0,sc); }
 function render(D,H){
   LAST={D:D,H:H};
   try{ document.body.classList.toggle('mkt-au', MKT==='au'); document.body.classList.toggle('mkt-us', MKT!=='au'); }catch(e){}   // 🎨 market-themed backdrop
@@ -11611,7 +11615,10 @@ function runStatusIco(D){
   }catch(e){ return ''; }
 }
 function setView(v){ VIEW = v; try{ localStorage.setItem('soup_view', v); }catch(e){} applyView(); }
-function applyView(){ if(!LAST) return; window.scrollTo(0,0); if(VIEW==='simple') renderSimple(LAST.D); else render(LAST.D, LAST.H); }
+function applyView(){ if(!LAST) return; window.scrollTo(0,0);
+  try{ if(VIEW==='simple') renderSimple(LAST.D); else render(LAST.D, LAST.H); }
+  catch(e){ try{console.error('applyView render threw',e);}catch(_){} try{flashToast('⚠️ Couldn’t switch views — please refresh');}catch(_){} }
+}
 var DEEPLINK_DONE=false;
 function boot(D,H){
   try{ normalizeMenuIsos(H); }catch(e){}   // #menuiso — backfill iso from stamp/time so no run dates to "Thu 1 Jan"
