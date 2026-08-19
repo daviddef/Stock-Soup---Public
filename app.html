@@ -5278,7 +5278,7 @@ function dividendBoardHtml(D){
     var svC=sv==='secure'?'var(--buy)':sv==='watch'?'#c47a1e':sv==='at risk'?'var(--dont)':'var(--muted)';
     var bd=daysTo(r.buyBy), soon=bd!=null&&bd<=7;
     var buy=r.buyBy?('<span class="dvb-buy'+(soon?' soon':'')+'">🛒 buy by '+esc(_divDate(r.buyBy))+(bd!=null?(bd<=0?' · today!':bd===1?' · tomorrow':' · in '+bd+'d'):'')+'</span>'):'<span class="dvb-noex">next ex-date not yet declared</span>';
-    var frank=(r.franking!=null)?'<span class="dvb-frank">'+r.franking+'% franked</span>':'';
+    var frank=(r.franking!=null)?'<span class="dvb-frank frankinfo" role="button" tabindex="0" data-frank="'+r.franking+'" title="What does franked mean? Tap to learn">'+r.franking+'% franked ⓘ</span>':'';
     return '<button class="dvb-row s2see" data-sym="'+esc(r.sym)+'" data-region="'+esc(r.region)+'" aria-label="'+esc(r.sym)+' dividend — full read">'+
       '<div class="dvb-l"><div class="dvb-sym">'+esc(r.sym)+(r.amount?' <span class="dvb-amt">'+esc(r.amount)+'</span>':'')+'</div><div class="dvb-nm">'+esc(r.name||'')+'</div>'+buy+frank+'</div>'+
       '<div class="dvb-r"><div class="dvb-yield">'+r.yield.toFixed(2)+'%</div>'+
@@ -6845,7 +6845,7 @@ function dividendCardHtml(o,region){
     if(!isNaN(ex)&&ex>=today){ exFuture=true; var bb=new Date(ex); do{ bb.setDate(bb.getDate()-1); }while(bb.getDay()===0||bb.getDay()===6); buyby=_divDate(bb.toISOString().slice(0,10)); }
   }
   var rows='<div class="dvrow"><span class="dvk">Yield</span><span class="dvv"><b>'+d.yield.toFixed(2)+'%</b> a year'+((d.rate||d.amount)?' · '+(d.rate?cur+d.rate:esc(d.amount))+'/share':'')+(d.avg5y_yield?' <span class="dvsub">(5-yr avg '+d.avg5y_yield.toFixed(1)+'%)</span>':'')+'</span></div>';
-  if(d.franking!=null) rows+='<div class="dvrow"><span class="dvk">🇦🇺 Franking</span><span class="dvv"><b>'+d.franking+'%</b>'+(d.franking>=100?' — fully franked (a tax bonus on top of the yield)':d.franking>0?' — partly franked':' — unfranked')+'</span></div>';
+  if(d.franking!=null) rows+='<div class="dvrow"><span class="dvk">🇦🇺 Franking</span><span class="dvv"><b class="frankinfo" role="button" tabindex="0" data-frank="'+d.franking+'" title="What does franked mean? Tap to learn">'+d.franking+'% ⓘ</b>'+(d.franking>=100?' — fully franked (a tax bonus on top of the yield)':d.franking>0?' — partly franked':' — unfranked')+'</span></div>';
   if(exFuture&&buyby){
     rows+='<div class="dvrow dvbuy"><span class="dvk">🛒 Buy by</span><span class="dvv"><b>'+esc(buyby)+'</b> — the last day to own it and still collect this dividend</span></div>';
     rows+='<div class="dvrow"><span class="dvk">Ex-date</span><span class="dvv">'+esc(_divDate(d.ex_date))+' — from this day it trades <i>without</i> the dividend</span></div>';
@@ -6858,6 +6858,24 @@ function dividendCardHtml(o,region){
   return '<div class="viz"><h4>💰 Dividend</h4><div class="dvrows">'+rows+'</div>'+safe+
     (region==='au'?'<p class="dvfrank">🇦🇺 ASX dividends often carry <b>franking credits</b> — a tax offset that can make the after-tax return meaningfully higher than the headline yield.</p>':'')+
     '<p class="atb-note">A dividend is never guaranteed — the safety read is about how <b>durable</b> today’s payout looks (payout ratio + whether the yield is out of line with its own history), not a promise.</p></div>';
+}
+// #franking (20 Aug 2026, user ask) — a tap-info overlay explaining what "franked" means, interpreting the
+// specific level. Australian dividend imputation: the company already paid ~30% tax on the profit, so it
+// attaches franking credits to the dividend — a credit for that tax so you aren't taxed twice.
+function openFrankingInfo(pct){
+  LASTFOCUS=document.activeElement;
+  var m=document.getElementById('modal'); if(!m) return; m.className='modal';
+  var lvl=(pct>=100)?'<b style="color:var(--buy)">Fully franked (100%)</b> — the full company tax is credited to you. A $70 fully-franked dividend is “grossed up” to about <b>$100</b> with a <b>$30</b> franking credit, so its after-tax value is meaningfully higher than the headline yield suggests.'
+    :(pct>0)?'<b style="color:#c47a1e">Partly franked ('+pct+'%)</b> — only part of the dividend carries a tax credit; the rest is taxed as normal income.'
+    :'<b style="color:var(--dont)">Unfranked (0%)</b> — no franking credit attached (e.g. profit earned overseas, or no Australian tax paid on it), so you pay full tax on the whole dividend.';
+  m.innerHTML='<div class="mhead"><button class="mclose" id="mClose" aria-label="Close">✕</button><div class="mtf">🇦🇺 What “franked” means</div></div>'+
+    '<div class="mbody">'+
+      '<div class="viz bansum"><p class="bansum-lead">In Australia, a company pays about <b>30% tax</b> on its profits <i>before</i> it pays you a dividend. To avoid taxing that money twice, it attaches <b>franking credits</b> — a credit for the tax already paid, which you claim on your own tax return.</p></div>'+
+      '<div class="viz"><h4>This one: '+pct+'% franked</h4><p style="font-size:13.5px;line-height:1.55">'+lvl+'</p></div>'+
+      '<div class="viz banfit"><h4>Why it matters</h4><p>Two dividends with the same headline yield are <b>not</b> equal: a fully-franked one is worth more after tax than an unfranked one. It’s an ASX-specific bonus — US dividends don’t carry franking. (How much the credit is actually worth to you depends on your own tax rate — this isn’t tax advice.)</p></div>'+
+    '</div>';
+  var ov=document.getElementById('overlay'); if(ov){ ov.classList.add('open'); ov.setAttribute('aria-hidden','false'); }
+  var mc=document.getElementById('mClose'); if(mc){ mc.onclick=closeModal; mc.focus(); }
 }
 function breadthPanelHtml(D,region){
   var b=marketBreadth(D,region); if(!b) return '';
@@ -7466,6 +7484,8 @@ document.addEventListener('click',function(e){
   if(snw){ e.preventDefault(); e.stopPropagation(); openSnowflake(snw.dataset.snowSym, snw.dataset.snowRegion); return; }
   var dsr=e.target.closest('.dvb-sort');   // 💰 dividend board sort toggle
   if(dsr){ e.preventDefault(); e.stopPropagation(); DIV_SORT=dsr.dataset.dsort; if(LAST&&LAST.D){var _sc=window.pageYOffset; try{render(LAST.D,LAST.H);}catch(_){}; window.scrollTo(0,_sc);} return; }
+  var fki=e.target.closest('.frankinfo');   // 🇦🇺 franking pill → what "franked" means (must win over the row tap)
+  if(fki){ e.preventDefault(); e.stopPropagation(); openFrankingInfo(+fki.dataset.frank); return; }
   var dvr=e.target.closest('.dvb-row[data-sym]');   // 💰 dividend board row → the ticker's full read
   if(dvr){ e.preventDefault(); e.stopPropagation(); openTicker(dvr.dataset.sym, dvr.dataset.region); return; }
   var sb=e.target.closest('.saladbtn');   // #salad — 🥗 trifecta badge → its own breakdown overlay
