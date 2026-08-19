@@ -463,10 +463,10 @@
   @media(max-width:760px){.axgrid{column-count:1}}
   /* (user ask v3) Actions = a row of ~5 compact SUMMARY tiles (one per verb group). Tap a tile → its detail
      cards expand below in a width-filling grid. Default = just the tile row: one scannable line, no waste. */
-  .axsumgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px}   /* 4 across (user ask) — was auto-fit which packed 6 then orphaned the 7th */
-  @media(max-width:860px){ .axsumgrid{grid-template-columns:repeat(3,minmax(0,1fr))} }
+  .axsumgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}   /* #axcard — 3 across (was 4, too cramped: labels truncated to "GE…") */
+  @media(max-width:860px){ .axsumgrid{grid-template-columns:repeat(2,minmax(0,1fr))} }
   /* #ax-tidy (user ask) — keep 3 across on mobile (was 2); tighten spacing so the trio fits cleanly */
-  @media(max-width:560px){ .axsumgrid{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px} .axsum-card{padding:9px 8px} .axsum-lbl{font-size:11px} }
+  @media(max-width:560px){ .axsumgrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px} .axsum-card{padding:10px 10px} .axsum-lbl{font-size:11.5px} }
   .axsum-card{text-align:left;cursor:pointer;border:1px solid var(--line);border-left:3px solid var(--muted);border-radius:12px;background:var(--surface);padding:11px 12px;display:flex;flex-direction:column;gap:4px;transition:transform .1s,border-color .12s,background .12s;font-family:inherit;min-width:0}
   .axsum-card:hover{transform:translateY(-2px)}
   /* #actions→pot — "Screen the whole pot" one-tap chips (deep-link into the Stock Pot) */
@@ -475,9 +475,10 @@
   .potchip{font-size:12px;font-weight:800;padding:6px 11px;border-radius:999px;border:1px solid var(--line);background:var(--surface-2);color:var(--ink);cursor:pointer;font-family:inherit;white-space:nowrap;transition:border-color .12s,color .12s,background .12s}
   .potchip:hover{border-color:var(--broth);color:var(--broth);background:rgba(232,102,42,.08)}
   .axsum-card[aria-expanded="true"]{background:var(--surface-2)}
-  .axsum-top{display:flex;align-items:center;gap:6px;min-width:0}
-  .axsum-ic{font-size:14px;line-height:1;flex:0 0 auto}
-  .axsum-lbl{font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:.03em;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .axsum-top{display:flex;align-items:flex-start;gap:6px;min-width:0}
+  .axsum-ic{font-size:15px;line-height:1.15;flex:0 0 auto}
+  .axsum-lbl{font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:.02em;color:var(--ink);line-height:1.2;min-width:0}   /* #axcard — WRAP, never truncate to "GE…" */
+  .axsum-sub{font-size:11px;color:var(--muted);line-height:1.35;margin-top:1px}   /* #axcard — the one-line "what to do" */
   .axsum-n{margin-left:auto;font-size:11px;font-weight:800;color:var(--broth);background:rgba(232,102,42,.12);border:1px solid rgba(232,102,42,.32);border-radius:999px;padding:0 7px;flex:0 0 auto}  /* (user ask) always orange, not just the open tile */
   .axsum-prev{font-size:11.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-variant-numeric:tabular-nums}
   .axsum-card[aria-expanded="true"] .axsum-n{background:var(--broth);color:#fff;border-color:transparent}
@@ -5319,16 +5320,18 @@ function actionsHtml(D){
   // (the full action cards) right below, in a width-filling grid. Default = just the summary row (one
   // scannable line of tiles), so there's zero wasted real estate and no overwhelm. The detail cards are
   // rendered (hidden) in the DOM so the existing card wiring works with no re-binding.
+  // #axcard (19 Aug 2026, user: "action card almost useless") — each tile now carries a one-line "what to do"
+  // (sub) so the collapsed tile is actually informative, not just an abbreviated label + count. Tap to expand.
   var BUCKETS=[
-    {k:'getin', ic:'🟢', label:'Get in',            verb:'to get in'},
-    {k:'themes',ic:'🛒', label:'Themes to buy',      verb:'to buy'},
-    {k:'room',  ic:'🍃', label:'Room to run',        verb:'not extended'},
-    {k:'bargain',ic:'💎',label:'Bargains',           verb:'beaten down'},
-    {k:'review',ic:'🔎', label:'Review — heating up', verb:'to review'},
-    {k:'trim',  ic:'🔴', label:'Trim / take profit', verb:'to trim'},
-    {k:'wait',  ic:'⏳', label:'Wait / watch',        verb:'to watch'},
-    {k:'coming',ic:'📅', label:'Coming up',           verb:'coming up'},
-    {k:'read',  ic:'📰', label:'Read these',          verb:'to read'}
+    {k:'getin', ic:'🟢', label:'Get in',            verb:'to get in',    sub:'at your ideal buy price right now'},
+    {k:'themes',ic:'🛒', label:'Themes to buy',      verb:'to buy',       sub:'hot themes worth buying into'},
+    {k:'room',  ic:'🍃', label:'Room to run',        verb:'not extended', sub:'strong, not overextended yet'},
+    {k:'bargain',ic:'💎',label:'Bargains',           verb:'beaten down',  sub:'oversold — cheap, not broken'},
+    {k:'review',ic:'🔎', label:'Review — heating up', verb:'to review',    sub:'heating up — worth a re-check'},
+    {k:'trim',  ic:'🔴', label:'Trim / take profit', verb:'to trim',      sub:'up hard — consider banking some'},
+    {k:'wait',  ic:'⏳', label:'Wait / watch',        verb:'to watch',     sub:'ran past the buy zone — wait for a dip'},
+    {k:'coming',ic:'📅', label:'Coming up',           verb:'coming up',    sub:'earnings / dividends / IPOs due soon'},
+    {k:'read',  ic:'📰', label:'Read these',          verb:'to read',      sub:'fresh news worth a read'}
   ];
   function _axSubject(h){ var m=String(h).match(/<span class="axsym[^"]*">([\s\S]*?)<\/span>/); return m?m[1].replace(/<[^>]+>/g,'').trim():''; }
   // #actions→pot — the 4 market-SCREEN buckets (buy themes / room-to-run / bargains / read) are no longer big
@@ -5346,6 +5349,7 @@ function actionsHtml(D){
     tiles+='<button class="axsum-card axs-'+bk.k+'" data-actgrp="'+bk.k+'" aria-expanded="false" aria-label="'+bk.label+' — '+mine.length+' '+(mine.length===1?'item':'items')+'">'+
       // #ax-tidy (17 Aug, user ask) — dropped the redundant "3 to get in" line: the count pill + label already say it.
       '<div class="axsum-top"><span class="axsum-ic">'+bk.ic+'</span><span class="axsum-lbl">'+esc(bk.label)+'</span><span class="axsum-n">'+mine.length+'</span></div>'+
+      (bk.sub?'<div class="axsum-sub">'+esc(bk.sub)+'</div>':'')+
       (prev?'<div class="axsum-prev">'+prev+'</div>':'')+'</button>';
     details+='<div class="axdetail" data-actgrp-body="'+bk.k+'" hidden><div class="axwrap">'+mine.map(function(x){return x.h;}).join('')+'</div></div>';
   });
