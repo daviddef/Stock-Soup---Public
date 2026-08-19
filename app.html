@@ -5279,7 +5279,8 @@ function dividendBoardHtml(D){
     var svC=sv==='secure'?'var(--buy)':sv==='watch'?'#c47a1e':sv==='at risk'?'var(--dont)':'var(--muted)';
     var bd=daysTo(r.buyBy), soon=bd!=null&&bd<=7;
     var buy=r.buyBy?('<span class="dvb-buy'+(soon?' soon':'')+'">🛒 buy by '+esc(_divDate(r.buyBy))+(bd!=null?(bd<=0?' · today!':bd===1?' · tomorrow':' · in '+bd+'d'):'')+'</span>'):'<span class="dvb-noex">next ex-date not yet declared</span>';
-    var frank=(r.franking!=null)?'<span class="dvb-frank frankinfo" role="button" tabindex="0" data-frank="'+r.franking+'" title="What does franked mean? Tap to learn">'+r.franking+'% franked ⓘ</span>':'';
+    var _fc=r.franking>=100?'var(--buy)':r.franking<=0?'var(--dont)':'#c47a1e', _fbg=r.franking>=100?'rgba(35,194,103,.12)':r.franking<=0?'rgba(214,40,60,.11)':'rgba(232,140,40,.14)';
+    var frank=(r.franking!=null)?'<span class="dvb-frank frankinfo" role="button" tabindex="0" data-frank="'+r.franking+'" style="color:'+_fc+';background:'+_fbg+'" title="What does franked mean? Tap to learn">'+r.franking+'% franked ⓘ</span>':'';
     return '<button class="dvb-row s2see" data-sym="'+esc(r.sym)+'" data-region="'+esc(r.region)+'" aria-label="'+esc(r.sym)+' dividend — full read">'+
       '<div class="dvb-l"><div class="dvb-sym">'+esc(r.sym)+(r.amount?' <span class="dvb-amt">'+esc(r.amount)+'</span>':'')+'</div><div class="dvb-nm">'+esc(r.name||'')+'</div>'+buy+frank+'</div>'+
       '<div class="dvb-r"><div class="dvb-yield">'+r.yield.toFixed(2)+'%</div>'+
@@ -6849,7 +6850,8 @@ function dividendCardHtml(o,region){
     if(!isNaN(ex)&&ex>=today){ exFuture=true; var bb=new Date(ex); do{ bb.setDate(bb.getDate()-1); }while(bb.getDay()===0||bb.getDay()===6); buyby=_divDate(bb.toISOString().slice(0,10)); }
   }
   var rows='<div class="dvrow"><span class="dvk">Yield</span><span class="dvv"><b>'+d.yield.toFixed(2)+'%</b> a year'+((d.rate||d.amount)?' · '+(d.rate?cur+d.rate:esc(d.amount))+'/share':'')+(d.avg5y_yield?' <span class="dvsub">(5-yr avg '+d.avg5y_yield.toFixed(1)+'%)</span>':'')+'</span></div>';
-  if(d.franking!=null) rows+='<div class="dvrow"><span class="dvk">🇦🇺 Franking</span><span class="dvv"><b class="frankinfo" role="button" tabindex="0" data-frank="'+d.franking+'" title="What does franked mean? Tap to learn">'+d.franking+'% ⓘ</b>'+(d.franking>=100?' — fully franked (a tax bonus on top of the yield)':d.franking>0?' — partly franked':' — unfranked')+'</span></div>';
+  if(d.franking!=null){ var _fkc=d.franking>=100?'var(--buy)':d.franking<=0?'var(--dont)':'#c47a1e';
+    rows+='<div class="dvrow"><span class="dvk">🇦🇺 Franking</span><span class="dvv"><b class="frankinfo" role="button" tabindex="0" data-frank="'+d.franking+'" style="color:'+_fkc+'" title="What does franked mean? Tap to learn">'+d.franking+'% ⓘ</b>'+(d.franking>=100?' — fully franked (a tax bonus on top of the yield)':d.franking>0?' — partly franked':' — unfranked')+'</span></div>'; }
   if(exFuture&&buyby){
     rows+='<div class="dvrow dvbuy"><span class="dvk">🛒 Buy by</span><span class="dvv"><b>'+esc(buyby)+'</b> — the last day to own it and still collect this dividend</span></div>';
     rows+='<div class="dvrow"><span class="dvk">Ex-date</span><span class="dvv">'+esc(_divDate(d.ex_date))+' — from this day it trades <i>without</i> the dividend</span></div>';
