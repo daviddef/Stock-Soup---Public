@@ -2383,6 +2383,7 @@
   .ug-cell{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;background:var(--surface-2);border:1px solid var(--line);border-radius:11px;padding:7px 4px;cursor:pointer;position:relative;min-height:52px}
   .ug-cell:active{transform:scale(.97)}.ug-cell.ug-empty{color:var(--faint);cursor:default;font-weight:800}
   .ug-flag{font-size:10px;line-height:1}.ug-sym{font-weight:800;font-size:13px;line-height:1.1}.ug-v{font-weight:800;font-size:15px;line-height:1}
+  .ug-nm{font-size:9px;color:var(--muted);line-height:1.15;max-width:100%;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;text-align:center}
   .ug-salad{position:absolute;top:2px;right:3px;font-size:11px}
   /* fresh gossip */
   .skgossip{display:flex;gap:11px;padding:13px 15px;border-radius:15px;background:var(--surface);border:1px solid var(--line);border-left-width:4px}
@@ -12375,8 +12376,9 @@ function unifiedGridHtml(D){
     if(!best||bv<0) return '<div class="ug-cell ug-empty">—</div>';
     var reg=best.__reg||best.region||'us', c=bv>=62?'var(--buy)':bv>=45?'#c47a1e':'var(--dont)';
     var sal=''; try{ var si=saladInfo(best.sym,reg,best); if(si&&si.min>=SALAD_MIN) sal='<span class="ug-salad">🥗</span>'; }catch(e){}
+    var nm=best.name&&best.name!==best.sym?'<span class="ug-nm">'+esc(best.name)+'</span>':'';
     return '<button class="ug-cell s2see" data-sym="'+esc(best.sym)+'" data-region="'+esc(reg)+'">'+
-      '<span class="ug-flag">'+(reg==='au'?'🇦🇺':'🇺🇸')+'</span><span class="ug-sym">'+esc(best.sym)+'</span>'+sal+
+      '<span class="ug-flag">'+(reg==='au'?'🇦🇺':'🇺🇸')+'</span><span class="ug-sym">'+esc(best.sym)+'</span>'+nm+sal+
       '<span class="ug-v" style="color:'+c+'">'+bv+'</span></button>';
   }
   var head='<div class="ug-row ug-head"><div class="ug-rl"></div>'+tiers.map(function(t){return '<div class="ug-th"><b>'+esc(t[1])+'</b><small>'+esc(t[2])+'</small></div>';}).join('')+'</div>';
