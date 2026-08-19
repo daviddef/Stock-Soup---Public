@@ -2839,7 +2839,14 @@ var EMBEDDED = {
 };
 var HIST_EMBED = {"names":{},"menus":[]};
 
-var esc=function(s){return String(s==null?"":s);};
+// audit #1 (19 Aug 2026) — esc() historically ONLY null-guarded; it did NOT escape, so a headline / company
+// name from an external feed (Google News / Yahoo RSS) containing a " or < could break out of an attribute
+// (data-name="…", title="…", href="…") or inject markup into a card. Now a real HTML escaper. For plain TEXT
+// content the rendered result is visually identical (&lt;→<, &quot;→", &amp;→&); it only changes — and fixes —
+// attribute/markup contexts. The &-guard escapes only an & that ISN'T already an entity, so feed text that
+// already carries entities ("Q3 &amp; beyond") is not double-encoded into "&amp;amp;". Single-quote is left
+// alone deliberately (attributes here are double-quoted; not escaping ' avoids breaking any onclick JS-string).
+var esc=function(s){return String(s==null?"":s).replace(/&(?!#?[a-zA-Z0-9]+;)/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");};
 // Bright D / W / M timeframe badges (Day / Week / Month) — used everywhere a timeframe shows.
 function tfNorm(s){s=String(s||'');return /week/i.test(s)?'Week':/long|month/i.test(s)?'Long':/day/i.test(s)?'Day':'';}
 var _TFB={Day:['d','D'],Week:['w','W'],Long:['m','M']};
@@ -2951,7 +2958,9 @@ var JUICE_CACHE={}, JUICE_SEQ=0;   // #105 — admin-only "real juice" raw-logic
 function yf(sym,region){var s=String(sym).replace(/\*$/,'');if(region==="au")s+=".AX";return "https://finance.yahoo.com/quote/"+encodeURIComponent(s);}
 function qlink(sym,region,label){return '<a class="q" href="'+yf(sym,region)+'" target="_blank" rel="noopener">'+esc(label==null?sym:label)+'</a>';}
 function sparkSVG(vals){
-  if(!vals||vals.length<2) return '';
+  // audit #5 (19 Aug 2026) — a STRING of length ≥2 passes the old `vals.length` guard but then throws in
+  // Math.min.apply (non-array), blanking the whole render. Require a real array.
+  if(!Array.isArray(vals)||vals.length<2) return '';
   var w=100,h=30,mn=Math.min.apply(null,vals),mx=Math.max.apply(null,vals),rng=(mx-mn)||1;
   var pts=vals.map(function(v,i){return ((i/(vals.length-1))*w).toFixed(1)+','+(h-((v-mn)/rng)*(h-4)-2).toFixed(1);});
   var up=vals[vals.length-1]>=vals[0], poly=pts.join(' '), last=pts[pts.length-1].split(',');
@@ -5789,16 +5798,23 @@ function render(D,H){
     var shortChip=(c.short!=null&&c.short>=4)?'<span class="pmc-short">🩳 '+c.short+'%</span>':'';
     var _crows=signalRows(c,c.region||'us');
     var jc=dualChip(c.score,c.sym,c.name,_crows);   // #173/#186 🍊 + #266 🍒 → #298 leading-score pref
+    // #potfruits (19 Aug 2026 audit #4) — the Stock Pot card only showed 🍊/🍒; a name that qualified as a 🥗
+    // salad (or carried a 🍌 sentiment / 📦 owned) showed those on its pick/watchlist/Finder card but NOT here,
+    // for the identical ticker. Add them so every card type is consistent (all resolve from the canonical candidate).
+    var _rg=c.region||'us', _bnc='', _slc='', _ob='';
+    try{ _bnc=bananaChip(c.sym,_rg,c); }catch(e){}
+    try{ _slc=saladBadge(c.sym,_rg,c); }catch(e){}
+    try{ _ob=ownBadge(c.sym,_rg); }catch(e){}
     var _bn=(c.score&&c.score.buy_now!=null)?c.score.buy_now:0;
     var _ov=(c.score&&c.score.buy_now!=null)?(overallScore(c.score.buy_now,_crows)||{}).score:0;   // #270 — cherry score for the OR-filter
     var rankBadge=rank?'<span class="pmc-rank">'+rank+'</span>':'';   // #211 — Stock Pot Top 20 is a numbered leaderboard
     return '<div class="potcard h-'+esc(c.heat)+(rank?' ranked':'')+'" data-ci="'+i+'" data-score="'+_bn+'" data-cherry="'+(_ov||0)+'" role="button" tabindex="0" aria-label="Details for '+esc(c.sym)+'">'+
-      '<div class="pmc-top">'+rankBadge+(c.heat==='cold'?'<span class="ph no">⛔</span>':'<span class="ph"></span>')+'<b class="pmc-sym">'+esc(c.sym)+'</b>'+servedTag(c.sym,c.region)+annFlag(c)+shortChip+'<span class="pmc-flag">'+(c.region==='au'?'AU':'US')+'</span>'+
+      '<div class="pmc-top">'+rankBadge+(c.heat==='cold'?'<span class="ph no">⛔</span>':'<span class="ph"></span>')+'<b class="pmc-sym">'+esc(c.sym)+'</b>'+servedTag(c.sym,c.region)+_ob+annFlag(c)+shortChip+'<span class="pmc-flag">'+(c.region==='au'?'AU':'US')+'</span>'+
         '<button class="watchbtn iconwatch pmc-watch" data-sym="'+esc(c.sym)+'" data-region="'+esc(c.region||'us')+'"'+(c.name?' data-name="'+esc(c.name)+'"':'')+' aria-pressed="false" title="Add to watchlist">☆</button></div>'+
       (c.name?'<div class="pmc-name">'+esc(c.name)+'</div>':'')+
       '<div class="pmc-px">'+(c.price?'<span class="pmc-price">'+esc(cleanPrice(c.price))+'</span>':'')+chg+'</div>'+
       (spk?'<div class="pmc-spark">'+spk+'</div>':'')+
-      '<div class="pmc-note">'+esc(c.note||c.news)+'</div>'+(jc?'<div class="pmc-juice">'+jc+'</div>':'')+'</div>';   // WHY it's rated this way beats a random news headline (was c.news||c.note)
+      '<div class="pmc-note">'+esc(c.note||c.news)+'</div>'+((jc||_bnc||_slc)?'<div class="pmc-juice">'+jc+_bnc+_slc+'</div>':'')+'</div>';   // WHY it's rated this way beats a random news headline (was c.news||c.note)
   }
   var _cands=(D.candidates||[]);
   // #273 — lens: rank/group the Full Pot by 🍊 timing (buy_now) or 🍒 conviction (overallScore). Cherry is
@@ -12023,10 +12039,12 @@ function skMenu(D,region){
   var picks=skPicks(D,region); if(picks.length<2) return '';   // the hero already covers the single top pick
   var plates=picks.map(function(p){
     var tf=p.tf?('<span class="skpl-tf">'+esc(tfBW?tfBW(p.tf):p.tf)+'</span>'):'';
-    return '<button class="skplate s2see" data-sym="'+esc(p.sym)+'" data-region="'+esc(region)+'">'+
+    // a DIV, not a <button> — the fruit chips inside are themselves <button>s, and nested buttons are invalid
+    // HTML (they break layout + swallow the inner taps). The .s2see class + role/tabindex make it tappable.
+    return '<div class="skplate s2see" role="button" tabindex="0" data-sym="'+esc(p.sym)+'" data-region="'+esc(region)+'" aria-label="'+esc(p.sym)+' — see the full card">'+
       '<div class="skpl-top">'+skVerdictStamp(p)+tf+'</div>'+
       '<div class="skpl-sym">'+esc(p.sym)+'</div><div class="skpl-co">'+esc(p.name||'')+'</div>'+
-      skFruitRow(p,region)+'</button>';
+      skFruitRow(p,region)+'</div>';
   }).join('');
   var other=region==='au'?'us':'au', on=skPicks(D,other).length;
   return '<div class="sksec rev"><h2 class="skh">🍜 On the menu tonight</h2>'+
@@ -12149,7 +12167,8 @@ function wireSimple(D){
   var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting)e.target.classList.add('in');});},{threshold:.16});
   document.querySelectorAll('.rev').forEach(function(el){io.observe(el);});
   // "See the full card" / plates / your-plate chips → the #318 canonical overlay
-  document.querySelectorAll('.s2see[data-sym]').forEach(function(b){ b.onclick=function(){ openTicker(b.dataset.sym,b.dataset.region); }; });
+  document.querySelectorAll('.s2see[data-sym]').forEach(function(b){ b.onclick=function(){ openTicker(b.dataset.sym,b.dataset.region); };
+    if(b.getAttribute('role')==='button') b.onkeydown=function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); openTicker(b.dataset.sym,b.dataset.region); } }; });
   document.querySelectorAll('.watchbtn[data-sym]').forEach(function(b){ b.addEventListener('click',function(e){e.preventDefault();e.stopPropagation();watchToggleFromEl(b);}); });
   syncWatchButtons();
   // #kitchen — the risk "heat" dot uses the shared needle placement; the "N more on the other market" switch
