@@ -1549,6 +1549,18 @@
   .bb-row{padding:6px 0;border-top:1px dashed var(--line);font-size:12.5px;line-height:1.35}.bb-row:first-of-type{border-top:0}
   .bb-row b{display:block;font-weight:800}.bb-row span{color:var(--muted);font-size:11.5px}
   .bb-empty{color:var(--faint);font-size:12px;font-style:italic;padding:6px 0}
+  /* #breadth — market-breadth panel */
+  .brd-card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:15px 16px;box-shadow:var(--shadow)}
+  .brd-head{display:flex;align-items:center;gap:11px;margin-bottom:12px}
+  .brd-w{font-size:30px;line-height:1;flex:0 0 auto}
+  .brd-ht{display:flex;flex-direction:column;flex:1;min-width:0}.brd-ht b{font-size:15px}
+  .brd-verdict{font-size:12.5px;font-weight:800}
+  .brd-row{display:flex;align-items:center;gap:10px;margin:7px 0}
+  .brd-lab{flex:1;min-width:0;font-size:12.5px;font-weight:700}.brd-lab small{display:block;color:var(--faint);font-weight:600;font-size:10.5px}
+  .brd-track{flex:0 0 40%;height:9px;border-radius:5px;background:var(--surface-2);border:1px solid var(--line);overflow:hidden}
+  .brd-track i{display:block;height:100%;border-radius:5px}
+  .brd-pct{flex:0 0 auto;width:38px;text-align:right;font-weight:800;font-size:13px;font-variant-numeric:tabular-nums}
+  .brd-note{color:var(--muted);font-size:12px;line-height:1.45;margin:11px 0 0}
   /* #ownbadge — a small 📦 on cards for tickers you own */
   .ownbadge{display:inline-flex;align-items:center;font-size:12px;padding:2px 6px;border-radius:8px;background:rgba(35,194,103,.16);border:1px solid rgba(35,194,103,.4);line-height:1;cursor:help;flex:0 0 auto}
   .fdr-ownbadge{font-size:11px;padding:1px 4px;margin-left:4px}
@@ -2310,6 +2322,9 @@
   .skheat-dot{position:absolute;top:50%;width:18px;height:18px;border-radius:50%;transform:translate(-50%,-50%);border:3px solid var(--surface);box-shadow:0 0 0 2px rgba(0,0,0,.15),0 0 12px 2px var(--rcp,rgba(242,163,61,.6))}
   .skheat-ends{display:flex;justify-content:space-between;font-size:10.5px;font-weight:700;color:var(--faint);margin-top:6px;text-transform:uppercase;letter-spacing:.04em}
   .skheat-s{color:var(--muted);font-size:13px;line-height:1.45;margin:9px 0 0}
+  .skweather{display:flex;align-items:center;gap:12px;margin-top:11px;padding:12px 14px;border-radius:15px;background:var(--surface-2);border:1px solid var(--line)}
+  .skwx-e{font-size:30px;line-height:1;flex:0 0 auto}
+  .skweather b{font-size:14px}.skweather small{display:block;color:var(--muted);font-size:12px;line-height:1.4;margin-top:2px}
   /* fresh gossip */
   .skgossip{display:flex;gap:11px;padding:13px 15px;border-radius:15px;background:var(--surface);border:1px solid var(--line);border-left-width:4px}
   .skgossip.sk-bull{border-left-color:var(--buy)}.skgossip.sk-bear{border-left-color:var(--dont)}.skgossip.sk-neu{border-left-color:var(--faint)}
@@ -5951,6 +5966,10 @@ function render(D,H){
     '<section><div class="sec-head"><h2 class="display"><span class="k">02</span> Take your seat, time for Action</h2>'+infoBtn('actions')+'</div>'+
       '<p class="sec-sub" style="margin-top:4px">It’s time to eat — enough of the mood, here’s what’s worth <b>acting on</b> right now.</p>'+
       actionsHtml(D)+'</section>'+
+    // #breadth — "is the whole market rising, or just a few names?" A live market-wide health read that
+    // complements the risk meter (mood) with actual equity participation. Degrades to '' if the scan universe
+    // isn't loaded. (20 Aug 2026, competitive-research idea.)
+    (function(){try{var bp=breadthPanelHtml(D,MKT);return bp?'<section class="sec-brd">'+bp+'</section>':'';}catch(e){return '';}})()+
     // Change-environment retired — its trajectory + "ready to buy" now live inside each pick card (miniTraj + buyat + rangeBar).
     // #299 — News, World & sectors, Commodities and Bargains are no longer stacked here; they're panels
     // inside the single "04 Market context" section below the Full Pot (see marketContextHtml).
@@ -6592,6 +6611,44 @@ function bullBearHtml(o,region){
     colH(bulls,'bb-bull','👍 Reasons it’s tempting','Nothing strongly in favour right now.')+
     colH(bears,'bb-bear','👎 Reasons to be careful','No red flags jumping out.')+
     '</div></div>';
+}
+// #breadth (20 Aug 2026, competitive-research idea — StockCharts/Fidelity primitive) — "how many boats are
+// rising?" A genuine GAP: the risk meter is VIX/BTC/gold/oil/AUD, none measure EQUITY breadth. Computed live,
+// CLIENT-SIDE, from the whole-market scan universe already in the bundle (finderUniverse, ~400 AU / ~530 US
+// liquid names) — % above their 20-day & 50-day trend + % up over the year. No new data, no backend.
+function marketBreadth(D,region){
+  var fu=((D&&D.finderUniverse||{})[region])||[];
+  var a20=0,n20=0,a50=0,n50=0,up=0,ny=0;
+  fu.forEach(function(x){
+    if(x.aboveEma20!=null){n20++; if(x.aboveEma20)a20++;}
+    if(x.aboveEma50!=null){n50++; if(x.aboveEma50)a50++;}
+    if(x.ret1y!=null){ny++; if(x.ret1y>0)up++;}
+  });
+  if(n50<20) return null;   // too few names for an honest read
+  return {above20:n20?Math.round(a20/n20*100):null, above50:n50?Math.round(a50/n50*100):null,
+          upYear:ny?Math.round(up/ny*100):null, n:n50};
+}
+// A one-line "market weather" verdict from breadth — used in the Simple view's kitchen-heat section.
+function breadthWeather(D,region){
+  var b=marketBreadth(D,region); if(!b||b.above50==null) return null;
+  var s=b.above50;
+  return s>=60?{emoji:'☀️',word:'broad strength',sub:Math.round(s)+'% of the market is above its medium-term trend — a healthy, broad rally.'}
+        :s>=40?{emoji:'⛅',word:'mixed',sub:'Only '+Math.round(s)+'% of the market is above its trend — a patchy, selective market.'}
+        :{emoji:'🌧️',word:'narrow / weak',sub:'Just '+Math.round(s)+'% of the market is above its trend — a narrow, fragile tape; be picky.'};
+}
+function breadthPanelHtml(D,region){
+  var b=marketBreadth(D,region); if(!b) return '';
+  var mkt=region==='au'?'ASX':'US';
+  var lead=b.above50, tone=lead>=60?{w:'☀️',t:'Broad strength',c:'var(--buy)'}:lead>=40?{w:'⛅',t:'Mixed',c:'#e8a020'}:{w:'🌧️',t:'Narrow / weak',c:'var(--dont)'};
+  function bar(lab,help,pct){ if(pct==null)return '';
+    var c=pct>=60?'var(--buy)':pct>=40?'#e8a020':'var(--dont)';
+    return '<div class="brd-row"><div class="brd-lab">'+lab+'<small>'+help+'</small></div><div class="brd-track"><i style="width:'+pct+'%;background:'+c+'"></i></div><div class="brd-pct">'+pct+'%</div></div>';
+  }
+  return '<div class="brd-card"><div class="brd-head"><span class="brd-w">'+tone.w+'</span><div class="brd-ht"><b>Market breadth · '+mkt+'</b><span class="brd-verdict" style="color:'+tone.c+'">'+esc(tone.t)+'</span></div>'+infoBtn('breadth')+'</div>'+
+    bar('Above their 20-day line','short-term trend',b.above20)+
+    bar('Above their 50-day line','medium-term trend',b.above50)+
+    bar('Up over the past year','long-term trend',b.upYear)+
+    '<p class="brd-note">Across the <b>'+b.n+'</b> liquid '+mkt+' names we scan. When most sit above their trend lines a rising market is <b>broad</b> (healthier); when few do, the rally is <b>narrow</b> — carried by a handful of names, and more fragile.</p></div>';
 }
 // #kitchen-story (user ask) — "One pot, two scores": the live funnel (real per-run counts) + where each
 // score attaches + a worked example pulled from tonight's real pot. Lives in Inside the Kitchen.
@@ -7520,6 +7577,13 @@ var INFO={
     '</ul>'+
     '<p>The 🍌 is the key twist: it rewards a name that hasn’t moved yet. So a name that’s <b>also</b> high on 🍊 and 🍒 means “great setup, everything agrees, <b>and</b> there’s a fresh catalyst you’re not late to.” That’s the genuine <b>“get in before it runs”</b> corner.</p>'+
     '<p class="infofoot">It’s <b>rare</b> — momentum names (high 🍊) have usually already moved (low 🍌), so all three rarely line up. When they do, it’s special. Sort by <b>🥗 Fruit salad</b> in The Stock Pot to see them ranked by their <i>weakest</i> fruit (all three must be strong to top the list).</p>'},
+  breadth:{icon:'📊',title:'Market breadth — how many boats are rising',body:
+    '<p>The risk meter tells you the market’s <i>mood</i> (VIX, gold, oil…). <b>Breadth</b> tells you how <i>broad</i> a move is — are most stocks taking part, or just a famous handful?</p>'+
+    '<ul class="infoul">'+
+    '<li><b>Above their 20-day / 50-day line</b> — the share of stocks trading above their short- and medium-term trend. Above ~60% = broad participation.</li>'+
+    '<li><b>Up over the year</b> — the share in a genuine long-term uptrend.</li>'+
+    '</ul>'+
+    '<p class="infofoot">A rising market on <b>broad</b> breadth is healthier and more durable; a rally where only a few names are above their trends (<b>narrow</b> breadth) is more fragile — it’s being carried by a small group and tends to wobble. Computed live across the ~400 (ASX) / ~530 (US) liquid names our daily scan covers — no new data, just a tally of the whole-market scan.</p>'},
   finderPresets:{icon:'🎛️',title:'The one-tap filters',body:
     '<p>Each is a shortcut that flips one lever. They <b>stack</b> — tap two and you get names that satisfy <i>both</i> (e.g. 💰 Penny stocks + 💎 Undervalued = cheap-priced <i>and</i> cheap-on-fundamentals). Tap again to clear just that one; <b>Clear</b> resets all.</p>'+
     '<ul class="infoul">'+
@@ -12157,16 +12221,18 @@ function skMenu(D,region){
 }
 function skHeat(D){
   var r=D.risk||{}, lvl=(r.level!=null)?+r.level:50;
-  var mood=lvl>=67?{e:'�horn',t:'Risk-on — the market’s hungry',s:'Buyers are confident. Good ideas tend to get rewarded — but don’t chase.'}:
-           lvl>=34?{e:'😐',t:'Neutral — a steady kitchen',s:'No strong push either way. Pick quality and be patient.'}:
-           {e:'🧊',t:'Risk-off — the market’s nervous',s:'Money’s hiding. Be pickier; smaller bets, tighter bail-outs.'};
+  var mood=lvl>=67?{t:'Risk-on — the market’s hungry',s:'Buyers are confident. Good ideas tend to get rewarded — but don’t chase.'}:
+           lvl>=34?{t:'Neutral — a steady kitchen',s:'No strong push either way. Pick quality and be patient.'}:
+           {t:'Risk-off — the market’s nervous',s:'Money’s hiding. Be pickier; smaller bets, tighter bail-outs.'};
   var e=lvl>=67?'🤑':lvl>=34?'😐':'😨';
+  // #breadth — a plain "market weather" line: how BROAD the market is (are most stocks taking part?).
+  var wx=''; try{ var w=breadthWeather(D,MKT); if(w) wx='<div class="skweather"><span class="skwx-e">'+w.emoji+'</span><div><b>Market weather · '+esc(w.word)+'</b><small>'+esc(w.sub)+'</small></div></div>'; }catch(_){}
   return '<div class="sksec rev"><h2 class="skh">🌡️ How hot’s the kitchen?</h2>'+
     '<div class="skcard skheat"><div class="skheat-face">'+e+'</div>'+
       '<div class="skheat-body"><div class="skheat-t">'+esc(mood.t)+'</div>'+
         '<div class="skheat-track"><span class="skheat-dot" id="skHeatDot"></span></div>'+
         '<div class="skheat-ends"><span>hide the cash</span><span>send it</span></div>'+
-        '<p class="skheat-s">'+esc(mood.s)+'</p></div></div></div>';
+        '<p class="skheat-s">'+esc(mood.s)+'</p></div></div>'+wx+'</div>';
 }
 function skGossip(D,region){
   var items=(D.topNews||[]).filter(function(n){return n&&n.headline&&(!n.region||n.region===region);}).slice(0,3);
