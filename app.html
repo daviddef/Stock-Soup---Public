@@ -4390,7 +4390,10 @@ function picksLastSessionPct(D){
 // already-computed news sentiment (deep newsflow / EODHD) when we have it, else fall back to a keyword lexicon
 // on the headline. Returns 'pos' | 'neg' | 'neu'.
 function _brkTone(t){ t=' '+String(t||'').toLowerCase()+' ';
-  var pos=/\b(beat|beats|upgrade[sd]?|record|surge[sd]?|soar[sed]*|jump[sed]*|rall(y|ies|ied)|gain[sed]*|profit|strong|win[s]?|contract|offtake|approval|breakthrough|higher|dividend|buyback|raises? (?:guidance|forecast|target)|outperform|rebound[sed]*|boom[sed]*|upbeat|tops?|expansion|milestone)\b/;
+  // #restone (19 Aug 2026, user-caught: QML's "Secures $15M / Government Backing / Drill Results Surpass"
+  // headlines all read NEUTRAL) — the lexicon was tuned for "beat/upgrade/surge" earnings language and missed
+  // resource-sector positives, so ASX small-cap miners never registered as bullish. Added the resource terms.
+  var pos=/\b(beat|beats|upgrade[sd]?|record|surge[sd]?|soar[sed]*|jump[sed]*|rall(y|ies|ied)|gain[sed]*|profit|strong|win[s]?|contract|offtake|approval|breakthrough|higher|dividend|buyback|raises? (?:guidance|forecast|target)|outperform|rebound[sed]*|boom[sed]*|upbeat|tops?|expansion|milestone|secure[sd]?|backing|fund(s|ed|ing)?|grant[s]?|investment|high.?grade|maiden|surpass(es|ed)?|exceed(s|ed)?|discover(y|ies)|first (?:gold|copper|production|pour)|advanc(e|es|ed|ing)|accelerat(e|es|ed|ing)|bonanza|strategic)\b/;
   var neg=/\b(miss|misses|missed|downgrade[sd]?|loss(es)?|plunge[sd]?|slump[sed]*|cut[s]?|weak|warn(s|ing|ed)?|halt[sed]*|probe|lawsuit|resign[sed]*|delay[sed]*|write.?down|slash(es|ed)?|underperform|sink[s]?|tumble[sd]?|fall[s]?|drop[s]?|declin(e|es|ed|ing)|profit warning|guidance cut|writeoff|impairment)\b/;
   var p=pos.test(t), n=neg.test(t); return (p&&!n)?'pos':(n&&!p)?'neg':'neu'; }
 function _brkItemTone(it){
@@ -6988,6 +6991,7 @@ var INFO={
     '<li><b>Match</b> — how well this name fits <i>your</i> active levers. 100% = it satisfies every filter you’ve set; with no levers on, everything is 100%.</li>'+
     '<li>🍊 <b>Orange (Buy-Now)</b> — the model’s “how good a buy <i>right now</i>” score: catalyst + technicals + fundamentals rolled into one. Higher is stronger.</li>'+
     '<li>🍒 <b>Cherry</b> — the blended overall read: the orange score tempered by the full signal picture. This is the headline number on the card face.</li>'+
+    '<li>💬 <b>Sentiment</b> — a pure <i>news</i> read: <b>positive recent news the price hasn’t chased yet</b>. High = fresh bullish coverage (last ~7 days) on a name that <i>hasn’t</i> run up on it — a not-yet-priced-in candidate; it falls as the price rises on that news (past ~10% up = mostly priced in). Positive-news-only — quiet or negative names sit at 0, and a name with no recent news shows a dash. Sort by 💬 to float fresh-news candidates to the top.</li>'+
     '<li><b>Range</b> — where the price sits in its 1-year range: 0 = at the year’s low, 100 = at the year’s high.</li>'+
     '<li><b>Value</b> — how <i>cheap</i> it is on the fundamentals (P/E · P/B · PEG). Higher = better value.</li>'+
     '<li><b>Qual</b> — business quality (return on equity/assets, margins, balance sheet). Higher = stronger business.</li>'+
@@ -10460,13 +10464,29 @@ function fdrSent100(s){ return s==null?null:Math.round((Math.max(-1,Math.min(1,+
 // this on the next major run. Same one-sided ≤7-day rules; growth proxied by today's move here. Returns
 // {score,why} or null. Positive news the price hasn't chased → high; positive news already run → low.
 function fdrSentFallback(c){
-  var nf=c.newsflow; if(!nf||nf.limited||nf.tone==null||nf.tone<=0) return null;   // positive news only
-  var age=null; if(c.news_date){ try{ age=Math.floor((Date.now()-new Date(c.news_date).getTime())/86400000); }catch(e){} }
-  if(age==null||age>7) return null;                                                 // ≤7-day window
-  var S=Math.max(0,Math.min(1,nf.tone/2));
   var growth=parseFloat(String(c.change==null?'':c.change).replace(/[^0-9.\-]/g,''))||0;   // rough proxy: today's move
   var U=Math.max(0,Math.min(1,1-Math.max(0,growth)/10));
-  return {score:Math.round(100*S*U), why:'Positive news ~'+age+'d ago (rough read — refines on the next run).'};
+  function daysAgo(d){ if(!d) return null; try{ return Math.floor((Date.now()-new Date(d).getTime())/86400000); }catch(e){ return null; } }
+  // A) news-scored candidate — proper newsflow tone (-3..+3), one-sided, ≤7-day
+  var nf=c.newsflow;
+  if(nf && !nf.limited && nf.tone!=null && nf.tone>0){
+    var age=daysAgo(c.news_date); if(age==null||age>7) return null;
+    var S=Math.max(0,Math.min(1,nf.tone/2));
+    return {score:Math.round(100*S*U), why:'Positive news ~'+age+'d ago (rough read — refines on the next run).'};
+  }
+  // B) #restone (19 Aug 2026, user-caught: QML) — a SCAN name (no newsflow) that DOES have Mac-sourced news in
+  // the bundle (newsCache). Derive a rough one-sided tone from its headlines so a name with obvious fresh
+  // positive coverage still gets a read, even though the whole-market scan doesn't run the real sentiment model.
+  var nc=(((LAST&&LAST.D)||{}).newsCache||{})[String(c.sym).toUpperCase()+':'+(c.region||'us')];
+  if(nc && nc.headline){
+    var age2=daysAgo(nc.date); if(age2==null||age2>7) return null;
+    var heads=[nc.headline].concat((nc.top3||[]).slice(0,4).map(function(h){return h.title||h.t;}));
+    var pos=0,neg=0; heads.forEach(function(h){ var tn=_brkTone(h); if(tn==='pos')pos++; else if(tn==='neg')neg++; });
+    if(pos<=neg) return null;   // net-positive only (one-sided)
+    var S2=Math.min(1,0.5+0.5*(pos-neg)/Math.max(1,heads.length));
+    return {score:Math.round(100*S2*U), why:'Positive coverage ~'+age2+'d ago (from live news — a rough read).'};
+  }
+  return null;
 }
 function fdrNum(p){ if(p==null)return null; var n=parseFloat(String(p).replace(/[^0-9.\-]/g,'')); return isFinite(n)?n:null; }
 // #bhp-fix (user ask) — days until a ticker's next dated earnings result, from D.upcomingEarnings. Null if
@@ -10592,6 +10612,7 @@ function fdrNormFU(r){
     rsi:(r.rsi!=null)?Math.round(r.rsi):null, rangePos:_rp, spring:_spring, ret1y:(_ret1y!=null)?Math.round(_ret1y):null,
     newsFresh:0,   // #freshfix — wide-scan rows carry no headline TEXT, so they're never "fresh news" we can show
     news:fdrSent100(r.newsSent), value:r.value, quality:r.quality, growth:r.growth,
+    sentiment:(function(){var f=fdrSentFallback(r);return f?f.score:null;})(), sentimentWhy:(function(){var f=fdrSentFallback(r);return f?f.why:null;})(),   // #restone — scan names get sentiment from Mac-sourced newsCache when available (e.g. QML)
     mcap:r.mcap||null, short:(r.short!=null)?r.short:null, industry:r.industry||null,
     dvol:(r.dollarVol!=null)?r.dollarVol:null,
     div:(r.divYield!=null)?Math.round(r.divYield*1000)/10:null,
