@@ -1538,6 +1538,8 @@
   .snowwrap{text-align:center}
   .snowflake{margin:4px auto 2px}
   .snowcap{font-size:12.5px;color:var(--muted);line-height:1.45;margin:6px auto 0;max-width:44ch}.snowcap b{color:var(--ink)}
+  .snowwrap{position:relative}
+  .snowinfo-float{position:absolute;top:8px;right:8px;z-index:2}
   .snowtap{display:block;width:100%;background:none;border:0;padding:0;cursor:pointer}
   .snowinfo{display:inline-flex;align-items:center;justify-content:center;width:19px;height:19px;border-radius:50%;border:1.5px solid var(--broth);color:var(--broth);background:transparent;font-size:11px;font-weight:800;font-style:italic;font-family:Georgia,serif;cursor:pointer;vertical-align:middle;margin-left:5px;line-height:1}
   .snowleg{display:flex;flex-wrap:wrap;justify-content:center;gap:5px 12px;margin:8px auto 0;max-width:320px}
@@ -6640,14 +6642,12 @@ function snowflakeLegend(o){
 function snowflakeCard(o,region){
   var svg=snowflakeSVG(o); if(!svg) return '';
   var sym=(o&&o.sym)||''; region=region||(o&&o.region)||'us';
-  var have=snowflakeAxes(o).filter(function(a){return a.v!=null;});
-  var avg=Math.round(have.reduce(function(s,a){return s+a.v;},0)/have.length);
-  var read=avg>=60?'A strong all-rounder — big and fairly even across the board.':avg>=40?'A mixed shape — strong on some axes, weaker on others.':'A thin shape — weak across most axes right now.';
-  return '<div class="viz snowwrap"><h4>❄️ The shape of it '+
-      '<button class="snowinfo" data-snow-sym="'+esc(sym)+'" data-snow-region="'+esc(region)+'" aria-label="What do these axes mean?" title="What do these axes mean?">i</button></h4>'+
+  // #snowflake-min (20 Aug, user ask) — header + on-screen caption removed; the full explainer lives one tap
+  // away (the ⓘ / tapping the chart → openSnowflake). On screen: just the shape + the legend of values.
+  return '<div class="viz snowwrap">'+
+    '<button class="snowinfo snowinfo-float" data-snow-sym="'+esc(sym)+'" data-snow-region="'+esc(region)+'" aria-label="What do these axes mean?" title="What do these axes mean?">i</button>'+
     '<button class="snowtap" data-snow-sym="'+esc(sym)+'" data-snow-region="'+esc(region)+'" aria-label="'+esc(sym)+' shape — tap for what each axis means">'+svg+'</button>'+
-    snowflakeLegend(o)+
-    '<p class="snowcap">Bigger, greener &amp; more even = stronger all-round. <b>'+esc(read)+'</b> The 3 fruits (🍊🍒🍌) + 3 fundamentals (💰🏆📈), each 0–100 — tap for what they mean.</p></div>';
+    snowflakeLegend(o)+'</div>';
 }
 // tap-for-info overlay — the big shape + a plain-English line per axis.
 function openSnowflake(sym,region){
@@ -7322,9 +7322,9 @@ function tickerModalHTML(o, region, cur, isPick){
       callHtml+
       (o.plain?'<p class="mplain">'+esc(o.plain)+'</p>':'')+
       chartH+
+      rangesHtml+                                                                  // price range ABOVE the shape (user ask, 20 Aug)
       (function(){try{return snowflakeCard(o,region);}catch(e){return '';}})()+   // ❄️ the 6-axis "shape of it"
-      rangesHtml+
-      (function(){try{return valBandHtml(o,cur);}catch(e){return '';}})()+
+      (function(){try{return valBandHtml(o,cur);}catch(e){return '';}})()+         // valuation BELOW the shape (user ask)
       (function(){try{return analystTargetBar(o,region);}catch(e){return '';}})()+   // 🎯 analyst target range bar
       (function(){try{return dividendCardHtml(o,region);}catch(e){return '';}})()+   // 💰 dividend: yield · safety · buy-by date
       rsiBlock+
