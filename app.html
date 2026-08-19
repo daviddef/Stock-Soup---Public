@@ -10612,7 +10612,7 @@ function fdrNormFU(r){
     rsi:(r.rsi!=null)?Math.round(r.rsi):null, rangePos:_rp, spring:_spring, ret1y:(_ret1y!=null)?Math.round(_ret1y):null,
     newsFresh:0,   // #freshfix — wide-scan rows carry no headline TEXT, so they're never "fresh news" we can show
     news:fdrSent100(r.newsSent), value:r.value, quality:r.quality, growth:r.growth,
-    sentiment:(function(){var f=fdrSentFallback(r);return f?f.score:null;})(), sentimentWhy:(function(){var f=fdrSentFallback(r);return f?f.why:null;})(),   // #restone — scan names get sentiment from Mac-sourced newsCache when available (e.g. QML)
+    sentiment:(r.sentimentScore&&r.sentimentScore.score!=null)?r.sentimentScore.score:(function(){var f=fdrSentFallback(r);return f?f.score:null;})(), sentimentWhy:(r.sentimentScore&&r.sentimentScore.why)||(function(){var f=fdrSentFallback(r);return f?f.why:null;})(),   // #restone/#sentcand — real pipeline sentiment (warm-sentiment.py) for top scan names, else the client newsCache fallback
     mcap:r.mcap||null, short:(r.short!=null)?r.short:null, industry:r.industry||null,
     dvol:(r.dollarVol!=null)?r.dollarVol:null,
     div:(r.divYield!=null)?Math.round(r.divYield*1000)/10:null,
