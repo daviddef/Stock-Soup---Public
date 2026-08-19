@@ -1507,6 +1507,23 @@
   .tl-tk .tl-o,.tl-tk .tl-c{font-weight:800;font-variant-numeric:tabular-nums}
   .tl-tk .tl-o{color:var(--broth)} /* #366 — 🍊 timing + 🍒 conviction, the Stock Pot's two-score identity */
   .tl-tk-buy{background:rgba(35,194,103,.12);color:var(--buy);border-color:rgba(35,194,103,.3)} .tl-tk-watch{background:rgba(232,102,42,.1);color:var(--broth)} .tl-tk-pass{color:var(--muted)}
+  /* #367 — timeline mini pot-cards: the Stock Pot card FACE for each scored ticker in a news/event row */
+  .tl-tks.tl-tkcards{gap:8px}
+  .tl-tkcard{display:block;white-space:normal;text-align:left;border-radius:12px;padding:9px 11px 7px;background:var(--surface);border:1px solid var(--line);flex:1 1 155px;min-width:150px;max-width:240px;font-size:12px;font-weight:600;position:relative;cursor:pointer;transition:transform .12s,border-color .12s}
+  .tl-tkcard:hover{transform:translateY(-2px);border-color:var(--broth)}
+  .tl-tkcard.tl-tk-buy,.tl-tkcard.tl-tk-watch,.tl-tkcard.tl-tk-pass{background:var(--surface);color:var(--ink);border-color:var(--line)}
+  .tl-tkcard.tl-tk-buy{border-left:3px solid var(--buy)} .tl-tkcard.tl-tk-watch{border-left:3px solid var(--broth)} .tl-tkcard.tl-tk-pass{border-left:3px solid var(--dont)}
+  .tl-cc-top{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+  .tl-cc-sym{font-weight:800;font-size:14px;color:var(--ink)}
+  .tl-cc-flag{font-size:9px;font-weight:800;color:var(--faint);border:1px solid var(--line);border-radius:5px;padding:0 4px;letter-spacing:.03em}
+  .tl-cc-chip{margin-left:auto;display:inline-flex}
+  .tl-cc-role{font-size:10.5px;font-weight:800;margin-top:4px}
+  .tl-role.up{color:var(--buy)} .tl-role.dn{color:var(--dont)}
+  .tl-cc-name{font-size:11px;font-weight:600;color:var(--muted);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .tl-cc-pxr{display:flex;align-items:baseline;gap:8px;margin-top:5px}
+  .tl-cc-px{font-weight:800;font-size:13.5px;color:var(--ink);font-variant-numeric:tabular-nums}
+  .tl-cc-chg{font-size:11px;font-weight:700;font-variant-numeric:tabular-nums} .tl-cc-chg.up{color:var(--buy)} .tl-cc-chg.down{color:var(--dont)}
+  .tl-tkcard .rsibar.wc-rsi{margin:16px 0 3px}
   .tlwrap[data-flt="news"] .tlrow:not([data-k="news"]),.tlwrap[data-flt="filing"] .tlrow:not([data-k="filing"]),.tlwrap[data-flt="event"] .tlrow:not([data-k="event"]),.tlwrap[data-flt="coming"] .tlrow:not([data-k="coming"]){display:none}
   /* a group heading whose rows are all filtered out would dangle — hide the two headings when a non-'all' filter is active */
   .tlwrap[data-flt="news"] .tl-grp,.tlwrap[data-flt="filing"] .tl-grp,.tlwrap[data-flt="event"] .tl-grp,.tlwrap[data-flt="coming"] .tl-grp{display:none}
@@ -4785,23 +4802,50 @@ function marketTimelineHtml(D){
   var tomEnd=today.getTime()+2*864e5-1;
   var futNear=[], futLater=[];
   future.forEach(function(x){ (x.t!=null && x.t<=tomEnd ? futNear : futLater).push(x); });
-  // candidate 🍊 score map so timeline ticker chips carry the same score as the Stock Pot chips
-  var cscore={}, candBy={}; (D.candidates||[]).forEach(function(c){ if(c&&c.sym){ var k=c.sym+'|'+(c.region||'us'); candBy[k]=c; if(c.score&&c.score.buy_now!=null) cscore[k]=Math.round(c.score.buy_now); } });
+  // candidate + pick score maps so timeline ticker cards carry the same scored identity as the Stock Pot.
+  var cscore={}, candBy={}, pickBy={};
+  (D.candidates||[]).forEach(function(c){ if(c&&c.sym){ var k=c.sym+'|'+(c.region||'us'); candBy[k]=c; if(c.score&&c.score.buy_now!=null) cscore[k]=Math.round(c.score.buy_now); } });
+  (D.regions||[]).forEach(function(rg){ (rg.picks||[]).forEach(function(p){ if(p&&p.sym){ var k=p.sym+'|'+(rg.id||'us'); if(!pickBy[k]) pickBy[k]=p; } }); });
+  function tkObj(key){ return candBy[key]||pickBy[key]||null; }
   // #366 — the timeline ticker chips carry the Stock Pot's TWO-score identity (🍊 timing + 🍒 conviction),
   // not just the orange. Cherry is memoised per key (it re-derives the signal vote), computed lazily so only
   // tickers that actually appear in the feed pay for it.
   var _chMemo={};
-  function _cherryOf(key){ if(_chMemo[key]!==undefined) return _chMemo[key]; var c=candBy[key], v=null;
+  function _cherryOf(key){ if(_chMemo[key]!==undefined) return _chMemo[key]; var c=tkObj(key), v=null;
     if(c&&c.score&&c.score.buy_now!=null){ try{ var ov=overallScore(c.score.buy_now, signalRows(c,c.region||'us')); if(ov&&ov.score!=null) v=Math.round(ov.score); }catch(e){} }
     _chMemo[key]=v; return v; }
   var TONE={bullish:{ic:'📈',cls:'ann-bull'},bearish:{ic:'📉',cls:'ann-bear'},neutral:{ic:'',cls:'ann-neu'}};
   var KND={news:'📰 News',filing:'📢 Filing',event:'🌐 Big picture',coming:'📅 Coming up'};
-  function tkchips(syms){ return (syms||[]).slice(0,6).map(function(s){ if(!s||!s.sym)return'';
-    var key=s.sym+'|'+(s.region||'us');
-    var bn=(s.bn!=null)?s.bn:cscore[key]; var ch=_cherryOf(key);
-    var cls=bn==null?'':(bn>=62?'tl-tk-buy':bn>=45?'tl-tk-watch':'tl-tk-pass'); var role=s.role==='at-risk'?'▼ ':(s.role==='beneficiary'?'▲ ':'');
+  // #367 (user ask, images 1↔2) — bring the Stock Pot card FACE to the timeline: each referenced ticker that
+  // we've SCORED renders as a mini pot-card (🍊/🍒 dual-chip → juice breakdown, name, price/change, RSI meter),
+  // reusing the exact same shared components (dualChip/signalRows/wlRsiMeter) the Full-Pot + watchlist cards use.
+  // An unscored ticker (referenced in news but not in tonight's pot) keeps the compact chip. Both stay tappable
+  // to the full read via the delegated .tl-tk click handler; the dual-chip's own capture-phase listener wins on
+  // its tap (opens juice) so a nested button inside a tappable card doesn't double-fire.
+  function tkCompact(s,key,band){ var bn=(s.bn!=null)?s.bn:cscore[key]; var ch=_cherryOf(key);
+    var role=s.role==='at-risk'?'▼ ':(s.role==='beneficiary'?'▲ ':'');
     var chips=(bn!=null?' <span class="tl-o">🍊'+Math.round(bn)+'</span>':'')+(ch!=null?' <span class="tl-c">🍒'+ch+'</span>':'');
-    return '<button class="tl-tk '+cls+'" data-sym="'+esc(s.sym)+'" data-region="'+esc(s.region||'us')+'">'+role+esc(s.sym)+chips+'</button>'; }).join(''); }
+    return '<button class="tl-tk '+band+'" data-sym="'+esc(s.sym)+'" data-region="'+esc(s.region||'us')+'">'+role+esc(s.sym)+chips+'</button>'; }
+  function tkCard(s){ if(!s||!s.sym) return '';
+    var key=s.sym+'|'+(s.region||'us'), region=s.region||'us', o=tkObj(key);
+    var bn=(s.bn!=null)?s.bn:cscore[key];
+    var band=bn==null?'':(bn>=62?'tl-tk-buy':bn>=45?'tl-tk-watch':'tl-tk-pass');
+    if(!o||!o.score||o.score.buy_now==null) return tkCompact(s,key,band);
+    var name=o.name||'';
+    var srows=[]; try{ srows=signalRows(o,region)||[]; }catch(e){}
+    var dc=''; try{ dc=dualChip(o.score,s.sym,name,srows); }catch(e){}
+    var rsi=(o.rsi!=null?o.rsi:(o.rsi14!=null?o.rsi14:null));
+    var px=(o.price!=null)?'<span class="tl-cc-px">'+esc(fdrCur(region))+esc(cleanPrice(o.price))+'</span>':'';
+    var chg=o.change?'<span class="tl-cc-chg '+(o.up?'up':'down')+'">'+(o.up?'▲':'▼')+' '+esc(o.change)+'</span>':'';
+    var role=s.role==='at-risk'?'<span class="tl-role dn">▼ at risk</span>':(s.role==='beneficiary'?'<span class="tl-role up">▲ set to gain</span>':'');
+    return '<div class="tl-tk tl-tkcard '+band+'" data-sym="'+esc(s.sym)+'" data-region="'+esc(region)+'" role="button" tabindex="0" aria-label="'+esc(s.sym)+' — tap for the full read">'+
+      '<div class="tl-cc-top"><span class="tl-cc-sym">'+esc(s.sym)+'</span><span class="tl-cc-flag">'+(region==='au'?'AU':'US')+'</span>'+(dc?'<span class="tl-cc-chip">'+dc+'</span>':'')+'</div>'+
+      (role?'<div class="tl-cc-role">'+role+'</div>':'')+
+      (name?'<div class="tl-cc-name">'+esc(name)+'</div>':'')+
+      ((px||chg)?'<div class="tl-cc-pxr">'+px+chg+'</div>':'')+
+      wlRsiMeter(rsi)+
+    '</div>'; }
+  function tkchips(syms){ return (syms||[]).slice(0,6).map(tkCard).join(''); }
   function row(x){ var tn=TONE[x.tone]||TONE.neutral;
     var head=x.url?'<a class="tl-head" href="'+esc(x.url)+'" target="_blank" rel="noopener">'+esc(x.head)+' ↗</a>':'<span class="tl-head">'+esc(x.head)+'</span>';
     var when=x.date?'<span class="tl-when">'+esc(dfmt(x.date))+' · '+esc(rel(x.t))+'</span>':'';
@@ -4809,7 +4853,7 @@ function marketTimelineHtml(D){
     return '<div class="tlrow '+tn.cls+'" data-k="'+x.k+'"><div class="tl-top"><span class="tl-kind tl-k-'+x.k+'">'+KND[x.k]+'</span>'+flag+when+'</div>'+
       '<div class="tl-headw">'+(tn.ic?tn.ic+' ':'')+head+'</div>'+
       (x.why?'<div class="tl-why">'+esc(x.why)+'</div>':'')+
-      (x.syms&&x.syms.length?'<div class="tl-tks">'+tkchips(x.syms)+'</div>':'')+'</div>'; }
+      (x.syms&&x.syms.length?'<div class="tl-tks tl-tkcards">'+tkchips(x.syms)+'</div>':'')+'</div>'; }
   var FILT=[['all','Everything'],['coming','📅 Coming up'],['news','📰 News'],['filing','📢 Filings'],['event','🌐 Big picture']];
   var chips=FILT.map(function(f){ return '<button class="tlchip'+(MKTF===f[0]?' on':'')+'" data-tlf="'+f[0]+'">'+f[1]+'</button>'; }).join('');
   var leftBody=recent.length?recent.map(row).join(''):'<div class="tl-empty">No recent news or filings.</div>';
