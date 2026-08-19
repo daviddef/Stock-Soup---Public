@@ -1591,6 +1591,24 @@
   .dvsafe-h{display:flex;justify-content:space-between;gap:8px;font-size:14px}.dvsafe-h span{font-weight:800;color:var(--muted);font-variant-numeric:tabular-nums}
   .dvsafe-why{margin:8px 0 0;padding-left:18px;color:var(--muted);font-size:12px;line-height:1.5}
   .dvfrank{color:var(--muted);font-size:12px;line-height:1.45;margin:11px 0 0;padding:9px 11px;background:rgba(35,194,103,.07);border-radius:10px}.dvfrank b{color:var(--ink)}
+  /* #dividend-board */
+  .dvb-sortrow{display:flex;gap:7px;flex-wrap:wrap;margin:2px 0 12px}
+  .dvb-sort{background:var(--surface-2);border:1px solid var(--line);border-radius:99px;padding:6px 13px;font-size:12.5px;font-weight:800;color:var(--muted);cursor:pointer}
+  .dvb-sort.on{background:var(--broth);border-color:var(--broth);color:#fff}
+  .dvb-list{display:flex;flex-direction:column;gap:9px}
+  .dvb-row{display:flex;align-items:center;justify-content:space-between;gap:12px;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:13px 15px;cursor:pointer;box-shadow:var(--shadow);transition:border-color .2s}
+  .dvb-row:hover{border-color:var(--broth)}
+  .dvb-l{min-width:0;flex:1}
+  .dvb-sym{font-weight:800;font-size:16px}.dvb-amt{font-weight:700;font-size:12px;color:var(--muted)}
+  .dvb-nm{color:var(--muted);font-size:12px;margin:1px 0 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+  .dvb-buy{display:inline-block;font-size:12px;font-weight:800;color:var(--muted)}
+  .dvb-buy.soon{color:var(--buy)}
+  .dvb-noex{font-size:11.5px;color:var(--faint);font-style:italic}
+  .dvb-frank{display:inline-block;font-size:10.5px;font-weight:800;color:var(--buy);background:rgba(35,194,103,.12);border-radius:6px;padding:2px 7px;margin-left:8px;vertical-align:middle}
+  .dvb-r{flex:0 0 auto;text-align:right}
+  .dvb-yield{font-weight:800;font-size:20px;letter-spacing:-.01em}
+  .dvb-safe{font-size:12.5px;font-weight:800;margin-top:1px}
+  .dvb-pay{font-size:10.5px;color:var(--faint);margin-top:2px}
   /* #ownbadge — a small 📦 on cards for tickers you own */
   .ownbadge{display:inline-flex;align-items:center;font-size:12px;padding:2px 6px;border-radius:8px;background:rgba(35,194,103,.16);border:1px solid rgba(35,194,103,.4);line-height:1;cursor:help;flex:0 0 auto}
   .fdr-ownbadge{font-size:11px;padding:1px 4px;margin-left:4px}
@@ -5230,6 +5248,37 @@ function marketTimelineHtml(D){
 }
 // Each panel reuses the existing builders verbatim (topNewsHtml/topMoversHtml/upcomingHtml + the geo/
 // sector/commodity `lines()` blocks) — nothing was rewritten, just folded behind a chip nav.
+// #dividend-board (20 Aug 2026, user ask) — the CONSOLIDATED dividend view: every payer in one place, sortable
+// by soonest buy-by / highest yield / safest, so you can plan purchases across names. Data = latest.dividendBoard
+// (dividend-board.py). Each row taps through to the ticker's full dividend card.
+var DIV_SORT='soon';
+function dividendBoardHtml(D){
+  var b=D&&D.dividendBoard; if(!b||!b.rows||!b.rows.length) return '';
+  var rows=b.rows.filter(function(r){return (r.region||'us')===MKT&&r.yield!=null;});
+  if(!rows.length) return '';
+  if(DIV_SORT==='yield') rows=rows.slice().sort(function(a,c){return (c.yield||0)-(a.yield||0);});
+  else if(DIV_SORT==='safe') rows=rows.slice().sort(function(a,c){return (c.safety||0)-(a.safety||0);});
+  else rows=rows.slice().sort(function(a,c){return ((a.buyBy?0:1)-(c.buyBy?0:1))||String(a.buyBy||'9999').localeCompare(String(c.buyBy||'9999'))||((c.yield||0)-(a.yield||0));});
+  function daysTo(iso){ if(!iso)return null; try{var d=new Date(iso+'T00:00:00'),t=new Date();t.setHours(0,0,0,0);return Math.round((d-t)/864e5);}catch(e){return null;} }
+  function rowHtml(r){
+    var sv=r.verdict, svE=sv==='secure'?'🟢':sv==='watch'?'🟡':sv==='at risk'?'🔴':'⚪';
+    var svC=sv==='secure'?'var(--buy)':sv==='watch'?'#c47a1e':sv==='at risk'?'var(--dont)':'var(--muted)';
+    var bd=daysTo(r.buyBy), soon=bd!=null&&bd<=7;
+    var buy=r.buyBy?('<span class="dvb-buy'+(soon?' soon':'')+'">🛒 buy by '+esc(_divDate(r.buyBy))+(bd!=null?(bd<=0?' · today!':bd===1?' · tomorrow':' · in '+bd+'d'):'')+'</span>'):'<span class="dvb-noex">next ex-date not yet declared</span>';
+    var frank=(r.franking!=null)?'<span class="dvb-frank">'+r.franking+'% franked</span>':'';
+    return '<button class="dvb-row s2see" data-sym="'+esc(r.sym)+'" data-region="'+esc(r.region)+'" aria-label="'+esc(r.sym)+' dividend — full read">'+
+      '<div class="dvb-l"><div class="dvb-sym">'+esc(r.sym)+(r.amount?' <span class="dvb-amt">'+esc(r.amount)+'</span>':'')+'</div><div class="dvb-nm">'+esc(r.name||'')+'</div>'+buy+frank+'</div>'+
+      '<div class="dvb-r"><div class="dvb-yield">'+r.yield.toFixed(2)+'%</div>'+
+        '<div class="dvb-safe" style="color:'+svC+'">'+svE+(r.safety!=null?' '+r.safety:'')+'</div>'+
+        (r.payDate?'<div class="dvb-pay">paid '+esc(_divDate(r.payDate))+'</div>':'')+'</div></button>';
+  }
+  var sorts=[['soon','🛒 Soonest'],['yield','💰 Highest yield'],['safe','🛡️ Safest']];
+  var nav=sorts.map(function(s){return '<button class="dvb-sort'+(s[0]===DIV_SORT?' on':'')+'" data-dsort="'+s[0]+'">'+s[1]+'</button>';}).join('');
+  return '<p class="sec-sub">Every dividend payer we track '+(MKT==='au'?'🇦🇺':'🇺🇸')+' — its yield, how <b>safe</b> the payout looks, and the <b>buy-by date</b> (the last day to OWN it and still collect the next dividend). Tap any for the full read.</p>'+
+    '<div class="dvb-sortrow">'+nav+'</div><div class="dvb-list">'+rows.map(rowHtml).join('')+'</div>'+
+    (MKT==='au'?'<p class="dvfrank" style="margin-top:12px">🇦🇺 Many ASX dividends carry <b>franking credits</b> — a tax offset that lifts the after-tax return above the headline yield.</p>':'')+
+    '<p class="atb-note" style="margin-top:8px">Yields &amp; safety from company fundamentals; ex-dates can move until declared. A dividend is never guaranteed — plan, don’t bank on it.</p>';
+}
 function marketContextHtml(D, bargainCards, lines){   // `lines` is a render-local closure — MUST be passed in (blank-page fix)
   // #348 layout (user: "commodities sit on the side / don't fit") — one BALANCED 2-col panel: geopolitics +
   // commodities share the left column (both short lists), sectors buy/skip + rotation fill the right. Commodities
@@ -5253,7 +5302,10 @@ function marketContextHtml(D, bargainCards, lines){   // `lines` is a render-loc
     // #348 — Sectors + Commodities merged into ONE balanced "Sectors & commodities" panel.
     ['sectors','🍳 Sectors &amp; commodities', sectorsCommodSec],
     // #iponet (19 Aug) — the full, uncurated IPO calendar for this market (upcoming + pipeline + just-listed).
-    ['ipos','🔔 IPOs', ipoSectionHtml(D)]
+    ['ipos','🔔 IPOs', ipoSectionHtml(D)],
+    // #dividend-board (20 Aug, user ask) — the consolidated dividend view: every payer's yield, safety verdict,
+    // ex-date + BUY-BY deadline in one place, so you can plan purchases across names, not one ticker at a time.
+    ['dividends','💰 Dividends', dividendBoardHtml(D)]
   ];
   if(bargainCards) tabs.push(['bargains','🛍️ Bargains',
     '<p class="sec-sub">Genuinely cheap right now — oversold, not in freefall, and nothing actively wrong that we can see. <b>Tap any for the full read.</b></p><div class="pot">'+bargainCards+'</div>']);
@@ -7384,6 +7436,10 @@ document.addEventListener('keydown',function(e){
 document.addEventListener('click',function(e){
   var snw=e.target.closest('.snowinfo,.snowtap');   // ❄️ snowflake radar → axis-explainer overlay
   if(snw){ e.preventDefault(); e.stopPropagation(); openSnowflake(snw.dataset.snowSym, snw.dataset.snowRegion); return; }
+  var dsr=e.target.closest('.dvb-sort');   // 💰 dividend board sort toggle
+  if(dsr){ e.preventDefault(); e.stopPropagation(); DIV_SORT=dsr.dataset.dsort; if(LAST&&LAST.D){var _sc=window.pageYOffset; try{render(LAST.D,LAST.H);}catch(_){}; window.scrollTo(0,_sc);} return; }
+  var dvr=e.target.closest('.dvb-row[data-sym]');   // 💰 dividend board row → the ticker's full read
+  if(dvr){ e.preventDefault(); e.stopPropagation(); openTicker(dvr.dataset.sym, dvr.dataset.region); return; }
   var sb=e.target.closest('.saladbtn');   // #salad — 🥗 trifecta badge → its own breakdown overlay
   if(sb){ e.preventDefault(); e.stopPropagation();
     sb.classList.remove('pop'); void sb.offsetWidth; sb.classList.add('pop');
