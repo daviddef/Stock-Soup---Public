@@ -3756,6 +3756,8 @@ function valBandHtml(p,cur){
   var verdict=v>=62?'Looks cheap — priced below what its fundamentals justify':v>=38?'Around fair value':'Looks dear — priced above what its fundamentals justify';
   var val=(p&&p.val)||{}, nums=[];
   if(val.pe!=null)nums.push('P/E '+val.pe);
+  // #eps (19 Aug) — raw earnings-per-share: trailing → forward, with the growth % when we have both (plain text; nums are esc()'d below).
+  if(fd.eps_ttm!=null) nums.push('EPS '+(cur||'$')+fd.eps_ttm+(fd.eps_forward!=null?(' → '+(cur||'$')+fd.eps_forward+(fd.eps_growth!=null?' ('+(fd.eps_growth>=0?'+':'')+Math.round(fd.eps_growth*100)+'% growth)':'')):''));
   // #cap-fmt (17 Aug) — sub-$1B caps were rounding to "$1B" (or "$0B" under 500M). Show real $M below a billion.
   if(fd.market_cap!=null)nums.push('cap '+ (fd.market_cap>=1e12?('$'+(fd.market_cap/1e12).toFixed(1)+'T'):fd.market_cap>=1e9?('$'+(fd.market_cap/1e9).toFixed(1)+'B'):('$'+Math.round(fd.market_cap/1e6)+'M')));
   return '<div class="viz"><h4>💰 Valuation — cheap or dear?</h4>'+
