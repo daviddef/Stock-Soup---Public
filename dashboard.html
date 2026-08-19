@@ -1367,6 +1367,17 @@
   a.annhead:hover{text-decoration:underline;color:var(--broth)}
   .anndate{font-size:10.5px;color:var(--faint);font-weight:700;white-space:nowrap}
   .hapmove{font-size:10.5px;font-weight:800;white-space:nowrap;margin-left:2px}
+  /* #news-consolidate — the news-mood line that now LEADS the merged feed (was a disconnected chip in
+     "Word on the street"). Derived from the same headlines shown below, with its WHY spelled out. */
+  .hapmood{display:flex;align-items:baseline;flex-wrap:wrap;gap:6px;font-size:12.5px;font-weight:800;
+    color:var(--ink);background:var(--surface-2);border:1px solid var(--line);border-radius:10px;
+    padding:8px 11px;margin-bottom:8px}
+  .hapmood.gd{border-color:rgba(35,194,103,.4)} .hapmood.bd{border-color:rgba(255,77,77,.4)}
+  .hapmk{color:var(--muted);font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.03em}
+  .hapmwhy{color:var(--muted);font-weight:600;font-size:11.5px}
+  .hapmood.bd .hapmwhy.stale,.hapmwhy.stale{color:var(--dont);font-weight:700}
+  .hapmlink{margin-left:auto;font-size:11.5px;font-weight:800;color:var(--broth);text-decoration:none;white-space:nowrap}
+  .hapmlink:hover{text-decoration:underline}
   .hapmove.up{color:var(--buy)}.hapmove.down{color:var(--dont)}
   .annchip{flex:0 0 auto}   /* #news-ticker — 🍊 score chip beside a news headline that names a ticker */
   .annspark{margin:7px 0 2px} .annspark .spark{height:28px;width:100%;display:block}
@@ -7977,9 +7988,46 @@ function happeningHtml(o){
     return '<div class="annrow '+t.cls+(old?' mnews-old':'')+'"><div class="anntop">'+kindchip+(t.ic?'<span class="annic">'+t.ic+'</span>':'')+head+annToneTag(r.tone)+(age?'<span class="anndate">'+esc(age)+(old?' ⚠️ OLD':'')+'</span>':'')+'</div>'+deep+'</div>';
   }
   var top=rows.slice(0,6), rest=rows.slice(6,20);
-  var out='<div class="viz"><h4>📣 What’s happening — news &amp; filings</h4>'+top.map(row).join('');
+  var out='<div class="viz"><h4>📣 What’s happening — news &amp; filings</h4>'+moodHeaderHtml(o,rows)+top.map(row).join('');
   if(rest.length) out+='<details class="newsmore"><summary>Show '+rest.length+' more →</summary>'+rest.map(row).join('')+'</details>';
   return out+'</div>';
+}
+// #news-consolidate (19 Aug 2026, user ask) — the "News mood" chip used to live in "Word on the street",
+// disconnected from the headlines it was describing: it read upbeat 🟢 off EODHD sentiment while the feed
+// below showed stale 12-22d-old news (PDI case). Now the mood LEADS the same feed it summarises, spells out
+// its WHY (how many of the headlines below lean +/−), and — crucially — is HONEST about freshness: when the
+// freshest shown headline is >7d old it caveats that and offers a browser-openable Google-News link (the
+// user's browser reaches Google even though our Cloudflare Worker's egress is blocked from it).
+function _newsToneSign(t){
+  if(t==null||t==='') return 0;
+  if(typeof t==='number') return t>0.05?1:t<-0.05?-1:0;
+  var s=String(t).toLowerCase();
+  return /bull|pos|up|beat|good|surge|jump|rise|gain/.test(s)?1:/bear|neg|down|miss|bad|fall|drop|slump|cut/.test(s)?-1:0;
+}
+function newsSearchUrl(sym,region,name){
+  if(!sym||sym==='NONE') return '';
+  var q=(region==='au')?('"ASX:'+sym+'"'+(name?(' OR "'+name+'"'):'')):(name?('"'+name+'" stock'):(sym+' stock'));
+  var gl=region==='au'?'AU':'US';
+  return 'https://news.google.com/search?q='+encodeURIComponent(q)+'&hl=en-'+gl+'&gl='+gl+'&ceid='+gl+':en';
+}
+function moodHeaderHtml(o,rows){
+  var newsRows=(rows||[]).filter(function(r){return r.kind==='news';});
+  var sent=(typeof o.news_sentiment==='number')?o.news_sentiment:null;
+  if(!newsRows.length && sent==null) return '';   // filings-only / no news → no mood line
+  var pos=0,neg=0; newsRows.forEach(function(r){ var s=_newsToneSign(r.tone); if(s>0)pos++; else if(s<0)neg++; });
+  var score=(sent!=null)?sent:(newsRows.length?(pos-neg)/newsRows.length:0);
+  var lab=score>0.15?{t:'upbeat',ic:'🟢',c:'gd'}:score<-0.15?{t:'gloomy',ic:'🔴',c:'bd'}:{t:'mixed',ic:'⚪',c:''};
+  var freshDays=null; newsRows.forEach(function(r){ if(r.date){ try{ var d=Math.floor((Date.now()-new Date(r.date).getTime())/86400000); if(freshDays==null||d<freshDays) freshDays=d; }catch(e){} } });
+  var why=[];
+  if(newsRows.length) why.push(newsRows.length+' headline'+(newsRows.length>1?'s':'')+' below');
+  if(pos||neg) why.push(pos+' lean positive, '+neg+' negative');
+  var stale=(freshDays!=null && freshDays>7);
+  var link=newsSearchUrl(o.sym,o.region,o.name);
+  return '<div class="hapmood '+lab.c+'"><span class="hapmk">News mood</span> <b>'+lab.t+' '+lab.ic+'</b>'+
+    (why.length?' <span class="hapmwhy">— '+esc(why.join(' · '))+'</span>':'')+
+    (stale?' <span class="hapmwhy stale">⚠️ from older coverage — freshest is '+freshDays+'d ago</span>':'')+
+    (link?'<a class="hapmlink" href="'+esc(link)+'" target="_blank" rel="noopener">📰 See the latest ↗</a>':'')+
+    '</div>';
 }
 function newsLineHtml(news, newsUrl, newsDate, items, sym, region, name){
   // #news-worker self-heal — a client-side-only holding (never scored) has no bundle news. When there's a
@@ -8338,20 +8386,18 @@ function renderAnalyst(a){
       (s.resistance!=null?'<div class="anz anz-sell"><span class="ank">🔴 Selling zone</span> '+esc(cur+s.resistance)+'</div>':'')+
     '</div></div>';
   }
-  // "Word on the street" consensus (headlines are NOT here — they flow into the canonical news section below)
+  // "Word on the street" = the OUTSIDE analyst view only (consensus bar + avg price target). #news-consolidate:
+  // the News-mood chip that used to sit here was disconnected from the headlines it described — it now leads the
+  // merged "What's happening" feed (moodHeaderHtml), connected to the actual headlines and honest about their
+  // age (and carries the browser-openable Google-News link). So this block is gated to real analyst data now:
+  // no near-empty box for an ASX name with no broker desk.
   var street='';
-  if(v.analystN||v.targetMean!=null||v.sentiment!=null||a.streetSummary){
+  if(v.analystN||v.targetMean!=null){
     var sp=[];
     if(v.analystN) sp.push('<div class="stbar" title="'+v.analystN+' analysts"><span class="stseg stbuy" style="width:'+v.buyPct+'%"></span><span class="stseg sthold" style="width:'+v.holdPct+'%"></span><span class="stseg stsell" style="width:'+v.sellPct+'%"></span></div>'+
       '<div class="stleg"><span class="up">▲ '+v.buyPct+'% buy</span><span class="stmid">■ '+v.holdPct+'% hold</span><span class="down">▼ '+v.sellPct+'% sell</span><span class="stn">'+v.analystN+' analysts</span></div>');
-    var sc=[];
-    if(v.targetMean!=null) sc.push('<span class="anchip"><span class="ank">Avg target</span> '+esc(cur+v.targetMean)+(upside!=null?' <b class="'+(upside>=0?'up':'down')+'">'+(upside>=0?'+':'')+upside+'%</b>':'')+'</span>');
-    if(v.sentiment!=null){ var t=v.sentiment>0.15?'upbeat 🟢':v.sentiment<-0.15?'gloomy 🔴':'mixed ⚪'; sc.push('<span class="anchip '+(v.sentiment>0.15?'gd':v.sentiment<-0.15?'bd':'')+'"><span class="ank">News mood</span> '+t+'</span>'); }
-    if(sc.length) sp.push('<div class="anchips" style="margin:9px 0 0">'+sc.join('')+'</div>');
-    // #snx2 (18 Aug 2026) — always offer a one-tap link to the live news search (the user's browser CAN reach
-    // Google News even though our server can't for ASX), so "no coverage" never dead-ends.
-    var newsLink=v.newsUrl?'<a class="stnewslink" href="'+esc(v.newsUrl)+'" target="_blank" rel="noopener">📰 See the latest news ↗</a>':'';
-    street='<div class="viz stblock"><h4>🗣️ Word on the street <span class="sthint">— what everyone else reckons</span></h4>'+(a.streetSummary?'<p class="stsum">'+a.streetSummary+'</p>':'')+sp.join('')+newsLink+'</div>';
+    if(v.targetMean!=null) sp.push('<div class="anchips" style="margin:9px 0 0"><span class="anchip"><span class="ank">Avg target</span> '+esc(cur+v.targetMean)+(upside!=null?' <b class="'+(upside>=0?'up':'down')+'">'+(upside>=0?'+':'')+upside+'%</b>':'')+'</span></div>');
+    street='<div class="viz stblock"><h4>🗣️ Word on the street <span class="sthint">— what the analysts reckon</span></h4>'+(a.streetSummary?'<p class="stsum">'+a.streetSummary+'</p>':'')+sp.join('')+'</div>';
   }
   // Why / Watch-out
   var dr='';
