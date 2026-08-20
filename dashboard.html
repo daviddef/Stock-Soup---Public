@@ -6463,9 +6463,19 @@ function ctRankings(reg){
       if(r.tone==='pos'&&won.indexOf(nm)<0) won.push(nm); else if(r.tone==='neg'&&lost.indexOf(nm)<0) lost.push(nm); });
     return {won:won.slice(0,3), lost:lost.slice(0,3)}; }
   var timing=top('o'), cherry=top('c'), news=top('b'), salad=top('min');
+  // #ct-multiwin — which names show up in MORE THAN ONE fruit's top-3 (the real all-round winners)
+  var appear={};
+  [['🍊 timing',timing],['🍒 conviction',cherry],['🍌 news',news],['🥗 salad',salad]].forEach(function(pr){
+    pr[1].forEach(function(x){ (appear[x.sym]=appear[x.sym]||{sym:x.sym,name:x.name,in:[]}).in.push(pr[0]); }); });
+  var multi=Object.keys(appear).map(function(k){return appear[k];}).filter(function(a){return a.in.length>=2;})
+    .sort(function(a,b){return b.in.length-a.in.length;});
   return {label:reg==='au'?'ASX':'US', pool:pool.length,
     timing:timing, cherry:cherry, news:news, salad:salad,
+    timingRows: timing[0]?rowsFor(timing[0].sym):[],
     cherryRows: cherry[0]?rowsFor(cherry[0].sym):[],
+    newsRows:   news[0]?rowsFor(news[0].sym):[],
+    saladRows:  salad[0]?rowsFor(salad[0].sym):[],
+    multiWin: multi,
     timingWL: timing[0]?wonLost(timing[0].sym):null,
     cherryWL: cherry[0]?wonLost(cherry[0].sym):null,
     saladWL:  salad[0]?wonLost(salad[0].sym):null };
@@ -6487,29 +6497,45 @@ function ctBuildScenes(reg){
     { k:'intro',
       cap:"Tonight’s <b>top 3 of each</b> · <b>"+R.label+"</b>. A casino with a spreadsheet — but hey. 🙂",
       say:"Right, shut up and listen, I'm only saying this once. Four flavours, top three of each, for the "+R.label+". Timing, conviction, news, and the all-rounder. Is it gonna make you rich? Probably not — it's the stock market, it's a fucking casino with a spreadsheet. But hey. Let's have a look, shall we." },
-    { k:'timing', fill:{def:"🍊 <b>Timing</b> — is the setup fresh <b>right now</b>? Are you early — or the wanker turning up when the beer’s gone?", arr:T, key:'o',
-        note:(twl.won.length?("<span class='ct-t'>"+ctDispName(T[0])+"</span> wins it on "+esc(ctJoinList(twl.won))+". Flash bastard."):("<span class='ct-t'>"+ctDispName(T[0])+"</span> leads on momentum alone. Bold."))},
+    { k:'timing', fill:{def:"🍊 <b>Timing</b> = fresh setup, are you early? The read on <span class='ct-t'>"+ctDispName(T[0])+"</span> ("+T[0].o+"):", arr:T, key:'o', sigs:R.timingRows},
       cap:"🍊 <b>Timing</b> — early, or a wanker turning up late?",
       say:"The orange. Timing. Is the setup fresh right now, are you early — or are you the wanker turning up to the party when the beer's gone? Top three: "+sl(T)+". "+ctSpokenName(T[0])+" leads at "+T[0].o+(twl.won.length?", winning on "+ctJoinList(twl.won)+" — flash bastard":", on momentum alone, bold")+". It's a setup, not a wedding. Don't fall in love — and don't come crying to me when it shits the bed." },
     { k:'conv', fill:{def:"🍒 <b>Conviction</b> = timing + how <b>every signal votes</b>. Here’s the room on <span class='ct-t'>"+ctDispName(Cv[0])+"</span> ("+Cv[0].c+"):", arr:Cv, key:'c', sigs:R.cherryRows,
         note:"<span class='ct-t'>"+ctDispName(Cv[0])+"</span> won on "+esc(ctJoinList(cwl.won)||'the balance')+(cwl.lost.length?", lost on "+esc(ctJoinList(cwl.lost)):"")+". One miserable prick at the back still shaking his head."},
       cap:"🍒 <b>Conviction</b> — does the whole room agree?",
       say:"Cherry. And no — it's not one lucky signal, any idiot can find one of those. It's whether the whole bloody room agrees. Timing, blended with how every signal votes. Top three: "+sl(Cv)+". "+ctSpokenName(Cv[0])+" tops it at "+Cv[0].c+", won on "+(ctJoinList(cwl.won)||"the balance of signals")+(cwl.lost.length?", lost on "+ctJoinList(cwl.lost):"")+". So — most of 'em nodding, one miserable prick at the back shaking his head. Welcome to investing." },
-    { k:'news', fill:{def:"🍌 <b>Fresh news</b> — a loud, shiny story the price <b>hasn’t chased yet</b>. It drops the second everyone piles in.", arr:N, key:'b',
-        note:(nThin?("⚠️ but timing on <span class='ct-r'>"+ctDispName(N[0])+"</span> is only "+N[0].o+" — you might be buying the top like an absolute loser."):("Loud today. Tomorrow? Not my fucking problem, mate."))},
+    { k:'news', fill:{def:"🍌 <b>Fresh news</b> = loud story, not yet chased. The read on <span class='ct-t'>"+ctDispName(N[0])+"</span> ("+N[0].b+"):", arr:N, key:'b', sigs:R.newsRows},
       cap:"🍌 <b>Fresh news</b> — shiny, and not yet chased.",
       say:"Banana. Fresh news the price hasn't chased yet. Loud, shiny, brand new. Top three: "+sl(N)+(nAllMax?", all maxed out at a hundred, calm down":"")+". Cracking headline today. Tomorrow? Not my fucking problem, mate."+(nThin?(" And the timing on these is thin, so you might be buying the very top like an absolute loser. Your call."):"") },
-    { k:'salad', fill:{def:"🥗 <b>Fruit salad</b> — the all-rounder: decent at timing, agreement <b>and</b> news, all at once. Boring. Beautiful, boring.", arr:Sd, key:'min',
-        note:(Sd.length
-          ? ("<span class='ct-t'>"+ctDispName(Sd[0])+"</span> — 🍊"+Sd[0].o+" · 🍒"+Sd[0].c+" · 🍌"+Sd[0].b+". Good at everything, best at fuck all."+(sBadge?" A proper 🥗.":" No shiny badge (needs all three ≥ "+SALAD_MIN+") — just the steadiest of the lot."))
-          : "Sod all to rank tonight. Rare beast, the all-rounder.")},
+    { k:'salad', fill:{def:(Sd.length?("🥗 <b>Salad</b> = strong on all three. <span class='ct-t'>"+ctDispName(Sd[0])+"</span> — 🍊"+Sd[0].o+" · 🍒"+Sd[0].c+" · 🍌"+Sd[0].b+(sBadge?" — a proper 🥗":" (no badge — needs all ≥"+SALAD_MIN+")")+":"):"🥗 <b>Fruit salad</b> — strong on all three at once. Rare."), arr:Sd, key:'min', sigs:R.saladRows},
       cap:"🥗 <b>Fruit salad</b> — good at everything, best at fuck all.",
       say:(Sd.length
         ? ("The salad. The all-rounder — decent at timing, decent at agreement, decent at news, all at once. Boring. Beautiful, boring. Top three: "+sl(Sd)+". "+ctSpokenName(Sd[0])+" tops it — "+Sd[0].o+" timing, "+Sd[0].c+" conviction, "+Sd[0].b+" news. Good at everything, best at fuck all. "+(sBadge?"A proper fruit salad, that one.":"Mind you, none of 'em clear the magic sixty tonight, so no shiny badge — just your steadiest bets. Emphasis on bets."))
         : "The salad — good at all three at once. Tonight? Sod all. Rare beast. Don't force it.") },
+    // #ct-plan (user ask) — the "how you'd actually play it" course: top served Week + Long pick with levels
+    (function(){
+      var D=(LAST&&LAST.D)||{}, picks=[];
+      (D.regions||[]).forEach(function(r){ if((r.id||r.region)===reg) picks=(r.picks||[]).filter(function(p){return p&&p.sym&&p.sym!=='NONE'&&p.score;}); });
+      function byTf(tf){ return picks.filter(function(p){return String(p.tf||'').toLowerCase().indexOf(tf)>=0;}).sort(function(a,b){return (b.score.buy_now||0)-(a.score.buy_now||0);})[0]; }
+      var wk=byTf('week'), lg=byTf('long');
+      function planRow(p,lab){ if(!p) return ''; var lv=[]; if(p.nEntry)lv.push('in '+esc(String(p.nEntry))); if(p.nStop)lv.push('stop '+esc(String(p.nStop))); if(p.nTarget)lv.push('target '+esc(String(p.nTarget)));
+        return '<div class="ct-plan-row"><span class="ct-plan-tf">'+lab+'</span> <b class="ct-t">'+esc(ctSpokenName(p))+'</b> <span class="ct-plan-lv">'+(lv.join(' · ')||'levels on the card')+'</span></div>'; }
+      function planSay(p,lab){ if(!p) return "No "+lab+" pick tonight — nothing worth the risk. "; var lv=[]; if(p.nEntry)lv.push("get in around "+String(p.nEntry).replace(/[–-].*/,'')); if(p.nStop)lv.push("stop at "+p.nStop); if(p.nTarget)lv.push("aim for "+p.nTarget);
+        return "The "+lab+": "+ctSpokenName(p)+". "+(lv.length?lv.join(", ")+". ":"levels are on the card. "); }
+      var body=(wk||lg)?(planRow(wk,'📅 Week')+planRow(lg,'📈 Long')):'<div class="ct-plan-row">No served picks tonight — the model didn’t like enough to serve. Honest, that.</div>';
+      var say=(wk||lg)?("Right, the actual plan. Two timeframes, Day's been binned — no edge, so we don't pretend. "+planSay(wk,'week pick')+planSay(lg,'long pick')+"Levels are there so you're not just guessing. Use a stop. Always use a stop.")
+                      :"No served picks tonight, either timeframe. The model didn't fancy enough to put its name to one, and neither will I. Some nights the kitchen's shut.";
+      return { k:'plan', fill:{body:body}, cap:"📋 <b>The plan</b> — 📅 Week & 📈 Long, with the levels.", say:say };
+    })(),
     { k:'verdict',
-      cap:"It’s a gamble — but now you’ve got a clue. 🙂 Now piss off and do your homework.",
-      say:"And that's your lot. Orange, you're early. Cherry, everyone agrees. Banana, fresh news. Salad, balance. Will any of it work? Haven't got a fucking clue — it's a gamble, it's always a gamble, and anyone who tells you different is a lying wanker trying to sell you something. But hey — at least now you're gambling with a bit of a clue. Now piss off and do your own homework." }
+      fill:{ board:[['🍊 timing',T[0]],['🍒 conviction',Cv[0]],['🍌 news',N[0]],['🥗 salad',Sd[0]]], multi:R.multiWin },
+      cap:"🏆 Tonight’s winners — it’s a gamble, but now you’ve got a clue. 🙂",
+      say:(function(){
+        var w=[]; if(T[0])w.push(ctSpokenName(T[0])+" takes timing"); if(Cv[0])w.push(ctSpokenName(Cv[0])+" the conviction"); if(N[0])w.push(ctSpokenName(N[0])+" the news"); if(Sd[0])w.push(ctSpokenName(Sd[0])+" the all-round");
+        var m=(R.multiWin||[]).slice(0,2).map(function(a){ return ctSpokenName(a)+" wins in "+a.in.length; });
+        var multiLine = m.length ? (" And watch the ones doing it twice — "+ctJoinList(R.multiWin.slice(0,2).map(function(a){return ctSpokenName(a)+", winning "+a.in.length+" of the four";}))+". When one name keeps turning up, that's the market actually agreeing with itself.") : " Nobody swept more than one tonight — a spread-out night.";
+        return "And that's your lot. The winners' board: "+ctJoinList(w)+"."+multiLine+" Will any of it work? Haven't got a fucking clue — it's a gamble, it's always a gamble, and anyone who tells you different is a lying wanker trying to sell you something. But hey — at least now you're gambling with a bit of a clue. Now piss off and do your own homework.";
+      })() }
   ];
   return {voiced:false, label:R.label, pool:R.pool, scenes:scenes};
 }
@@ -6518,7 +6544,10 @@ function ctSpell(sym){ sym=String(sym||''); if(!sym) return 'this one';
   if(sym.length<=4 && sym===sym.toUpperCase()) return sym.split('').join(' '); return sym; }
 // #ct-names — the VOICE should say the company name ("Flexsteel"), not spell the ticker ("F L X S"). Strip the
 // noisy corporate suffixes for a natural read; fall back to the spelled ticker when we have no name.
+// pipeline-supplied real names for tickers the bundle only had as a bare ticker (latest.chalkNames[SYM])
+function ctNameMap(){ try{ return ((LAST&&LAST.D)||{}).chalkNames||{}; }catch(e){ return {}; } }
 function ctSpokenName(x){ var n=(x&&x.name)?String(x.name):'', sym=(x&&x.sym)?String(x.sym):'';
+  if(!n || n.toUpperCase()===sym.toUpperCase()){ var mp=ctNameMap()[sym]; if(mp) n=String(mp); }   // #ct-names fill from the map
   if(!n || n.toUpperCase()===sym.toUpperCase()) return ctSpell(sym);
   n=n.replace(/[.,]?\s+(Incorporated|Inc|Limited|Ltd|Corporation|Corp|Company|Co|PLC|Plc|Group|Holdings|Holding|Industries|International|SA|NV|AG|SE)\b\.?$/i,'').trim();
   // strip a second trailing suffix (e.g. "... Group Holdings")
@@ -6596,6 +6625,16 @@ function ctInjectCSS(){
   '.ct-sig{font-size:clamp(12px,2.2vw,17px);line-height:1.25;color:#d9d5c8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}'+
   '.ct-sig-mk{margin-right:4px}.ct-sig b{color:#f4f1e8;font-weight:700}.ct-sig-rd{color:#a7ab9c}'+
   '.ct-sig-pos b{color:#7bd88f}.ct-sig-neg b{color:#ff8f8f}'+
+  '.ct-plan-row{font-family:"Caveat","Segoe UI",cursive;font-weight:600;font-size:clamp(15px,2.8vw,22px);color:#e8e5da;margin-bottom:9px;line-height:1.3}'+
+  '.ct-plan-tf{font-family:"Gaegu",sans-serif;font-weight:800;color:#c9c6ba}.ct-plan-lv{color:#a7ab9c}'+
+  '.ct-winboard{display:flex;flex-direction:column;gap:6px}'+
+  '.ct-winrow{display:flex;align-items:baseline;gap:10px;font-family:"Gaegu",sans-serif;font-size:clamp(15px,2.9vw,23px)}'+
+  '.ct-winlab{font-weight:800;min-width:128px}.ct-winrow b{color:#fff;font-weight:800}'+
+  '.ct-winlab.ct-cwo{color:#ff8a3d}.ct-winlab.ct-cwc{color:#ff5d73}.ct-winlab.ct-cwb{color:#f7d861}.ct-winlab.ct-cwg{color:#7bd88f}'+
+  // clickable chapter dots (fruit icons)
+  '.ct-dots{gap:10px}.ct-dots i{width:auto!important;height:auto!important;background:none!important;border-radius:0!important;cursor:pointer;display:inline-flex}'+
+  '.ct-dot-ic{font-size:16px;line-height:1;filter:grayscale(.4) opacity(.65);transition:.15s}'+
+  '.ct-dots i.on .ct-dot-ic,.ct-dots i:hover .ct-dot-ic{filter:none;transform:scale(1.3)}.ct-dots i.done .ct-dot-ic{filter:grayscale(.15) opacity(.85)}'+
   '.ct-barwrap{position:absolute;left:38%;right:8%}.ct-bartrack{height:14px;border:2px solid #c9c6ba;border-radius:8px;opacity:.85;overflow:hidden;position:relative}'+
   '.ct-barfill{position:absolute;inset:0;width:0;border-radius:6px;background:repeating-linear-gradient(45deg,#ff8a3d,#ff8a3d 6px,rgba(255,138,61,.7) 6px,rgba(255,138,61,.7) 12px)}'+
   '.ct-layer.on .ct-barfill{animation:ctbar 1s .5s ease forwards}@keyframes ctbar{to{width:var(--pct,50%)}}'+
@@ -6640,10 +6679,10 @@ function ctBoardHTML(){
     '<section class="ct-layer" data-k="timing"><svg viewBox="0 0 400 250" aria-hidden="true">'+
       '<circle class="ct-draw ct-o" pathLength="1" cx="345" cy="55" r="30"/><path class="ct-draw ct-g" pathLength="1" d="M345 25 q8 -10 18 -6 q-5 10 -18 8"/>'+
       '<path class="ct-draw ct-o" pathLength="1" d="M328 45 q17 20 34 0 M328 58 q17 20 34 0"/></svg>'+
-      '<div class="ct-txt"><div class="ct-cw big ct-cwo d1" style="left:5%;top:7%">🍊 Timing</div>'+
-        '<div class="ct-cw sm d2" data-fill="t_def" style="left:5%;top:27%;right:22%"></div>'+
-        '<div class="ct-cw ct-pod d3" data-fill="t_pod" style="left:5%;top:60%;right:5%"></div>'+
-        '<div class="ct-cw sm d4" data-fill="t_note" style="left:5%;bottom:6%;right:5%"></div></div></section>'+
+      '<div class="ct-txt"><div class="ct-cw big ct-cwo d1" style="left:5%;top:6%">🍊 Timing</div>'+
+        '<div class="ct-cw sm d2" data-fill="t_def" style="left:5%;top:22%;right:22%"></div>'+
+        '<div class="ct-cw d3" data-fill="t_sigs" style="left:5%;top:38%;right:4%;bottom:16%"></div>'+
+        '<div class="ct-cw ct-pod d4" data-fill="t_pod" style="left:5%;bottom:5%;right:5%;font-size:clamp(13px,2.4vw,19px)"></div></div></section>'+
     // 2 conviction (cherries top-right)
     '<section class="ct-layer" data-k="conv"><svg viewBox="0 0 400 250" aria-hidden="true">'+
       '<circle class="ct-draw ct-c" pathLength="1" cx="330" cy="60" r="18"/><circle class="ct-draw ct-c" pathLength="1" cx="362" cy="68" r="18"/>'+
@@ -6656,32 +6695,45 @@ function ctBoardHTML(){
     '<section class="ct-layer" data-k="news"><svg viewBox="0 0 400 250" aria-hidden="true">'+
       '<path class="ct-draw ct-ba" pathLength="1" d="M312 34 q6 44 46 52 q-11 -11 -12 -25 q-19 -4 -28 -27 z"/>'+
       '<path class="ct-draw ct-dim" pathLength="1" d="M300 96 l40 -14 v34 l-40 -14 z M340 86 l14 -6 v50 l-14 -6 z"/></svg>'+
-      '<div class="ct-txt"><div class="ct-cw big ct-cwb d1" style="left:5%;top:7%">🍌 Fresh news</div>'+
-        '<div class="ct-cw sm d2" data-fill="n_def" style="left:5%;top:27%;right:20%"></div>'+
-        '<div class="ct-cw ct-pod d3" data-fill="n_pod" style="left:5%;top:60%;right:5%"></div>'+
-        '<div class="ct-cw sm d4" data-fill="n_note" style="left:5%;bottom:6%;right:5%"></div></div></section>'+
+      '<div class="ct-txt"><div class="ct-cw big ct-cwb d1" style="left:5%;top:6%">🍌 Fresh news</div>'+
+        '<div class="ct-cw sm d2" data-fill="n_def" style="left:5%;top:22%;right:20%"></div>'+
+        '<div class="ct-cw d3" data-fill="n_sigs" style="left:5%;top:38%;right:4%;bottom:16%"></div>'+
+        '<div class="ct-cw ct-pod d4" data-fill="n_pod" style="left:5%;bottom:5%;right:5%;font-size:clamp(13px,2.4vw,19px)"></div></div></section>'+
     // 4 salad (bowl top-right)
     '<section class="ct-layer" data-k="salad"><svg viewBox="0 0 400 250" aria-hidden="true">'+
       '<path class="ct-draw" pathLength="1" d="M300 62 a44 26 0 0 0 88 0 z"/><path class="ct-draw ct-dim" pathLength="1" d="M295 62 h98"/>'+
       '<circle class="ct-draw ct-o" pathLength="1" cx="330" cy="56" r="10"/><circle class="ct-draw ct-c" pathLength="1" cx="352" cy="59" r="7"/><path class="ct-draw ct-ba" pathLength="1" d="M360 48 q4 14 16 16"/></svg>'+
-      '<div class="ct-txt"><div class="ct-cw big ct-cwg d1" style="left:5%;top:7%">🥗 Fruit salad</div>'+
-        '<div class="ct-cw sm d2" data-fill="s_def" style="left:5%;top:27%;right:22%"></div>'+
-        '<div class="ct-cw ct-pod d3" data-fill="s_pod" style="left:5%;top:60%;right:5%"></div>'+
-        '<div class="ct-cw sm d4" data-fill="s_note" style="left:5%;bottom:6%;right:5%"></div></div></section>'+
-    // 5 verdict — coach walking off
+      '<div class="ct-txt"><div class="ct-cw big ct-cwg d1" style="left:5%;top:6%">🥗 Fruit salad</div>'+
+        '<div class="ct-cw sm d2" data-fill="s_def" style="left:5%;top:22%;right:22%"></div>'+
+        '<div class="ct-cw d3" data-fill="s_sigs" style="left:5%;top:38%;right:4%;bottom:16%"></div>'+
+        '<div class="ct-cw ct-pod d4" data-fill="s_pod" style="left:5%;bottom:5%;right:5%;font-size:clamp(13px,2.4vw,19px)"></div></div></section>'+
+    // 5 plan — the served Week + Long picks with levels
+    '<section class="ct-layer" data-k="plan"><svg viewBox="0 0 400 250" aria-hidden="true">'+
+      '<path class="ct-draw ct-dim" pathLength="1" d="M40 210 h320"/>'+           // ground
+      '<path class="ct-draw ct-g" pathLength="1" d="M330 60 l14 8 l-4 -16"/><path class="ct-draw ct-g" pathLength="1" d="M120 200 C 200 180 280 120 340 66"/></svg>'+   // rising arrow
+      '<div class="ct-txt"><div class="ct-cw big ct-cwy d1" style="left:5%;top:6%">📋 The plan</div>'+
+        '<div class="ct-cw sm d2" style="left:5%;top:22%;right:20%">how you’d actually play it — entry · stop · target</div>'+
+        '<div class="ct-cw d3" data-fill="p_body" style="left:5%;top:38%;right:4%;bottom:6%"></div></div></section>'+
+    // 6 verdict — the winners board + who wins in multiple areas
     '<section class="ct-layer" data-k="verdict"><svg viewBox="0 0 400 250" aria-hidden="true">'+
-      '<circle class="ct-draw" pathLength="1" cx="300" cy="78" r="20"/><path class="ct-draw" pathLength="1" d="M300 98 v46"/>'+
-      '<path class="ct-draw ct-o" pathLength="1" d="M300 112 l24 10"/><path class="ct-draw" pathLength="1" d="M300 144 l-16 40 M300 144 l20 36"/></svg>'+
-      '<div class="ct-txt"><div class="ct-cw big ct-cwy d1" style="left:5%;top:10%;right:28%">That’s your lot.</div>'+
-        '<div class="ct-cw sm d2" style="left:5%;top:40%;right:28%">🍊 early · 🍒 agreement · 🍌 news · 🥗 balance.</div>'+
-        '<div class="ct-cw mid d3" style="left:5%;bottom:12%;right:28%">Now do your own <b style="color:#ff8a3d">homework.</b></div></div></section>'+
+      '<path class="ct-draw ct-y" pathLength="1" d="M348 40 a12 12 0 1 1 -1 0 M340 62 h16 v10 h-16 z M344 50 h8"/></svg>'+   // little trophy top-right
+      '<div class="ct-txt"><div class="ct-cw big ct-cwy d1" style="left:5%;top:6%">🏆 Tonight’s winners</div>'+
+        '<div class="ct-cw d2" data-fill="v_board" style="left:5%;top:22%;right:5%"></div>'+
+        '<div class="ct-cw sm d3" data-fill="v_multi" style="left:5%;bottom:6%;right:5%"></div></div></section>'+
     '</div></div>';
 }
 function ctMount(reg, built){
   CT_STATE.reg=reg; CT_STATE.data=built; CT_STATE.idx=-1; CT_STATE.playing=false;
   var supportsTTS=('speechSynthesis' in window);
   var dotsWrap=document.getElementById('ctDots'); dotsWrap.innerHTML='';
-  built.scenes.forEach(function(){ dotsWrap.appendChild(document.createElement('i')); });
+  var CT_ICON={intro:'🍲',timing:'🍊',conv:'🍒',news:'🍌',salad:'🥗',plan:'📋',verdict:'🏆'};
+  built.scenes.forEach(function(sc,si){ var d=document.createElement('i');
+    d.innerHTML='<span class="ct-dot-ic">'+(CT_ICON[sc.k]||'•')+'</span>';
+    d.title='Jump to '+(sc.k||'chapter'); d.setAttribute('role','button'); d.setAttribute('tabindex','0');
+    // #ct-chapters (user ask) — tap a fruit dot to jump to that chapter and play from there
+    d.onclick=function(){ CT_STATE.idx=si; ctPlay(si); };
+    d.onkeydown=function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); CT_STATE.idx=si; ctPlay(si); } };
+    dotsWrap.appendChild(d); });
   ctFillScenes(built.scenes);
   ctShowScene(0, built); document.querySelectorAll('#ctDots i').forEach(function(d){d.classList.remove('on','done');});
   var playBtn=document.getElementById('ctPlay'), repBtn=document.getElementById('ctReplay'), muteBtn=document.getElementById('ctMute');
@@ -6706,12 +6758,21 @@ function ctFillScenes(scenes){
     var order={pos:0,neg:1,mix:2}; var rs=rows.slice().sort(function(a,b){return (order[a.tone]||2)-(order[b.tone]||2);}).slice(0,8);
     return '<div class="ct-sigs">'+rs.map(function(r){ var mk=r.tone==='pos'?'✅':r.tone==='neg'?'⚠️':'•';
       return '<div class="ct-sig ct-sig-'+r.tone+'"><span class="ct-sig-mk">'+mk+'</span><b>'+esc(r.label)+'</b> <span class="ct-sig-rd">'+esc(r.read)+'</span></div>'; }).join('')+'</div>'; }
-  scenes.forEach(function(sc){ if(!sc.fill||!pfx[sc.k]) return; var f=sc.fill, p=pfx[sc.k];
-    function set(k,html){ var el=document.querySelector('[data-fill="'+k+'"]'); if(el!=null) el.innerHTML=html; }
-    set(p+'_def', f.def||'');
-    set(p+'_pod', podRow(f.arr, f.key));
-    set(p+'_note', f.note||'');
-    if(f.sigs) set(p+'_sigs', sigGrid(f.sigs));
+  function setFill(k,html){ var el=document.querySelector('[data-fill="'+k+'"]'); if(el!=null) el.innerHTML=html; }
+  scenes.forEach(function(sc){ if(!sc.fill) return; var f=sc.fill;
+    if(pfx[sc.k]){ var p=pfx[sc.k];
+      setFill(p+'_def', f.def||''); setFill(p+'_pod', podRow(f.arr, f.key));
+      setFill(p+'_note', f.note||''); if(f.sigs) setFill(p+'_sigs', sigGrid(f.sigs));
+    } else if(sc.k==='plan'){ setFill('p_body', f.body||'');
+    } else if(sc.k==='verdict'){
+      var fr={'🍊 timing':'ct-cwo','🍒 conviction':'ct-cwc','🍌 news':'ct-cwb','🥗 salad':'ct-cwg'};
+      var board='<div class="ct-winboard">'+(f.board||[]).map(function(pr){ var lab=pr[0], w=pr[1];
+        return '<div class="ct-winrow"><span class="ct-winlab '+(fr[lab]||'')+'">'+lab+'</span><b class="ct-t">'+(w?esc(ctSpokenName(w)):'—')+'</b></div>'; }).join('')+'</div>';
+      setFill('v_board', board);
+      var mw=(f.multi||[]); setFill('v_multi', mw.length
+        ? ('⭐ <b>'+mw.map(function(a){return esc(ctSpokenName(a))+' ('+a.in.length+'×)';}).join(' · ')+'</b> — winning in more than one lane. That’s the market agreeing with itself.')
+        : 'No name swept more than one lane tonight — a spread-out night.');
+    }
   });
 }
 function ctShowScene(i, built){
