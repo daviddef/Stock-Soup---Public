@@ -5893,7 +5893,7 @@ function render(D,H){
   var ocRecord=ocOn?OUTCOMES.record:sb.record;
   var _rp2=(ocRecord||'').split(/[–-]/);
   var recClear2=(_rp2.length===2)?'<div class="sub" style="color:var(--ink);font-weight:700">'+_rp2[0].trim()+' win'+(_rp2[0].trim()==='1'?'':'s')+' · '+_rp2[1].trim()+' loss'+(_rp2[1].trim()==='1'?'':'es')+'</div>':recClear;
-  var ocGraded=ocOn?Object.keys(OUTCOMES.outcomes).map(function(k){var o=OUTCOMES.outcomes[k];o._k=k;return o;}).filter(function(o){return o.status==='graded';}):[];
+  var ocGraded=ocOn?Object.keys(OUTCOMES.outcomes).map(function(k){var o=OUTCOMES.outcomes[k];o._k=k;return o;}).filter(function(o){return o.status==='graded' && Math.abs(o.ret||0)<=3;}):[];
   // #218 — tier badge on each graded call so the ONE consolidated scorecard shows T1 (catalyst) alongside
   // T2/T3 (whole-market scan). Missing tier = an older, pre-#218 outcome → those were all T1 catalyst picks.
   function _tierPill(t){t=t||'T1';var c=(t==='T1')?'rltier-1':'rltier-23';return '<span class="rltier '+c+'" title="'+(t==='T1'?'Type 1 — catalyst-driven pick':'Type '+t.slice(1)+' — whole-market technical scan')+'">'+esc(t)+'</span>';}
@@ -7724,7 +7724,7 @@ function openTimeframe(tf){
   if(!(OUTCOMES&&OUTCOMES.outcomes))return;
   LASTFOCUS=document.activeElement;
   var all=Object.keys(OUTCOMES.outcomes).map(function(k){return OUTCOMES.outcomes[k];}).filter(function(o){return o.tf===tf;});
-  var graded=all.filter(function(o){return o.status==='graded';}).sort(function(a,b){return (b.date||'').localeCompare(a.date||'');});
+  var graded=all.filter(function(o){return o.status==='graded' && Math.abs(o.ret||0)<=3;}).sort(function(a,b){return (b.date||'').localeCompare(a.date||'');});
   var pending=all.filter(function(o){return o.status!=='graded';});
   var wins=graded.filter(function(o){return o.correct;}).length, n=graded.length;
   var TL={Day:'Day trades',Week:'Week holds',Long:'Long holds'};
@@ -12245,7 +12245,7 @@ function s1TrackHtml(D){
   if(!(OUTCOMES&&OUTCOMES.outcomes)) return '';
   var rec=(OUTCOMES.record||'').split(/[–-]/);
   var wins=(rec[0]||'0').trim(), losses=(rec[1]||'0').trim();
-  var ocGraded=Object.keys(OUTCOMES.outcomes).map(function(k){var o=OUTCOMES.outcomes[k];o._k=k;return o;}).filter(function(o){return o.status==='graded';});
+  var ocGraded=Object.keys(OUTCOMES.outcomes).map(function(k){var o=OUTCOMES.outcomes[k];o._k=k;return o;}).filter(function(o){return o.status==='graded' && Math.abs(o.ret||0)<=3;});
   return '<div class="s1score">'+
     '<div class="s1wl"><span class="s1wlw">'+esc(wins)+'</span><span class="s1wlx">–</span><span class="s1wll">'+esc(losses)+'</span>'+
       '<div class="s1wllbl">wins – losses · every graded call, no cherry-picking</div></div>'+
