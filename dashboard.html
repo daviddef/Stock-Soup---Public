@@ -6558,7 +6558,7 @@ function ctBuildScenes(reg){
     { k:'news', fill:{def:"🍌 <b>Fresh news</b> = loud story, not yet chased. The read on <span class='ct-t'>"+ctDispName(N[0])+"</span> ("+N[0].b+"):", arr:N, key:'b', sigs:R.newsRows},
       cap:"🍌 <b>Fresh news</b> — shiny, and not yet chased.",
       say:"Banana. Fresh news the price hasn't chased yet. Loud, shiny, brand new. Top three: "+sl(N)+(nAllMax?", all maxed out at a hundred, calm down":"")+". Cracking headline today. Tomorrow? Not my fucking problem, mate."+(nThin?(" And the timing on these is thin, so you might be buying the very top like an absolute loser. Your call."):"") },
-    { k:'salad', fill:{def:(Sd.length?("🥗 <b>Salad</b> = strong on all three. <span class='ct-t'>"+ctDispName(Sd[0])+"</span> — 🍊"+Sd[0].o+" · 🍒"+Sd[0].c+" · 🍌"+Sd[0].b+(sBadge?" — a proper 🥗":" (no badge — needs all ≥"+SALAD_MIN+")")+":"):"🥗 <b>Fruit salad</b> — strong on all three at once. Rare."), arr:Sd, key:'min', sigs:R.saladRows},
+    { k:'salad', fill:{def:(Sd.length?("🥗 <b>Salad</b> = good at all three. <span class='ct-t'>"+esc(Sd[0].sym)+"</span>: 🍊"+Sd[0].o+" · 🍒"+Sd[0].c+" · 🍌"+Sd[0].b+(sBadge?" 🥗":"")):"🥗 <b>Fruit salad</b> — strong on all three at once. Rare."), arr:Sd, key:'min', sigs:R.saladRows},
       cap:"🥗 <b>Fruit salad</b> — good at everything, best at fuck all.",
       say:(Sd.length
         ? ("The salad. The all-rounder — decent at timing, decent at agreement, decent at news, all at once. Boring. Beautiful, boring. Top three: "+sl(Sd)+". "+ctSpokenName(Sd[0])+" tops it — "+Sd[0].o+" timing, "+Sd[0].c+" conviction, "+Sd[0].b+" news. Good at everything, best at fuck all. "+(sBadge?"A proper fruit salad, that one.":"Mind you, none of 'em clear the magic sixty tonight, so no shiny badge — just your steadiest bets. Emphasis on bets."))
@@ -6630,6 +6630,7 @@ function openChalkTalk(reg, ep){
   m.innerHTML='<div class="mhead"><button class="mclose" id="mClose" aria-label="Close">✕</button><div class="mtf">'+ttl+'</div>'+
     '<div class="ct-mkt" id="ctMkt"><button data-m="au"'+(reg==='au'?' class="on"':'')+'>🇦🇺 ASX</button><button data-m="us"'+(reg==='us'?' class="on"':'')+'>🇺🇸 US</button></div></div>'+
     '<div class="mbody ct-body">'+ctBoardHTML()+
+      '<div class="ct-progress" aria-hidden="true"><i id="ctProg"></i></div>'+   // #ct-progress — where we are in the video
       '<div class="ct-dots" id="ctDots"></div>'+
       '<p class="ct-cap" id="ctCap" aria-live="polite">Tap <b>▶ Play</b> — chalk + voice walk you through tonight’s four flavours for the <b>'+esc(built.label)+'</b>.</p>'+
       '<div class="ct-controls">'+
@@ -6695,6 +6696,8 @@ function ctInjectCSS(){
   '.ct-sc-up .ct-scpct{color:#7bd88f}.ct-sc-dn .ct-scpct{color:#ff8f8f}'+
   '.ct-scnet{margin-top:8px;font-family:"Caveat",cursive;font-size:clamp(15px,2.8vw,21px);color:#d9d5c8}.ct-scnet b{color:#fff}'+
   // clickable chapter dots (fruit icons)
+  '.ct-progress{height:5px;background:var(--line);border-radius:5px;margin:12px auto 0;max-width:520px;overflow:hidden}'+
+  '.ct-progress i{display:block;height:100%;width:0;background:linear-gradient(90deg,#ff8a3d,#ff5d73);border-radius:5px}'+
   '.ct-dots{gap:10px}.ct-dots i{width:auto!important;height:auto!important;background:none!important;border-radius:0!important;cursor:pointer;display:inline-flex}'+
   '.ct-dot-ic{font-size:16px;line-height:1;filter:grayscale(.4) opacity(.65);transition:.15s}'+
   '.ct-dots i.on .ct-dot-ic,.ct-dots i:hover .ct-dot-ic{filter:none;transform:scale(1.3)}.ct-dots i.done .ct-dot-ic{filter:grayscale(.15) opacity(.85)}'+
@@ -6770,22 +6773,20 @@ function ctBoardHTML(){
         '<div class="ct-cw ct-pod d4" data-fill="n_pod" style="left:5%;bottom:5%;right:5%;font-size:clamp(13px,2.4vw,19px)"></div></div></section>'+
     // 4 salad (bowl top-right)
     '<section class="ct-layer" data-k="salad"><svg viewBox="0 0 400 250" aria-hidden="true">'+
-      '<path class="ct-draw" pathLength="1" d="M300 62 a44 26 0 0 0 88 0 z"/><path class="ct-draw ct-dim" pathLength="1" d="M295 62 h98"/>'+
-      '<circle class="ct-draw ct-o" pathLength="1" cx="330" cy="56" r="10"/><circle class="ct-draw ct-c" pathLength="1" cx="352" cy="59" r="7"/><path class="ct-draw ct-ba" pathLength="1" d="M360 48 q4 14 16 16"/></svg>'+
+      '<path class="ct-draw" pathLength="1" d="M344 38 a26 15 0 0 0 52 0 z"/><path class="ct-draw ct-dim" pathLength="1" d="M341 38 h58"/>'+   // small bowl, top-right corner
+      '<circle class="ct-draw ct-o" pathLength="1" cx="360" cy="33" r="6"/><circle class="ct-draw ct-c" pathLength="1" cx="376" cy="35" r="4.5"/></svg>'+
       '<div class="ct-txt"><div class="ct-cw big ct-cwg d1" style="left:5%;top:6%">🥗 Fruit salad</div>'+
-        '<div class="ct-cw sm d2" data-fill="s_def" style="left:5%;top:22%;right:22%"></div>'+
+        '<div class="ct-cw sm d2" data-fill="s_def" style="left:5%;top:24%;right:6%"></div>'+
         '<div class="ct-cw d3" data-fill="s_sigs" style="left:5%;top:38%;right:4%;bottom:16%"></div>'+
         '<div class="ct-cw ct-pod d4" data-fill="s_pod" style="left:5%;bottom:5%;right:5%;font-size:clamp(13px,2.4vw,19px)"></div></div></section>'+
     // 5 plan — the served Week + Long picks with levels
     '<section class="ct-layer" data-k="plan"><svg viewBox="0 0 400 250" aria-hidden="true">'+
-      '<path class="ct-draw ct-dim" pathLength="1" d="M40 210 h320"/>'+           // ground
-      '<path class="ct-draw ct-g" pathLength="1" d="M330 60 l14 8 l-4 -16"/><path class="ct-draw ct-g" pathLength="1" d="M120 200 C 200 180 280 120 340 66"/></svg>'+   // rising arrow
+      '<path class="ct-draw ct-g" pathLength="1" d="M344 74 C 356 58 366 50 380 40"/><path class="ct-draw ct-g" pathLength="1" d="M372 38 l10 2 l-2 10"/></svg>'+   // small rising arrow, top-right corner
       '<div class="ct-txt"><div class="ct-cw big ct-cwy d1" style="left:5%;top:6%">📋 The plan</div>'+
         '<div class="ct-cw sm d2" style="left:5%;top:22%;right:20%">how you’d actually play it — entry · stop · target</div>'+
         '<div class="ct-cw d3" data-fill="p_body" style="left:5%;top:38%;right:4%;bottom:6%"></div></div></section>'+
     // 6 verdict — the winners board + who wins in multiple areas
-    '<section class="ct-layer" data-k="verdict"><svg viewBox="0 0 400 250" aria-hidden="true">'+
-      '<path class="ct-draw ct-y" pathLength="1" d="M348 40 a12 12 0 1 1 -1 0 M340 62 h16 v10 h-16 z M344 50 h8"/></svg>'+   // little trophy top-right
+    '<section class="ct-layer" data-k="verdict">'+   // no corner doodle — the title already carries 🏆 and the winners board fills the width
       '<div class="ct-txt"><div class="ct-cw big ct-cwy d1" style="left:5%;top:6%">🏆 Tonight’s winners</div>'+
         '<div class="ct-cw d2" data-fill="v_board" style="left:5%;top:22%;right:5%"></div>'+
         '<div class="ct-cw sm d3" data-fill="v_multi" style="left:5%;bottom:6%;right:5%"></div></div></section>'+
@@ -6865,7 +6866,9 @@ function ctShowScene(i, built){
   layers.forEach(function(l,j){ l.classList.toggle('on', j===i); });
   document.querySelectorAll('#ctDots i').forEach(function(d,j){ d.classList.toggle('on',j===i); d.classList.toggle('done',j<i); });
   var cap=document.getElementById('ctCap'); if(cap) cap.innerHTML=built.scenes[i].cap;
+  ctSetProgress(i/(built.scenes.length||1));   // #ct-progress — floor progress at the scene's start
 }
+function ctSetProgress(frac){ var el=document.getElementById('ctProg'); if(el) el.style.width=Math.max(0,Math.min(100,frac*100)).toFixed(1)+'%'; }
 function ctClearTimer(){ if(CT_STATE.timer){ clearTimeout(CT_STATE.timer); CT_STATE.timer=null; } }
 function ctStopAudio(){ if(CT_STATE.audio){ try{CT_STATE.audio.pause();}catch(e){} CT_STATE.audio=null; } if('speechSynthesis' in window){ try{speechSynthesis.cancel();}catch(e){} } }
 function ctPause(){ CT_STATE.playing=false; ctClearTimer(); ctStopAudio(); var p=document.getElementById('ctPlay'); if(p) p.innerHTML='▶ Play the lesson'; }
@@ -6881,16 +6884,19 @@ function ctPlay(from){
 function ctRunScene(i, gen){
   if(gen!==CT_STATE.gen) return;                    // a newer play/replay/toggle superseded this chain
   var built=CT_STATE.data; if(!built) return;
+  if(i>=built.scenes.length){ ctSetProgress(1); ctFinish(); return; }   // finish FIRST — never pause the (already-ended) last audio
   ctStopAudio(); ctClearTimer();                    // #ct-overlap — kill any prior audio BEFORE the next scene
-  if(i>=built.scenes.length){ ctFinish(); return; }
   CT_STATE.idx=i; ctShowScene(i, built);
-  var sc=built.scenes[i], advanced=false;
-  var next=function(){ if(advanced||gen!==CT_STATE.gen) return; advanced=true;   // onended+onerror can't double-advance
-    if(CT_STATE.playing) CT_STATE.timer=setTimeout(function(){ ctRunScene(i+1, gen); },380); };
+  var sc=built.scenes[i], advanced=false, total=built.scenes.length;
+  var isLast=(i===total-1);
+  // #ct-endcut — the last scene ended ~1s early; wait for the audio to TRULY finish (+ a small tail) before finishing
+  var next=function(){ if(advanced||gen!==CT_STATE.gen) return; advanced=true;
+    if(CT_STATE.playing) CT_STATE.timer=setTimeout(function(){ ctRunScene(i+1, gen); }, isLast?650:380); };
   if(!CT_STATE.muted && built.voiced && sc.audio){
     var a=new Audio(sc.audio); CT_STATE.audio=a; a.onended=next;
+    a.ontimeupdate=function(){ if(a.duration && isFinite(a.duration)) ctSetProgress((i + a.currentTime/a.duration)/total); };   // #ct-progress smooth
     var timed=function(){ if(advanced||gen!==CT_STATE.gen) return; CT_STATE.timer=setTimeout(function(){ if(!advanced&&gen===CT_STATE.gen){ advanced=true; if(CT_STATE.playing) ctRunScene(i+1,gen); } }, ctEstMs(sc.say||sc.cap)); };
-    a.onerror=timed;                                   // load failed → advance visuals on a timer
+    a.onerror=function(){ if(a.currentTime<0.3) timed(); };   // only fall back if it never really started (don't cut a playing clip)
     a.play().catch(function(){ CT_STATE.autoblocked=true; var p=document.getElementById('ctPlay'); if(p&&CT_STATE.idx===0) p.innerHTML='🔊 Tap for sound'; timed(); });   // autoplay blocked (no gesture) → silent timed play-through
   } else if(!CT_STATE.muted && ('speechSynthesis' in window)){
     ctSpeakFallback(sc,i,next);
@@ -7600,7 +7606,11 @@ function kitchenScoreStory(D){
       +'.ks-glab{display:flex;justify-content:space-between;font-size:11px;color:var(--faint);font-weight:700;margin-top:8px}.ks-gauge{height:8px;border-radius:5px;background:var(--line);overflow:hidden;margin:3px 0}.ks-gauge i{display:block;height:100%}.ks-g-o i{background:var(--broth)}.ks-g-c i{background:#d6283c}.ks-g-b i{background:#f4b23e}'
       +'.ks-verdict{font-size:12.5px;color:var(--muted);line-height:1.5;margin-top:9px}.ks-verdict b{color:var(--ink)}'
       +'.ks-ct-row{display:flex;gap:10px;margin:0 0 16px;flex-wrap:wrap}'
-      +'.ks-ct-cta{flex:1 1 auto;display:flex;align-items:center;gap:13px;text-align:left;cursor:pointer;padding:13px 15px;border-radius:14px;border:1px solid var(--line);background:linear-gradient(180deg,#2a3129,#222922);color:#f4f1e8;box-shadow:0 8px 20px -12px rgba(0,0,0,.5)}'
+      +'.ks-ct-cta{flex:1 1 auto;display:flex;align-items:center;gap:13px;text-align:left;cursor:pointer;padding:13px 15px;border-radius:14px;border:1px solid rgba(255,138,61,.45);background:linear-gradient(180deg,#2a3129,#222922);color:#f4f1e8;box-shadow:0 8px 20px -12px rgba(0,0,0,.5);animation:ksctpulse 2.6s ease-in-out infinite}'
+      +'@keyframes ksctpulse{0%,100%{box-shadow:0 8px 20px -12px rgba(0,0,0,.5),0 0 0 0 rgba(255,138,61,.0);border-color:rgba(255,138,61,.35)}50%{box-shadow:0 8px 22px -12px rgba(0,0,0,.5),0 0 0 5px rgba(255,138,61,.16);border-color:rgba(255,138,61,.7)}}'
+      +'.ks-ct-cta:hover{animation:none;border-color:var(--broth)}.ks-ct-ic{animation:ksctico 2.6s ease-in-out infinite}'
+      +'@keyframes ksctico{0%,100%{box-shadow:0 0 16px -2px var(--broth)}50%{box-shadow:0 0 22px 2px var(--broth)}}'
+      +'@media(prefers-reduced-motion:reduce){.ks-ct-cta,.ks-ct-ic{animation:none}}'
       +'.ks-ct-past{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;cursor:pointer;padding:10px 15px;border-radius:14px;border:1px solid var(--line);background:var(--surface-2);color:var(--ink);font-size:20px;line-height:1;min-width:96px}'
       +'.ks-ct-past:hover{border-color:var(--broth);transform:translateY(-1px)}.ks-ct-past span{font-size:11px;font-weight:800;color:var(--muted);margin-top:3px}.ks-ct-past b{font-size:12px;color:var(--broth);font-weight:800}'
       +'.ks-ct-cta:hover{border-color:var(--broth);transform:translateY(-1px)}.ks-ct-cta:active{transform:translateY(0)}'
