@@ -3174,7 +3174,8 @@ function shadowPortfolioHtml(D){
       '<div class="spf-h"><span class="spf-ic">'+ic+'</span><div class="spf-ht"><div class="spf-name">'+esc(name)+'</div><div class="spf-tag">'+esc(tag)+'</div></div></div>'+
       '<div class="spf-pnl '+(up?'up':'down')+'">'+fmtMoney(f.pnl||0)+'</div>'+
       chart+
-      '<div class="spf-stats"><span><b>'+(f.n||0)+'</b> closed</span><span><b>'+(f.n?Math.round((f.winRate||0)*100)+'%':'—')+'</b> win</span><span><b>'+(f.n?((f.avgRet>=0?'+':'')+(f.avgRet*100).toFixed(1)+'%'):'—')+'</b>/trade</span></div>'+
+      /* #scoreboard-honest — show the MEDIAN /trade (robust to penny-stock data artifacts that hijack the mean) */
+      (function(){var _tr=(f.medRet!=null?f.medRet:f.avgRet);return '<div class="spf-stats"><span><b>'+(f.n||0)+'</b> closed</span><span><b>'+(f.n?Math.round((f.winRate||0)*100)+'%':'—')+'</b> win</span><span title="typical (median) result per trade — robust to outliers"><b>'+(f.n&&_tr!=null?((_tr>=0?'+':'')+(_tr*100).toFixed(1)+'%'):'—')+'</b>/trade</span></div>';})()+
       '<div class="spf-open">'+openList+'</div></div>';
   }
   return '<section class="sppanel"><div class="sec-head"><h2 class="display">🌘 Shadow Portfolio</h2></div>'+
