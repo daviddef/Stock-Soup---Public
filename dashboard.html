@@ -6617,6 +6617,10 @@ function openChalkTalk(reg, ep){
   var ov=document.getElementById('overlay'); if(ov){ ov.classList.add('open'); ov.setAttribute('aria-hidden','false'); }
   var mc=document.getElementById('mClose'); if(mc){ mc.onclick=function(){ ctStop(); closeModal(); }; mc.focus(); }
   ctMount(reg, built);
+  // #ct-autoplay (user ask) — start automatically on open. When opened by a tap (the ▶ panel/poster/deep-link
+  // control) the recent user gesture lets audio play with sound; on a no-gesture deep-link the browser blocks
+  // audio, so ctRunScene falls back to a silent timed play-through and the ▶ button plays with sound on tap.
+  setTimeout(function(){ try{ if(!CT_STATE.playing) ctPlay(0); }catch(e){} }, 360);
 }
 function ctInjectCSS(){
   if(document.getElementById('ctCSS')) return;
@@ -6782,11 +6786,16 @@ function ctMount(reg, built){
   repBtn.onclick=function(){ CT_STATE.idx=-1; ctPlay(0); };
   muteBtn.onclick=function(){ CT_STATE.muted=!CT_STATE.muted; muteBtn.setAttribute('aria-pressed',CT_STATE.muted?'false':'true');
     muteBtn.textContent=CT_STATE.muted?'🔇 muted':(built.voiced?'🔊 studio voice':'🔊 device voice'); if(CT_STATE.playing) ctPlay(CT_STATE.idx>-1?CT_STATE.idx:0); };
-  var shareBtn=document.getElementById('ctShare'); if(shareBtn) shareBtn.onclick=function(){   // #ct-deeplink — copy a direct link to this video
+  var shareBtn=document.getElementById('ctShare'); if(shareBtn) shareBtn.onclick=function(){   // #ct-deeplink — copy a direct link to this video (bulletproof: async clipboard → execCommand → prompt)
     var url=location.origin+location.pathname+'#chalk/'+(CT_STATE.reg||MKT||'au');
-    var done=function(){ var o=shareBtn.textContent; shareBtn.textContent='✓ Link copied'; setTimeout(function(){ shareBtn.textContent=o; },1600); };
-    try{ if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(url).then(done,function(){ prompt('Copy this link:',url); }); }
-      else { prompt('Copy this link:',url); } }catch(e){ prompt('Copy this link:',url); } };
+    function flash(txt){ shareBtn.textContent=txt; setTimeout(function(){ shareBtn.textContent='🔗 Copy link'; },1800); }
+    function legacy(){ try{ var ta=document.createElement('textarea'); ta.value=url; ta.setAttribute('readonly',''); ta.style.position='fixed'; ta.style.top='-1000px'; ta.style.opacity='0'; document.body.appendChild(ta); ta.focus(); ta.select(); ta.setSelectionRange(0,url.length); var ok=document.execCommand('copy'); document.body.removeChild(ta); return ok; }catch(e){ return false; } }
+    if(navigator.clipboard&&navigator.clipboard.writeText){
+      navigator.clipboard.writeText(url).then(function(){ flash('✓ Link copied'); },
+        function(){ if(legacy()) flash('✓ Link copied'); else { flash('⚠ copy failed'); prompt('Copy this link:',url); } });
+    } else if(legacy()){ flash('✓ Link copied'); }
+    else { flash('⚠ copy failed'); prompt('Copy this link:',url); }
+  };
   var mkt=document.getElementById('ctMkt'); if(mkt) mkt.onclick=function(e){ var b=e.target.closest('button[data-m]'); if(!b) return;
     ctStop(); var nr=b.dataset.m; var nb=CT_STATE.ep ? (CT_STATE.ep[nr]) : ctBuildScenes(nr); if(!nb||!nb.scenes||!nb.scenes.length) return;
     [].forEach.call(this.querySelectorAll('button'),function(x){x.classList.toggle('on',x===b);});
@@ -6854,8 +6863,9 @@ function ctRunScene(i, gen){
     if(CT_STATE.playing) CT_STATE.timer=setTimeout(function(){ ctRunScene(i+1, gen); },380); };
   if(!CT_STATE.muted && built.voiced && sc.audio){
     var a=new Audio(sc.audio); CT_STATE.audio=a; a.onended=next;
-    a.onerror=function(){ ctSpeakFallback(sc,i,next); };
-    a.play().catch(function(){ ctSpeakFallback(sc,i,next); });
+    var timed=function(){ if(advanced||gen!==CT_STATE.gen) return; CT_STATE.timer=setTimeout(function(){ if(!advanced&&gen===CT_STATE.gen){ advanced=true; if(CT_STATE.playing) ctRunScene(i+1,gen); } }, ctEstMs(sc.say||sc.cap)); };
+    a.onerror=timed;                                   // load failed → advance visuals on a timer
+    a.play().catch(function(){ CT_STATE.autoblocked=true; var p=document.getElementById('ctPlay'); if(p&&CT_STATE.idx===0) p.innerHTML='🔊 Tap for sound'; timed(); });   // autoplay blocked (no gesture) → silent timed play-through
   } else if(!CT_STATE.muted && ('speechSynthesis' in window)){
     ctSpeakFallback(sc,i,next);
   } else {
