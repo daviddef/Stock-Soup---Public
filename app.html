@@ -6429,43 +6429,84 @@ function ctLeaders(reg){
     timing:pack(ctTopBy(pool,O)), conv:pack(ctTopBy(pool,C)),
     news:pack(ctTopBy(pool,B)), salad:pack(ctTopBy(pool,S)), pool:pool.length};
 }
+// ctRankings — the REAL ranked top-3 per fruit (matches the Stock-Pot sorts exactly), plus what the #1 of each
+// won/lost on (the pos/neg signal votes from signalRows — same rows the 🍒 modal shows as "N for · N against").
+function ctSigShort(r){ var l=String((r&&r.label)||'').toLowerCase();
+  if(/rsi/.test(l)) return 'RSI'; if(/volume|rvol/.test(l)&&!/vwap/.test(l)) return 'volume';
+  if(/vwap|intraday/.test(l)) return 'the intraday tape';
+  if(/adx|macd|trend/.test(l)) return 'the trend'; if(/ema|moving/.test(l)) return 'the moving averages';
+  if(/index|asx ?200|s&p|500|relative|vs /.test(l)) return 'beating the index';
+  if(/supply|demand/.test(l)) return 'supply-and-demand'; if(/level|reward|risk/.test(l)) return 'reward-to-risk';
+  if(/news|sentiment/.test(l)) return 'the news'; if(/short/.test(l)) return 'short interest';
+  if(/fundament|value|quality|piotroski|altman/.test(l)) return 'the fundamentals';
+  if(/bollinger|squeeze|%b|band/.test(l)) return 'the bands'; if(/earnings|pead|beat/.test(l)) return 'earnings';
+  if(/insider|smart money|13f|whale/.test(l)) return 'insiders'; if(/fib|retrace/.test(l)) return null;
+  return null; }
+function ctJoinList(a){ a=(a||[]).filter(Boolean); if(!a.length) return ''; if(a.length===1) return a[0];
+  return a.slice(0,-1).join(', ')+' and '+a[a.length-1]; }
+function ctRankings(reg){
+  var D=(LAST&&LAST.D)||{};
+  var pool=(D.candidates||[]).filter(function(c){return (c.region||'us')===reg && c.score && c.score.buy_now!=null;});
+  if(!pool.length) return null;
+  function fruit(c){ var o=Math.round(c.score.buy_now), cc=null, bb=null;
+    try{ var ov=overallScore(c.score.buy_now, signalRows(c,reg)); if(ov&&ov.score!=null) cc=Math.round(ov.score); }catch(e){}
+    try{ var b=_sentResolve(c.sym,reg,c); if(b&&b.score!=null) bb=b.score; }catch(e){}
+    return {sym:c.sym,name:c.name,o:o,c:cc,b:bb,min:((cc!=null&&bb!=null)?Math.min(o,cc,bb):null)}; }
+  var fr=pool.map(fruit);
+  function top(key,n){ return fr.filter(function(x){return x[key]!=null;}).sort(function(a,b){return b[key]-a[key];}).slice(0,n||3); }
+  function wonLost(sym){ var c=pool.filter(function(x){return x.sym===sym;})[0]; if(!c) return {won:[],lost:[]};
+    var rows=[]; try{ rows=signalRows(c,reg)||[]; }catch(e){}
+    var won=[],lost=[]; rows.forEach(function(r){ var nm=ctSigShort(r); if(!nm) return;
+      if(r.tone==='pos'&&won.indexOf(nm)<0) won.push(nm); else if(r.tone==='neg'&&lost.indexOf(nm)<0) lost.push(nm); });
+    return {won:won.slice(0,3), lost:lost.slice(0,3)}; }
+  var timing=top('o'), cherry=top('c'), news=top('b'), salad=top('min');
+  return {label:reg==='au'?'ASX':'US', pool:pool.length,
+    timing:timing, cherry:cherry, news:news, salad:salad,
+    timingWL: timing[0]?wonLost(timing[0].sym):null,
+    cherryWL: cherry[0]?wonLost(cherry[0].sym):null,
+    saladWL:  salad[0]?wonLost(salad[0].sym):null };
+}
 function ctBuildScenes(reg){
-  // prefer the pipeline's voiced scenes (exact text the audio was made from)
   var D=(LAST&&LAST.D)||{}, ct=(D.chalkTalk||{})[reg];
-  // use the pipeline's stored scenes ONLY when they carry rendered audio; otherwise always compute fresh live
   if(ct && ct.voiced && ct.scenes && ct.scenes.length) return {voiced:true, label:ct.label||(reg==='au'?'ASX':'US'), pool:ct.pool, scenes:ct.scenes};
-  var L=ctLeaders(reg); if(!L||!L.timing) return null;
-  function cap1(s){s=String(s||'');return s.charAt(0).toUpperCase()+s.slice(1);}
-  var T=L.timing, Cv=L.conv, N=L.news, Sd=L.salad, sameHead=(Cv&&T&&Cv.sym===T.sym);
+  var R=ctRankings(reg); if(!R||!R.timing.length) return null;
+  function sl(arr){ return ctJoinList(arr.map(function(x){return ctSpell(x.sym);})); }        // spoken ticker list
+  function capPod(arr,key){ var md=['🥇','🥈','🥉']; return arr.map(function(x,i){
+      return '<span class="ct-podi">'+md[i]+' <span class="ct-t">'+esc(x.sym)+'</span> <span class="ct-n">'+x[key]+'</span></span>'; }).join(' '); }
+  var T=R.timing, Cv=R.cherry, N=R.news, Sd=R.salad;
+  var twl=R.timingWL||{won:[]}, cwl=R.cherryWL||{won:[],lost:[]}, swl=R.saladWL||{won:[]};
+  var nAllMax=(N.length>=3 && N[0].b>=100 && N[2].b>=100), nThin=(N[0] && N[0].o<45);
+  var sBadge=(Sd.length && Sd[0].min>=SALAD_MIN);   // did the top salad clear the "true trifecta" bar?
+  // Roy-Kent-ish: dry, sarcastic, mildly sweary (PG), fatalistic — "it's a gamble, but hey 🙂". Facts stay honest.
   var scenes=[
-    { cap:"Tonight's kitchen: every <b>"+L.label+"</b> name, tasted on four flavours — 🍊 timing · 🍒 conviction · 🍌 news · 🥗 salad.",
-      say:"Welcome to tonight's kitchen. We tasted every "+L.label+" name and rated each on four flavours — timing, conviction, fresh news, and the rare fruit salad. Here's what came out of the pot.",
-      k:'intro' },
-    { cap:"🍊 <b>Timing</b> — am I early? Sharpest tonight: <span class='ct-t'>"+T.sym+"</span> at <span class='ct-n'>"+T.o+"</span>. "+esc(T.verdict||''),
-      say:"First flavour, the orange — timing. It asks, is this a fresh setup, am I early before the crowd? Tonight's sharpest is "+ctSpell(T.sym)+", scoring "+T.o+" out of a hundred. "+(T.verdict||''),
-      k:'timing', fill:{t:T.sym, o:T.o, why:(T.head||'')} },
-    { cap: sameHead
-        ? "🍒 <b>Conviction</b> — do all signals agree? <span class='ct-t'>"+Cv.sym+"</span> tops this too at <span class='ct-n'>"+Cv.c+"</span> — one name, both flavours: your headline plate."
-        : "🍒 <b>Conviction</b> — broadest agreement: <span class='ct-t'>"+(Cv?Cv.sym:'—')+"</span> at <span class='ct-n'>"+(Cv?Cv.c:'—')+"</span>.",
-      say: sameHead
-        ? "Next, the cherry — conviction. Do all the signals agree, or just one loud one? Here's the tell: "+ctSpell(Cv.sym)+" tops this too, at "+Cv.c+". When timing and the whole kitchen point at the same dish, that's your headline plate."
-        : "Next, the cherry — conviction. Broadest agreement tonight goes to "+ctSpell(Cv?Cv.sym:'')+", at "+(Cv?Cv.c:'')+".",
-      k:'conv', fill:{t:Cv?Cv.sym:'—', c:Cv?Cv.c:'—'} },
-    { cap:"🍌 <b>Fresh news</b>"+((N&&N.o<45)?" — mind the entry":"")+". Loudest: <span class='ct-t'>"+(N?N.sym:'—')+"</span> at <span class='ct-n'>"+(N?N.b:'—')+"</span>"+((N&&N.o<45)?", yet timing only <span class='ct-r'>"+N.o+"</span> — loud news isn't always a good price.":"."),
-      say:"Now the banana — fresh news. It rewards a story the price hasn't chased yet. The loudest tonight is "+ctSpell(N?N.sym:'')+", scoring "+(N?N.b:'')+". "+((N&&N.o<45)?("But watch — its timing is only "+N.o+". Great news, but the market may have already paid for it. A lesson, not a green light."):""),
-      k:'news', fill:{t:N?N.sym:'—', b:N?N.b:'—', o:N?N.o:'—', warn:(N&&N.o<45)} },
-    (Sd && Sd.o!=null && Sd.c!=null && Sd.b!=null && Math.min(Sd.o,Sd.c,Sd.b)>=SALAD_MIN)
-      ? { cap:"🥗 <b>Fruit salad</b> — all three at once, rare. Tonight: <span class='ct-t'>"+Sd.sym+"</span> — 🍊 <span class='ct-n'>"+Sd.o+"</span> · 🍒 <span class='ct-n'>"+Sd.c+"</span> · 🍌 <span class='ct-n'>"+Sd.b+"</span>.",
-          say:"And the rare one — the fruit salad. Strong on all three at once. Tonight that's "+ctSpell(Sd.sym)+" — "+Sd.o+" timing, "+Sd.c+" conviction, "+Sd.b+" news. Not the flashiest, but the most balanced plate on the menu.",
-          k:'salad', fill:{t:Sd.sym, o:Sd.o, c:Sd.c, b:Sd.b} }
-      : { cap:"🥗 <b>Fruit salad</b> — none tonight. No "+L.label+" name cleared all three flavours at once (that's the point — it's rare).",
-          say:"And the rare one — the fruit salad, strong on all three at once. Tonight, none of the "+L.label+" names cleared it. That's the point — a true trifecta is rare.",
-          k:'salad', fill:{t:'—'} },
-    { cap:"How to order: 🍊 fresh setup · 🍒 everyone agrees · 🍌 mind the entry · 🥗 balance. Same pot, <b>four ways to serve it.</b>",
-      say:"So — how will you order? Want a fresh setup, take the orange. Want everyone at the table nodding, the cherry. Chasing a story, mind the banana's entry. Want balance, the salad. Same pot, four ways to serve it.",
-      k:'verdict' }
+    { k:'intro',
+      cap:"Four flavours · <b>top 3 of each</b> · <b>"+R.label+"</b> — 🍊 🍒 🍌 🥗. It’s basically a casino with a spreadsheet. But hey. 🙂",
+      say:"Right, listen up, I'm only saying this once. Four flavours, top three of each, for the "+R.label+". Timing, conviction, news, and the all-rounder. Will it make you rich? Probably not — it's the stock market, it's a casino with extra homework. But hey. Let's have a look anyway." },
+    { k:'timing', fill:{def:"🍊 <b>Timing</b> — is the setup fresh <b>right now</b>? Are you early — or turning up when the beer’s gone?", arr:T, key:'o',
+        note:(twl.won.length?("<span class='ct-t'>"+esc(T[0].sym)+"</span> wins it on "+esc(ctJoinList(twl.won))+". Show-off."):("<span class='ct-t'>"+esc(T[0].sym)+"</span> leads on momentum alone. Bold."))},
+      cap:"🍊 <b>Timing</b> — early, or late to the party? "+capPod(T,'o'),
+      say:"The orange. Timing. Is the setup fresh right now, are you early — or are you turning up to the party when the beer's gone. Top three: "+sl(T)+". "+ctSpell(T[0].sym)+" leads at "+T[0].o+(twl.won.length?", winning on "+ctJoinList(twl.won)+" — show-off":", on momentum alone, bold")+". It's a setup, not a wedding. Don't fall in love, and don't come crying to me when it does the opposite." },
+    { k:'conv', fill:{def:"🍒 <b>Conviction</b> — not one lucky signal (any fool finds one). Does the <b>whole room</b> agree? Timing, blended with every vote.", arr:Cv, key:'c',
+        note:"<span class='ct-t'>"+esc(Cv[0].sym)+"</span> won on "+esc(ctJoinList(cwl.won)||'the balance')+(cwl.lost.length?", lost on "+esc(ctJoinList(cwl.lost)):"")+". One bloke at the back’s still shaking his head."},
+      cap:"🍒 <b>Conviction</b> — does the room agree? "+capPod(Cv,'c'),
+      say:"Cherry. And no — it's not one lucky signal, any fool can find one of those. It's whether the whole room agrees. Timing, blended with how every signal votes. Top three: "+sl(Cv)+". "+ctSpell(Cv[0].sym)+" tops it at "+Cv[0].c+", won on "+(ctJoinList(cwl.won)||"the balance of signals")+(cwl.lost.length?", lost on "+ctJoinList(cwl.lost):"")+". So — mostly nodding, one bloke at the back shaking his head. Welcome to investing." },
+    { k:'news', fill:{def:"🍌 <b>Fresh news</b> — a loud, shiny story the price <b>hasn’t chased yet</b>. It drops the second everyone piles in.", arr:N, key:'b',
+        note:(nThin?("⚠️ but timing on <span class='ct-r'>"+esc(N[0].sym)+"</span> is only "+N[0].o+" — you might be buying the top like an absolute legend."):("Loud today. Tomorrow? Not my problem, mate."))},
+      cap:"🍌 <b>Fresh news</b> — shiny, not yet chased. "+capPod(N,'b'),
+      say:"Banana. Fresh news the price hasn't chased yet. Loud, shiny, brand new. Top three: "+sl(N)+(nAllMax?", all maxed out at a hundred, calm down":"")+". Cracking headline today. Tomorrow? Not my problem, mate."+(nThin?(" And the timing on these is thin, so you might be buying the very top like an absolute legend. Your call."):"") },
+    { k:'salad', fill:{def:"🥗 <b>Fruit salad</b> — the all-rounder: decent at timing, agreement <b>and</b> news, all at once. Boring. Beautiful, boring.", arr:Sd, key:'min',
+        note:(Sd.length
+          ? ("<span class='ct-t'>"+esc(Sd[0].sym)+"</span> — 🍊"+Sd[0].o+" · 🍒"+Sd[0].c+" · 🍌"+Sd[0].b+". Good at everything, best at nothing."+(sBadge?" A proper 🥗.":" No shiny badge tonight (needs all three ≥ "+SALAD_MIN+") — but the steadiest of the lot."))
+          : "Nothing to rank tonight. Rare beast, the all-rounder.")},
+      cap:"🥗 <b>Fruit salad</b> — good at everything, best at nothing. "+(Sd.length?capPod(Sd,'min'):""),
+      say:(Sd.length
+        ? ("The salad. The all-rounder — decent at timing, decent at agreement, decent at news, all at once. Boring. Beautiful, boring. Top three: "+sl(Sd)+". "+ctSpell(Sd[0].sym)+" tops it — "+Sd[0].o+" timing, "+Sd[0].c+" conviction, "+Sd[0].b+" news. Good at everything, best at nothing. "+(sBadge?"A proper fruit salad, that one.":"Mind you, none of them clear the magic sixty tonight, so no shiny badge — they're just your steadiest bets. Emphasis on bets."))
+        : "The salad — good at all three at once. Tonight there's sod all to show you. Rare beast. Don't force it.") },
+    { k:'verdict',
+      cap:"🍊 early · 🍒 room agrees · 🍌 fresh news · 🥗 balance. It’s a gamble — but now you’ve got a clue. 🙂",
+      say:"And that's your lot. Orange, you're early. Cherry, everyone agrees. Banana, fresh news. Salad, balance. Will any of it work? No idea — it's a gamble, it's always a gamble, and anyone who tells you otherwise is selling something. But hey — at least now you're gambling with a bit of a clue. Off you pop. Do your own homework." }
   ];
-  return {voiced:false, label:L.label, pool:L.pool, scenes:scenes};
+  return {voiced:false, label:R.label, pool:R.pool, scenes:scenes};
 }
 // spell short/opaque tickers so the built-in voice reads them as letters, not a word
 function ctSpell(sym){ sym=String(sym||''); if(!sym) return 'this one';
@@ -6531,6 +6572,9 @@ function ctInjectCSS(){
   '.ct-cw.sm{font-family:"Caveat","Segoe UI",cursive;font-weight:700;font-size:clamp(14px,2.7vw,21px);color:#c9c6ba}'+
   '.ct-cwo{color:#ff8a3d}.ct-cwc{color:#ff5d73}.ct-cwb{color:#f7d861}.ct-cwy{color:#f4d03f}.ct-cwg{color:#7bd88f}.ct-cwr{color:#ff6b6b}'+
   '.ct-chip{display:inline-block;font-family:"Gaegu";font-weight:700;border:2px solid currentColor;border-radius:8px;padding:0 8px}'+
+  '.ct-pod{display:flex;flex-wrap:wrap;gap:7px 12px;align-items:baseline;font-family:"Gaegu",sans-serif}'+
+  '.ct-podi{display:inline-flex;align-items:baseline;gap:5px;font-size:clamp(16px,3.1vw,25px);font-weight:700;color:#f4f1e8;white-space:nowrap}'+
+  '.ct-podi .ct-pm{font-size:.9em}.ct-podi b{color:#fff;font-weight:800}.ct-podi .ct-n{color:var(--broth);font-variant-numeric:tabular-nums}'+
   '.ct-barwrap{position:absolute;left:38%;right:8%}.ct-bartrack{height:14px;border:2px solid #c9c6ba;border-radius:8px;opacity:.85;overflow:hidden;position:relative}'+
   '.ct-barfill{position:absolute;inset:0;width:0;border-radius:6px;background:repeating-linear-gradient(45deg,#ff8a3d,#ff8a3d 6px,rgba(255,138,61,.7) 6px,rgba(255,138,61,.7) 12px)}'+
   '.ct-layer.on .ct-barfill{animation:ctbar 1s .5s ease forwards}@keyframes ctbar{to{width:var(--pct,50%)}}'+
@@ -6561,49 +6605,57 @@ function ctBoardHTML(){
   return '<div class="ct-board"><svg width="0" height="0" style="position:absolute"><defs>'+
     '<filter id="ctChalk"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="4" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="1.6"/></filter></defs></svg>'+
     '<div class="ct-stage" id="ctStage">'+
-    // 0 intro (pot + hat)
+    // 0 intro — the coach + chalkboard
     '<section class="ct-layer" data-k="intro"><svg viewBox="0 0 400 250" aria-hidden="true">'+
-      '<path class="ct-draw" pathLength="1" d="M150 150 h100 l-10 60 h-80 z"/><path class="ct-draw" pathLength="1" d="M144 150 h112"/>'+
-      '<path class="ct-draw ct-dim" pathLength="1" d="M186 138 q-8 -18 4 -30 q10 -10 2 -26"/><path class="ct-draw ct-dim" pathLength="1" d="M206 136 q-8 -20 4 -32 q10 -12 2 -28"/>'+
-      '<path class="ct-draw" pathLength="1" d="M300 70 a16 16 0 1 1 4 -1 a13 13 0 1 1 -20 6 a15 15 0 1 1 16 -5 Z"/><path class="ct-draw" pathLength="1" d="M286 96 h30 v14 h-30 z"/></svg>'+
-      '<div class="ct-txt"><div class="ct-cw big d1" style="left:6%;top:14%">Tonight’s specials</div>'+
-        '<div class="ct-cw mid d2" style="left:6%;bottom:12%"><span class="ct-cwo">🍊</span> <span class="ct-cwc">🍒</span> <span class="ct-cwb">🍌</span> <span class="ct-cwg">🥗</span></div></div></section>'+
-    // 1 timing (orange)
+      '<circle class="ct-draw" pathLength="1" cx="120" cy="72" r="24"/>'+                    // head
+      '<path class="ct-draw" pathLength="1" d="M108 82 h24"/>'+                               // flat, unimpressed mouth
+      '<path class="ct-draw" pathLength="1" d="M120 96 v54"/>'+                               // body
+      '<path class="ct-draw ct-o" pathLength="1" d="M96 116 L146 132 M146 116 L96 132"/>'+   // crossed arms
+      '<path class="ct-draw" pathLength="1" d="M120 150 L102 192 M120 150 L138 192"/>'+       // legs
+      '<path class="ct-draw ct-dim" pathLength="1" d="M210 46 h150 v120 h-150 z"/>'+          // chalkboard
+      '<path class="ct-draw ct-o" pathLength="1" d="M228 88 h90 M228 112 h114 M228 136 h74"/></svg>'+
+      '<div class="ct-txt"><div class="ct-cw big d1" style="left:52%;top:8%;right:5%">Tonight’s top 3</div>'+
+        '<div class="ct-cw sm d2" style="left:52%;top:34%;right:5%">of each flavour. No fluff.</div>'+
+        '<div class="ct-cw mid d3" style="left:52%;bottom:12%"><span class="ct-cwo">🍊</span> <span class="ct-cwc">🍒</span> <span class="ct-cwb">🍌</span> <span class="ct-cwg">🥗</span></div></div></section>'+
+    // 1 timing (orange top-right; leaderboard left)
     '<section class="ct-layer" data-k="timing"><svg viewBox="0 0 400 250" aria-hidden="true">'+
-      '<circle class="ct-draw ct-o" pathLength="1" cx="90" cy="120" r="46"/><path class="ct-draw ct-g" pathLength="1" d="M90 74 q10 -12 22 -8 q-6 12 -22 10"/>'+
-      '<path class="ct-draw ct-o" pathLength="1" d="M64 104 q26 30 52 0 M64 120 q26 30 52 0 M64 136 q26 26 52 0"/></svg>'+
-      '<div class="ct-txt"><div class="ct-cw big ct-cwo d1" style="left:38%;top:8%">🍊 Timing</div>'+
-        '<div class="ct-cw mid d2" data-fill="t_line" style="left:38%;top:40%"></div>'+
-        '<div class="ct-barwrap d3" style="top:62%"><div class="ct-bartrack"><div class="ct-barfill" data-fill="t_bar"></div></div></div>'+
-        '<div class="ct-cw sm d4" data-fill="t_why" style="left:38%;bottom:6%;right:6%"></div></div></section>'+
-    // 2 conviction (cherries + ticks)
+      '<circle class="ct-draw ct-o" pathLength="1" cx="345" cy="55" r="30"/><path class="ct-draw ct-g" pathLength="1" d="M345 25 q8 -10 18 -6 q-5 10 -18 8"/>'+
+      '<path class="ct-draw ct-o" pathLength="1" d="M328 45 q17 20 34 0 M328 58 q17 20 34 0"/></svg>'+
+      '<div class="ct-txt"><div class="ct-cw big ct-cwo d1" style="left:5%;top:7%">🍊 Timing</div>'+
+        '<div class="ct-cw sm d2" data-fill="t_def" style="left:5%;top:27%;right:22%"></div>'+
+        '<div class="ct-cw ct-pod d3" data-fill="t_pod" style="left:5%;top:60%;right:5%"></div>'+
+        '<div class="ct-cw sm d4" data-fill="t_note" style="left:5%;bottom:6%;right:5%"></div></div></section>'+
+    // 2 conviction (cherries top-right)
     '<section class="ct-layer" data-k="conv"><svg viewBox="0 0 400 250" aria-hidden="true">'+
-      '<circle class="ct-draw ct-c" pathLength="1" cx="78" cy="150" r="26"/><circle class="ct-draw ct-c" pathLength="1" cx="128" cy="160" r="26"/>'+
-      '<path class="ct-draw ct-g" pathLength="1" d="M78 124 q20 -46 40 -60 M128 134 q6 -44 -10 -70"/>'+
-      '<path class="ct-draw ct-g" pathLength="1" d="M250 80 l8 8 l16 -18 M250 130 l8 8 l16 -18"/></svg>'+
-      '<div class="ct-txt"><div class="ct-cw big ct-cwc d1" style="left:40%;top:8%">🍒 Conviction</div>'+
-        '<div class="ct-cw mid d2" data-fill="c_line" style="left:40%;top:44%"></div>'+
-        '<div class="ct-cw sm d3" data-fill="c_why" style="left:40%;bottom:10%;right:6%"></div></div></section>'+
-    // 3 news (banana + papers)
+      '<circle class="ct-draw ct-c" pathLength="1" cx="330" cy="60" r="18"/><circle class="ct-draw ct-c" pathLength="1" cx="362" cy="68" r="18"/>'+
+      '<path class="ct-draw ct-g" pathLength="1" d="M330 42 q14 -30 28 -40 M362 50 q4 -28 -8 -46"/></svg>'+
+      '<div class="ct-txt"><div class="ct-cw big ct-cwc d1" style="left:5%;top:7%">🍒 Conviction</div>'+
+        '<div class="ct-cw sm d2" data-fill="c_def" style="left:5%;top:27%;right:20%"></div>'+
+        '<div class="ct-cw ct-pod d3" data-fill="c_pod" style="left:5%;top:60%;right:5%"></div>'+
+        '<div class="ct-cw sm d4" data-fill="c_note" style="left:5%;bottom:6%;right:5%"></div></div></section>'+
+    // 3 news (banana + megaphone top-right)
     '<section class="ct-layer" data-k="news"><svg viewBox="0 0 400 250" aria-hidden="true">'+
-      '<path class="ct-draw ct-ba" pathLength="1" d="M60 90 q10 70 74 84 q-18 -18 -20 -40 q-30 -6 -44 -44 z"/>'+
-      '<path class="ct-draw ct-dim" pathLength="1" d="M250 80 h64 v46 h-64 z M250 140 h64 v40 h-64 z"/></svg>'+
-      '<div class="ct-txt"><div class="ct-cw big ct-cwb d1" style="left:34%;top:6%">🍌 Fresh news</div>'+
-        '<div class="ct-cw mid d2" data-fill="n_line" style="left:34%;top:44%"></div>'+
-        '<div class="ct-cw sm ct-cwr d3" data-fill="n_warn" style="left:34%;bottom:8%;right:6%"></div></div></section>'+
-    // 4 salad (bowl)
+      '<path class="ct-draw ct-ba" pathLength="1" d="M312 34 q6 44 46 52 q-11 -11 -12 -25 q-19 -4 -28 -27 z"/>'+
+      '<path class="ct-draw ct-dim" pathLength="1" d="M300 96 l40 -14 v34 l-40 -14 z M340 86 l14 -6 v50 l-14 -6 z"/></svg>'+
+      '<div class="ct-txt"><div class="ct-cw big ct-cwb d1" style="left:5%;top:7%">🍌 Fresh news</div>'+
+        '<div class="ct-cw sm d2" data-fill="n_def" style="left:5%;top:27%;right:20%"></div>'+
+        '<div class="ct-cw ct-pod d3" data-fill="n_pod" style="left:5%;top:60%;right:5%"></div>'+
+        '<div class="ct-cw sm d4" data-fill="n_note" style="left:5%;bottom:6%;right:5%"></div></div></section>'+
+    // 4 salad (bowl top-right)
     '<section class="ct-layer" data-k="salad"><svg viewBox="0 0 400 250" aria-hidden="true">'+
-      '<path class="ct-draw" pathLength="1" d="M92 130 a70 40 0 0 0 140 0 z"/><path class="ct-draw ct-dim" pathLength="1" d="M84 130 h156"/>'+
-      '<circle class="ct-draw ct-o" pathLength="1" cx="140" cy="120" r="15"/><circle class="ct-draw ct-c" pathLength="1" cx="176" cy="126" r="11"/>'+
-      '<path class="ct-draw ct-ba" pathLength="1" d="M188 108 q6 22 26 26"/></svg>'+
-      '<div class="ct-txt"><div class="ct-cw big ct-cwg d1" style="left:56%;top:10%">🥗 Salad</div>'+
-        '<div class="ct-cw mid d2" data-fill="s_line" style="left:56%;top:46%"></div>'+
-        '<div class="ct-cw sm d3" data-fill="s_why" style="left:56%;bottom:12%;right:5%"></div></div></section>'+
-    // 5 verdict (plate)
+      '<path class="ct-draw" pathLength="1" d="M300 62 a44 26 0 0 0 88 0 z"/><path class="ct-draw ct-dim" pathLength="1" d="M295 62 h98"/>'+
+      '<circle class="ct-draw ct-o" pathLength="1" cx="330" cy="56" r="10"/><circle class="ct-draw ct-c" pathLength="1" cx="352" cy="59" r="7"/><path class="ct-draw ct-ba" pathLength="1" d="M360 48 q4 14 16 16"/></svg>'+
+      '<div class="ct-txt"><div class="ct-cw big ct-cwg d1" style="left:5%;top:7%">🥗 Fruit salad</div>'+
+        '<div class="ct-cw sm d2" data-fill="s_def" style="left:5%;top:27%;right:22%"></div>'+
+        '<div class="ct-cw ct-pod d3" data-fill="s_pod" style="left:5%;top:60%;right:5%"></div>'+
+        '<div class="ct-cw sm d4" data-fill="s_note" style="left:5%;bottom:6%;right:5%"></div></div></section>'+
+    // 5 verdict — coach walking off
     '<section class="ct-layer" data-k="verdict"><svg viewBox="0 0 400 250" aria-hidden="true">'+
-      '<ellipse class="ct-draw" pathLength="1" cx="200" cy="150" rx="86" ry="20"/><ellipse class="ct-draw ct-dim" pathLength="1" cx="200" cy="146" rx="62" ry="13"/></svg>'+
-      '<div class="ct-txt"><div class="ct-cw big ct-cwy d1" style="left:0;right:0;top:12%;text-align:center">How will you order?</div>'+
-        '<div class="ct-cw mid d2" style="left:0;right:0;bottom:16%;text-align:center">Same pot — <b style="color:#ff8a3d">four ways.</b></div></div></section>'+
+      '<circle class="ct-draw" pathLength="1" cx="300" cy="78" r="20"/><path class="ct-draw" pathLength="1" d="M300 98 v46"/>'+
+      '<path class="ct-draw ct-o" pathLength="1" d="M300 112 l24 10"/><path class="ct-draw" pathLength="1" d="M300 144 l-16 40 M300 144 l20 36"/></svg>'+
+      '<div class="ct-txt"><div class="ct-cw big ct-cwy d1" style="left:5%;top:10%;right:28%">That’s your lot.</div>'+
+        '<div class="ct-cw sm d2" style="left:5%;top:40%;right:28%">🍊 early · 🍒 agreement · 🍌 news · 🥗 balance.</div>'+
+        '<div class="ct-cw mid d3" style="left:5%;bottom:12%;right:28%">Now do your own <b style="color:#ff8a3d">homework.</b></div></div></section>'+
     '</div></div>';
 }
 function ctMount(reg, built){
@@ -6627,12 +6679,14 @@ function ctMount(reg, built){
     ctMount(nr, nb); document.getElementById('ctPlay').innerHTML='▶ Play the lesson'; };
 }
 function ctFillScenes(scenes){
-  scenes.forEach(function(sc){ if(!sc.fill) return; var f=sc.fill;
+  var pfx={timing:'t',conv:'c',news:'n',salad:'s'};
+  function podRow(arr,key){ var md=['🥇','🥈','🥉']; if(!arr||!arr.length) return '<span class="ct-podi">—</span>';
+    return arr.map(function(x,i){ return '<span class="ct-podi"><span class="ct-pm">'+md[i]+'</span> <b>'+esc(x.sym)+'</b> <span class="ct-n">'+x[key]+'</span></span>'; }).join(''); }
+  scenes.forEach(function(sc){ if(!sc.fill||!pfx[sc.k]) return; var f=sc.fill, p=pfx[sc.k];
     function set(k,html){ var el=document.querySelector('[data-fill="'+k+'"]'); if(el!=null) el.innerHTML=html; }
-    if(sc.k==='timing'){ set('t_line','<span class="ct-chip ct-cwo">'+esc(f.t)+' · 🍊 '+f.o+'</span>'); var bar=document.querySelector('[data-fill="t_bar"]'); if(bar) bar.style.setProperty('--pct',Math.max(3,Math.min(100,f.o))+'%'); set('t_why', f.why?esc(f.why):''); }
-    if(sc.k==='conv'){ set('c_line','<span class="ct-chip ct-cwc">'+esc(f.t)+' · 🍒 '+f.c+'</span>'); set('c_why','when timing &amp; conviction agree, that’s your headline plate'); }
-    if(sc.k==='news'){ set('n_line','<span class="ct-chip ct-cwb">'+esc(f.t)+' · 🍌 '+f.b+'</span>'); set('n_warn', f.warn?('…but timing only <b style="color:#ff6b6b">'+f.o+'</b> — the price may have moved'):''); }
-    if(sc.k==='salad'){ set('s_line', f.t==='—'?'<span class="ct-chip ct-cwg">none tonight</span>':'<span class="ct-chip ct-cwg">'+esc(f.t)+'</span> 🍊 '+f.o+' · 🍒 '+f.c+' · 🍌 '+f.b); set('s_why', f.t==='—'?'a true trifecta is rare — that’s the point':'the most balanced plate on the menu'); }
+    set(p+'_def', f.def||'');
+    set(p+'_pod', podRow(f.arr, f.key));
+    set(p+'_note', f.note||'');
   });
 }
 function ctShowScene(i, built){
