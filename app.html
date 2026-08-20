@@ -6089,7 +6089,7 @@ function render(D,H){
 
   // ===== 🔎 THE FINDER (#336) — its own tab; filled by renderFinder() =====
   '<div class="tabview" id="tab-finder">'+
-    tabHead('🍲 The Stock Pot','Pull the levers for the stock you actually want','Every name we\'ve scored this run — the daily whole-market scan plus the catalyst pot — screened by any signal. It opens on our 🍊 Buy profile; drag a lever, or switch to <b>Best match</b> to always get a shortlist. Tap any result for the full read.',[])+
+    tabHead('🍲 The Stock Pot','Pull the levers for the stock you actually want','Every name we\'ve scored this run — the daily whole-market scan plus the catalyst pot — screened by any signal. It opens in <b>⛰ Strict</b>, ranked by <b>🥗 Fruit salad</b> so the names strong on all three fruits float to the top; drag a lever, or switch to <b>🎯 Best match</b> if Strict comes back empty. Tap any result for the full read.',[])+
     '<div id="finderRoot"><div class="fdr-empty"><b>Warming up…</b>One moment.</div></div>'+
   '</div>'+
 
@@ -6930,7 +6930,10 @@ function kitchenScoreStory(D){
     var scoredc=[];
     pot.forEach(function(c){ try{ if(!c.score||c.score.buy_now==null) return;
       var ov=overallScore(c.score.buy_now, signalRows(c,mkt)); if(!ov) return;
-      scoredc.push({sym:c.sym,name:c.name,o:Math.round(c.score.buy_now),ch:ov.score,gap:ov.score-Math.round(c.score.buy_now)}); }catch(e){} });
+      var ban=null; try{ var br=_sentResolve(c.sym,mkt,c); if(br&&br.score!=null) ban=Math.round(br.score); }catch(e){}
+      var o=Math.round(c.score.buy_now), ch=Math.round(ov.score);
+      var mn=(ban!=null)?Math.min(o,ch,ban):null;
+      scoredc.push({sym:c.sym,name:c.name,o:o,ch:ch,b:ban,gap:ch-o,salad:(mn!=null&&mn>=SALAD_MIN)}); }catch(e){} });
     var hiCherry=scoredc.slice().sort(function(a,b){return b.gap-a.gap;})[0];   // cherry >> orange
     var hiOrange=scoredc.slice().sort(function(a,b){return a.gap-b.gap;})[0];   // orange >> cherry
     function exCard(x,kind){
@@ -6940,14 +6943,23 @@ function kitchenScoreStory(D){
       var sub=strong?'A strong name — but a late entry':'A clean entry — on a so-so name';
       var read=strong?('Every signal votes yes, so conviction is high — but the timing score is held back (it’s run up / near overbought). <b>Read:</b> strong stock, wait for a better entry.')
                       :('Fresh timing setup — but the signals are split, so conviction is only middling. <b>Read:</b> a trade, not a marriage — take it with a stop.');
+      var banRow = (x.b!=null)
+        ? '<div class="ks-glab"><span>🍌 fresh-news</span><span>'+x.b+'</span></div><div class="ks-gauge ks-g-b"><i style="width:'+Math.max(3,Math.min(100,x.b))+'%"></i></div>'
+        : '<div class="ks-glab"><span>🍌 fresh-news</span><span>—</span></div><div class="ks-gauge ks-g-b"><i style="width:3%;opacity:.3"></i></div>';
+      var saladRow = x.salad
+        ? '<div class="ks-salad">🥗 <b>Fruit salad</b> — all three ≥ '+SALAD_MIN+'. The rare one where timing, conviction AND fresh news all agree.'
+        : '<div class="ks-salad ks-salad-no">🥗 Not a salad — the three don’t all clear '+SALAD_MIN+' together (that’s the point of showing them side by side).';
       return '<div class="ks-exc"><div class="ks-exsym">'+esc(x.sym)+'</div><div class="ks-exname">'+esc(x.name||x.sym)+' · '+esc(title)+'</div>'+
         '<div class="ks-glab"><span>🍊 timing</span><span>'+x.o+'</span></div><div class="ks-gauge ks-g-o"><i style="width:'+Math.max(3,Math.min(100,x.o))+'%"></i></div>'+
         '<div class="ks-glab"><span>🍒 conviction</span><span>'+x.ch+'</span></div><div class="ks-gauge ks-g-c"><i style="width:'+Math.max(3,Math.min(100,x.ch))+'%"></i></div>'+
-        '<div class="ks-verdict"><b>'+esc(sub)+'.</b> '+read+'</div></div>';
+        banRow+
+        '<div class="ks-verdict"><b>'+esc(sub)+'.</b> '+read+'</div>'+saladRow+'</div>';
     }
     var examples='';
     if(hiCherry&&hiOrange&&hiCherry.sym!==hiOrange.sym&&(hiCherry.gap>=4||hiOrange.gap<=-4)){
-      examples='<h4 class="ks-h4">Why two numbers beat one — tonight’s pot, two ways</h4><div class="ks-exgrid">'+exCard(hiCherry,'cherry')+exCard(hiOrange,'orange')+'</div>';
+      examples='<h4 class="ks-h4">Why one number isn’t enough — every score, side by side</h4>'+
+        '<p class="ks-exintro">🍊 timing · 🍒 conviction · 🍌 fresh-news — and 🥗 fruit salad when all three line up. Watch how they can pull in different directions on the very same stock:</p>'+
+        '<div class="ks-exgrid">'+exCard(hiCherry,'cherry')+exCard(hiOrange,'orange')+'</div>';
     }
     var css='<style>'
       +'.ks-wrap{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:20px 20px 24px;box-shadow:var(--shadow)}'
@@ -6990,8 +7002,10 @@ function kitchenScoreStory(D){
       +'.ks-pills{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}.ks-mini{font-size:10.5px;font-weight:700;padding:3px 8px;border-radius:7px;background:rgba(232,102,42,.11);color:var(--broth)}.ks-mini.pen{background:rgba(214,40,60,.11);color:#d6283c}'
       +'.ks-h4{font-weight:800;font-size:15px;margin:18px 0 10px}.ks-exgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}@media(max-width:640px){.ks-exgrid{grid-template-columns:1fr}}'
       +'.ks-exc{background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:14px}.ks-exsym{font-weight:800;font-size:17px}.ks-exname{color:var(--muted);font-size:12px;margin-bottom:10px}'
-      +'.ks-glab{display:flex;justify-content:space-between;font-size:11px;color:var(--faint);font-weight:700;margin-top:8px}.ks-gauge{height:8px;border-radius:5px;background:var(--line);overflow:hidden;margin:3px 0}.ks-gauge i{display:block;height:100%}.ks-g-o i{background:var(--broth)}.ks-g-c i{background:#d6283c}'
+      +'.ks-glab{display:flex;justify-content:space-between;font-size:11px;color:var(--faint);font-weight:700;margin-top:8px}.ks-gauge{height:8px;border-radius:5px;background:var(--line);overflow:hidden;margin:3px 0}.ks-gauge i{display:block;height:100%}.ks-g-o i{background:var(--broth)}.ks-g-c i{background:#d6283c}.ks-g-b i{background:#f4b23e}'
       +'.ks-verdict{font-size:12.5px;color:var(--muted);line-height:1.5;margin-top:9px}.ks-verdict b{color:var(--ink)}'
+      +'.ks-exintro{font-size:12.5px;color:var(--muted);line-height:1.5;margin:0 0 10px}'
+      +'.ks-salad{font-size:12px;color:var(--muted);line-height:1.45;margin-top:9px;padding-top:9px;border-top:1px dashed var(--line)}.ks-salad b{color:var(--ink)}.ks-salad-no{opacity:.75}'
       // Mobile: the desktop width-taper (84%/60%/44%/30%) crushes each funnel row into an unreadable sliver.
       // On phones, every row goes full-width and the funnel narrowing is carried by the descending numbers +
       // the ▼ arrows (which read as a funnel top-to-bottom). A thin proportional bar under each number keeps
@@ -11360,7 +11374,7 @@ function pushViewState(){
 // Replaces the Full Pot. Reads latest.finderUniverse (#337, the whole scored liquid market) unioned with
 // tonight's candidates/picks, and lets you pull levers for the stock you want. Fully guarded: any throw
 // is caught so a Finder bug can never blank the app (the #216 blank-page class).
-var FDR={mode:'flexible', view:'cards', sectorSet:null, commoditySet:[], toggles:{aboveMa:false}, sort:'match', xAxis:'rangePos', yAxis:'buyNow', query:'', catalystOnly:false, excludeJunk:false, holdingsOnly:false, watchOnly:false, built:false};
+var FDR={mode:'strict', view:'cards', sectorSet:null, commoditySet:[], toggles:{aboveMa:false}, sort:'salad', xAxis:'rangePos', yAxis:'buyNow', query:'', catalystOnly:false, excludeJunk:false, holdingsOnly:false, watchOnly:false, built:false};
 var FDR_RAIL_OPEN=false;   // #fdr-collapse — lever body collapsed by default on mobile
 var FDR_LEVERS=[
   {grp:'Scores', items:[
