@@ -6115,6 +6115,7 @@ function render(D,H){
       glanceStripHtml(D)+
       breakingHtml(D)+
       '<h1 class="display">Two pots on the boil: <span class="hot">'+esc(hdl(D,'a'))+'</span> &amp; <span class="hot">'+esc(hdl(D,'b'))+'</span>.</h1>'+
+      chalkTalkCta(D)+   // #ct-cta (user ask) — the ▶ Watch-tonight's-specials panel, up top under the header, before the chef's note
       // chef's framing sits directly under the headline (collapsed). The standalone "Tonight's one move" card
       // was removed (user ask) — it duplicated the pick it points at + the glance tile; the #1 move is now a
       // 🥇 ribbon on its actual pick card in the grid below, and the glance strip's One-move tile jumps to it.
@@ -6454,14 +6455,17 @@ function ctRankings(reg){
     return {sym:c.sym,name:c.name,o:o,c:cc,b:bb,min:((cc!=null&&bb!=null)?Math.min(o,cc,bb):null)}; }
   var fr=pool.map(fruit);
   function top(key,n){ return fr.filter(function(x){return x[key]!=null;}).sort(function(a,b){return b[key]-a[key];}).slice(0,n||3); }
-  function wonLost(sym){ var c=pool.filter(function(x){return x.sym===sym;})[0]; if(!c) return {won:[],lost:[]};
+  function rowsFor(sym){ var c=pool.filter(function(x){return x.sym===sym;})[0]; if(!c) return [];
     var rows=[]; try{ rows=signalRows(c,reg)||[]; }catch(e){}
-    var won=[],lost=[]; rows.forEach(function(r){ var nm=ctSigShort(r); if(!nm) return;
+    return rows.map(function(r){ var rd=String(r.read||''); if(rd.length>34) rd=rd.slice(0,32)+'…';
+      return {icon:r.icon||'•', label:String(r.label||''), tone:r.tone||'mix', read:rd}; }); }
+  function wonLost(sym){ var won=[],lost=[]; rowsFor(sym).forEach(function(r){ var nm=ctSigShort(r); if(!nm) return;
       if(r.tone==='pos'&&won.indexOf(nm)<0) won.push(nm); else if(r.tone==='neg'&&lost.indexOf(nm)<0) lost.push(nm); });
     return {won:won.slice(0,3), lost:lost.slice(0,3)}; }
   var timing=top('o'), cherry=top('c'), news=top('b'), salad=top('min');
   return {label:reg==='au'?'ASX':'US', pool:pool.length,
     timing:timing, cherry:cherry, news:news, salad:salad,
+    cherryRows: cherry[0]?rowsFor(cherry[0].sym):[],
     timingWL: timing[0]?wonLost(timing[0].sym):null,
     cherryWL: cherry[0]?wonLost(cherry[0].sym):null,
     saladWL:  salad[0]?wonLost(salad[0].sym):null };
@@ -6487,7 +6491,7 @@ function ctBuildScenes(reg){
         note:(twl.won.length?("<span class='ct-t'>"+ctDispName(T[0])+"</span> wins it on "+esc(ctJoinList(twl.won))+". Flash bastard."):("<span class='ct-t'>"+ctDispName(T[0])+"</span> leads on momentum alone. Bold."))},
       cap:"🍊 <b>Timing</b> — early, or a wanker turning up late?",
       say:"The orange. Timing. Is the setup fresh right now, are you early — or are you the wanker turning up to the party when the beer's gone? Top three: "+sl(T)+". "+ctSpokenName(T[0])+" leads at "+T[0].o+(twl.won.length?", winning on "+ctJoinList(twl.won)+" — flash bastard":", on momentum alone, bold")+". It's a setup, not a wedding. Don't fall in love — and don't come crying to me when it shits the bed." },
-    { k:'conv', fill:{def:"🍒 <b>Conviction</b> — not one lucky signal (any idiot finds one). Does the <b>whole room</b> agree? Timing, blended with every vote.", arr:Cv, key:'c',
+    { k:'conv', fill:{def:"🍒 <b>Conviction</b> = timing + how <b>every signal votes</b>. Here’s the room on <span class='ct-t'>"+ctDispName(Cv[0])+"</span> ("+Cv[0].c+"):", arr:Cv, key:'c', sigs:R.cherryRows,
         note:"<span class='ct-t'>"+ctDispName(Cv[0])+"</span> won on "+esc(ctJoinList(cwl.won)||'the balance')+(cwl.lost.length?", lost on "+esc(ctJoinList(cwl.lost)):"")+". One miserable prick at the back still shaking his head."},
       cap:"🍒 <b>Conviction</b> — does the whole room agree?",
       say:"Cherry. And no — it's not one lucky signal, any idiot can find one of those. It's whether the whole bloody room agrees. Timing, blended with how every signal votes. Top three: "+sl(Cv)+". "+ctSpokenName(Cv[0])+" tops it at "+Cv[0].c+", won on "+(ctJoinList(cwl.won)||"the balance of signals")+(cwl.lost.length?", lost on "+ctJoinList(cwl.lost):"")+". So — most of 'em nodding, one miserable prick at the back shaking his head. Welcome to investing." },
@@ -6587,6 +6591,11 @@ function ctInjectCSS(){
   '.ct-pod{display:flex;flex-wrap:wrap;gap:7px 12px;align-items:baseline;font-family:"Gaegu",sans-serif}'+
   '.ct-podi{display:inline-flex;align-items:baseline;gap:5px;font-size:clamp(16px,3.1vw,25px);font-weight:700;color:#f4f1e8;white-space:nowrap}'+
   '.ct-podi .ct-pm{font-size:.9em}.ct-podi b{color:#fff;font-weight:800}.ct-podi .ct-n{color:var(--broth);font-variant-numeric:tabular-nums}'+
+  '.ct-sigs{display:grid;grid-template-columns:1fr 1fr;gap:3px 16px;font-family:"Caveat","Segoe UI",cursive;font-weight:600;align-content:start}'+
+  '@media(max-width:560px){.ct-sigs{grid-template-columns:1fr}}'+
+  '.ct-sig{font-size:clamp(12px,2.2vw,17px);line-height:1.25;color:#d9d5c8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}'+
+  '.ct-sig-mk{margin-right:4px}.ct-sig b{color:#f4f1e8;font-weight:700}.ct-sig-rd{color:#a7ab9c}'+
+  '.ct-sig-pos b{color:#7bd88f}.ct-sig-neg b{color:#ff8f8f}'+
   '.ct-barwrap{position:absolute;left:38%;right:8%}.ct-bartrack{height:14px;border:2px solid #c9c6ba;border-radius:8px;opacity:.85;overflow:hidden;position:relative}'+
   '.ct-barfill{position:absolute;inset:0;width:0;border-radius:6px;background:repeating-linear-gradient(45deg,#ff8a3d,#ff8a3d 6px,rgba(255,138,61,.7) 6px,rgba(255,138,61,.7) 12px)}'+
   '.ct-layer.on .ct-barfill{animation:ctbar 1s .5s ease forwards}@keyframes ctbar{to{width:var(--pct,50%)}}'+
@@ -6639,10 +6648,10 @@ function ctBoardHTML(){
     '<section class="ct-layer" data-k="conv"><svg viewBox="0 0 400 250" aria-hidden="true">'+
       '<circle class="ct-draw ct-c" pathLength="1" cx="330" cy="60" r="18"/><circle class="ct-draw ct-c" pathLength="1" cx="362" cy="68" r="18"/>'+
       '<path class="ct-draw ct-g" pathLength="1" d="M330 42 q14 -30 28 -40 M362 50 q4 -28 -8 -46"/></svg>'+
-      '<div class="ct-txt"><div class="ct-cw big ct-cwc d1" style="left:5%;top:7%">🍒 Conviction</div>'+
-        '<div class="ct-cw sm d2" data-fill="c_def" style="left:5%;top:27%;right:20%"></div>'+
-        '<div class="ct-cw ct-pod d3" data-fill="c_pod" style="left:5%;top:60%;right:5%"></div>'+
-        '<div class="ct-cw sm d4" data-fill="c_note" style="left:5%;bottom:6%;right:5%"></div></div></section>'+
+      '<div class="ct-txt"><div class="ct-cw big ct-cwc d1" style="left:5%;top:6%">🍒 Conviction</div>'+
+        '<div class="ct-cw sm d2" data-fill="c_def" style="left:5%;top:22%;right:22%"></div>'+
+        '<div class="ct-cw d3" data-fill="c_sigs" style="left:5%;top:38%;right:4%;bottom:16%"></div>'+
+        '<div class="ct-cw ct-pod d4" data-fill="c_pod" style="left:5%;bottom:5%;right:5%;font-size:clamp(13px,2.4vw,19px)"></div></div></section>'+
     // 3 news (banana + megaphone top-right)
     '<section class="ct-layer" data-k="news"><svg viewBox="0 0 400 250" aria-hidden="true">'+
       '<path class="ct-draw ct-ba" pathLength="1" d="M312 34 q6 44 46 52 q-11 -11 -12 -25 q-19 -4 -28 -27 z"/>'+
@@ -6692,11 +6701,17 @@ function ctFillScenes(scenes){
   var pfx={timing:'t',conv:'c',news:'n',salad:'s'};
   function podRow(arr,key){ var md=['🥇','🥈','🥉']; if(!arr||!arr.length) return '<span class="ct-podi">—</span>';
     return arr.map(function(x,i){ return '<span class="ct-podi"><span class="ct-pm">'+md[i]+'</span> <b>'+esc(x.sym)+'</b> <span class="ct-n">'+x[key]+'</span></span>'; }).join(''); }
+  function sigGrid(rows){ if(!rows||!rows.length) return '';
+    // rank so the vote reads clearly: FOR first, then AGAINST, then neutral context; cap to what fits
+    var order={pos:0,neg:1,mix:2}; var rs=rows.slice().sort(function(a,b){return (order[a.tone]||2)-(order[b.tone]||2);}).slice(0,8);
+    return '<div class="ct-sigs">'+rs.map(function(r){ var mk=r.tone==='pos'?'✅':r.tone==='neg'?'⚠️':'•';
+      return '<div class="ct-sig ct-sig-'+r.tone+'"><span class="ct-sig-mk">'+mk+'</span><b>'+esc(r.label)+'</b> <span class="ct-sig-rd">'+esc(r.read)+'</span></div>'; }).join('')+'</div>'; }
   scenes.forEach(function(sc){ if(!sc.fill||!pfx[sc.k]) return; var f=sc.fill, p=pfx[sc.k];
     function set(k,html){ var el=document.querySelector('[data-fill="'+k+'"]'); if(el!=null) el.innerHTML=html; }
     set(p+'_def', f.def||'');
     set(p+'_pod', podRow(f.arr, f.key));
     set(p+'_note', f.note||'');
+    if(f.sigs) set(p+'_sigs', sigGrid(f.sigs));
   });
 }
 function ctShowScene(i, built){
@@ -7524,12 +7539,16 @@ function kitchenScoreStory(D){
         +'<p>The 🍌 is the key twist: it rewards a name that <b>hasn’t moved yet</b>. So a name that’s <b>also</b> high on 🍊 and 🍒 means “great setup, everything agrees, <b>and</b> there’s a fresh catalyst you’re not late to.” That’s the genuine <b>“get in before it runs”</b> corner — and it’s <b>rare</b>, because momentum names (high 🍊) have usually already moved (low 🍌). When all three line up, it’s special.</p>'
         +'<div class="ks-saltag">🥗 Sort <b>The Stock Pot</b> by <b>Fruit salad</b> to rank names by their weakest fruit — only a true trifecta tops the list.</div>'
       +'</div>';
-    var nEp=0; try{ nEp=((D.chalkTalkArchive||[]).length); }catch(e){}
-    var ctCta='<div class="ks-ct-row"><button class="ks-ct-cta" onclick="openChalkTalk()" title="A 40-second animated chalkboard that narrates tonight’s four flavours">'+
-      '<span class="ks-ct-ic">▶</span><span class="ks-ct-tx"><b>Watch tonight’s specials</b><small>a 40-sec chalk-talk: 🍊 timing · 🍒 conviction · 🍌 news · 🥗 salad — drawn &amp; narrated</small></span><span class="ks-ct-board">🍲</span></button>'+
-      (nEp?'<button class="ks-ct-past" onclick="openChalkArchive()" title="Replay past episodes — the kitchen podcast">📼<span>Past specials</span><b>'+nEp+'</b></button>':'')+'</div>';
-    return '<div class="ks-wrap">'+css+ctCta+funnel+lanes+examples+'</div>';
+    return '<div class="ks-wrap">'+css+chalkTalkCta(D)+funnel+lanes+examples+'</div>';
   }catch(e){ try{console.error('kitchenScoreStory',e);}catch(_){}; return ''; }
+}
+// #ct-cta — the ▶ Watch-tonight's-specials + 📼 Past-specials panel, reusable so it can sit at the top of the
+// menu (under the header, above the chef's note) AND inside the kitchen "one pot, three scores" section.
+function chalkTalkCta(D){
+  var nEp=0; try{ nEp=(((D||(LAST&&LAST.D)||{}).chalkTalkArchive||[]).length); }catch(e){}
+  return '<div class="ks-ct-row"><button class="ks-ct-cta" onclick="openChalkTalk()" title="A 40-second animated chalkboard that narrates tonight’s four flavours">'+
+    '<span class="ks-ct-ic">▶</span><span class="ks-ct-tx"><b>Watch tonight’s specials</b><small>a 40-sec chalk-talk: 🍊 timing · 🍒 conviction · 🍌 news · 🥗 salad — drawn &amp; narrated</small></span><span class="ks-ct-board">🍲</span></button>'+
+    (nEp?'<button class="ks-ct-past" onclick="openChalkArchive()" title="Replay past episodes — the kitchen podcast">📼<span>Past specials</span><b>'+nEp+'</b></button>':'')+'</div>';
 }
 function overallBannerHtml(ov){
   if(!ov) return '';
