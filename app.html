@@ -141,7 +141,7 @@
   @keyframes omReveal{from{opacity:0;transform:translateY(15px)}to{opacity:1;transform:translateY(0)}}
   @media(prefers-reduced-motion:reduce){.onemove{animation:none}.onemove:hover{transform:none}}
   /* #312 — morning brief: a thin, dismissible status strip above the header */
-  .mbrief{display:flex;align-items:center;gap:9px;margin:0 0 14px;padding:9px 13px;border-radius:12px;background:var(--surface-2);border:1px solid var(--line);font-size:12.5px;color:var(--ink);animation:omReveal .5s ease both}
+  .mbrief{display:flex;align-items:center;gap:9px;margin:0 0 10px;padding:8px 13px;border-radius:12px;background:var(--surface-2);border:1px solid var(--line);font-size:12.5px;color:var(--ink);animation:omReveal .5s ease both}
   .mb-ic{font-size:15px;flex:0 0 auto}
   .mb-txt{flex:1 1 auto;line-height:1.4} .mb-txt b{font-weight:800}
   .mb-x{flex:0 0 auto;background:none;border:0;color:var(--muted);font-size:13px;cursor:pointer;padding:2px 5px;border-radius:6px;line-height:1}
@@ -150,7 +150,8 @@
   .mbrief.schedlink{cursor:pointer} .mbrief .schedi{flex:0 0 auto}
   .mbrief:hover .schedi{border-color:var(--broth);color:var(--broth)}
   /* #hero (#3) — smaller display headline so the picks come up sooner (brand survives at this size) */
-  .menuhead h1{font-size:clamp(28px,6vw,52px);margin:12px 0 8px}
+  /* real-estate #7 — tighter floor + line-height so a long generated headline doesn't eat the first mobile screen */
+  .menuhead h1{font-size:clamp(23px,5.4vw,52px);line-height:1.06;margin:10px 0 6px}
   /* #hero — the risk "weather" is a chip INSIDE the orient banner; the full gradient meter opens on tap */
   .mb-risk{flex:0 0 auto;display:inline-flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:4px 11px;font-size:12.5px;font-weight:800;color:var(--ink);cursor:pointer;font-family:inherit;transition:border-color .12s}
   .mb-risk:hover{border-color:var(--broth)}
@@ -205,7 +206,7 @@
   .glance.led .gt-sub{color:#ff8a3d;text-shadow:0 0 6px rgba(255,138,61,.5)}
   /* ── live horizontal EXCHANGE-TAPE ticker (replaces the LED board + pills) — a committed dark phosphor
      "screen", full-width & responsive: 3 rows crawl in alternating directions/speeds, pause on hover/touch ── */
-  .tickerwrap.ticklive{display:flex;flex-direction:column;gap:6px;width:100%;margin:2px 0 16px;padding:7px;
+  .tickerwrap.ticklive{display:flex;flex-direction:column;gap:5px;width:100%;margin:2px 0 10px;padding:6px 7px;
     background:#0b0d10;border:1px solid #23262c;border-radius:14px;overflow:hidden;position:relative;
     box-shadow:inset 0 1px 0 rgba(255,255,255,.04)}
   .tickerwrap.ticklive::after{content:"";position:absolute;inset:0;pointer-events:none;border-radius:14px;
@@ -851,6 +852,10 @@
   .storyrow .slbl{font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
   .storyrow b{color:var(--broth)}
   .pickcol{display:flex;flex-direction:column;gap:12px}
+  /* real-estate #8 — the grid stretches each column to the tallest in the row, but the card inside sat at
+     content height, leaving a gap under the shorter cards. Let the card fill its column so the 3 picks
+     line up as a set (aligned tops AND bottoms). */
+  .menu>.pickcol>.card{flex:1 1 auto}
   .rucard{background:linear-gradient(180deg,rgba(255,107,26,.10),rgba(255,107,26,.03));border:1px solid rgba(255,107,26,.4);border-left:4px solid var(--broth);border-radius:14px;padding:15px 16px}
   .rutag{font-size:13px;font-weight:900;letter-spacing:.04em;text-transform:uppercase;color:var(--broth);margin-bottom:8px;display:flex;align-items:center;gap:8px}
   .rutop{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap}
@@ -955,6 +960,7 @@
      flow in the columns BELOW it (was the 1st grid cell, so executed rows sat beside it — user-caught). */
   .rlfuture-wrap{grid-column:1/-1;background:#241d18;border:1px solid #3a2f26;border-radius:14px;padding:12px 13px 6px;margin-bottom:14px;box-shadow:0 2px 10px rgba(0,0,0,.14)}
   .rlfuture-h{font-size:10.5px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:#ffb888;margin:0 0 8px}
+  .rlfuture-hint{font-weight:600;color:#8f8074;text-transform:none;letter-spacing:0}
   .rlfuture-wrap .rlrow.rlfuture{border:0;border-top:1px solid rgba(255,255,255,.07);border-radius:0;padding:9px 2px;background:none;opacity:1}
   .rlfuture-wrap .rlrow.rlfuture:first-of-type{border-top:0}
   .rltag-future{color:#ffcaa0;font-weight:800}
@@ -1275,7 +1281,7 @@
   .movercard{cursor:pointer;background:var(--surface);border:1px solid var(--line);border-radius:11px;padding:9px 10px;transition:border-color .12s,transform .05s}
   .movercard:hover{border-color:var(--broth)} .movercard:active{transform:scale(.98)}
   /* 🔴 "Just in" breaking-news strip — fresh headlines on tracked names, produced by the 10-min pulse */
-  .brkstrip{margin:0 0 16px;border:1px solid var(--line);border-radius:13px;overflow:hidden;background:var(--surface-2)}
+  .brkstrip{margin:0 0 10px;border:1px solid var(--line);border-radius:13px;overflow:hidden;background:var(--surface-2)}
   .brkhdr{display:flex;align-items:center;gap:8px;flex-wrap:nowrap;white-space:nowrap;padding:7px 12px;font-weight:800;letter-spacing:.02em;color:var(--ink);background:rgba(120,120,120,.06);font-size:13px}
   .brkx{margin-left:auto;flex:0 0 auto;background:none;border:0;color:var(--muted);font-size:13px;font-weight:800;cursor:pointer;padding:3px 7px;border-radius:8px;line-height:1;opacity:.75}
   .brkx:hover{opacity:1;background:var(--line)}
@@ -1289,6 +1295,15 @@
   .brkhead{font-weight:650;font-size:13.5px;line-height:1.3}
   .brkhead a{color:var(--ink);text-decoration:none;border-bottom:1px solid var(--line)} .brkhead a:hover{border-color:var(--broth)}
   .brkmeta{font-size:11px;color:var(--muted)}
+  /* #brk-dedupe — a multi-ticker article becomes ONE stacked card: headline, a row of ticker chips, then meta */
+  .brkrow.brkmulti{display:block;cursor:default}
+  .brkrow.brkmulti .brkhead{margin-bottom:6px}
+  .brksyms{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:5px}
+  .brkchip{font-weight:800;font-size:11.5px;color:var(--muted);background:var(--line);border:0;border-radius:7px;padding:3px 8px;cursor:pointer;white-space:nowrap}
+  .brkchip:hover{background:var(--broth);color:#fff} .brkchip:active{transform:scale(.96)}
+  .brkchip.brkown{background:rgba(255,107,26,.16);color:var(--broth)}
+  .brkrow.brkmulti.brk-t-pos .brkchip:not(.brkown){color:var(--buy);background:rgba(35,194,103,.14)}
+  .brkrow.brkmulti.brk-t-neg .brkchip:not(.brkown){color:#d6283c;background:rgba(214,40,60,.13)}
   /* #brk-tone (19 Aug, user ask) — the strip is now NEUTRAL (it was blanket-red, which made EVERY headline
      look like bad news). Each row carries its own sentiment: green good-news, red bad-news, grey neutral —
      tone taken from the ticker's computed news sentiment when we have it, else a light headline lexicon. */
@@ -4720,12 +4735,29 @@ function breakingHtml(D){
     try{ it._own=wlOwns(it.sym,it.region); }catch(e){ it._own=false; }
     try{ it._watch=wlGet().some(function(w){return w.sym===it.sym && (w.region||'au')===it.region;}); }catch(e){ it._watch=false; }
   });
+  // #brk-dedupe (real-estate #1, 20 Aug 2026, user ask) — one article that mentions N tickers arrives as N
+  // separate items (same headline/url, different sym), so the strip used to show the SAME story as N full
+  // cards (e.g. the CSL/Cochlear/Pro-Medicus piece filled three card-heights). Group by article (url when
+  // present, else normalized headline) into ONE row carrying every ticker as a tappable chip. Owned/watch
+  // roll up if ANY ticker in the group qualifies, so the filter pills still work.
+  var _seen={}, _groups=[];
+  items.forEach(function(it){
+    var key=(it.url&&String(it.url).trim())?('u:'+String(it.url).trim()):('h:'+String(it.headline||'').toLowerCase().replace(/\s+/g,' ').trim());
+    var g=_seen[key];
+    if(g!=null){ g=_groups[g];
+      if(!g.syms.some(function(s){return s.sym===it.sym&&s.region===it.region;})) g.syms.push({sym:it.sym,region:it.region,own:it._own,watch:it._watch});
+      g._own=g._own||it._own; g._watch=g._watch||it._watch; return;
+    }
+    _seen[key]=_groups.length;
+    _groups.push({headline:it.headline,url:it.url,source:it.source,at:it.at,region:it.region,_own:it._own,_watch:it._watch,tone:_brkItemTone(it),syms:[{sym:it.sym,region:it.region,own:it._own,watch:it._watch}]});
+  });
+  items=_groups;
   items.sort(function(a,b){ return (b._own?1:0)-(a._own?1:0); });   // owned first; recency preserved within each group
   items=items.slice(0,30);   // (user ask) show more than 6 — the grid scrolls
   if(!items.length) return '';
   // (user ask) dismissible — hide the CURRENT batch once dismissed, but a genuinely NEW set of breaking
   // headlines (different signature) re-surfaces, since that's the whole point of a breaking alert.
-  var sig=(b.stamp||'')+'|'+MKT+'|'+items.map(function(it){return it.sym;}).join(',');
+  var sig=(b.stamp||'')+'|'+MKT+'|'+items.map(function(it){return it.syms.map(function(s){return s.sym;}).join('+');}).join(',');
   var dismissed=''; try{ dismissed=localStorage.getItem('soup_brk_dismiss')||''; }catch(e){}
   if(sig && sig===dismissed) return '';
   var nOwn=items.filter(function(it){return it._own;}).length, nWatch=items.filter(function(it){return it._watch;}).length;
@@ -4734,8 +4766,23 @@ function breakingHtml(D){
   var rows=items.map(function(it){
     var ago=timeAgo(it.at), url=it.url||'';
     var head=url?('<a href="'+esc(url)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()">'+esc(it.headline)+'</a>'):esc(it.headline);
-    return '<button class="brkrow brk-t-'+_brkItemTone(it)+(it._own?' brkown':'')+'" data-sym="'+esc(it.sym)+'" data-region="'+esc(it.region)+'"'+(it._own?' data-own="1"':'')+(it._watch?' data-watch="1"':'')+' title="Tap for '+esc(it.sym)+'’s full read">'+
-             '<span class="brksym">'+(it._own?'📦 ':'')+esc(it.sym)+'</span>'+
+    var filt2=(it._own?' data-own="1"':'')+(it._watch?' data-watch="1"':'');
+    var cls='brk-t-'+it.tone+(it._own?' brkown':'');
+    if(it.syms.length>1){
+      // multi-ticker article → one card, a chip per ticker (each tappable to its own read)
+      var chips=it.syms.map(function(s){
+        return '<button class="brkchip'+(s.own?' brkown':'')+'" data-sym="'+esc(s.sym)+'" data-region="'+esc(s.region)+'" type="button" title="Tap for '+esc(s.sym)+'’s full read">'+(s.own?'📦 ':'')+esc(s.sym)+'</button>';
+      }).join('');
+      var nOwnG=it.syms.filter(function(s){return s.own;}).length;
+      return '<div class="brkrow brkmulti '+cls+'"'+filt2+'>'+
+               '<span class="brkhead">'+head+'</span>'+
+               '<span class="brksyms">'+chips+'</span>'+
+               '<span class="brkmeta">'+(nOwnG?'<b class="brkownlbl">you own '+(nOwnG>1?'these':'this')+'</b> · ':'')+esc(it.source||'')+(ago?' · '+esc(ago):'')+'</span>'+
+             '</div>';
+    }
+    var s0=it.syms[0];
+    return '<button class="brkrow '+cls+'" data-sym="'+esc(s0.sym)+'" data-region="'+esc(s0.region)+'"'+filt2+' title="Tap for '+esc(s0.sym)+'’s full read">'+
+             '<span class="brksym">'+(s0.own?'📦 ':'')+esc(s0.sym)+'</span>'+
              '<span class="brkhead">'+head+'</span>'+
              '<span class="brkmeta">'+(it._own?'<b class="brkownlbl">you own this</b> · ':'')+esc(it.source||'')+(ago?' · '+esc(ago):'')+'</span>'+
            '</button>';
@@ -4856,9 +4903,15 @@ function glanceStripHtml(D){
     crawl.push('<span class="tkitem'+tkFresh('mv:'+region+':'+m.sym, (+cp).toFixed(1))+'" data-sym="'+esc(m.sym)+'" data-region="'+esc(region)+'"><span class="tksym">'+esc(m.sym)+'</span><span class="tkchg '+(up?'up':'down')+'">'+(up?'▲':'▼')+Math.abs(+cp).toFixed(1)+'%</span></span>'); });
   var half=Math.ceil(tiles.length/2), sep='<span class="tksep">•</span>';
   function tkrow(inner, dir, dur){ if(!inner) return ''; return '<div class="tkrow tk-'+dir+'" style="--dur:'+dur+'"><div class="tkinner">'+inner+sep+inner+sep+'</div></div>'; }
-  var rows=[ tkrow(tiles.slice(0,half).join(sep),'left','46s'),
-             tkrow(tiles.slice(half).join(sep),'right','58s'),
-             tkrow(crawl.join(sep),'left','34s') ].filter(Boolean).join('');
+  // #tape-2row (real-estate #3) — on a phone the 3-row tape ate ~⅓ of the first screen. Below ~700px collapse
+  // the two labelled-tile rows into ONE crawling row (all tiles), keeping the price crawl → 2 rows, not 3.
+  var narrow=false; try{ narrow=(window.innerWidth||1024)<700; }catch(e){}
+  var rows = narrow
+    ? [ tkrow(tiles.join(sep),'left','64s'),
+        tkrow(crawl.join(sep),'left','34s') ].filter(Boolean).join('')
+    : [ tkrow(tiles.slice(0,half).join(sep),'left','46s'),
+        tkrow(tiles.slice(half).join(sep),'right','58s'),
+        tkrow(crawl.join(sep),'left','34s') ].filter(Boolean).join('');
   if(!rows) return '';
   return '<div class="tickerwrap ticklive" role="group" aria-label="Tonight at a glance — live ticker">'+rows+'</div>';
 }
@@ -8419,7 +8472,7 @@ function upcomingRunsHtml(){
   // #241 (user ask) — group the scheduled-next rows inside one bordered, dark-background panel with a clear
   // "Future runs" label, so they read as a distinct block that hasn't happened yet, not loose rows that
   // blend into the real run history below. #243 — each row taps through to "what this run does".
-  return '<div class="rlfuture-wrap"><div class="rlfuture-h">🔮 Future runs · scheduled next</div>'+items.map(function(o){
+  return '<div class="rlfuture-wrap"><div class="rlfuture-h">🔮 Future runs · scheduled next <span class="rlfuture-hint">· tap any for what’s included</span></div>'+items.map(function(o){
     var badge=o.tier?'<span class="rltier rltier-'+(o.tier==='T1'?'1':'23')+'">'+esc(o.tier)+'</span>':'';
     var estTxt=o.est&&o.est.txt||'';
     // #246 — project the finish time and show how long before the next market open/close it lands.
@@ -8432,7 +8485,7 @@ function upcomingRunsHtml(){
       fin=' · runs <b>off-peak on the last close</b> — ready well before '+(o.mkt==='us'?'the US opens':'the ASX opens');
     } else if(o.est&&o.est.ms){ var ev=nextMktEvent(o.t.getTime()+o.est.ms, o.mkt); if(ev){ var mins=Math.max(0,Math.round((ev.t-(o.t.getTime()+o.est.ms))/60000)); fin=' · expected to finish <b>'+_gap(mins)+' before '+esc(ev.w)+'</b>'; } }
     return '<div class="rlrow rlfuture rltap" data-runkind="'+o.kind+'" data-runts="'+o.t.getTime()+'" role="button" tabindex="0"><div class="rltop"><span class="rltag rltag-future">'+o.ic+' '+esc(o.lbl)+'</span>'+badge+'<span class="rlwhen">'+hm(o.t)+' · '+untilTxt(o.t)+'</span></div>'+
-      (estTxt?'<div class="rlest">⏳ takes '+esc(estTxt)+fin+' · <span class="ri-hint">tap for what\'s included</span></div>':'')+'</div>';
+      (estTxt?'<div class="rlest">⏳ takes '+esc(estTxt)+fin+'</div>':'')+'</div>';
   }).join('')+'</div>';
 }
 // #336 (user ask, 13 Aug 2026) — the 10-min re-price pulse runs silently; user wanted it VISIBLE in the
@@ -11138,6 +11191,9 @@ function wire(D){
   // row opens the ticker's full read; the headline link inside stops propagation so it opens the source.
   document.querySelectorAll('.brkrow[data-sym]').forEach(function(b){ b.onclick=function(){
     try{ openMover(b.dataset.sym, b.dataset.region); }catch(e){} }; });
+  // #brk-dedupe — multi-ticker cards render a chip per ticker; each opens that ticker's read
+  document.querySelectorAll('.brkchip[data-sym]').forEach(function(c){ c.onclick=function(e){ e.stopPropagation();
+    try{ openMover(c.dataset.sym, c.dataset.region); }catch(e2){} }; });
   var bx=document.getElementById('brkDismiss'); if(bx) bx.onclick=function(e){ e.stopPropagation(); var s=bx.closest('.brkstrip'); if(s){ try{ localStorage.setItem('soup_brk_dismiss', s.dataset.sig||''); }catch(e){} s.remove(); } };
   // (user ask) "Just in" filter pills — toggle All / 📦 Holdings / 👀 Watchlist by adding a class to the strip
   // (CSS hides non-matching rows, so no re-render needed); the choice persists in localStorage.
@@ -11783,8 +11839,7 @@ function fdrSrcBadge(s){
 function fdrStatCells(s){
   var c=[];
   if(s.rangePos!=null) c.push('<span>Range <b>'+s.rangePos+'%</b></span>');
-  if(s.rsi!=null)      c.push('<span>RSI <b>'+s.rsi+'</b></span>');
-  if(s.value!=null)    c.push('<span>Value <b>'+s.value+'</b></span>');
+  // #rev-dupe (real-estate #2) — RSI & Value are shown below as labeled mini-bars, so don't repeat them here.
   if(s.quality!=null)  c.push('<span>Qual <b>'+s.quality+'</b></span>');
   if(s.mcap!=null)     c.push('<span>Cap <b>'+fdrMcap(s.mcap)+'</b></span>');
   if(s.news!=null)     c.push('<span>News <b>'+s.news+'</b></span>');
@@ -11806,7 +11861,7 @@ function fdrCardsHtml(rows){
       '<div class="fdr-cscores"><span class="fdr-sc fdr-sc-o'+(s.cherry==null?' fdr-sc-scan':'')+'"'+(s.cherry==null?' title="Scan-only score — technicals + fundamentals, not deep-vetted yet (that\'s why there\'s no 🍒). Watch it (☆) to get the full analysis."':'')+'>🍊 '+(s.buyNow!=null?s.buyNow:'—')+(s.cherry==null&&s.buyNow!=null?'°':'')+'</span>'+
         (s.cherry!=null?'<span class="fdr-sc fdr-sc-c">🍒 '+s.cherry+'</span>':'')+
         (s.sentiment!=null?'<button class="fdr-sc fdr-sc-s banbtn" data-ban-sym="'+esc(s.sym)+'" data-ban-region="'+esc(s.region)+'" title="Sentiment — tap for the full breakdown">🍌 '+s.sentiment+'</button>':'')+   // #sentcand — tappable to the 🍌 overlay
-        (showMatch?'<span class="fdr-mpill" style="--mc:'+fdrColor(o.m)+'" title="How well this name matches your filters">'+o.m+'% match</span>':'')+
+        (showMatch&&o.m<100?'<span class="fdr-mpill" style="--mc:'+fdrColor(o.m)+'" title="How well this name matches your filters">'+o.m+'% match</span>':'')+   // #match-noise (real-estate #6) — a 100% pill on every card carries no info; only show when it discriminates
         earnFlag(s.sym,s.region)+
         '<span class="fdr-cpx">'+(s.price!=null?fdrCur(s.region)+s.price:'')+'</span></div>'+
       fdrStatCells(s)+
