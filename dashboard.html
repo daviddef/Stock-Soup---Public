@@ -6432,7 +6432,8 @@ function ctLeaders(reg){
 function ctBuildScenes(reg){
   // prefer the pipeline's voiced scenes (exact text the audio was made from)
   var D=(LAST&&LAST.D)||{}, ct=(D.chalkTalk||{})[reg];
-  if(ct && ct.scenes && ct.scenes.length) return {voiced:true, label:ct.label||(reg==='au'?'ASX':'US'), pool:ct.pool, scenes:ct.scenes};
+  // use the pipeline's stored scenes ONLY when they carry rendered audio; otherwise always compute fresh live
+  if(ct && ct.voiced && ct.scenes && ct.scenes.length) return {voiced:true, label:ct.label||(reg==='au'?'ASX':'US'), pool:ct.pool, scenes:ct.scenes};
   var L=ctLeaders(reg); if(!L||!L.timing) return null;
   function cap1(s){s=String(s||'');return s.charAt(0).toUpperCase()+s.slice(1);}
   var T=L.timing, Cv=L.conv, N=L.news, Sd=L.salad, sameHead=(Cv&&T&&Cv.sym===T.sym);
@@ -6470,10 +6471,13 @@ function ctBuildScenes(reg){
 function ctSpell(sym){ sym=String(sym||''); if(!sym) return 'this one';
   if(sym.length<=4 && sym===sym.toUpperCase()) return sym.split('').join(' '); return sym; }
 
-var CT_STATE={idx:-1,playing:false,timer:null,audio:null,muted:false,reg:null,data:null};
-function openChalkTalk(reg){
+var CT_STATE={idx:-1,playing:false,timer:null,audio:null,muted:false,reg:null,data:null,ep:null};
+// openChalkTalk(reg) plays TONIGHT (computed live). openChalkTalk(reg, ep) replays a stored archive episode
+// (ep = {slug,date,au:{label,pool,voiced,scenes},us:{...}}) — the 📼 Past-specials podcast.
+function openChalkTalk(reg, ep){
   reg=reg||MKT||'au';
-  var built=ctBuildScenes(reg);
+  CT_STATE.ep = ep||null;
+  var built = ep ? (ep[reg]||ep.au||ep.us) : ctBuildScenes(reg);
   var m=document.getElementById('modal'); if(!m) return;
   if(!built){ // no pot yet
     m.className='modal'; m.innerHTML='<div class="mhead"><button class="mclose" id="mClose" aria-label="Close">✕</button><div class="mtf">🍲 Tonight’s specials</div></div><div class="mbody"><div class="viz"><p>No scored names in the pot for this market yet — check back after the next cook.</p></div></div>';
@@ -6484,7 +6488,8 @@ function openChalkTalk(reg){
   ctInjectCSS();
   m.className='modal ct-modal';
   var voicedNote = built.voiced ? '🔊 studio voice' : '🔊 device voice';
-  m.innerHTML='<div class="mhead"><button class="mclose" id="mClose" aria-label="Close">✕</button><div class="mtf">🍲 Tonight’s specials — chalk talk</div>'+
+  var ttl = ep ? ('📼 '+esc(ep.date||'Past special')) : '🍲 Tonight’s specials — chalk talk';
+  m.innerHTML='<div class="mhead"><button class="mclose" id="mClose" aria-label="Close">✕</button><div class="mtf">'+ttl+'</div>'+
     '<div class="ct-mkt" id="ctMkt"><button data-m="au"'+(reg==='au'?' class="on"':'')+'>🇦🇺 ASX</button><button data-m="us"'+(reg==='us'?' class="on"':'')+'>🇺🇸 US</button></div></div>'+
     '<div class="mbody ct-body">'+ctBoardHTML()+
       '<div class="ct-dots" id="ctDots"></div>'+
@@ -6536,7 +6541,20 @@ function ctInjectCSS(){
   '.ct-btn:hover{border-color:var(--broth)}.ct-btn.ct-play{background:var(--broth);border-color:var(--broth);color:#241207;padding:10px 20px;font-size:15px}'+
   '.ct-dots{display:flex;gap:6px;justify-content:center;margin:12px 0 0}.ct-dots i{width:7px;height:7px;border-radius:50%;background:var(--line)}.ct-dots i.on{background:var(--broth)}.ct-dots i.done{background:#c9c6ba}'+
   '.ct-foot{margin:12px auto 0;max-width:640px;text-align:center;color:var(--muted);font-size:12px;line-height:1.55}'+
-  '@media(prefers-reduced-motion:reduce){.ct-draw{stroke-dashoffset:0!important;animation:none!important}.ct-cw{opacity:1!important;transform:none!important;animation:none!important}.ct-barfill{animation:none!important;width:var(--pct,50%)!important}}';
+  // 📼 Past-specials gallery
+  '.ct-arch-lead{color:var(--muted);font-size:13px;line-height:1.5;margin:0 0 14px;text-align:center}'+
+  '.ct-arch-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}'+
+  '.ct-poster{display:flex;flex-direction:column;gap:0;padding:0;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--surface-2);cursor:pointer;text-align:left}'+
+  '.ct-poster:hover{border-color:var(--broth);transform:translateY(-2px)}.ct-poster:active{transform:none}'+
+  '.ct-poster-board{position:relative;aspect-ratio:16/10;background:radial-gradient(140% 120% at 15% 0%,rgba(255,255,255,.05),transparent 40%),linear-gradient(180deg,#26302b,#212a25);border-bottom:5px solid #6b4b2a;padding:9px 10px;display:flex;flex-direction:column;justify-content:flex-end}'+
+  '.ct-poster-hat{position:absolute;top:7px;left:9px;font-size:19px;filter:drop-shadow(0 2px 3px rgba(0,0,0,.4))}'+
+  '.ct-poster-flag{position:absolute;top:9px;right:10px;font-family:"Gaegu",sans-serif;font-weight:800;font-size:12px;color:#c9c6ba;letter-spacing:.04em}'+
+  '.ct-poster-play{position:absolute;top:50%;left:50%;transform:translate(-50%,-58%);width:34px;height:34px;border-radius:50%;background:rgba(255,138,61,.92);color:#241207;display:grid;place-items:center;font-size:14px;font-weight:900;box-shadow:0 3px 10px rgba(0,0,0,.4);opacity:.9}'+
+  '.ct-poster:hover .ct-poster-play{opacity:1;transform:translate(-50%,-58%) scale(1.08)}'+
+  '.ct-poster-chips{display:flex;flex-wrap:wrap;gap:4px}'+
+  '.ct-pchip{font-family:"Gaegu",sans-serif;font-weight:700;font-size:11px;color:#f4f1e8;background:rgba(255,255,255,.08);border-radius:6px;padding:1px 6px;text-shadow:0 0 6px rgba(244,241,232,.2)}'+
+  '.ct-poster-meta{padding:8px 10px;display:flex;flex-direction:column;gap:1px}.ct-poster-meta b{font-size:12.5px;color:var(--ink);font-weight:800}.ct-poster-meta small{font-size:10.5px;color:var(--muted)}'+
+  '@media(prefers-reduced-motion:reduce){.ct-draw{stroke-dashoffset:0!important;animation:none!important}.ct-cw{opacity:1!important;transform:none!important;animation:none!important}.ct-barfill{animation:none!important;width:var(--pct,50%)!important}.ct-poster:hover{transform:none}}';
   document.head.appendChild(s);
 }
 function ctBoardHTML(){
@@ -6603,9 +6621,9 @@ function ctMount(reg, built){
   muteBtn.onclick=function(){ CT_STATE.muted=!CT_STATE.muted; muteBtn.setAttribute('aria-pressed',CT_STATE.muted?'false':'true');
     muteBtn.textContent=CT_STATE.muted?'🔇 muted':(built.voiced?'🔊 studio voice':'🔊 device voice'); if(CT_STATE.playing) ctPlay(CT_STATE.idx>-1?CT_STATE.idx:0); };
   var mkt=document.getElementById('ctMkt'); if(mkt) mkt.onclick=function(e){ var b=e.target.closest('button[data-m]'); if(!b) return;
-    ctStop(); var nr=b.dataset.m; var nb=ctBuildScenes(nr); if(!nb) return;
+    ctStop(); var nr=b.dataset.m; var nb=CT_STATE.ep ? (CT_STATE.ep[nr]) : ctBuildScenes(nr); if(!nb||!nb.scenes||!nb.scenes.length) return;
     [].forEach.call(this.querySelectorAll('button'),function(x){x.classList.toggle('on',x===b);});
-    document.getElementById('ctCap').innerHTML='Tap <b>▶ Play</b> — tonight’s four flavours for the <b>'+esc(nb.label)+'</b>.';
+    document.getElementById('ctCap').innerHTML='Tap <b>▶ Play</b> — '+(CT_STATE.ep?'this episode’s':'tonight’s')+' four flavours for the <b>'+esc(nb.label)+'</b>.';
     ctMount(nr, nb); document.getElementById('ctPlay').innerHTML='▶ Play the lesson'; };
 }
 function ctFillScenes(scenes){
@@ -6659,6 +6677,42 @@ function ctSpeakFallback(sc,i,next){
 }
 function ctFinish(){ CT_STATE.playing=false; ctClearTimer(); var p=document.getElementById('ctPlay'); if(p) p.innerHTML='↻ Watch again';
   document.querySelectorAll('#ctDots i').forEach(function(d){ d.classList.remove('on'); d.classList.add('done'); }); }
+// #chalktalk — 📼 Past specials: the running "podcast" of every run's chalk talk. Each episode is a mini
+// chalkboard poster (date + market + the fruit leaders); tap to replay it (its stored scenes + audio, or the
+// device voice). Newest first. CT_ARCHIVE_OPEN holds the archive so a card tap can find its episode.
+var CT_ARCHIVE=[];
+function openChalkArchive(){
+  var D=(LAST&&LAST.D)||{}; CT_ARCHIVE=(D.chalkTalkArchive||[]).slice();
+  var m=document.getElementById('modal'); if(!m) return; LASTFOCUS=document.activeElement; ctInjectCSS();
+  var eps=CT_ARCHIVE.slice().reverse();
+  var body;
+  if(!eps.length){ body='<div class="viz"><p>No past specials yet — the first episode is saved after the next cook.</p></div>'; }
+  else {
+    body='<div class="ct-arch-grid">'+eps.map(function(e,ri){ return ctPosterCard(e, CT_ARCHIVE.length-1-ri); }).join('')+'</div>';
+  }
+  m.className='modal ct-modal';
+  m.innerHTML='<div class="mhead"><button class="mclose" id="mClose" aria-label="Close">✕</button><div class="mtf">📼 Past specials — the kitchen podcast</div></div>'+
+    '<div class="mbody ct-body"><p class="ct-arch-lead">Every run’s chalk talk, saved. Tap a card to replay it — watch the kitchen’s calls (and the show) evolve over time.</p>'+body+'</div>';
+  var ov=document.getElementById('overlay'); if(ov){ ov.classList.add('open'); ov.setAttribute('aria-hidden','false'); }
+  var mc=document.getElementById('mClose'); if(mc){ mc.onclick=function(){ ctStop(); closeModal(); }; mc.focus(); }
+  m.querySelectorAll('.ct-poster[data-ep]').forEach(function(c){ c.onclick=function(){
+    var e=CT_ARCHIVE[+c.dataset.ep]; if(!e) return; var reg=(e[MKT]&&e[MKT].scenes&&e[MKT].scenes.length)?MKT:((e.au&&e.au.scenes&&e.au.scenes.length)?'au':'us');
+    openChalkTalk(reg, e); }; });
+}
+function ctPosterCard(e, epIdx){
+  // pick the market to preview: current market if it has scenes, else whichever does
+  var mk=(e[MKT]&&e[MKT].leaders)?MKT:((e.au&&e.au.leaders)?'au':'us'); var d=e[mk]||{};
+  var L=d.leaders||{}; function chip(f,ic,cls){ return f&&f.sym?('<span class="ct-pchip '+cls+'">'+ic+' '+esc(f.sym)+'</span>'):''; }
+  var voiced = (e.au&&e.au.voiced)||(e.us&&e.us.voiced);
+  var salad = (L.salad&&L.salad.sym)?'<span class="ct-pchip ct-cwg">🥗 '+esc(L.salad.sym)+'</span>':'';
+  return '<button class="ct-poster" data-ep="'+epIdx+'" title="Replay this episode">'+
+    '<div class="ct-poster-board"><span class="ct-poster-hat">🍲</span>'+
+      '<span class="ct-poster-flag">'+(d.label||(mk==='au'?'ASX':'US'))+'</span>'+
+      '<span class="ct-poster-play">▶</span>'+
+      '<div class="ct-poster-chips">'+chip(L.timing,'🍊','ct-cwo')+chip(L.news,'🍌','ct-cwb')+salad+'</div>'+
+    '</div>'+
+    '<div class="ct-poster-meta"><b>'+esc(e.date||e.slug||'')+'</b><small>'+(voiced?'🔊 studio voice':'🔈 device voice')+'</small></div></button>';
+}
 
 function openSalad(sym, region, ds){
   region=region||'us';
@@ -7315,7 +7369,10 @@ function kitchenScoreStory(D){
       +'.ks-exc{background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:14px}.ks-exsym{font-weight:800;font-size:17px}.ks-exname{color:var(--muted);font-size:12px;margin-bottom:10px}'
       +'.ks-glab{display:flex;justify-content:space-between;font-size:11px;color:var(--faint);font-weight:700;margin-top:8px}.ks-gauge{height:8px;border-radius:5px;background:var(--line);overflow:hidden;margin:3px 0}.ks-gauge i{display:block;height:100%}.ks-g-o i{background:var(--broth)}.ks-g-c i{background:#d6283c}.ks-g-b i{background:#f4b23e}'
       +'.ks-verdict{font-size:12.5px;color:var(--muted);line-height:1.5;margin-top:9px}.ks-verdict b{color:var(--ink)}'
-      +'.ks-ct-cta{display:flex;align-items:center;gap:13px;width:100%;text-align:left;cursor:pointer;margin:0 0 16px;padding:13px 15px;border-radius:14px;border:1px solid var(--line);background:linear-gradient(180deg,#2a3129,#222922);color:#f4f1e8;box-shadow:0 8px 20px -12px rgba(0,0,0,.5)}'
+      +'.ks-ct-row{display:flex;gap:10px;margin:0 0 16px;flex-wrap:wrap}'
+      +'.ks-ct-cta{flex:1 1 auto;display:flex;align-items:center;gap:13px;text-align:left;cursor:pointer;padding:13px 15px;border-radius:14px;border:1px solid var(--line);background:linear-gradient(180deg,#2a3129,#222922);color:#f4f1e8;box-shadow:0 8px 20px -12px rgba(0,0,0,.5)}'
+      +'.ks-ct-past{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;cursor:pointer;padding:10px 15px;border-radius:14px;border:1px solid var(--line);background:var(--surface-2);color:var(--ink);font-size:20px;line-height:1;min-width:96px}'
+      +'.ks-ct-past:hover{border-color:var(--broth);transform:translateY(-1px)}.ks-ct-past span{font-size:11px;font-weight:800;color:var(--muted);margin-top:3px}.ks-ct-past b{font-size:12px;color:var(--broth);font-weight:800}'
       +'.ks-ct-cta:hover{border-color:var(--broth);transform:translateY(-1px)}.ks-ct-cta:active{transform:translateY(0)}'
       +'.ks-ct-ic{flex:0 0 auto;width:38px;height:38px;border-radius:50%;background:var(--broth);color:#241207;display:grid;place-items:center;font-size:16px;font-weight:900;box-shadow:0 0 16px -2px var(--broth)}'
       +'.ks-ct-tx{flex:1 1 auto;display:flex;flex-direction:column;gap:2px;min-width:0}.ks-ct-tx b{font-size:15px;font-weight:800}.ks-ct-tx small{font-size:11.5px;color:#b9c0b0;line-height:1.35}'
@@ -7399,8 +7456,10 @@ function kitchenScoreStory(D){
         +'<p>The 🍌 is the key twist: it rewards a name that <b>hasn’t moved yet</b>. So a name that’s <b>also</b> high on 🍊 and 🍒 means “great setup, everything agrees, <b>and</b> there’s a fresh catalyst you’re not late to.” That’s the genuine <b>“get in before it runs”</b> corner — and it’s <b>rare</b>, because momentum names (high 🍊) have usually already moved (low 🍌). When all three line up, it’s special.</p>'
         +'<div class="ks-saltag">🥗 Sort <b>The Stock Pot</b> by <b>Fruit salad</b> to rank names by their weakest fruit — only a true trifecta tops the list.</div>'
       +'</div>';
-    var ctCta='<button class="ks-ct-cta" onclick="openChalkTalk()" title="A 40-second animated chalkboard that narrates tonight’s four flavours">'+
-      '<span class="ks-ct-ic">▶</span><span class="ks-ct-tx"><b>Watch tonight’s specials</b><small>a 40-sec chalk-talk: 🍊 timing · 🍒 conviction · 🍌 news · 🥗 salad — drawn &amp; narrated</small></span><span class="ks-ct-board">🍲</span></button>';
+    var nEp=0; try{ nEp=((D.chalkTalkArchive||[]).length); }catch(e){}
+    var ctCta='<div class="ks-ct-row"><button class="ks-ct-cta" onclick="openChalkTalk()" title="A 40-second animated chalkboard that narrates tonight’s four flavours">'+
+      '<span class="ks-ct-ic">▶</span><span class="ks-ct-tx"><b>Watch tonight’s specials</b><small>a 40-sec chalk-talk: 🍊 timing · 🍒 conviction · 🍌 news · 🥗 salad — drawn &amp; narrated</small></span><span class="ks-ct-board">🍲</span></button>'+
+      (nEp?'<button class="ks-ct-past" onclick="openChalkArchive()" title="Replay past episodes — the kitchen podcast">📼<span>Past specials</span><b>'+nEp+'</b></button>':'')+'</div>';
     return '<div class="ks-wrap">'+css+ctCta+funnel+lanes+examples+'</div>';
   }catch(e){ try{console.error('kitchenScoreStory',e);}catch(_){}; return ''; }
 }
