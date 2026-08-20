@@ -1315,8 +1315,11 @@
   .brkgrid .brkrow{border:1px solid var(--line);border-radius:10px}
   .brkgrid .brkrow.brk-t-pos{border-color:rgba(35,194,103,.4)} .brkgrid .brkrow.brk-t-neg{border-color:rgba(214,40,60,.4)}
   .brkgrid .brkrow:first-of-type{border-top:1px solid var(--line)}   /* override the list-mode divider reset */
-  .brkrow.brkown{background:rgba(255,107,26,.07);border-color:rgba(255,107,26,.36)}
-  .brkrow.brkown .brksym{background:rgba(255,107,26,.16);color:var(--broth)}
+  /* #brk-consistent (21 Aug, user ask) — sentiment tone must colour the card the SAME way on All, Holdings and
+     Watchlist. The old owned tint (orange background + border + sym chip) fully masked the green/red tone on every
+     owned card, so Holdings/Watchlist looked uniform. Ownership is now a subtle orange right-edge marker (+ the
+     📦 prefix and "you own this" label already on the card); the tone still owns the left border + card colour. */
+  .brkrow.brkown{box-shadow:inset -3px 0 0 rgba(255,107,26,.55)}
   .brkownlbl{color:var(--broth);font-weight:800}
   /* (user ask) filter pills (All · Holdings · Watchlist) + scroll past the first rows */
   .brkgrid{max-height:340px;overflow-y:auto}
