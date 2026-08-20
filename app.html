@@ -2076,10 +2076,14 @@
   .wlc-mval{font-size:18px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1.18}
   .wlc-mval.up{color:var(--buy)} .wlc-mval.down{color:var(--dont)} .wlc-mval.flat{color:var(--muted)}
   .wlc-msub{font-size:10.5px;color:var(--muted);font-variant-numeric:tabular-nums;margin-top:1px}
-  .wlc-plot{position:relative;width:100%;height:134px}
+  .wlc-plot{position:relative;width:100%;height:150px}
   .wlc-svg{position:absolute;inset:0;width:100%;height:100%;display:block;overflow:visible}
   .wlc-svg .wlc-base{stroke:var(--line);stroke-width:1;stroke-dasharray:3 4;vector-effect:non-scaling-stroke}
-  .wlc-svg polyline{fill:none;stroke-width:2.2;vector-effect:non-scaling-stroke;stroke-linejoin:round;stroke-linecap:round}
+  .wlc-svg .wlc-grid{stroke:var(--line);stroke-width:1;opacity:.55;vector-effect:non-scaling-stroke}
+  .wlc-svg .wlc-line{fill:none;stroke-width:3;vector-effect:non-scaling-stroke;stroke-linejoin:round;stroke-linecap:round;filter:drop-shadow(0 2px 3px rgba(0,0,0,.18))}
+  .wlc-svg .wlc-area{stroke:none}
+  .wlc-endpt{position:absolute;transform:translate(-50%,-50%);width:9px;height:9px;border-radius:50%;border:2px solid var(--surface);box-shadow:0 1px 4px rgba(0,0,0,.28);z-index:2}
+  .wlc-monlab{position:absolute;bottom:2px;transform:translateX(-50%);font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.3px;white-space:nowrap}
   .wlc-mk{position:absolute;transform:translate(-50%,-50%);width:14px;height:14px;border-radius:50%;border:2px solid var(--surface);background:#e8a33a;cursor:pointer;padding:0;animation:wlcpulse 2s ease-out infinite}
   .wlc-mk.up{background:var(--buy)} .wlc-mk.down{background:var(--dont)}
   @keyframes wlcpulse{0%{box-shadow:0 0 0 0 rgba(232,163,58,.5)}70%{box-shadow:0 0 0 8px rgba(232,163,58,0)}100%{box-shadow:0 0 0 0 rgba(232,163,58,0)}}
@@ -10670,8 +10674,15 @@ function renderWlSummary(rows){
 // Built entirely from wlBuildRows() (spark = 30 daily closes, change = today %, news = {h,u,d}) — no new data.
 var WL_MARKS=[];
 function _wlNum(x){ var n=parseFloat(String(x==null?'':x).replace(/[^0-9.\-]/g,'')); return isFinite(n)?n:null; }
+// A spark point that jumps >2.5× (or drops >60%) day-over-day is a split/consolidation/bad-data artifact, not a
+// real close (e.g. HGO printed 29 days at ~$0.06 then a stray $0.95 = a false +1400%). One such member destroys an
+// equal-weight mean, so exclude corrupt sparks from the index entirely. A real fast mover still passes (no single
+// day is >2.5×). Also require a positive base + enough history.
+function _wlSparkOk(sp){ if(!sp || sp.length<15 || !(sp[0]>0)) return false;
+  for(var i=1;i<sp.length;i++){ if(!(sp[i]>0)) return false; var r=sp[i]/sp[i-1]; if(r>2.5 || r<0.4) return false; }
+  return true; }
 function _wlIndexSeries(members){                      // equal-weight normalised % index, aligned by recency
-  var use=(members||[]).filter(function(m){ return m.spark && m.spark.length>=15; });
+  var use=(members||[]).filter(function(m){ return _wlSparkOk(m.spark); });
   if(!use.length) return null;
   var L=30; use.forEach(function(m){ L=Math.min(L,m.spark.length); }); L=Math.max(2,L);
   var norm=use.map(function(m){ var s=m.spark.slice(-L), b=s[0]; return (b>0)?s.map(function(v){return (v/b-1)*100;}):null; }).filter(Boolean);
@@ -10679,7 +10690,8 @@ function _wlIndexSeries(members){                      // equal-weight normalise
   var out=[]; for(var i=0;i<L;i++){ var t=0; for(var j=0;j<norm.length;j++) t+=norm[j][i]; out.push(t/norm.length); }
   return out;
 }
-function _wlTodayAvg(members){ var v=(members||[]).map(function(m){return m.change;}).filter(function(x){return x!=null&&isFinite(x);});
+function _wlTodayAvg(members){ var v=(members||[]).map(function(m){return m.change;})
+  .filter(function(x){return x!=null&&isFinite(x)&&Math.abs(x)<=60;});   // |>60%| in a day = glitch/illiquid noise, drop it
   return v.length? v.reduce(function(a,b){return a+b;},0)/v.length : null; }
 function renderWlChart(allRows){
   var el=document.getElementById('wlChart'); if(!el) return;
@@ -10694,16 +10706,33 @@ function renderWlChart(allRows){
   var allMembers=mk.au.concat(mk.us), tAll=_wlTodayAvg(allMembers);
   var vals=[0]; if(sAU)vals=vals.concat(sAU); if(sUS)vals=vals.concat(sUS);
   var mn=Math.min.apply(null,vals), mx=Math.max.apply(null,vals); if(mx-mn<0.6){ mx+=0.6; mn-=0.6; }
-  var padT=9, padB=9; function yFor(v){ return padT + (mx-v)/(mx-mn)*(100-padT-padB); }
+  var padT=12, padB=22; function yFor(v){ return padT + (mx-v)/(mx-mn)*(100-padT-padB); }   // padB reserves a bottom strip for month labels
   function xFor(i,L){ return L<=1?0:(i/(L-1))*100; }
-  var AUCOL='#2ca66f', USCOL='#4f8ef7';
-  function lineFor(series,color){ if(!series||series.length<2) return '';
-    var pts=series.map(function(v,i){ return xFor(i,series.length).toFixed(2)+','+yFor(v).toFixed(2); }).join(' ');
-    return '<polyline points="'+pts+'" style="stroke:'+color+'"/>'; }
+  // theme palette: AU = brand-adjacent emerald/gold-green, US = a friendly blue. Vivid but not garish.
+  var AUCOL='#16a34a', USCOL='#3b82f6', endPts=[];
+  function lineFor(series,color,gid){ if(!series||series.length<2) return '';
+    var pts=series.map(function(v,i){ return xFor(i,series.length).toFixed(2)+','+yFor(v).toFixed(2); });
+    var poly='<polygon points="0,100 '+pts.join(' ')+' 100,100" fill="url(#'+gid+')" class="wlc-area"/>'
+      +'<polyline points="'+pts.join(' ')+'" style="stroke:'+color+'" class="wlc-line"/>';
+    endPts.push({x:xFor(series.length-1,series.length), y:yFor(series[series.length-1]), c:color});
+    return poly; }
+  // month gridlines — sparks carry no dates, so approximate over the nominal 30-trading-day window
+  // (~1.4 calendar days per trading day) and mark where the month rolls over.
+  var WIN=30, gNow=new Date(), grids=[], _lastM=null;
+  for(var gi=0; gi<WIN; gi++){ var gd=new Date(gNow.getTime()-(WIN-1-gi)*1.4*86400000), gm=gd.getMonth();
+    if(_lastM!==null && gm!==_lastM) grids.push({x:xFor(gi,WIN), lab:gd.toLocaleString('en',{month:'short'})}); _lastM=gm; }
   var zeroY=yFor(0).toFixed(2);
+  function grad(id,color){ return '<linearGradient id="'+id+'" x1="0" y1="0" x2="0" y2="1">'
+    +'<stop offset="0" stop-color="'+color+'" stop-opacity="0.26"/><stop offset="1" stop-color="'+color+'" stop-opacity="0"/></linearGradient>'; }
+  var lineAU=lineFor(sAU,AUCOL,'wlgAU'), lineUS=lineFor(sUS,USCOL,'wlgUS');
   var svg='<svg class="wlc-svg" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">'
+    +'<defs>'+grad('wlgAU',AUCOL)+grad('wlgUS',USCOL)+'</defs>'
+    +grids.map(function(g){ return '<line class="wlc-grid" x1="'+g.x.toFixed(2)+'" y1="3" x2="'+g.x.toFixed(2)+'" y2="82"/>'; }).join('')
     +'<line class="wlc-base" x1="0" y1="'+zeroY+'" x2="100" y2="'+zeroY+'"/>'
-    +lineFor(sAU,AUCOL)+lineFor(sUS,USCOL)+'</svg>';
+    +lineAU+lineUS+'</svg>';
+  // end-of-line dots + month labels are HTML overlays (circles/text distort under preserveAspectRatio=none)
+  var endDots=endPts.map(function(p){ return '<span class="wlc-endpt" style="left:'+p.x.toFixed(2)+'%;top:'+p.y.toFixed(2)+'%;background:'+p.c+'"></span>'; }).join('');
+  var monthLabs=grids.map(function(g){ return '<span class="wlc-monlab" style="left:'+g.x.toFixed(2)+'%">'+esc(g.lab)+'</span>'; }).join('');
   WL_MARKS=[]; var now=Date.now(), marks='';
   // Collect news items across both markets, position each by its news date on that market's index line, then
   // de-clutter: watchlist news is freshness-gated so most is 0–3 days old and would stack on the far-right edge.
@@ -10738,7 +10767,7 @@ function renderWlChart(allRows){
       +(mk.au.length?metric('🇦🇺 AU',tAU,false,'30d '+pct(endAU)):'')
       +(mk.us.length?metric('🇺🇸 US',tUS,false,'30d '+pct(endUS)):'')
     +'</div></div>'
-    +'<div class="wlc-plot">'+svg+marks+'<div class="wlc-tip" id="wlcTip" hidden></div></div>'
+    +'<div class="wlc-plot">'+svg+monthLabs+endDots+marks+'<div class="wlc-tip" id="wlcTip" hidden></div></div>'
     +'<div class="wlc-legend">'
       +(mk.au.length?'<span><span class="wlc-sw" style="background:'+AUCOL+'"></span>🇦🇺 ASX</span>':'')
       +(mk.us.length?'<span><span class="wlc-sw" style="background:'+USCOL+'"></span>🇺🇸 US</span>':'')
