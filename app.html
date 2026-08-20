@@ -6709,7 +6709,7 @@ function ctInjectCSS(){
   '.ct-pod{display:flex;flex-wrap:wrap;gap:7px 12px;align-items:baseline;font-family:"Gaegu",sans-serif}'+
   '.ct-podi{display:inline-flex;align-items:baseline;gap:5px;font-size:clamp(16px,3.1vw,25px);font-weight:700;color:#f4f1e8;white-space:nowrap}'+
   '.ct-podi .ct-pm{font-size:.9em}.ct-podi b{color:#fff;font-weight:800}.ct-podi .ct-n{color:var(--broth);font-variant-numeric:tabular-nums}'+
-  '.ct-sigs{display:grid;grid-template-columns:1fr 1fr;gap:3px 16px;font-family:"Caveat","Segoe UI",cursive;font-weight:600;align-content:start}'+
+  '.ct-sigs{display:grid;grid-template-columns:1fr 1fr;gap:3px 16px;font-family:"Caveat","Segoe UI",cursive;font-weight:600;align-content:start;height:100%;overflow:hidden}'+   /* #ct-overlap — hard-clip so a long list can never spill onto the podium row below */
   '@media(max-width:560px){.ct-sigs{grid-template-columns:1fr}}'+
   '.ct-sig{font-size:clamp(12px,2.2vw,17px);line-height:1.25;color:#d9d5c8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}'+
   '.ct-sig-mk{margin-right:4px}.ct-sig b{color:#f4f1e8;font-weight:700}.ct-sig-rd{color:#a7ab9c}'+
@@ -6788,7 +6788,7 @@ function ctBoardHTML(){
       '<path class="ct-draw ct-o" pathLength="1" d="M328 45 q17 20 34 0 M328 58 q17 20 34 0"/></svg>'+
       '<div class="ct-txt"><div class="ct-cw big ct-cwo d1" style="left:5%;top:6%">🍊 Timing</div>'+
         '<div class="ct-cw sm d2" data-fill="t_def" style="left:5%;top:22%;right:22%"></div>'+
-        '<div class="ct-cw d3" data-fill="t_sigs" style="left:5%;top:38%;right:4%;bottom:16%"></div>'+
+        '<div class="ct-cw d3" data-fill="t_sigs" style="left:5%;top:38%;right:4%;bottom:21%"></div>'+
         '<div class="ct-cw ct-pod d4" data-fill="t_pod" style="left:5%;bottom:5%;right:5%;font-size:clamp(13px,2.4vw,19px)"></div></div></section>'+
     // 2 conviction (cherries top-right)
     '<section class="ct-layer" data-k="conv"><svg viewBox="0 0 400 250" aria-hidden="true">'+
@@ -6796,14 +6796,14 @@ function ctBoardHTML(){
       '<path class="ct-draw ct-g" pathLength="1" d="M330 42 q14 -30 28 -40 M362 50 q4 -28 -8 -46"/></svg>'+
       '<div class="ct-txt"><div class="ct-cw big ct-cwc d1" style="left:5%;top:6%">🍒 Conviction</div>'+
         '<div class="ct-cw sm d2" data-fill="c_def" style="left:5%;top:22%;right:22%"></div>'+
-        '<div class="ct-cw d3" data-fill="c_sigs" style="left:5%;top:38%;right:4%;bottom:16%"></div>'+
+        '<div class="ct-cw d3" data-fill="c_sigs" style="left:5%;top:38%;right:4%;bottom:21%"></div>'+
         '<div class="ct-cw ct-pod d4" data-fill="c_pod" style="left:5%;bottom:5%;right:5%;font-size:clamp(13px,2.4vw,19px)"></div></div></section>'+
     // 3 news (banana + megaphone top-right)
     '<section class="ct-layer" data-k="news"><svg viewBox="0 0 400 250" aria-hidden="true">'+
       '<path class="ct-draw ct-ba" pathLength="1" d="M338 30 q5 36 38 43 q-9 -9 -10 -21 q-16 -3 -23 -22 z"/></svg>'+   // small banana, top-right corner only
       '<div class="ct-txt"><div class="ct-cw big ct-cwb d1" style="left:5%;top:6%">🍌 Fresh news</div>'+
         '<div class="ct-cw sm d2" data-fill="n_def" style="left:5%;top:22%;right:20%"></div>'+
-        '<div class="ct-cw d3" data-fill="n_sigs" style="left:5%;top:38%;right:4%;bottom:16%"></div>'+
+        '<div class="ct-cw d3" data-fill="n_sigs" style="left:5%;top:38%;right:4%;bottom:21%"></div>'+
         '<div class="ct-cw ct-pod d4" data-fill="n_pod" style="left:5%;bottom:5%;right:5%;font-size:clamp(13px,2.4vw,19px)"></div></div></section>'+
     // 4 salad (bowl top-right)
     '<section class="ct-layer" data-k="salad"><svg viewBox="0 0 400 250" aria-hidden="true">'+
@@ -6811,7 +6811,7 @@ function ctBoardHTML(){
       '<circle class="ct-draw ct-o" pathLength="1" cx="360" cy="33" r="6"/><circle class="ct-draw ct-c" pathLength="1" cx="376" cy="35" r="4.5"/></svg>'+
       '<div class="ct-txt"><div class="ct-cw big ct-cwg d1" style="left:5%;top:6%">🥗 Fruit salad</div>'+
         '<div class="ct-cw sm d2" data-fill="s_def" style="left:5%;top:24%;right:6%"></div>'+
-        '<div class="ct-cw d3" data-fill="s_sigs" style="left:5%;top:38%;right:4%;bottom:16%"></div>'+
+        '<div class="ct-cw d3" data-fill="s_sigs" style="left:5%;top:38%;right:4%;bottom:21%"></div>'+
         '<div class="ct-cw ct-pod d4" data-fill="s_pod" style="left:5%;bottom:5%;right:5%;font-size:clamp(13px,2.4vw,19px)"></div></div></section>'+
     // 5 plan — the served Week + Long picks with levels
     '<section class="ct-layer" data-k="plan"><svg viewBox="0 0 400 250" aria-hidden="true">'+
@@ -6875,8 +6875,10 @@ function ctFillScenes(scenes){
   function podRow(arr,key){ var md=['🥇','🥈','🥉']; if(!arr||!arr.length) return '<span class="ct-podi">—</span>';
     return arr.map(function(x,i){ return '<span class="ct-podi"><span class="ct-pm">'+md[i]+'</span> <b>'+esc(x.sym)+'</b> <span class="ct-n">'+x[key]+'</span></span>'; }).join(''); }
   function sigGrid(rows){ if(!rows||!rows.length) return '';
-    // rank so the vote reads clearly: FOR first, then AGAINST, then neutral context; cap to what fits
-    var order={pos:0,neg:1,mix:2}; var rs=rows.slice().sort(function(a,b){return (order[a.tone]||2)-(order[b.tone]||2);}).slice(0,8);
+    // rank so the vote reads clearly: FOR first, then AGAINST, then neutral context; cap to what fits the
+    // fixed 16:10 board. #ct-overlap (20 Aug): was 8 — on a phone (single-column) that overflowed the box and
+    // collided with the podium row below. 4 fits cleanly one-column; desktop's 2-column shows all 4 in 2 rows.
+    var order={pos:0,neg:1,mix:2}; var rs=rows.slice().sort(function(a,b){return (order[a.tone]||2)-(order[b.tone]||2);}).slice(0,4);
     return '<div class="ct-sigs">'+rs.map(function(r){ var mk=r.tone==='pos'?'✅':r.tone==='neg'?'⚠️':'•';
       return '<div class="ct-sig ct-sig-'+r.tone+'"><span class="ct-sig-mk">'+mk+'</span><b>'+esc(r.label)+'</b> <span class="ct-sig-rd">'+esc(r.read)+'</span></div>'; }).join('')+'</div>'; }
   function setFill(k,html){ var el=document.querySelector('[data-fill="'+k+'"]'); if(el!=null) el.innerHTML=html; }
