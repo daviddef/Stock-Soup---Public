@@ -5104,6 +5104,9 @@ function applyDeepLink(){
     setTimeout(function(){ try{ openDocs(parts[1]||null); }catch(e){} },30);
     return;
   }
+  // #ct-deeplink (user ask) — a shareable direct link to the chalk-talk video: #chalk or #chalk/au or #chalk/us
+  if(parts[0]==='chalk'){ var creg=(parts[1]==='us'||parts[1]==='au')?parts[1]:MKT;
+    switchTab('menu'); setTimeout(function(){ try{ openChalkTalk(creg); }catch(e){} },50); return; }
   if(parts[0]==='guide'){ setTimeout(function(){ try{ openUserGuide(); }catch(e){} },30); return; }
   if(parts[0]==='method'){ setTimeout(function(){ try{ openExpertBrief(); }catch(e){} },30); return; }
   if(TABNAMES[parts[0]]) switchTab(parts[0]);
@@ -6604,6 +6607,7 @@ function openChalkTalk(reg, ep){
         '<button class="ct-btn ct-play" id="ctPlay">▶ Play the lesson</button>'+
         '<button class="ct-btn" id="ctReplay">↻ Replay</button>'+
         '<button class="ct-btn" id="ctMute" aria-pressed="false">'+voicedNote+'</button>'+
+        '<button class="ct-btn" id="ctShare" title="Copy a direct link to this video">🔗 Copy link</button>'+
       '</div>'+
       '<p class="ct-foot">Every ticker &amp; number is <b>tonight’s real pot</b> ('+built.pool+' '+esc(built.label)+' names). '+(built.voiced?'Narrated with Grok studio voice.':'Narrated with your device’s built-in voice — studio voice fills in once the kitchen renders it.')+'</p>'+
     '</div>';
@@ -6777,6 +6781,11 @@ function ctMount(reg, built){
   repBtn.onclick=function(){ CT_STATE.idx=-1; ctPlay(0); };
   muteBtn.onclick=function(){ CT_STATE.muted=!CT_STATE.muted; muteBtn.setAttribute('aria-pressed',CT_STATE.muted?'false':'true');
     muteBtn.textContent=CT_STATE.muted?'🔇 muted':(built.voiced?'🔊 studio voice':'🔊 device voice'); if(CT_STATE.playing) ctPlay(CT_STATE.idx>-1?CT_STATE.idx:0); };
+  var shareBtn=document.getElementById('ctShare'); if(shareBtn) shareBtn.onclick=function(){   // #ct-deeplink — copy a direct link to this video
+    var url=location.origin+location.pathname+'#chalk/'+(CT_STATE.reg||MKT||'au');
+    var done=function(){ var o=shareBtn.textContent; shareBtn.textContent='✓ Link copied'; setTimeout(function(){ shareBtn.textContent=o; },1600); };
+    try{ if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(url).then(done,function(){ prompt('Copy this link:',url); }); }
+      else { prompt('Copy this link:',url); } }catch(e){ prompt('Copy this link:',url); } };
   var mkt=document.getElementById('ctMkt'); if(mkt) mkt.onclick=function(e){ var b=e.target.closest('button[data-m]'); if(!b) return;
     ctStop(); var nr=b.dataset.m; var nb=CT_STATE.ep ? (CT_STATE.ep[nr]) : ctBuildScenes(nr); if(!nb||!nb.scenes||!nb.scenes.length) return;
     [].forEach.call(this.querySelectorAll('button'),function(x){x.classList.toggle('on',x===b);});
