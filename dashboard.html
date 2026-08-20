@@ -2064,6 +2064,32 @@
   .wlfpill.on{background:var(--accent);border-color:var(--accent);color:#fff}
   .wlfpill .wlfn{font-size:12px;font-weight:800;background:rgba(0,0,0,.10);border-radius:999px;padding:1px 8px;min-width:20px;text-align:center}
   .wlfpill.on .wlfn{background:rgba(255,255,255,.26);color:#fff}
+  /* 📈 Watchlist overview chart (user ask) — AU+US equal-weight index + today metric + pulsing news markers */
+  .wlchart{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 14px 12px;margin:0 0 16px}
+  .wlc-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+  .wlc-title{font-size:14px;font-weight:800;color:var(--ink);letter-spacing:.2px}
+  .wlc-sub{font-size:11px;color:var(--muted);margin-top:2px}
+  .wlc-metrics{display:flex;gap:8px;flex-wrap:wrap}
+  .wlc-metric{background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:6px 11px;min-width:70px}
+  .wlc-metric.big{padding:6px 14px}
+  .wlc-mlab{display:block;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)}
+  .wlc-mval{font-size:18px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1.18}
+  .wlc-mval.up{color:var(--buy)} .wlc-mval.down{color:var(--dont)} .wlc-mval.flat{color:var(--muted)}
+  .wlc-msub{font-size:10.5px;color:var(--muted);font-variant-numeric:tabular-nums;margin-top:1px}
+  .wlc-plot{position:relative;width:100%;height:134px}
+  .wlc-svg{position:absolute;inset:0;width:100%;height:100%;display:block;overflow:visible}
+  .wlc-svg .wlc-base{stroke:var(--line);stroke-width:1;stroke-dasharray:3 4;vector-effect:non-scaling-stroke}
+  .wlc-svg polyline{fill:none;stroke-width:2.2;vector-effect:non-scaling-stroke;stroke-linejoin:round;stroke-linecap:round}
+  .wlc-mk{position:absolute;transform:translate(-50%,-50%);width:14px;height:14px;border-radius:50%;border:2px solid var(--surface);background:#e8a33a;cursor:pointer;padding:0;animation:wlcpulse 2s ease-out infinite}
+  .wlc-mk.up{background:var(--buy)} .wlc-mk.down{background:var(--dont)}
+  @keyframes wlcpulse{0%{box-shadow:0 0 0 0 rgba(232,163,58,.5)}70%{box-shadow:0 0 0 8px rgba(232,163,58,0)}100%{box-shadow:0 0 0 0 rgba(232,163,58,0)}}
+  @media(prefers-reduced-motion:reduce){.wlc-mk{animation:none}}
+  .wlc-tip{position:absolute;z-index:8;max-width:210px;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:9px;padding:8px 10px;font-size:11.5px;line-height:1.32;box-shadow:0 8px 24px rgba(0,0,0,.24);transform:translate(-50%,calc(-100% - 13px))}
+  .wlc-tip b{display:block;font-size:12px;margin-bottom:2px;color:var(--ink)}
+  .wlc-tipmeta{color:var(--muted);font-size:10px;margin-top:3px}
+  .wlc-tipview{display:inline-block;margin-top:5px;color:var(--accent);font-weight:800;cursor:pointer}
+  .wlc-legend{display:flex;gap:14px;flex-wrap:wrap;font-size:11px;color:var(--muted);margin-top:10px;align-items:center}
+  .wlc-sw{display:inline-block;width:14px;height:3px;border-radius:2px;vertical-align:middle;margin-right:5px}
   /* one-line news on a watchlist card sits a touch tighter than the overlay version */
   .wcard .mnews{margin-top:8px;font-size:12.5px;padding:9px 11px}
   /* #365 — Stock-Pot card face on watchlist cards: chip row + compact RSI meter */
@@ -6204,6 +6230,7 @@ function render(D,H){
   '<div class="tabview" id="tab-faves">'+
     watchTickerHtml(D)+
     favesHead()+
+    '<div class="wlchart" id="wlChart" style="display:none"></div>'+   /* 📈 overall AU+US watchlist index (user ask) */
     '<section>'+
       '<div class="wlalert" id="wlAlert" role="status" aria-live="polite" style="display:none"></div>'+
       /* #207 — add-ticker bar moved to the top, above the performance summary cards */
@@ -10638,6 +10665,98 @@ function renderWlSummary(rows){
     b.addEventListener('click',function(e){ e.preventDefault(); openTicker(b.dataset.wlSym,b.dataset.wlRegion); });   // #318 — canonical resolver (pick/cand → rich card, else watch-insight)
   });
 }
+// ===== 📈 Watchlist overview chart (user ask, 21 Aug) — one equal-weight INDEX per market (AU + US) over the
+// last ~30 trading days, a "growth today" metric card, and pulsing markers where a watched name has fresh news.
+// Built entirely from wlBuildRows() (spark = 30 daily closes, change = today %, news = {h,u,d}) — no new data.
+var WL_MARKS=[];
+function _wlNum(x){ var n=parseFloat(String(x==null?'':x).replace(/[^0-9.\-]/g,'')); return isFinite(n)?n:null; }
+function _wlIndexSeries(members){                      // equal-weight normalised % index, aligned by recency
+  var use=(members||[]).filter(function(m){ return m.spark && m.spark.length>=15; });
+  if(!use.length) return null;
+  var L=30; use.forEach(function(m){ L=Math.min(L,m.spark.length); }); L=Math.max(2,L);
+  var norm=use.map(function(m){ var s=m.spark.slice(-L), b=s[0]; return (b>0)?s.map(function(v){return (v/b-1)*100;}):null; }).filter(Boolean);
+  if(!norm.length) return null;
+  var out=[]; for(var i=0;i<L;i++){ var t=0; for(var j=0;j<norm.length;j++) t+=norm[j][i]; out.push(t/norm.length); }
+  return out;
+}
+function _wlTodayAvg(members){ var v=(members||[]).map(function(m){return m.change;}).filter(function(x){return x!=null&&isFinite(x);});
+  return v.length? v.reduce(function(a,b){return a+b;},0)/v.length : null; }
+function renderWlChart(allRows){
+  var el=document.getElementById('wlChart'); if(!el) return;
+  var mk={au:[],us:[]};
+  (allRows||[]).forEach(function(r){ var reg=(r.w.region||'au'); if(!mk[reg]) return;
+    if(r.spark && r.spark.length>=5){ mk[reg].push({sym:r.w.sym,region:reg,name:r.name||r.w.sym,
+      spark:r.spark.slice(-30), change:_wlNum(r.change), news:r.news}); } });
+  if(!mk.au.length && !mk.us.length){ el.innerHTML=''; el.style.display='none'; return; }
+  el.style.display='';
+  var sAU=_wlIndexSeries(mk.au), sUS=_wlIndexSeries(mk.us);
+  var tAU=_wlTodayAvg(mk.au), tUS=_wlTodayAvg(mk.us);
+  var allMembers=mk.au.concat(mk.us), tAll=_wlTodayAvg(allMembers);
+  var vals=[0]; if(sAU)vals=vals.concat(sAU); if(sUS)vals=vals.concat(sUS);
+  var mn=Math.min.apply(null,vals), mx=Math.max.apply(null,vals); if(mx-mn<0.6){ mx+=0.6; mn-=0.6; }
+  var padT=9, padB=9; function yFor(v){ return padT + (mx-v)/(mx-mn)*(100-padT-padB); }
+  function xFor(i,L){ return L<=1?0:(i/(L-1))*100; }
+  var AUCOL='#2ca66f', USCOL='#4f8ef7';
+  function lineFor(series,color){ if(!series||series.length<2) return '';
+    var pts=series.map(function(v,i){ return xFor(i,series.length).toFixed(2)+','+yFor(v).toFixed(2); }).join(' ');
+    return '<polyline points="'+pts+'" style="stroke:'+color+'"/>'; }
+  var zeroY=yFor(0).toFixed(2);
+  var svg='<svg class="wlc-svg" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">'
+    +'<line class="wlc-base" x1="0" y1="'+zeroY+'" x2="100" y2="'+zeroY+'"/>'
+    +lineFor(sAU,AUCOL)+lineFor(sUS,USCOL)+'</svg>';
+  WL_MARKS=[]; var now=Date.now(), marks='';
+  // Collect news items across both markets, position each by its news date on that market's index line, then
+  // de-clutter: watchlist news is freshness-gated so most is 0–3 days old and would stack on the far-right edge.
+  // Cap to the 10 most recent and enforce a minimum x-gap (nudging colliding markers left, y re-read on the line).
+  var items=[];
+  function collect(members,series){ if(!series) return;
+    members.forEach(function(m){ if(!m.news||!m.news.h) return;
+      var d=m.news.d?new Date(m.news.d).getTime():NaN, daysOld=isFinite(d)?Math.max(0,(now-d)/86400000):0;
+      var frac=Math.max(0,Math.min(1,1-daysOld/(series.length-1))), idx=Math.round(frac*(series.length-1));
+      items.push({m:m,series:series,idx:idx,x:xFor(idx,series.length),daysOld:daysOld}); });
+  }
+  collect(mk.au,sAU); collect(mk.us,sUS);
+  items.sort(function(a,b){ return a.x-b.x; });
+  if(items.length>10) items=items.slice(items.length-10);        // keep the 10 most recent (rightmost)
+  var GAP=3.4;                                                    // min horizontal spacing between markers (%)
+  for(var k=items.length-2;k>=0;k--){ if(items[k+1].x-items[k].x<GAP) items[k].x=Math.max(0,items[k+1].x-GAP); }
+  items.forEach(function(it){ var m=it.m, s=it.series;
+    var ix=Math.max(0,Math.min(s.length-1,Math.round(it.x/100*(s.length-1)))), y=yFor(s[ix]);
+    var cls=m.change>0?'up':(m.change<0?'down':'');
+    var id=WL_MARKS.length; WL_MARKS.push({sym:m.sym,region:m.region,name:m.name,head:m.news.h,url:m.news.u||null,d:m.news.d||null});
+    marks+='<button class="wlc-mk '+cls+'" style="left:'+it.x.toFixed(2)+'%;top:'+y.toFixed(2)+'%" data-i="'+id+'" title="'+esc(m.sym)+': '+esc(m.news.h)+'" aria-label="News for '+esc(m.sym)+'"></button>';
+  });
+  function pct(v){ return v==null?'—':((v>=0?'+':'')+v.toFixed(1)+'%'); }
+  function metric(lab,val,big,sub){ return '<div class="wlc-metric'+(big?' big':'')+'"><span class="wlc-mlab">'+lab+'</span>'
+    +'<b class="wlc-mval '+(val==null?'flat':(val>=0?'up':'down'))+'">'+pct(val)+'</b>'+(sub?'<div class="wlc-msub">'+sub+'</div>':'')+'</div>'; }
+  var endAU=sAU?sAU[sAU.length-1]:null, endUS=sUS?sUS[sUS.length-1]:null;
+  el.innerHTML=
+    '<div class="wlc-head"><div><div class="wlc-title">📈 Your watchlist — AU + US</div>'
+      +'<div class="wlc-sub">Equal-weight index of your '+allMembers.length+' watched name'+(allMembers.length===1?'':'s')+' · last ~30 trading days</div></div>'
+    +'<div class="wlc-metrics">'
+      +metric('Today',tAll,true)
+      +(mk.au.length?metric('🇦🇺 AU',tAU,false,'30d '+pct(endAU)):'')
+      +(mk.us.length?metric('🇺🇸 US',tUS,false,'30d '+pct(endUS)):'')
+    +'</div></div>'
+    +'<div class="wlc-plot">'+svg+marks+'<div class="wlc-tip" id="wlcTip" hidden></div></div>'
+    +'<div class="wlc-legend">'
+      +(mk.au.length?'<span><span class="wlc-sw" style="background:'+AUCOL+'"></span>🇦🇺 ASX</span>':'')
+      +(mk.us.length?'<span><span class="wlc-sw" style="background:'+USCOL+'"></span>🇺🇸 US</span>':'')
+      +'<span>🔔 pulsing marker = fresh news · tap it</span></div>';
+  wireWlChart();
+}
+function wireWlChart(){
+  var el=document.getElementById('wlChart'); if(!el) return; var tip=document.getElementById('wlcTip');
+  el.querySelectorAll('.wlc-mk').forEach(function(b){ b.onclick=function(e){ e.stopPropagation();
+    var m=WL_MARKS[+b.dataset.i]; if(!m||!tip) return;
+    var dstr=''; try{ if(m.d){ var dd=Math.round((Date.now()-new Date(m.d).getTime())/86400000); dstr=dd<=0?'today':(dd===1?'yesterday':dd+'d ago'); } }catch(_e){}
+    tip.innerHTML='<b>'+esc(m.name||m.sym)+' ('+esc(m.sym)+')</b>'+esc(m.head)+(dstr?'<div class="wlc-tipmeta">'+dstr+'</div>':'')
+      +'<span class="wlc-tipview" data-sym="'+esc(m.sym)+'" data-region="'+esc(m.region)+'">View '+esc(m.sym)+' →</span>';
+    tip.style.left=b.style.left; tip.style.top=b.style.top; tip.hidden=false;
+    var v=tip.querySelector('.wlc-tipview'); if(v) v.onclick=function(ev){ ev.stopPropagation(); tip.hidden=true; try{ openTicker(m.sym,m.region); }catch(_e){} };
+  }; });
+  el.onclick=function(ev){ if(tip && !ev.target.closest('.wlc-mk') && !ev.target.closest('.wlc-tip')) tip.hidden=true; };
+}
 // #320 — shared watchlist row-builder so the Favourites tab AND the Simple-view one-pager compute
 // performance from the exact same source (and the #318/#319 NaN + since-last-open logic lives once).
 function wlBuildRows(D){
@@ -10664,6 +10783,7 @@ function renderWatchlist(){
   var el=document.getElementById('wlPills'); if(!el) return;
   var D=(LAST&&LAST.D)||{};
   var rows=wlBuildRows(D);
+  try{ renderWlChart(rows); }catch(e){}   // 📈 overall AU+US index — uses the UNFILTERED rows (both markets, regardless of the AU/US toggle)
   // #206 — the watchlist now honours the AU/US toggle like the rest of the page. Count how many sit in the
   // OTHER market so an empty AU (say) view can point the user to their US names instead of looking broken.
   var otherMkt=rows.filter(function(r){return (r.w.region||'au')!==MKT;}).length;
