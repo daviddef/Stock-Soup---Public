@@ -1330,6 +1330,7 @@
   .brkx{margin-left:auto}
   .brkstrip.brk-f-own .brkrow:not([data-own]){display:none}
   .brkstrip.brk-f-watch .brkrow:not([data-watch]){display:none}
+  .brkstrip.brk-f-all .brkrow[data-tracked]{display:none}   /* #brk-tracked — your-names news shows under Holdings/Watchlist, not the whole-market "All" */
   /* glance-tile "show me the cards" mini-cards (conviction / sectors / commodities modal) */
   .gmclist{display:flex;flex-direction:column;gap:10px;margin-top:4px}
   .gmcard{cursor:pointer;background:var(--surface);border:1px solid var(--line);border-radius:13px;padding:12px 13px;transition:border-color .12s,transform .05s}
@@ -4743,6 +4744,21 @@ function breakingHtml(D){
     try{ it._own=wlOwns(it.sym,it.region); }catch(e){ it._own=false; }
     try{ it._watch=wlGet().some(function(w){return w.sym===it.sym && (w.region||'au')===it.region;}); }catch(e){ it._watch=false; }
   });
+  // #brk-tracked (20 Aug 2026, user ask: "Just in doesn't speak to my holdings/watchlist — nothing?") — the
+  // whole-market breaking sweep rarely includes YOUR names, so Holdings/Watchlist read 0. Fold in each tracked
+  // name's freshest POT news (holdings-to-pot/watchlist-to-pot give every tracked name a candidate with real,
+  // fresh news) so those tabs actually reflect your holdings & watchlist. Tagged _tracked so they surface ONLY
+  // under the Holdings/Watchlist filters — never flooding the whole-market "All" tab.
+  try{
+    var _cn=(D.candidates||[]), _seenSym={}; items.forEach(function(it){ _seenSym[it.sym+'|'+it.region]=1; });
+    var _tr=[]; wlGet().forEach(function(w){ var reg=w.region||'us'; if(reg!==MKT) return; if(_seenSym[w.sym+'|'+reg]) return;
+      var c=_cn.filter(function(x){return x.sym===w.sym && (x.region||'us')===reg;})[0]; var hd=c&&(c.news||c.newsHead); if(!c||!hd) return;
+      var dt=c.news_date||c.newsDate||null; if(dt){ try{ if(Date.now()-new Date(dt).getTime() > 12*24*3600*1000) return; }catch(e){} }
+      _tr.push({sym:w.sym, region:reg, headline:String(hd), url:c.news_url||c.newsUrl||'', source:'📌 your '+(w.own?'holding':'watchlist'),
+        at:dt||new Date().toISOString(), _own:!!w.own, _watch:true, _tracked:true, _dt:(dt?new Date(dt).getTime():0)}); });
+    _tr.sort(function(a,b){ return (b._own?1:0)-(a._own?1:0) || (b._dt||0)-(a._dt||0); });
+    items=items.concat(_tr.slice(0,24));
+  }catch(e){}
   // #brk-dedupe (real-estate #1, 20 Aug 2026, user ask) — one article that mentions N tickers arrives as N
   // separate items (same headline/url, different sym), so the strip used to show the SAME story as N full
   // cards (e.g. the CSL/Cochlear/Pro-Medicus piece filled three card-heights). Group by article (url when
@@ -4754,13 +4770,14 @@ function breakingHtml(D){
     var g=_seen[key];
     if(g!=null){ g=_groups[g];
       if(!g.syms.some(function(s){return s.sym===it.sym&&s.region===it.region;})) g.syms.push({sym:it.sym,region:it.region,own:it._own,watch:it._watch});
-      g._own=g._own||it._own; g._watch=g._watch||it._watch; return;
+      g._own=g._own||it._own; g._watch=g._watch||it._watch; g._tracked=g._tracked&&!!it._tracked; return;
     }
     _seen[key]=_groups.length;
-    _groups.push({headline:it.headline,url:it.url,source:it.source,at:it.at,region:it.region,_own:it._own,_watch:it._watch,tone:_brkItemTone(it),syms:[{sym:it.sym,region:it.region,own:it._own,watch:it._watch}]});
+    _groups.push({headline:it.headline,url:it.url,source:it.source,at:it.at,region:it.region,_own:it._own,_watch:it._watch,_tracked:!!it._tracked,tone:_brkItemTone(it),syms:[{sym:it.sym,region:it.region,own:it._own,watch:it._watch}]});
   });
   items=_groups;
-  items.sort(function(a,b){ return (b._own?1:0)-(a._own?1:0); });   // owned first; recency preserved within each group
+  // whole-market breaking first, then your tracked-name news (owned first) — so "All" leads with real breaking
+  items.sort(function(a,b){ return (a._tracked?1:0)-(b._tracked?1:0) || (b._own?1:0)-(a._own?1:0); });
   items=items.slice(0,30);   // (user ask) show more than 6 — the grid scrolls
   if(!items.length) return '';
   // (user ask) dismissible — hide the CURRENT batch once dismissed, but a genuinely NEW set of breaking
@@ -4768,13 +4785,14 @@ function breakingHtml(D){
   var sig=(b.stamp||'')+'|'+MKT+'|'+items.map(function(it){return it.syms.map(function(s){return s.sym;}).join('+');}).join(',');
   var dismissed=''; try{ dismissed=localStorage.getItem('soup_brk_dismiss')||''; }catch(e){}
   if(sig && sig===dismissed) return '';
+  var nAll=items.filter(function(it){return !it._tracked;}).length;   // "All" = whole-market breaking only
   var nOwn=items.filter(function(it){return it._own;}).length, nWatch=items.filter(function(it){return it._watch;}).length;
   var filt='all'; try{ filt=localStorage.getItem('soup_brk_filter')||'all'; }catch(e){}
   if((filt==='own'&&!nOwn)||(filt==='watch'&&!nWatch)) filt='all';   // never land on an empty filter
   var rows=items.map(function(it){
     var ago=timeAgo(it.at), url=it.url||'';
     var head=url?('<a href="'+esc(url)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()">'+esc(it.headline)+'</a>'):esc(it.headline);
-    var filt2=(it._own?' data-own="1"':'')+(it._watch?' data-watch="1"':'');
+    var filt2=(it._own?' data-own="1"':'')+(it._watch?' data-watch="1"':'')+(it._tracked?' data-tracked="1"':'');
     var cls='brk-t-'+it.tone+(it._own?' brkown':'');
     if(it.syms.length>1){
       // multi-ticker article → one card, a chip per ticker (each tappable to its own read)
@@ -4796,7 +4814,7 @@ function breakingHtml(D){
            '</button>';
   }).join('');
   function pill(k,lab,n){ return '<button class="brkpill'+(filt===k?' on':'')+'" data-brkf="'+k+'"'+(n===0&&k!=='all'?' disabled':'')+' type="button">'+lab+(n!=null?' <b>'+n+'</b>':'')+'</button>'; }
-  var pills='<span class="brkpills">'+pill('all','All',items.length)+pill('own','📦 Holdings',nOwn)+pill('watch','👀 Watchlist',nWatch)+'</span>';
+  var pills='<span class="brkpills">'+pill('all','All',nAll)+pill('own','📦 Holdings',nOwn)+pill('watch','👀 Watchlist',nWatch)+'</span>';
   return '<div class="brkstrip brk-f-'+filt+'" data-sig="'+esc(sig)+'">'+
     '<div class="brkhdr"><span class="brkdot"></span><span class="brkttl">Just in</span>'+pills+
       '<button class="brkx" id="brkDismiss" type="button" aria-label="Dismiss these headlines" title="Dismiss">✕</button></div>'+
