@@ -2118,6 +2118,10 @@
   .ow-c-name{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .ow-c-fruits{font-size:12px;font-weight:700;color:var(--ink);margin-top:3px;font-variant-numeric:tabular-nums}
   .ow-tier{font-size:9.5px;font-weight:800;background:var(--line);color:var(--muted);border-radius:5px;padding:1px 5px;margin-right:5px}
+  .ow-star{font-size:11px;margin-left:4px;vertical-align:baseline}
+  /* #ow-heat — background heat by how many lenses a name features in (2 = warm, 3+ = hot all-rounder) */
+  .owcard.ow-h2{background:rgba(255,138,42,.15);border-color:rgba(255,138,42,.45)}
+  .owcard.ow-h3{background:rgba(255,138,42,.28);border-color:rgba(255,138,42,.72)}
   /* one-line news on a watchlist card sits a touch tighter than the overlay version */
   .wcard .mnews{margin-top:8px;font-size:12.5px;padding:9px 11px}
   /* #365 — Stock-Pot card face on watchlist cards: chip row + compact RSI meter */
@@ -6209,7 +6213,7 @@ function render(D,H){
       // 🥇 ribbon on its actual pick card in the grid below, and the glance strip's One-move tile jumps to it.
       '<div class="chefwrap"><div class="chef">'+chefFor(D)+'</div><button class="chefmore" aria-expanded="false">Read the chef’s full note ▾</button></div>'+
       '<div class="sec-head" style="margin:22px 0 3px"><h2 class="display"><span class="k">01</span> Serving today in '+(MKT==='us'?'the U.S.':'Australia')+'</h2>'+infoBtn('menu')+'</div>'+
-      '<p class="sec-sub" style="margin:0 0 10px">Three time horizons — '+tfB('Day')+' a quick feed · '+tfB('Week')+' a few days · '+tfB('Long')+' slow-cooked. Tap a card for the full serve; tap a name for Yahoo.</p>'+concentrationHtml(D)+tierToggleHtml+menus+convictionStripHtml(D)+otherWinnersHtml(D)+
+      '<p class="sec-sub" style="margin:0 0 10px">Three time horizons — '+tfB('Day')+' a quick feed · '+tfB('Week')+' a few days · '+tfB('Long')+' slow-cooked. Tap a card for the full serve; tap a name for Yahoo.</p>'+concentrationHtml(D)+tierToggleHtml+menus+otherWinnersHtml(D)+
     '</div>'+
     '<section><div class="sec-head"><h2 class="display"><span class="k">02</span> Take your seat, time for Action</h2>'+infoBtn('actions')+'</div>'+
       '<p class="sec-sub" style="margin-top:4px">It’s time to eat — enough of the mood, here’s what’s worth <b>acting on</b> right now.</p>'+
@@ -6545,7 +6549,7 @@ function otherWinnersHtml(D){
   var hasTier=((mt.type2||{})[MKT]||[]).length || ((mt.type3||{})[MKT]||[]).length;
   if(!pool.length && !hasTier) return '';
   return '<details class="owrap" ontoggle="hydrateOtherWinners(this)">'
-    +'<summary class="ow-sum"><span class="ow-sum-l">🏅 Other winners<span class="ow-sum-sub">top 3 per flavour beyond tonight’s picks · plus the whole-market scan</span></span><span class="ow-chev">▾</span></summary>'
+    +'<summary class="ow-sum"><span class="ow-sum-l">🏅 The leaderboard<span class="ow-sum-sub">top 3 per flavour · ⭐ = served tonight · hotter card = wins in more lenses · plus the whole-market scan</span></span><span class="ow-chev">▾</span></summary>'
     +'<div class="ow-body" data-ow-ready="0"><div class="ow-loading">Ranking the pot…</div></div>'
     +'</details>';
 }
@@ -6553,28 +6557,39 @@ function hydrateOtherWinners(el){
   if(!el || !el.open) return;
   var body=el.querySelector('.ow-body'); if(!body || body.dataset.owReady==='1') return;
   var D=(LAST&&LAST.D)||{};
-  var served={}; (D.regions||[]).forEach(function(r){ if((r.id||r.region)===MKT)(r.picks||[]).forEach(function(p){ if(p&&p.sym) served[p.sym]=1; }); });
-  var pool=(D.candidates||[]).filter(function(c){return (c.region||'us')===MKT && c.score && c.score.buy_now!=null && !served[c.sym];});
+  // #ow-unify (21 Aug) — this section now IS the single conviction/leaderboard view (the old standalone "same pot
+  // ranked by conviction" strip was folded in here). Each flavour shows the FULL top-3 from the whole pot INCLUDING
+  // served picks (⭐), so the conviction board reads JHX/CVW/MGR just like the old strip — no more two-list confusion.
+  var served={}; (D.regions||[]).forEach(function(r){ if((r.id||r.region)===MKT)(r.picks||[]).forEach(function(p){ if(p&&p.sym&&p.sym!=='NONE') served[p.sym]=1; }); });
+  var pool=(D.candidates||[]).filter(function(c){return (c.region||'us')===MKT && c.score && c.score.buy_now!=null;});
   function cScore(c){ try{ var ov=overallScore(c.score.buy_now, signalRows(c,MKT)); return (ov&&ov.score!=null)?Math.round(ov.score):null; }catch(e){ return null; } }
   function bScore(c){ var s=c.sentimentScore; return (s&&s.score!=null)?s.score:null; }
   var fr=pool.map(function(c){ return {c:c, o:Math.round(c.score.buy_now), cc:cScore(c), b:bScore(c)}; });
   function top(key){ return fr.filter(function(x){return x[key]!=null;}).sort(function(a,b){return b[key]-a[key];}).slice(0,3); }
+  var oTop=top('o'), cTop=top('cc'), bTop=top('b');
+  var t2=(((D.modelTiers||{}).type2||{})[MKT]||[]).filter(function(p){return p&&p.sym&&p.sym!=='NONE';});
+  var t3=(((D.modelTiers||{}).type3||{})[MKT]||[]).filter(function(p){return p&&p.sym&&p.sym!=='NONE';});
+  // #ow-heat (user ask) — tint each card by how many categories the name features in (timing/conviction/news/scan).
+  // The all-rounders that keep turning up glow hottest — the market agreeing with itself, at a glance.
+  var freq={}; function bump(sym){ if(sym) freq[sym]=(freq[sym]||0)+1; }
+  [oTop,cTop,bTop].forEach(function(a){ a.forEach(function(x){ bump(x.c.sym); }); });
+  [t2,t3].forEach(function(a){ a.forEach(function(p){ bump(p.sym); }); });
   function fruits(x){ return '🍊 '+(x.o!=null?x.o:'—')+' · 🍒 '+(x.cc!=null?x.cc:'—')+' · 🍌 '+(x.b!=null?x.b:'—'); }
   function card(sym,name,price,change,up,foot){
-    return '<button class="owcard" data-sym="'+esc(sym)+'" data-region="'+esc(MKT)+'">'
-      +'<div class="ow-c-top"><b class="ow-c-sym">'+esc(sym)+'</b>'+(price!=null&&price!==''?'<span class="ow-c-px '+(up!==false?'up':'down')+'">'+esc(String(price))+(change!=null&&change!==''?' '+esc(String(change)):'')+'</span>':'')+'</div>'
+    var heat=Math.min(3,freq[sym]||0), badge=served[sym]?'<span class="ow-star" title="Served tonight">⭐</span>':'';
+    return '<button class="owcard'+(heat>=2?' ow-h'+heat:'')+'" data-sym="'+esc(sym)+'" data-region="'+esc(MKT)+'"'+(heat>=2?' title="Features in '+heat+' lenses"':'')+'>'
+      +'<div class="ow-c-top"><b class="ow-c-sym">'+esc(sym)+badge+'</b>'+(price!=null&&price!==''?'<span class="ow-c-px '+(up!==false?'up':'down')+'">'+esc(String(price))+(change!=null&&change!==''?' '+esc(String(change)):'')+'</span>':'')+'</div>'
       +'<div class="ow-c-name">'+esc(name||sym)+'</div>'
       +'<div class="ow-c-fruits">'+foot+'</div></button>'; }
   function grp(icon,label,arr){ if(!arr.length) return '';
     return '<div class="ow-grp"><div class="ow-grp-h">'+icon+' '+label+'</div><div class="ow-grid">'
       +arr.map(function(x){ return card(x.c.sym,x.c.name,x.c.price,x.c.change,x.c.up,fruits(x)); }).join('')+'</div></div>'; }
-  var t2=((D.modelTiers||{}).type2||{})[MKT]||[], t3=((D.modelTiers||{}).type3||{})[MKT]||[];
-  function tierRows(arr,tier){ return arr.filter(function(p){return p&&p.sym&&p.sym!=='NONE';}).map(function(p){
+  function tierRows(arr,tier){ return arr.map(function(p){
     var bn=(p.score&&p.score.buy_now!=null)?('🍊 '+Math.round(p.score.buy_now)):'';
     return card(p.sym,p.name,p.price,p.change,p.up,'<span class="ow-tier">'+tier+'</span>'+bn); }).join(''); }
   var tierHtml=(t2.length||t3.length) ? ('<div class="ow-grp"><div class="ow-grp-h">🔬 Whole-market scan · T2 / T3</div><div class="ow-grid">'+tierRows(t2,'T2')+tierRows(t3,'T3')+'</div></div>') : '';
-  body.innerHTML=(grp('🍊','Top timing',top('o'))+grp('🍒','Top conviction',top('cc'))+grp('🍌','Top news',top('b'))+tierHtml)
-    || '<div class="ow-loading">Nothing beyond tonight’s picks in the pot yet.</div>';
+  body.innerHTML=(grp('🍊','Top timing',oTop)+grp('🍒','Top conviction',cTop)+grp('🍌','Top news',bTop)+tierHtml)
+    || '<div class="ow-loading">Nothing in the pot yet.</div>';
   body.dataset.owReady='1';
   body.querySelectorAll('.owcard').forEach(function(b){ b.onclick=function(){ try{ openTicker(b.dataset.sym,b.dataset.region); }catch(e){} }; });
 }
