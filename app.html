@@ -6934,8 +6934,12 @@ function kitchenScoreStory(D){
       var o=Math.round(c.score.buy_now), ch=Math.round(ov.score);
       var mn=(ban!=null)?Math.min(o,ch,ban):null;
       scoredc.push({sym:c.sym,name:c.name,o:o,ch:ch,b:ban,gap:ch-o,salad:(mn!=null&&mn>=SALAD_MIN)}); }catch(e){} });
-    var hiCherry=scoredc.slice().sort(function(a,b){return b.gap-a.gap;})[0];   // cherry >> orange
-    var hiOrange=scoredc.slice().sort(function(a,b){return a.gap-b.gap;})[0];   // orange >> cherry
+    // Prefer example names that actually carry all THREE fruits (banana present) so the side-by-side demo shows a
+    // real 🍌, not a dead "—" row; fall back to the whole pool only if none of the gap-extreme names have news.
+    var pool3=scoredc.filter(function(s){return s.b!=null;});
+    var poolC=pool3.length?pool3:scoredc, poolO=pool3.length?pool3:scoredc;
+    var hiCherry=poolC.slice().sort(function(a,b){return b.gap-a.gap;})[0];   // cherry >> orange
+    var hiOrange=poolO.slice().sort(function(a,b){return a.gap-b.gap;})[0];   // orange >> cherry
     function exCard(x,kind){
       if(!x) return '';
       var strong=kind==='cherry';
