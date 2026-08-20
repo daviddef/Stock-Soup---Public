@@ -6477,34 +6477,35 @@ function ctBuildScenes(reg){
   var twl=R.timingWL||{won:[]}, cwl=R.cherryWL||{won:[],lost:[]}, swl=R.saladWL||{won:[]};
   var nAllMax=(N.length>=3 && N[0].b>=100 && N[2].b>=100), nThin=(N[0] && N[0].o<45);
   var sBadge=(Sd.length && Sd[0].min>=SALAD_MIN);   // did the top salad clear the "true trifecta" bar?
-  // Roy-Kent-ish: dry, sarcastic, mildly sweary (PG), fatalistic — "it's a gamble, but hey 🙂". Facts stay honest.
+  // Full Roy Kent: blunt, sweary, fatalistic, warm underneath. Aimed at the market, never real people. The BOARD
+  // is the star (def + podium + won/lost signals in `fill`); the caption is just a short subtitle.
   var scenes=[
     { k:'intro',
-      cap:"Four flavours · <b>top 3 of each</b> · <b>"+R.label+"</b> — 🍊 🍒 🍌 🥗. It’s basically a casino with a spreadsheet. But hey. 🙂",
-      say:"Right, listen up, I'm only saying this once. Four flavours, top three of each, for the "+R.label+". Timing, conviction, news, and the all-rounder. Will it make you rich? Probably not — it's the stock market, it's a casino with extra homework. But hey. Let's have a look anyway." },
-    { k:'timing', fill:{def:"🍊 <b>Timing</b> — is the setup fresh <b>right now</b>? Are you early — or turning up when the beer’s gone?", arr:T, key:'o',
-        note:(twl.won.length?("<span class='ct-t'>"+esc(T[0].sym)+"</span> wins it on "+esc(ctJoinList(twl.won))+". Show-off."):("<span class='ct-t'>"+esc(T[0].sym)+"</span> leads on momentum alone. Bold."))},
-      cap:"🍊 <b>Timing</b> — early, or late to the party? "+capPod(T,'o'),
-      say:"The orange. Timing. Is the setup fresh right now, are you early — or are you turning up to the party when the beer's gone. Top three: "+sl(T)+". "+ctSpell(T[0].sym)+" leads at "+T[0].o+(twl.won.length?", winning on "+ctJoinList(twl.won)+" — show-off":", on momentum alone, bold")+". It's a setup, not a wedding. Don't fall in love, and don't come crying to me when it does the opposite." },
-    { k:'conv', fill:{def:"🍒 <b>Conviction</b> — not one lucky signal (any fool finds one). Does the <b>whole room</b> agree? Timing, blended with every vote.", arr:Cv, key:'c',
-        note:"<span class='ct-t'>"+esc(Cv[0].sym)+"</span> won on "+esc(ctJoinList(cwl.won)||'the balance')+(cwl.lost.length?", lost on "+esc(ctJoinList(cwl.lost)):"")+". One bloke at the back’s still shaking his head."},
-      cap:"🍒 <b>Conviction</b> — does the room agree? "+capPod(Cv,'c'),
-      say:"Cherry. And no — it's not one lucky signal, any fool can find one of those. It's whether the whole room agrees. Timing, blended with how every signal votes. Top three: "+sl(Cv)+". "+ctSpell(Cv[0].sym)+" tops it at "+Cv[0].c+", won on "+(ctJoinList(cwl.won)||"the balance of signals")+(cwl.lost.length?", lost on "+ctJoinList(cwl.lost):"")+". So — mostly nodding, one bloke at the back shaking his head. Welcome to investing." },
+      cap:"Tonight’s <b>top 3 of each</b> · <b>"+R.label+"</b>. A casino with a spreadsheet — but hey. 🙂",
+      say:"Right, shut up and listen, I'm only saying this once. Four flavours, top three of each, for the "+R.label+". Timing, conviction, news, and the all-rounder. Is it gonna make you rich? Probably not — it's the stock market, it's a fucking casino with a spreadsheet. But hey. Let's have a look, shall we." },
+    { k:'timing', fill:{def:"🍊 <b>Timing</b> — is the setup fresh <b>right now</b>? Are you early — or the wanker turning up when the beer’s gone?", arr:T, key:'o',
+        note:(twl.won.length?("<span class='ct-t'>"+esc(T[0].sym)+"</span> wins it on "+esc(ctJoinList(twl.won))+". Flash bastard."):("<span class='ct-t'>"+esc(T[0].sym)+"</span> leads on momentum alone. Bold."))},
+      cap:"🍊 <b>Timing</b> — early, or a wanker turning up late?",
+      say:"The orange. Timing. Is the setup fresh right now, are you early — or are you the wanker turning up to the party when the beer's gone? Top three: "+sl(T)+". "+ctSpell(T[0].sym)+" leads at "+T[0].o+(twl.won.length?", winning on "+ctJoinList(twl.won)+" — flash bastard":", on momentum alone, bold")+". It's a setup, not a wedding. Don't fall in love — and don't come crying to me when it shits the bed." },
+    { k:'conv', fill:{def:"🍒 <b>Conviction</b> — not one lucky signal (any idiot finds one). Does the <b>whole room</b> agree? Timing, blended with every vote.", arr:Cv, key:'c',
+        note:"<span class='ct-t'>"+esc(Cv[0].sym)+"</span> won on "+esc(ctJoinList(cwl.won)||'the balance')+(cwl.lost.length?", lost on "+esc(ctJoinList(cwl.lost)):"")+". One miserable prick at the back still shaking his head."},
+      cap:"🍒 <b>Conviction</b> — does the whole room agree?",
+      say:"Cherry. And no — it's not one lucky signal, any idiot can find one of those. It's whether the whole bloody room agrees. Timing, blended with how every signal votes. Top three: "+sl(Cv)+". "+ctSpell(Cv[0].sym)+" tops it at "+Cv[0].c+", won on "+(ctJoinList(cwl.won)||"the balance of signals")+(cwl.lost.length?", lost on "+ctJoinList(cwl.lost):"")+". So — most of 'em nodding, one miserable prick at the back shaking his head. Welcome to investing." },
     { k:'news', fill:{def:"🍌 <b>Fresh news</b> — a loud, shiny story the price <b>hasn’t chased yet</b>. It drops the second everyone piles in.", arr:N, key:'b',
-        note:(nThin?("⚠️ but timing on <span class='ct-r'>"+esc(N[0].sym)+"</span> is only "+N[0].o+" — you might be buying the top like an absolute legend."):("Loud today. Tomorrow? Not my problem, mate."))},
-      cap:"🍌 <b>Fresh news</b> — shiny, not yet chased. "+capPod(N,'b'),
-      say:"Banana. Fresh news the price hasn't chased yet. Loud, shiny, brand new. Top three: "+sl(N)+(nAllMax?", all maxed out at a hundred, calm down":"")+". Cracking headline today. Tomorrow? Not my problem, mate."+(nThin?(" And the timing on these is thin, so you might be buying the very top like an absolute legend. Your call."):"") },
+        note:(nThin?("⚠️ but timing on <span class='ct-r'>"+esc(N[0].sym)+"</span> is only "+N[0].o+" — you might be buying the top like an absolute loser."):("Loud today. Tomorrow? Not my fucking problem, mate."))},
+      cap:"🍌 <b>Fresh news</b> — shiny, and not yet chased.",
+      say:"Banana. Fresh news the price hasn't chased yet. Loud, shiny, brand new. Top three: "+sl(N)+(nAllMax?", all maxed out at a hundred, calm down":"")+". Cracking headline today. Tomorrow? Not my fucking problem, mate."+(nThin?(" And the timing on these is thin, so you might be buying the very top like an absolute loser. Your call."):"") },
     { k:'salad', fill:{def:"🥗 <b>Fruit salad</b> — the all-rounder: decent at timing, agreement <b>and</b> news, all at once. Boring. Beautiful, boring.", arr:Sd, key:'min',
         note:(Sd.length
-          ? ("<span class='ct-t'>"+esc(Sd[0].sym)+"</span> — 🍊"+Sd[0].o+" · 🍒"+Sd[0].c+" · 🍌"+Sd[0].b+". Good at everything, best at nothing."+(sBadge?" A proper 🥗.":" No shiny badge tonight (needs all three ≥ "+SALAD_MIN+") — but the steadiest of the lot."))
-          : "Nothing to rank tonight. Rare beast, the all-rounder.")},
-      cap:"🥗 <b>Fruit salad</b> — good at everything, best at nothing. "+(Sd.length?capPod(Sd,'min'):""),
+          ? ("<span class='ct-t'>"+esc(Sd[0].sym)+"</span> — 🍊"+Sd[0].o+" · 🍒"+Sd[0].c+" · 🍌"+Sd[0].b+". Good at everything, best at fuck all."+(sBadge?" A proper 🥗.":" No shiny badge (needs all three ≥ "+SALAD_MIN+") — just the steadiest of the lot."))
+          : "Sod all to rank tonight. Rare beast, the all-rounder.")},
+      cap:"🥗 <b>Fruit salad</b> — good at everything, best at fuck all.",
       say:(Sd.length
-        ? ("The salad. The all-rounder — decent at timing, decent at agreement, decent at news, all at once. Boring. Beautiful, boring. Top three: "+sl(Sd)+". "+ctSpell(Sd[0].sym)+" tops it — "+Sd[0].o+" timing, "+Sd[0].c+" conviction, "+Sd[0].b+" news. Good at everything, best at nothing. "+(sBadge?"A proper fruit salad, that one.":"Mind you, none of them clear the magic sixty tonight, so no shiny badge — they're just your steadiest bets. Emphasis on bets."))
-        : "The salad — good at all three at once. Tonight there's sod all to show you. Rare beast. Don't force it.") },
+        ? ("The salad. The all-rounder — decent at timing, decent at agreement, decent at news, all at once. Boring. Beautiful, boring. Top three: "+sl(Sd)+". "+ctSpell(Sd[0].sym)+" tops it — "+Sd[0].o+" timing, "+Sd[0].c+" conviction, "+Sd[0].b+" news. Good at everything, best at fuck all. "+(sBadge?"A proper fruit salad, that one.":"Mind you, none of 'em clear the magic sixty tonight, so no shiny badge — just your steadiest bets. Emphasis on bets."))
+        : "The salad — good at all three at once. Tonight? Sod all. Rare beast. Don't force it.") },
     { k:'verdict',
-      cap:"🍊 early · 🍒 room agrees · 🍌 fresh news · 🥗 balance. It’s a gamble — but now you’ve got a clue. 🙂",
-      say:"And that's your lot. Orange, you're early. Cherry, everyone agrees. Banana, fresh news. Salad, balance. Will any of it work? No idea — it's a gamble, it's always a gamble, and anyone who tells you otherwise is selling something. But hey — at least now you're gambling with a bit of a clue. Off you pop. Do your own homework." }
+      cap:"It’s a gamble — but now you’ve got a clue. 🙂 Now piss off and do your homework.",
+      say:"And that's your lot. Orange, you're early. Cherry, everyone agrees. Banana, fresh news. Salad, balance. Will any of it work? Haven't got a fucking clue — it's a gamble, it's always a gamble, and anyone who tells you different is a lying wanker trying to sell you something. But hey — at least now you're gambling with a bit of a clue. Now piss off and do your own homework." }
   ];
   return {voiced:false, label:R.label, pool:R.pool, scenes:scenes};
 }
