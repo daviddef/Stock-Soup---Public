@@ -5719,7 +5719,9 @@ function actionsHtml(D){
     +'<button class="potchip" data-potpreset="spring" title="Flat / not run up, but starting to turn">🌱 Coiled spring</button>'
     +'<button class="potchip" data-potpreset="value" title="Cheap on the fundamentals">💎 Undervalued</button>'
     +'<button class="potchip" data-potpreset="news" title="A fresh headline in the last few days">📰 Fresh news</button>'
-    +'<button class="potchip" data-potpreset="catalyst" title="Only the catalyst pot — news / earnings / quant / IPO">🎯 On a catalyst</button></div>';
+    +'<button class="potchip" data-potpreset="catalyst" title="Only the catalyst pot — news / earnings / quant / IPO">🎯 On a catalyst</button>'
+    +((function(){var n=0;try{n=ctReportsSoonCount();}catch(e){} return n?'<button class="potchip" data-potpreset="reports" title="Names with an earnings result today or tomorrow — often a 5–20% same-day move">📊 Reports ≤ tomorrow <b>'+n+'</b></button>':'';})())
+    +'</div>';
   return '<div class="actions"><div class="axsumgrid">'+tiles+'</div>'+details+potChips+'</div>';
 }
 
@@ -12044,7 +12046,21 @@ function pushViewState(){
 // Replaces the Full Pot. Reads latest.finderUniverse (#337, the whole scored liquid market) unioned with
 // tonight's candidates/picks, and lets you pull levers for the stock you want. Fully guarded: any throw
 // is caught so a Finder bug can never blank the app (the #216 blank-page class).
-var FDR={mode:'strict', view:'cards', sectorSet:null, commoditySet:[], toggles:{aboveMa:false}, sort:'salad', xAxis:'rangePos', yAxis:'buyNow', query:'', catalystOnly:false, excludeJunk:false, holdingsOnly:false, watchOnly:false, built:false};
+var FDR={mode:'strict', view:'cards', sectorSet:null, commoditySet:[], toggles:{aboveMa:false}, sort:'salad', xAxis:'rangePos', yAxis:'buyNow', query:'', catalystOnly:false, excludeJunk:false, holdingsOnly:false, watchOnly:false, reportsSoon:false, built:false};
+// #reports-soon (user ask) — one-tap "reports tomorrow": names with an earnings date today/tomorrow, from
+// latest.upcomingEarnings ({sym,region,date}). Memoized per bundle+day so the filter is cheap.
+var _rsMemo=null, _rsStamp=null;
+function ctReportsSoonSet(){
+  var D=(LAST&&LAST.D)||{}; var st=(D.stamp||'')+'|'+(new Date().toDateString());
+  if(_rsMemo&&_rsStamp===st) return _rsMemo;
+  var set={}, now=new Date(), t0=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+  (D.upcomingEarnings||[]).forEach(function(e){ if(!e||!e.date) return;
+    var d; try{ d=new Date(e.date+'T00:00:00'); }catch(x){ return; }
+    var du=Math.round((d-t0)/86400000); if(du>=0&&du<=1) set[String(e.sym).toUpperCase()+'|'+(e.region||'us')]={d:e.date,du:du}; });
+  _rsMemo=set; _rsStamp=st; return set;
+}
+function ctReportsSoonHas(sym,region){ return !!ctReportsSoonSet()[String(sym).toUpperCase()+'|'+(region||'us')]; }
+function ctReportsSoonCount(){ var s=ctReportsSoonSet(),n=0; for(var k in s){ if((s[k].region||'us')!==undefined) n++; } return Object.keys(s).length; }
 var FDR_RAIL_OPEN=false;   // #fdr-collapse — lever body collapsed by default on mobile
 var FDR_LEVERS=[
   {grp:'Scores', items:[
@@ -12341,6 +12357,8 @@ function fdrInScope(s){
   // nothing to filter to). Not exempting picks here — "my holdings" should mean exactly that.
   if(FDR.holdingsOnly && !wlOwns(s.sym, s.region)) return false;
   if(FDR.watchOnly && !wlHas(s.sym, s.region)) return false;
+  // #reports-soon (user ask) — one-tap "reports tomorrow": keep only names with an earnings date today/tomorrow
+  if(FDR.reportsSoon && !ctReportsSoonHas(s.sym, s.region)) return false;
   // #23 — commodity filter: when commodities are chosen, a name must match at least one (by industry or name).
   if(s.src!=='pick' && FDR.commoditySet && FDR.commoditySet.length){
     var cok=false; for(var ci=0;ci<FDR.commoditySet.length;ci++){ if(fdrCommMatch(s,FDR.commoditySet[ci])){cok=true;break;} }
@@ -12416,6 +12434,7 @@ function fdrRailHtml(pool){
     '<button class="fdr-preset'+(fdrLever('newsFresh')&&fdrLever('newsFresh').on?' on':'')+'" id="fdrFreshPreset" title="A fresh headline in the last ~3 days">📰 Fresh news</button>'+
     '<button class="fdr-preset'+(FDR.sort==='move'?' on':'')+'" id="fdrMoversPreset" title="Today’s biggest movers among names we’ve scored — sorts by the day’s % change (gainers first; flip the sort for fallers)">🚀 Today’s movers</button>'+
     '<button class="fdr-preset'+(FDR.catalystOnly?' on':'')+'" id="fdrCatPreset" title="Only the catalyst pot — names our news/earnings/quant/IPO nets surfaced (drops the wide technical scan)">🎯 On a catalyst</button>'+
+    ((function(){var n=0;try{n=ctReportsSoonCount();}catch(e){} return n?('<button class="fdr-preset'+(FDR.reportsSoon?' on':'')+'" id="fdrReportsPreset" title="Only names with an earnings result today or tomorrow — often a 5–20% same-day move">📊 Reports ≤ tomorrow ('+n+')</button>'):'';})())+
     '<button class="fdr-preset'+(fdrLever('value')&&fdrLever('value').on?' on':'')+'" id="fdrValuePreset" title="Cheap on the fundamentals — high value score (P/E · P/B · PEG). Needs fundamentals (catalyst-pot names).">💎 Undervalued</button>'+
     '<button class="fdr-preset'+(FDR.excludeJunk?' on':'')+'" id="fdrJunkPreset" title="Drop the obvious no-gos — sub-2c prices, blow-off RSI≥90, and illiquid names below the daily $-volume floor. Stacks with everything else.">🚫 Exclude junk</button>'+
     '</div>';
@@ -12651,7 +12670,7 @@ function fdrWire(root){
   root.querySelectorAll('[data-fmode]').forEach(function(b){b.onclick=function(){ FDR.mode=b.dataset.fmode; if(FDR.mode==='flexible')FDR.sort='match'; rerender(); };});
   root.querySelectorAll('[data-fview]').forEach(function(b){b.onclick=function(){ FDR.view=b.dataset.fview; rerender(); };});
   var ss=document.getElementById('fdrSort'); if(ss) ss.onchange=function(){ FDR.sort=ss.value; rerender(); };
-  var reset=document.getElementById('fdrReset'); if(reset) reset.onclick=function(){ FDR_LEVERS.forEach(function(g){g.items.forEach(function(l){ l.on=false; });}); FDR.sectorSet=[]; FDR.commoditySet=[]; FDR.toggles.aboveMa=false; FDR.catalystOnly=false; FDR.excludeJunk=false; FDR.holdingsOnly=false; FDR.watchOnly=false; FDR.sort='match'; rerender(); };
+  var reset=document.getElementById('fdrReset'); if(reset) reset.onclick=function(){ FDR_LEVERS.forEach(function(g){g.items.forEach(function(l){ l.on=false; });}); FDR.sectorSet=[]; FDR.commoditySet=[]; FDR.toggles.aboveMa=false; FDR.catalystOnly=false; FDR.excludeJunk=false; FDR.holdingsOnly=false; FDR.watchOnly=false; FDR.reportsSoon=false; FDR.sort='match'; rerender(); };
   // #345/#2c — one-tap presets. They now STACK (user ask: "can I click penny stocks AND undervalued together?"):
   // each button toggles ONLY its own lever, leaving the others (and any sector/commodity chips) intact. Click a
   // preset again to clear just that one. In Best-match mode the categorical `req` levers (penny/small/undervalued)
@@ -12673,6 +12692,7 @@ function fdrWire(root){
   // #cat — "On a catalyst" is a plain toggle (composes with the levers), not a lever-preset: it narrows the
   // pool to the catalyst-caught set (drops the wide technical scan). Keeps whatever levers are already set.
   var cat=document.getElementById('fdrCatPreset'); if(cat) cat.onclick=function(){ FDR.catalystOnly=!FDR.catalystOnly; rerender(); };
+  var rep=document.getElementById('fdrReportsPreset'); if(rep) rep.onclick=function(){ FDR.reportsSoon=!FDR.reportsSoon; rerender(); };   // #reports-soon
   // #347 (user ask) — Top Movers as a Pot one-click. Sort-only (no lever): rank scored names by today's %
   // move. Toggling off falls back to Best match. Covers scored names only — the whole-market by-volume list
   // that used to live in the Market-backdrop panel isn't reproduced here (dvol lever covers liquidity instead).
@@ -12718,9 +12738,10 @@ function fdrWire(root){
 function openStockPot(preset){
   try{
     FDR_LEVERS.forEach(function(g){g.items.forEach(function(l){ l.on=(l.k==='buyNow'||l.k==='news'||l.k==='rsi'); });});
-    FDR.sectorSet=[]; FDR.commoditySet=[]; FDR.toggles={aboveMa:false}; FDR.catalystOnly=false; FDR.excludeJunk=false; FDR.holdingsOnly=false; FDR.watchOnly=false; FDR.query=''; FDR.mode='flexible'; FDR.sort='match';
+    FDR.sectorSet=[]; FDR.commoditySet=[]; FDR.toggles={aboveMa:false}; FDR.catalystOnly=false; FDR.excludeJunk=false; FDR.holdingsOnly=false; FDR.watchOnly=false; FDR.reportsSoon=false; FDR.query=''; FDR.mode='flexible'; FDR.sort='match';
     var on=function(k,v){ var l=fdrLever(k); if(l){ l.on=true; if(v!=null)l.val=v; } };
-    if(preset==='spring'){ on('spring',55); FDR.sort='spring'; }
+    if(preset==='reports'){ FDR.reportsSoon=true; FDR.sort='buyNow'; }   // #reports-soon — names reporting today/tomorrow
+    else if(preset==='spring'){ on('spring',55); FDR.sort='spring'; }
     else if(preset==='value'){ on('value',60); FDR.sort='value'; }
     else if(preset==='news'){ on('newsFresh',40); FDR.sort='newsFresh'; }
     else if(preset==='catalyst'){ FDR.catalystOnly=true; FDR.sort='buyNow'; }
