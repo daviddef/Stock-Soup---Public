@@ -2124,6 +2124,12 @@
   .owcard.ow-h3{background:rgba(255,138,42,.28);border-color:rgba(255,138,42,.72)}
   /* one-line news on a watchlist card sits a touch tighter than the overlay version */
   .wcard .mnews{margin-top:8px;font-size:12.5px;padding:9px 11px}
+  /* #wl-compact (21 Aug, user ask) — a watchlist card shows only the LATEST headline; the rest of the list lives
+     in the card's overlay (openTicker). And the chart is ALWAYS at the top (above the news): a pre-fetched spark
+     already sits there, but the lazy .misschart carries order:99 which flex-pushed it below the news on cards
+     without a spark — pin it back to the top so the chart position is consistent across every card. */
+  .wcard .mnews-more{display:none}
+  .wcard .misschart{order:0}
   /* #365 — Stock-Pot card face on watchlist cards: chip row + compact RSI meter */
   .wc-tag.wc-pot{display:block}
   .wc-potchips{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
@@ -10693,10 +10699,14 @@ function wlPotFace(it,w,name){
   var region=w.region||'us';
   var crows=[]; try{ crows=signalRows(full,region)||[]; }catch(e){}
   var jc=''; try{ jc=dualChip(score,w.sym,name,crows); }catch(e){}
+  // #wl-banana (21 Aug, user ask) — watchlist cards showed only 🍊/🍒; add the 🍌 news-sentiment chip (and the
+  // 🥗 trifecta badge when it earns one) so the fruit set matches the pick/pot cards.
+  var bn=''; try{ bn=bananaChip(w.sym,region,full); }catch(e){}
+  var sd=''; try{ sd=saladBadge(w.sym,region,full); }catch(e){}
   var sp=''; try{ if(crows.length) sp=signalPillHtml(full,region,w.sym); }catch(e){}
   var vd=it.verdict?'<span class="wic vd '+esc(it.vclass||'')+'">'+esc(it.verdict)+'</span>':'';
   var rsi=(full.rsi!=null?full.rsi:(full.rsi14!=null?full.rsi14:null));
-  var chips=(jc||'')+(vd||'')+(sp||'');
+  var chips=(jc||'')+(bn||'')+(sd||'')+(vd||'')+(sp||'');
   if(!chips && rsi==null) return '';
   return (chips?'<div class="wc-potchips">'+chips+'</div>':'')+wlRsiMeter(rsi);
 }
