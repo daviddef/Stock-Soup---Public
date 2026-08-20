@@ -2090,6 +2090,14 @@
   .acctsel{background:var(--surface-2);border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:7px 9px;font-size:12.5px;font-weight:700;font-family:var(--font)}
   .acctsub{color:var(--faint);font-size:11.5px;padding:2px 0 13px;border-bottom:1px solid var(--line);line-height:1.5}
   .adminbadge{background:var(--broth);color:#fff;font-size:9px;font-weight:900;padding:2px 6px;border-radius:5px;letter-spacing:.06em;vertical-align:middle}
+  /* #notif-admin — per-user notifications table */
+  .npu-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);flex-wrap:wrap}
+  .npu-email{font-size:13px;font-weight:700;color:var(--ink);min-width:0;overflow:hidden;text-overflow:ellipsis}
+  .npu-ctrls{display:flex;align-items:center;gap:8px;flex:0 0 auto}
+  .npu-lab{display:inline-flex;align-items:center;gap:4px;font-size:13px}
+  .npu-push{font-size:12px;font-weight:800;border:1px solid var(--line);background:var(--surface-2);color:var(--muted);border-radius:8px;padding:6px 10px;cursor:pointer;white-space:nowrap}
+  .npu-push.on{border-color:var(--buy);color:var(--buy);background:rgba(35,194,103,.10)}
+  .npu-push:hover{border-color:var(--broth)}
   .themeseg{display:inline-flex;gap:4px;background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:3px}
   .tseg{background:none;border:0;padding:6px 11px;border-radius:8px;font-size:12.5px;font-weight:700;cursor:pointer;color:var(--muted);font-family:inherit}
   .tseg.on{background:var(--broth);color:#fff}
@@ -10799,6 +10807,11 @@ function openManageAdmins(){
       '<form class="authform" id="grantForm"><input id="grantEmail" type="email" placeholder="person@email.com" required><button class="authbtn" type="submit">Grant admin →</button></form>'+
       '<div class="authmsg" id="grantMsg"></div>'+
       '<div class="acctk" style="margin:16px 0 8px">Current admins</div><div id="adminList"><div class="anload">loading…</div></div>'+
+      // #notif-admin — see + toggle every user's run-email mode and buy-zone push
+      '<div class="acctk" style="margin:20px 0 6px">📣 Customer notifications &amp; emails</div>'+
+      '<p class="mtake" style="margin-top:0;font-size:12px">Every signed-in user. Set their <b>run-email</b> (Off · only when picks Change · Always) and switch their <b>buy-zone push</b> on/off. Saves instantly. Off keeps their devices subscribed so you can turn it back on anytime.</p>'+
+      '<div class="npmsg" id="npMsg" style="font-size:12px;min-height:16px"></div>'+
+      '<div id="userPrefsList"><div class="anload">loading…</div></div>'+
     '</div>';
   var ov=document.getElementById('overlay'); ov.classList.add('open'); ov.setAttribute('aria-hidden','false');
   document.getElementById('mClose').onclick=closeModal; document.getElementById('mClose').focus();
@@ -10811,7 +10824,30 @@ function openManageAdmins(){
         return '<div class="acctrow"><span class="acctv">'+esc(u.email)+(isOwner?' <span class="adminbadge">OWNER</span>':'')+'</span>'+(isOwner?'':'<button class="acctbtn ghost revokeAdm" data-email="'+esc(u.email)+'" style="padding:5px 12px;font-size:12px;width:auto">Remove</button>')+'</div>';
       }).join(''):'<div class="anload nc-empty">just you</div>';
       el.querySelectorAll('.revokeAdm').forEach(function(b){ b.onclick=function(){ if(!confirm('Remove admin access from '+b.dataset.email+'?'))return; act('/admin/revoke',b.dataset.email); }; });
+      // #notif-admin — the per-user notifications table (ALL users)
+      var pl=document.getElementById('userPrefsList'); if(pl){ var users=(res.j.users||[]);
+        pl.innerHTML = users.length ? users.map(function(u){ var em=esc(u.email), dm=u.digest_mode||'changes', pe=(u.push_enabled!==false), dv=u.devices||0;
+          function opt(v,l){ return '<option value="'+v+'"'+(dm===v?' selected':'')+'>'+l+'</option>'; }
+          return '<div class="npu-row"><div class="npu-email">'+em+(u.is_admin?' <span class="adminbadge">ADMIN</span>':'')+'</div>'+
+            '<div class="npu-ctrls">'+
+              '<label class="npu-lab">📧<select class="acctsel npu-dm" data-email="'+em+'">'+opt('off','Off')+opt('changes','Changes')+opt('always','Always')+'</select></label>'+
+              '<button class="npu-push'+(pe?' on':'')+'" data-email="'+em+'" data-on="'+(pe?'1':'0')+'" title="'+dv+' device'+(dv===1?'':'s')+' subscribed">🔔 '+(pe?'On':'Off')+(dv?' · '+dv:'')+'</button>'+
+            '</div></div>';
+        }).join('') : '<div class="anload nc-empty">no users yet</div>';
+        pl.querySelectorAll('.npu-dm').forEach(function(s){ s.onchange=function(){ setPref(s.dataset.email,{digest_mode:s.value}); }; });
+        pl.querySelectorAll('.npu-push').forEach(function(btn){ btn.onclick=function(){ var now=btn.dataset.on==='1'; var next=!now;
+          setPref(btn.dataset.email,{push_enabled:next}, function(ok){ if(ok){ btn.dataset.on=next?'1':'0'; btn.classList.toggle('on',next);
+            var dv=btn.title.match(/(\d+) device/); btn.innerHTML='🔔 '+(next?'On':'Off')+(dv?' · '+dv[1]:''); } }); }; });
+      }
     }).catch(function(){ var el=document.getElementById('adminList'); if(el) el.innerHTML='<div class="anload nc-empty">network error</div>'; });
+  }
+  function setPref(email, body, cb){
+    var msg=document.getElementById('npMsg');
+    fetch(API_BASE+'/admin/user-prefs',{method:'POST',headers:{'Authorization':'Bearer '+sessGet(),'Content-Type':'application/json'},body:JSON.stringify(Object.assign({email:email},body))})
+      .then(function(r){return r.json().then(function(j){return {ok:r.ok,j:j};});}).then(function(res){
+        if(msg){ msg.textContent=res.ok?('✓ Updated '+email):('⚠️ '+(res.j.error||'failed')); msg.style.color=res.ok?'var(--buy)':'var(--dont)'; setTimeout(function(){ if(msg)msg.textContent=''; },2200); }
+        if(cb) cb(res.ok);
+      }).catch(function(){ if(msg){ msg.textContent='⚠️ network error'; msg.style.color='var(--dont)'; } if(cb) cb(false); });
   }
   function act(path,email){
     var msg=document.getElementById('grantMsg');
