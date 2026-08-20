@@ -395,7 +395,7 @@
   .burgerwrap{position:relative}
   /* #hero (user ask, 13 Aug) — burger pinned to the hero's top-right corner, out of the filter row.
      Reserve room on the brandrow so the desktop tier row doesn't slide under it. */
-  .heroburg{position:absolute;top:clamp(11px,1.5vw,16px);right:clamp(11px,1.5vw,16px);z-index:6;display:flex;align-items:center;gap:8px}
+  .heroburg{position:absolute;top:clamp(11px,1.5vw,16px);right:clamp(11px,1.5vw,16px);z-index:60;display:flex;align-items:center;gap:8px}   /* above the sticky tabbar (z=50) so the open burger menu isn't hidden behind it */
   .brandrow{padding-right:clamp(122px,17vw,172px)}   /* reserve room on row 1 (brand) for the wider absolute chrome cluster — min must clear all 3 buttons so the bigger title never underlaps/clips (#hero-prom 18 Aug) */
   @media(max-width:560px){ .runico-t{display:none} }   /* on a phone, run-status shows the 🍳 icon only so the cluster stays narrow */
   .burger{width:38px;height:38px;border-radius:11px;border:1.5px solid var(--line);background:var(--surface-2);color:var(--ink);font-size:18px;line-height:1;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;padding:0}
@@ -10797,6 +10797,39 @@ function setScoreLead(t){try{localStorage.setItem('soup_scorelead',t);}catch(e){
 // The header 👤 button → real account-management panel (settings, not the watchlist).
 // #admin-role (20 Aug 2026, user ask) — admin-only screen to grant/revoke the admin role by email. Every
 // action is verified SERVER-side (POST /admin/grant|revoke check isAdminUser); this UI just calls them.
+// #notif-admin — shared per-user notifications/email controls, used by BOTH Manage-admins and Members & usage.
+function notifSetPref(email, body, cb, msgId){
+  var msg=document.getElementById(msgId||'npMsg');
+  fetch(API_BASE+'/admin/user-prefs',{method:'POST',headers:{'Authorization':'Bearer '+sessGet(),'Content-Type':'application/json'},body:JSON.stringify(Object.assign({email:email},body))})
+    .then(function(r){return r.json().then(function(j){return {ok:r.ok,j:j};});}).then(function(res){
+      if(msg){ msg.textContent=res.ok?('✓ Updated '+email):('⚠️ '+(res.j.error||'failed')); msg.style.color=res.ok?'var(--buy)':'var(--dont)'; setTimeout(function(){ if(msg)msg.textContent=''; },2200); }
+      if(cb) cb(res.ok);
+    }).catch(function(){ if(msg){ msg.textContent='⚠️ network error'; msg.style.color='var(--dont)'; } if(cb) cb(false); });
+}
+function notifRenderRows(pl, users, msgId){
+  if(!pl) return;
+  users=users||[];
+  pl.innerHTML = users.length ? users.map(function(u){ var em=esc(u.email), dm=u.digest_mode||'changes', pe=(u.push_enabled!==false), dv=u.devices||0;
+    function opt(v,l){ return '<option value="'+v+'"'+(dm===v?' selected':'')+'>'+l+'</option>'; }
+    return '<div class="npu-row"><div class="npu-email">'+em+(u.is_admin?' <span class="adminbadge">ADMIN</span>':'')+'</div>'+
+      '<div class="npu-ctrls">'+
+        '<label class="npu-lab" title="Run-email: Off · only when picks Change · every published run">📧<select class="acctsel npu-dm" data-email="'+em+'">'+opt('off','Off')+opt('changes','Changes')+opt('always','Always')+'</select></label>'+
+        '<button class="npu-push'+(pe?' on':'')+'" data-email="'+em+'" data-on="'+(pe?'1':'0')+'" title="'+dv+' device'+(dv===1?'':'s')+' subscribed · buy-zone push">🔔 '+(pe?'On':'Off')+(dv?' · '+dv:'')+'</button>'+
+      '</div></div>';
+  }).join('') : '<div class="anload nc-empty">no users yet</div>';
+  pl.querySelectorAll('.npu-dm').forEach(function(s){ s.onchange=function(){ notifSetPref(s.dataset.email,{digest_mode:s.value},null,msgId); }; });
+  pl.querySelectorAll('.npu-push').forEach(function(btn){ btn.onclick=function(){ var next=btn.dataset.on!=='1';
+    notifSetPref(btn.dataset.email,{push_enabled:next},function(ok){ if(ok){ btn.dataset.on=next?'1':'0'; btn.classList.toggle('on',next);
+      var dv=(btn.title.match(/(\d+) device/)||[])[1]; btn.innerHTML='🔔 '+(next?'On':'Off')+(dv&&+dv?' · '+dv:''); } },msgId); }; });
+}
+// admin-only: fetch all users + render the notifications table into `el`
+function renderNotifSection(el){
+  if(!el) return;
+  el.innerHTML='<div class="npmsg" id="npMsgM" style="font-size:12px;min-height:16px"></div><div id="userPrefsListM"><div class="anload">loading…</div></div>';
+  fetch(API_BASE+'/admin/users',{headers:{'Authorization':'Bearer '+sessGet()}}).then(function(r){return r.json();})
+    .then(function(j){ notifRenderRows(document.getElementById('userPrefsListM'), j.users||[], 'npMsgM'); })
+    .catch(function(){ var p=document.getElementById('userPrefsListM'); if(p) p.innerHTML='<div class="anload nc-empty">network error</div>'; });
+}
 function openManageAdmins(){
   if(!isAdmin()) return;
   LASTFOCUS=document.activeElement;
@@ -10824,30 +10857,9 @@ function openManageAdmins(){
         return '<div class="acctrow"><span class="acctv">'+esc(u.email)+(isOwner?' <span class="adminbadge">OWNER</span>':'')+'</span>'+(isOwner?'':'<button class="acctbtn ghost revokeAdm" data-email="'+esc(u.email)+'" style="padding:5px 12px;font-size:12px;width:auto">Remove</button>')+'</div>';
       }).join(''):'<div class="anload nc-empty">just you</div>';
       el.querySelectorAll('.revokeAdm').forEach(function(b){ b.onclick=function(){ if(!confirm('Remove admin access from '+b.dataset.email+'?'))return; act('/admin/revoke',b.dataset.email); }; });
-      // #notif-admin — the per-user notifications table (ALL users)
-      var pl=document.getElementById('userPrefsList'); if(pl){ var users=(res.j.users||[]);
-        pl.innerHTML = users.length ? users.map(function(u){ var em=esc(u.email), dm=u.digest_mode||'changes', pe=(u.push_enabled!==false), dv=u.devices||0;
-          function opt(v,l){ return '<option value="'+v+'"'+(dm===v?' selected':'')+'>'+l+'</option>'; }
-          return '<div class="npu-row"><div class="npu-email">'+em+(u.is_admin?' <span class="adminbadge">ADMIN</span>':'')+'</div>'+
-            '<div class="npu-ctrls">'+
-              '<label class="npu-lab">📧<select class="acctsel npu-dm" data-email="'+em+'">'+opt('off','Off')+opt('changes','Changes')+opt('always','Always')+'</select></label>'+
-              '<button class="npu-push'+(pe?' on':'')+'" data-email="'+em+'" data-on="'+(pe?'1':'0')+'" title="'+dv+' device'+(dv===1?'':'s')+' subscribed">🔔 '+(pe?'On':'Off')+(dv?' · '+dv:'')+'</button>'+
-            '</div></div>';
-        }).join('') : '<div class="anload nc-empty">no users yet</div>';
-        pl.querySelectorAll('.npu-dm').forEach(function(s){ s.onchange=function(){ setPref(s.dataset.email,{digest_mode:s.value}); }; });
-        pl.querySelectorAll('.npu-push').forEach(function(btn){ btn.onclick=function(){ var now=btn.dataset.on==='1'; var next=!now;
-          setPref(btn.dataset.email,{push_enabled:next}, function(ok){ if(ok){ btn.dataset.on=next?'1':'0'; btn.classList.toggle('on',next);
-            var dv=btn.title.match(/(\d+) device/); btn.innerHTML='🔔 '+(next?'On':'Off')+(dv?' · '+dv[1]:''); } }); }; });
-      }
+      // #notif-admin — the per-user notifications table (ALL users), via the shared helper
+      notifRenderRows(document.getElementById('userPrefsList'), res.j.users||[], 'npMsg');
     }).catch(function(){ var el=document.getElementById('adminList'); if(el) el.innerHTML='<div class="anload nc-empty">network error</div>'; });
-  }
-  function setPref(email, body, cb){
-    var msg=document.getElementById('npMsg');
-    fetch(API_BASE+'/admin/user-prefs',{method:'POST',headers:{'Authorization':'Bearer '+sessGet(),'Content-Type':'application/json'},body:JSON.stringify(Object.assign({email:email},body))})
-      .then(function(r){return r.json().then(function(j){return {ok:r.ok,j:j};});}).then(function(res){
-        if(msg){ msg.textContent=res.ok?('✓ Updated '+email):('⚠️ '+(res.j.error||'failed')); msg.style.color=res.ok?'var(--buy)':'var(--dont)'; setTimeout(function(){ if(msg)msg.textContent=''; },2200); }
-        if(cb) cb(res.ok);
-      }).catch(function(){ if(msg){ msg.textContent='⚠️ network error'; msg.style.color='var(--dont)'; } if(cb) cb(false); });
   }
   function act(path,email){
     var msg=document.getElementById('grantMsg');
@@ -11255,7 +11267,12 @@ function openAdminAnalytics(){
   var body=document.getElementById('anaBody');
   fetch(API_BASE+'/admin/stats',{headers:apiHdr(),cache:'no-store'})
     .then(function(r){ if(!r.ok) throw r.status; return r.json(); })
-    .then(function(d){ body.innerHTML=adminAnalyticsHtml(d); })
+    .then(function(d){ body.innerHTML=adminAnalyticsHtml(d)+
+        '<div class="anasec"><div class="anah">📣 Notifications &amp; emails</div>'+
+        '<p class="sec-sub" style="margin:0 0 8px">Per member: set their <b>run-email</b> (Off · Changes · Always) and switch their <b>buy-zone push</b> on/off. Saves instantly.</p>'+
+        '<div id="notifSecHost"></div></div>';
+      renderNotifSection(document.getElementById('notifSecHost'));
+    })
     .catch(function(st){
       if(st===404){ body.innerHTML='<div class="anacard"><b>Usage analytics isn’t live yet.</b><p class="sec-sub" style="margin:8px 0 0">The frontend is ready, but the backend needs the latest Worker + one D1 migration deployed. From <code>~/stock-soup/backend</code>:</p>'+
         '<pre class="anapre">npx wrangler d1 execute stocksoup --remote --command \\\n  "ALTER TABLE users ADD COLUMN last_seen INTEGER"\nnpx wrangler d1 execute stocksoup --remote --command \\\n  "CREATE TABLE IF NOT EXISTS visits (user_id TEXT NOT NULL, day TEXT NOT NULL, hits INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (user_id, day))"\nnpx wrangler d1 execute stocksoup --remote --command \\\n  "CREATE INDEX IF NOT EXISTS idx_visits_day ON visits(day)"\nnpx wrangler deploy</pre>'+
