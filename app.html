@@ -6560,18 +6560,34 @@ function ctBuildScenes(reg){
   // is the star (def + podium + won/lost signals in `fill`); the caption is just a short subtitle.
   // #ct-recap (user ask) — brutal COLD OPEN: how last session's SERVED picks actually moved. Real data, no
   // cherry-picking — celebrate the winner AND own the loser, total it honestly.
-  var _rp=[]; try{ var _D=(LAST&&LAST.D)||{}; (_D.regions||[]).forEach(function(r){ if((r.id||r.region)===reg) _rp=(r.picks||[]).filter(function(p){return p&&p.sym&&p.sym!=='NONE';}); }); }catch(e){}
-  var moves=_rp.map(function(p){ var n=parseFloat(String(p.change).replace(/[^0-9.\-]/g,'')); return {sym:p.sym,name:p.name,pct:(isFinite(n)?n:null)}; }).filter(function(x){return x.pct!=null;}).sort(function(a,b){return b.pct-a.pct;});
+  // #ct-recap-fix (21 Aug, user-caught) — "last time out" must be the PREVIOUS menu's SERVED picks and how they've
+  // moved SINCE we served them — NOT tonight's picks with today's change (the old bug pulled the CURRENT serving,
+  // so US showed ScanSource/Flexsteel/Futu instead of last run's FLXS/JKHY/ESEA). Previous menu = menus[1][reg]
+  // (mirrors the dashboard's own prev-menu logic, #5811); served price from that menu's snapshot, current price
+  // from the live pool (wlPriceMap). A real graded recap, not a same-picks echo.
+  var moves=[]; try{
+    var _H=(LAST&&LAST.H)||{}, _menus=_H.menus||[], _names=_H.names||{}, _prev=_menus.length>1?_menus[1]:null;
+    if(_prev){
+      var _pm=wlPriceMap((LAST&&LAST.D)||{}), _snapBy={};
+      (_prev[reg+'Snap']||[]).forEach(function(s){ if(s&&s.sym) _snapBy[s.sym]=s; });
+      function _pnum(x){ var n=parseFloat(String(x==null?'':x).replace(/[^0-9.\-]/g,'')); return isFinite(n)?n:null; }
+      (_prev[reg]||[]).forEach(function(sym){ if(!sym||sym==='NONE') return;
+        var served=_pnum((_snapBy[sym]||{}).price), pi=_pm[sym+'|'+reg]||{}, cur=_pnum(pi.price);
+        var pct=(served&&cur)?((cur/served-1)*100):null;
+        moves.push({sym:sym, name:_names[sym]||pi.name||sym, pct:pct}); });
+    }
+  }catch(e){}
+  moves=moves.filter(function(x){return x.pct!=null;}).sort(function(a,b){return b.pct-a.pct;});
   var rBest=moves[0], rWorst=moves[moves.length-1], rUp=moves.filter(function(m){return m.pct>0;}).length,
       rNet=moves.reduce(function(a,m){return a+m.pct;},0), rAvg=(moves.length?rNet/moves.length:0);
   function pc(n){ return (n>=0?'+':'')+n.toFixed(1)+'%'; }
   var recapSay = (!moves.length)
-    ? "Right, before we start — last time out? Fresh menu, nothing to grade yet. Lucky you, nothing to be embarrassed about. Give it a day."
-    : ("Right, before we start — last time out. If you'd actually listened: "
-        +(rBest.pct>0 ? (ctSpokenName(rBest)+" up "+rBest.pct.toFixed(1)+" percent — you're welcome.") : (ctSpokenName(rBest)+" was the least-worst at "+pc(rBest.pct)+", and that's the good news."))
-        +(rWorst && rWorst!==rBest && rWorst.pct<0 ? (" But "+ctSpokenName(rWorst)+" absolutely shat itself, down "+Math.abs(rWorst.pct).toFixed(1)+" percent — there goes your beer money.") : "")
-        +" "+rUp+" of "+moves.length+" up, and net you'd be "+(rNet>=0?("up about "+rNet.toFixed(1)):("down about "+Math.abs(rNet).toFixed(1)))+" percent across the lot. "
-        +(rAvg>=0 ? "Decent. Don't let it go to your head — it's a gamble, and tomorrow it'll try to take it back." : "Grim. But that's the game — some nights the kitchen burns the toast. Right, tonight —"));
+    ? "Right. Last time out? Bugger all to grade — fresh menu, clean sheet, nobody's embarrassed yet. Savour it, because it won't last."
+    : ("Right — sit down, shut up, school's in. Last time out, the picks I actually put my name to: "
+        +(rBest.pct>0 ? (ctSpokenName(rBest)+"'s up "+rBest.pct.toFixed(1)+" percent. You're welcome — don't blow it all on scratchies.") : (ctSpokenName(rBest)+" was the least-shit of the lot at "+pc(rBest.pct)+", and that, tragically, is the good news."))
+        +(rWorst && rWorst!==rBest && rWorst.pct<0 ? (" "+ctSpokenName(rWorst)+"? Absolutely bricked it, down "+Math.abs(rWorst.pct).toFixed(1)+" percent — there goes your beer money, you mug.") : "")
+        +" "+rUp+" of "+moves.length+" green, net you'd be "+(rNet>=0?("up about "+rNet.toFixed(1)):("down about "+Math.abs(rNet).toFixed(1)))+" percent across the lot. "
+        +(rAvg>=0 ? "Not bad. Now wipe the smug off your face — the market claws it straight back the second you get cocky." : "Grim. But that's the gig — some nights the kitchen burns the toast and still hands you the bill. Right. Tonight."));
   var recapBoard = moves.length ? moves : null;
   var scenes=[
     { k:'recap',
@@ -6580,7 +6596,7 @@ function ctBuildScenes(reg){
       say:recapSay },
     { k:'intro',
       cap:"Tonight’s <b>top 3 of each</b> · <b>"+R.label+"</b>. A casino with a spreadsheet — but hey. 🙂",
-      say:"Right, shut up and listen, I'm only saying this once. Four flavours, top three of each, for the "+R.label+". Timing, conviction, news, and the all-rounder. Is it gonna make you rich? Probably not — it's the stock market, it's a fucking casino with a spreadsheet. But hey. Let's have a look, shall we." },
+      say:"Right, phones down, listen up — I'm only saying this once. Four flavours, top three of each, for the "+R.label+". Timing, conviction, news, and the all-rounder salad. Is this gonna make you rich? Course it bloody isn't — it's the stock market, it's a casino that files paperwork. But at least this lot counts the cards. Come on, let's have a look." },
     { k:'timing', fill:{def:"🍊 <b>Timing</b> = fresh setup, are you early? The read on <span class='ct-t'>"+ctDispName(T[0])+"</span> ("+T[0].o+"):", arr:T, key:'o', sigs:R.timingRows},
       cap:"🍊 <b>Timing</b> — early, or a wanker turning up late?",
       say:"The orange. Timing. Is the setup fresh right now, are you early — or are you the wanker turning up to the party when the beer's gone? Top three: "+sl(T)+". "+ctSpokenName(T[0])+" leads at "+T[0].o+(twl.won.length?", winning on "+ctJoinList(twl.won)+" — flash bastard":", on momentum alone, bold")+". It's a setup, not a wedding. Don't fall in love — and don't come crying to me when it shits the bed." },
@@ -6647,7 +6663,7 @@ function ctBuildScenes(reg){
         var w=[]; if(T[0])w.push(ctSpokenName(T[0])+" takes timing"); if(Cv[0])w.push(ctSpokenName(Cv[0])+" the conviction"); if(N[0])w.push(ctSpokenName(N[0])+" the news"); if(Sd[0])w.push(ctSpokenName(Sd[0])+" the all-round");
         var m=(R.multiWin||[]).slice(0,2).map(function(a){ return ctSpokenName(a)+" wins in "+a.in.length; });
         var multiLine = m.length ? (" And watch the ones doing it twice — "+ctJoinList(R.multiWin.slice(0,2).map(function(a){return ctSpokenName(a)+", winning "+a.in.length+" of the four";}))+". When one name keeps turning up, that's the market actually agreeing with itself.") : " Nobody swept more than one tonight — a spread-out night.";
-        return "And that's your lot. The winners' board: "+ctJoinList(w)+"."+multiLine+" Will any of it work? Haven't got a fucking clue — it's a gamble, it's always a gamble, and anyone who tells you different is a lying wanker trying to sell you something. But hey — at least now you're gambling with a bit of a clue. Now piss off and do your own homework.";
+        return "And that's your lot — the winners' board: "+ctJoinList(w)+"."+multiLine+" Will any of it actually work? Haven't got a scooby, mate — it's a gamble, it's always a gamble, and anyone who swears otherwise is a lying wanker with a course to flog you. But you're not gambling blind anymore — you're gambling with the receipts in your hand. So go on — piss off, do your own homework, and don't come crying to me when you ignore the stop. Use. The. Bloody. Stop.";
       })() }
   ];
   return {voiced:false, label:R.label, pool:R.pool, scenes:scenes};
