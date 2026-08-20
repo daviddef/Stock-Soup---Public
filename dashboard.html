@@ -6710,6 +6710,11 @@ function ctInjectCSS(){
   '.ct-podi{display:inline-flex;align-items:baseline;gap:5px;font-size:clamp(16px,3.1vw,25px);font-weight:700;color:#f4f1e8;white-space:nowrap}'+
   '.ct-podi .ct-pm{font-size:.9em}.ct-podi b{color:#fff;font-weight:800}.ct-podi .ct-n{color:var(--broth);font-variant-numeric:tabular-nums}'+
   '.ct-sigs{display:grid;grid-template-columns:1fr 1fr;gap:3px 16px;font-family:"Caveat","Segoe UI",cursive;font-weight:600;align-content:start;height:100%;overflow:hidden}'+   /* #ct-overlap — hard-clip so a long list can never spill onto the podium row below */
+  '.ct-tapstart{position:absolute;inset:0;z-index:6;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:11px;background:rgba(18,24,18,.56);border:0;cursor:pointer;color:#f4f1e8;font:inherit;padding:0}'+
+  '.ct-tapstart .ct-tap-ic{width:64px;height:64px;border-radius:50%;background:#e8873a;color:#fff;display:flex;align-items:center;justify-content:center;font-size:27px;padding-left:4px;box-shadow:0 6px 20px rgba(0,0,0,.45);animation:cttappulse 1.8s ease-in-out infinite}'+
+  '.ct-tapstart .ct-tap-tx{font-size:15px;letter-spacing:.3px;text-shadow:0 1px 3px rgba(0,0,0,.6)}'+
+  '@keyframes cttappulse{0%,100%{transform:scale(1)}50%{transform:scale(1.09)}}'+
+  '@media(prefers-reduced-motion:reduce){.ct-tapstart .ct-tap-ic{animation:none}}'+
   '@media(max-width:560px){.ct-sigs{grid-template-columns:1fr}}'+
   '.ct-sig{font-size:clamp(12px,2.2vw,17px);line-height:1.25;color:#d9d5c8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}'+
   '.ct-sig-mk{margin-right:4px}.ct-sig b{color:#f4f1e8;font-weight:700}.ct-sig-rd{color:#a7ab9c}'+
@@ -6922,8 +6927,19 @@ function ctStopAudio(){ if(CT_STATE.audio){ try{CT_STATE.audio.pause();}catch(e)
 function ctPause(){ CT_STATE.playing=false; ctClearTimer(); ctStopAudio(); var p=document.getElementById('ctPlay'); if(p) p.innerHTML='▶ Play the lesson'; }
 function ctStop(){ ctPause(); CT_STATE.idx=-1; }
 function ctEstMs(t){ return Math.max(3400,(String(t||'').split(/\s+/).length)*300+900); }
+function ctTapToStart(){   // #ct-tapstart — autoplay-blocked deep-link: overlay a clear tap-to-play-with-sound button
+  ctClearTimer(); ctStopAudio(); CT_STATE.playing=false;
+  var board=document.querySelector('#modal .ct-board'); if(!board || document.getElementById('ctTap')) return;
+  var d=document.createElement('button'); d.id='ctTap'; d.className='ct-tapstart'; d.type='button';
+  d.innerHTML='<span class="ct-tap-ic">▶</span><span class="ct-tap-tx">Tap to play <b>with sound</b></span>';
+  d.onclick=function(){ d.remove(); ctPlay(0); };
+  board.appendChild(d);
+  var p=document.getElementById('ctPlay'); if(p) p.innerHTML='▶ Play the lesson';
+  var cap=document.getElementById('ctCap'); if(cap) cap.innerHTML='🔊 Your browser paused autoplay — <b>tap the board</b> (or ▶) to start with sound.';
+}
 function ctPlay(from){
   var built=CT_STATE.data; if(!built) return;
+  var _tap=document.getElementById('ctTap'); if(_tap) _tap.remove();   // #ct-tapstart — a real play supersedes the tap overlay
   ctStopAudio(); ctClearTimer(); CT_STATE.playing=true;
   CT_STATE.gen=(CT_STATE.gen||0)+1;                 // new play-chain generation — stale chains abort
   var p=document.getElementById('ctPlay'); if(p) p.innerHTML='⏸ Pause';
@@ -6945,7 +6961,12 @@ function ctRunScene(i, gen){
     a.ontimeupdate=function(){ if(a.duration && isFinite(a.duration)) ctSetProgress((i + a.currentTime/a.duration)/total); };   // #ct-progress smooth
     var timed=function(){ if(advanced||gen!==CT_STATE.gen) return; CT_STATE.timer=setTimeout(function(){ if(!advanced&&gen===CT_STATE.gen){ advanced=true; if(CT_STATE.playing) ctRunScene(i+1,gen); } }, ctEstMs(sc.say||sc.cap)); };
     a.onerror=function(){ if(a.currentTime<0.3) timed(); };   // only fall back if it never really started (don't cut a playing clip)
-    a.play().catch(function(){ CT_STATE.autoblocked=true; var p=document.getElementById('ctPlay'); if(p&&CT_STATE.idx===0) p.innerHTML='🔊 Tap for sound'; timed(); });   // autoplay blocked (no gesture) → silent timed play-through
+    a.play().catch(function(){ CT_STATE.autoblocked=true;
+        // #ct-tapstart (21 Aug) — on a pasted DEEP-LINK there's no user gesture, so the browser blocks audio.
+        // At scene 0 (a fresh open) DON'T silently flip through the whole video muted — that reads as "it didn't
+        // play." Instead pause and show a clear tap-to-play overlay; one tap gives the gesture and replays WITH
+        // sound. Only past scene 0 (already interacting) do we keep the silent timed fallback.
+        if(i===0){ ctTapToStart(); } else { var p=document.getElementById('ctPlay'); if(p) p.innerHTML='🔊 Tap for sound'; timed(); } });
   } else if(!CT_STATE.muted && ('speechSynthesis' in window)){
     ctSpeakFallback(sc,i,next);
   } else {
