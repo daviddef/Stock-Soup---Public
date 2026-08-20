@@ -6493,7 +6493,26 @@ function ctBuildScenes(reg){
   var sBadge=(Sd.length && Sd[0].min>=SALAD_MIN);   // did the top salad clear the "true trifecta" bar?
   // Full Roy Kent: blunt, sweary, fatalistic, warm underneath. Aimed at the market, never real people. The BOARD
   // is the star (def + podium + won/lost signals in `fill`); the caption is just a short subtitle.
+  // #ct-recap (user ask) — brutal COLD OPEN: how last session's SERVED picks actually moved. Real data, no
+  // cherry-picking — celebrate the winner AND own the loser, total it honestly.
+  var _rp=[]; try{ var _D=(LAST&&LAST.D)||{}; (_D.regions||[]).forEach(function(r){ if((r.id||r.region)===reg) _rp=(r.picks||[]).filter(function(p){return p&&p.sym&&p.sym!=='NONE';}); }); }catch(e){}
+  var moves=_rp.map(function(p){ var n=parseFloat(String(p.change).replace(/[^0-9.\-]/g,'')); return {sym:p.sym,name:p.name,pct:(isFinite(n)?n:null)}; }).filter(function(x){return x.pct!=null;}).sort(function(a,b){return b.pct-a.pct;});
+  var rBest=moves[0], rWorst=moves[moves.length-1], rUp=moves.filter(function(m){return m.pct>0;}).length,
+      rNet=moves.reduce(function(a,m){return a+m.pct;},0), rAvg=(moves.length?rNet/moves.length:0);
+  function pc(n){ return (n>=0?'+':'')+n.toFixed(1)+'%'; }
+  var recapSay = (!moves.length)
+    ? "Right, before we start — last time out? Fresh menu, nothing to grade yet. Lucky you, nothing to be embarrassed about. Give it a day."
+    : ("Right, before we start — last time out. If you'd actually listened: "
+        +(rBest.pct>0 ? (ctSpokenName(rBest)+" up "+rBest.pct.toFixed(1)+" percent — you're welcome.") : (ctSpokenName(rBest)+" was the least-worst at "+pc(rBest.pct)+", and that's the good news."))
+        +(rWorst && rWorst!==rBest && rWorst.pct<0 ? (" But "+ctSpokenName(rWorst)+" absolutely shat itself, down "+Math.abs(rWorst.pct).toFixed(1)+" percent — there goes your beer money.") : "")
+        +" "+rUp+" of "+moves.length+" up, and net you'd be "+(rNet>=0?("up about "+rNet.toFixed(1)):("down about "+Math.abs(rNet).toFixed(1)))+" percent across the lot. "
+        +(rAvg>=0 ? "Decent. Don't let it go to your head — it's a gamble, and tomorrow it'll try to take it back." : "Grim. But that's the game — some nights the kitchen burns the toast. Right, tonight —"));
+  var recapBoard = moves.length ? moves : null;
   var scenes=[
+    { k:'recap',
+      fill:{moves:recapBoard, net:rNet, nUp:rUp, n:moves.length},
+      cap:(moves.length?("📊 Last time out — <b>"+rUp+"/"+moves.length+" up</b>, net <b>"+pc(rNet)+"</b>. It’s a gamble. 🙂"):"📊 Last time out — fresh menu, nothing to grade yet."),
+      say:recapSay },
     { k:'intro',
       cap:"Tonight’s <b>top 3 of each</b> · <b>"+R.label+"</b>. A casino with a spreadsheet — but hey. 🙂",
       say:"Right, shut up and listen, I'm only saying this once. Four flavours, top three of each, for the "+R.label+". Timing, conviction, news, and the all-rounder. Is it gonna make you rich? Probably not — it's the stock market, it's a fucking casino with a spreadsheet. But hey. Let's have a look, shall we." },
@@ -6632,6 +6651,12 @@ function ctInjectCSS(){
   '.ct-winrow{display:flex;align-items:baseline;gap:10px;font-family:"Gaegu",sans-serif;font-size:clamp(15px,2.9vw,23px)}'+
   '.ct-winlab{font-weight:800;min-width:128px}.ct-winrow b{color:#fff;font-weight:800}'+
   '.ct-winlab.ct-cwo{color:#ff8a3d}.ct-winlab.ct-cwc{color:#ff5d73}.ct-winlab.ct-cwb{color:#f7d861}.ct-winlab.ct-cwg{color:#7bd88f}'+
+  '.ct-score{display:grid;grid-template-columns:1fr 1fr;gap:4px 18px;font-family:"Gaegu",sans-serif;font-size:clamp(14px,2.7vw,21px)}'+
+  '@media(max-width:560px){.ct-score{grid-template-columns:1fr}}'+
+  '.ct-scorerow{display:flex;justify-content:space-between;align-items:baseline;gap:8px;border-bottom:1px dashed rgba(255,255,255,.08);padding-bottom:2px}'+
+  '.ct-scorerow b{font-weight:700;color:#f4f1e8}.ct-scpct{font-weight:800;font-variant-numeric:tabular-nums}'+
+  '.ct-sc-up .ct-scpct{color:#7bd88f}.ct-sc-dn .ct-scpct{color:#ff8f8f}'+
+  '.ct-scnet{margin-top:8px;font-family:"Caveat",cursive;font-size:clamp(15px,2.8vw,21px);color:#d9d5c8}.ct-scnet b{color:#fff}'+
   // clickable chapter dots (fruit icons)
   '.ct-dots{gap:10px}.ct-dots i{width:auto!important;height:auto!important;background:none!important;border-radius:0!important;cursor:pointer;display:inline-flex}'+
   '.ct-dot-ic{font-size:16px;line-height:1;filter:grayscale(.4) opacity(.65);transition:.15s}'+
@@ -6666,7 +6691,15 @@ function ctBoardHTML(){
   return '<div class="ct-board"><svg width="0" height="0" style="position:absolute"><defs>'+
     '<filter id="ctChalk"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="4" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="1.6"/></filter></defs></svg>'+
     '<div class="ct-stage" id="ctStage">'+
-    // 0 intro — the coach + chalkboard
+    // 0 recap — brutal cold open: how last session's served picks actually moved
+    '<section class="ct-layer" data-k="recap"><svg viewBox="0 0 400 250" aria-hidden="true">'+
+      '<path class="ct-draw ct-dim" pathLength="1" d="M320 40 v120 M312 160 h100"/>'+          // little axes, top-right
+      '<path class="ct-draw ct-g" pathLength="1" d="M320 150 l18 -30 l16 12 l22 -46"/>'+       // up squiggle
+      '<path class="ct-draw ct-c" pathLength="1" d="M320 150 l14 8 l18 22"/></svg>'+          // down squiggle (cherry-red)
+      '<div class="ct-txt"><div class="ct-cw big d1" style="left:5%;top:6%">📊 Last time out</div>'+
+        '<div class="ct-cw sm d2" style="left:5%;top:22%;right:22%">if you’d actually listened…</div>'+
+        '<div class="ct-cw d3" data-fill="r_body" style="left:5%;top:36%;right:4%;bottom:6%"></div></div></section>'+
+    // 1 intro — the coach + chalkboard
     '<section class="ct-layer" data-k="intro"><svg viewBox="0 0 400 250" aria-hidden="true">'+
       '<circle class="ct-draw" pathLength="1" cx="120" cy="72" r="24"/>'+                    // head
       '<path class="ct-draw" pathLength="1" d="M108 82 h24"/>'+                               // flat, unimpressed mouth
@@ -6727,7 +6760,7 @@ function ctMount(reg, built){
   CT_STATE.reg=reg; CT_STATE.data=built; CT_STATE.idx=-1; CT_STATE.playing=false;
   var supportsTTS=('speechSynthesis' in window);
   var dotsWrap=document.getElementById('ctDots'); dotsWrap.innerHTML='';
-  var CT_ICON={intro:'🍲',timing:'🍊',conv:'🍒',news:'🍌',salad:'🥗',plan:'📋',verdict:'🏆'};
+  var CT_ICON={recap:'📊',intro:'🍲',timing:'🍊',conv:'🍒',news:'🍌',salad:'🥗',plan:'📋',verdict:'🏆'};
   built.scenes.forEach(function(sc,si){ var d=document.createElement('i');
     d.innerHTML='<span class="ct-dot-ic">'+(CT_ICON[sc.k]||'•')+'</span>';
     d.title='Jump to '+(sc.k||'chapter'); d.setAttribute('role','button'); d.setAttribute('tabindex','0');
@@ -6764,6 +6797,12 @@ function ctFillScenes(scenes){
     if(pfx[sc.k]){ var p=pfx[sc.k];
       setFill(p+'_def', f.def||''); setFill(p+'_pod', podRow(f.arr, f.key));
       setFill(p+'_note', f.note||''); if(f.sigs) setFill(p+'_sigs', sigGrid(f.sigs));
+    } else if(sc.k==='recap'){
+      if(!f.moves||!f.moves.length){ setFill('r_body','<div class="ct-scnet">Fresh menu — nothing served last time. Nothing to be embarrassed about yet.</div>'); }
+      else { var rows='<div class="ct-score">'+f.moves.map(function(m){ var up=m.pct>=0;
+        return '<div class="ct-scorerow '+(up?'ct-sc-up':'ct-sc-dn')+'"><b>'+esc(ctSpokenName(m))+'</b><span class="ct-scpct">'+(up?'+':'')+m.pct.toFixed(1)+'%</span></div>'; }).join('')+'</div>';
+        var net=f.net, netTxt='<div class="ct-scnet"><b>'+f.nUp+'/'+f.n+' up</b> · net you’d be <b style="color:'+(net>=0?'#7bd88f':'#ff8f8f')+'">'+(net>=0?'+':'')+net.toFixed(1)+'%</b> across the lot. '+(net>=0?'Don’t get cocky.':'It’s a gamble, remember.')+'</div>';
+        setFill('r_body', rows+netTxt); }
     } else if(sc.k==='plan'){ setFill('p_body', f.body||'');
     } else if(sc.k==='verdict'){
       var fr={'🍊 timing':'ct-cwo','🍒 conviction':'ct-cwc','🍌 news':'ct-cwb','🥗 salad':'ct-cwg'};
