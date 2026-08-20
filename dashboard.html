@@ -6470,7 +6470,7 @@ function ctBuildScenes(reg){
   var D=(LAST&&LAST.D)||{}, ct=(D.chalkTalk||{})[reg];
   if(ct && ct.voiced && ct.scenes && ct.scenes.length) return {voiced:true, label:ct.label||(reg==='au'?'ASX':'US'), pool:ct.pool, scenes:ct.scenes};
   var R=ctRankings(reg); if(!R||!R.timing.length) return null;
-  function sl(arr){ return ctJoinList(arr.map(function(x){return ctSpell(x.sym);})); }        // spoken ticker list
+  function sl(arr){ return ctJoinList(arr.map(function(x){return ctSpokenName(x);})); }        // spoken COMPANY-NAME list
   function capPod(arr,key){ var md=['🥇','🥈','🥉']; return arr.map(function(x,i){
       return '<span class="ct-podi">'+md[i]+' <span class="ct-t">'+esc(x.sym)+'</span> <span class="ct-n">'+x[key]+'</span></span>'; }).join(' '); }
   var T=R.timing, Cv=R.cherry, N=R.news, Sd=R.salad;
@@ -6484,24 +6484,24 @@ function ctBuildScenes(reg){
       cap:"Tonight’s <b>top 3 of each</b> · <b>"+R.label+"</b>. A casino with a spreadsheet — but hey. 🙂",
       say:"Right, shut up and listen, I'm only saying this once. Four flavours, top three of each, for the "+R.label+". Timing, conviction, news, and the all-rounder. Is it gonna make you rich? Probably not — it's the stock market, it's a fucking casino with a spreadsheet. But hey. Let's have a look, shall we." },
     { k:'timing', fill:{def:"🍊 <b>Timing</b> — is the setup fresh <b>right now</b>? Are you early — or the wanker turning up when the beer’s gone?", arr:T, key:'o',
-        note:(twl.won.length?("<span class='ct-t'>"+esc(T[0].sym)+"</span> wins it on "+esc(ctJoinList(twl.won))+". Flash bastard."):("<span class='ct-t'>"+esc(T[0].sym)+"</span> leads on momentum alone. Bold."))},
+        note:(twl.won.length?("<span class='ct-t'>"+ctDispName(T[0])+"</span> wins it on "+esc(ctJoinList(twl.won))+". Flash bastard."):("<span class='ct-t'>"+ctDispName(T[0])+"</span> leads on momentum alone. Bold."))},
       cap:"🍊 <b>Timing</b> — early, or a wanker turning up late?",
-      say:"The orange. Timing. Is the setup fresh right now, are you early — or are you the wanker turning up to the party when the beer's gone? Top three: "+sl(T)+". "+ctSpell(T[0].sym)+" leads at "+T[0].o+(twl.won.length?", winning on "+ctJoinList(twl.won)+" — flash bastard":", on momentum alone, bold")+". It's a setup, not a wedding. Don't fall in love — and don't come crying to me when it shits the bed." },
+      say:"The orange. Timing. Is the setup fresh right now, are you early — or are you the wanker turning up to the party when the beer's gone? Top three: "+sl(T)+". "+ctSpokenName(T[0])+" leads at "+T[0].o+(twl.won.length?", winning on "+ctJoinList(twl.won)+" — flash bastard":", on momentum alone, bold")+". It's a setup, not a wedding. Don't fall in love — and don't come crying to me when it shits the bed." },
     { k:'conv', fill:{def:"🍒 <b>Conviction</b> — not one lucky signal (any idiot finds one). Does the <b>whole room</b> agree? Timing, blended with every vote.", arr:Cv, key:'c',
-        note:"<span class='ct-t'>"+esc(Cv[0].sym)+"</span> won on "+esc(ctJoinList(cwl.won)||'the balance')+(cwl.lost.length?", lost on "+esc(ctJoinList(cwl.lost)):"")+". One miserable prick at the back still shaking his head."},
+        note:"<span class='ct-t'>"+ctDispName(Cv[0])+"</span> won on "+esc(ctJoinList(cwl.won)||'the balance')+(cwl.lost.length?", lost on "+esc(ctJoinList(cwl.lost)):"")+". One miserable prick at the back still shaking his head."},
       cap:"🍒 <b>Conviction</b> — does the whole room agree?",
-      say:"Cherry. And no — it's not one lucky signal, any idiot can find one of those. It's whether the whole bloody room agrees. Timing, blended with how every signal votes. Top three: "+sl(Cv)+". "+ctSpell(Cv[0].sym)+" tops it at "+Cv[0].c+", won on "+(ctJoinList(cwl.won)||"the balance of signals")+(cwl.lost.length?", lost on "+ctJoinList(cwl.lost):"")+". So — most of 'em nodding, one miserable prick at the back shaking his head. Welcome to investing." },
+      say:"Cherry. And no — it's not one lucky signal, any idiot can find one of those. It's whether the whole bloody room agrees. Timing, blended with how every signal votes. Top three: "+sl(Cv)+". "+ctSpokenName(Cv[0])+" tops it at "+Cv[0].c+", won on "+(ctJoinList(cwl.won)||"the balance of signals")+(cwl.lost.length?", lost on "+ctJoinList(cwl.lost):"")+". So — most of 'em nodding, one miserable prick at the back shaking his head. Welcome to investing." },
     { k:'news', fill:{def:"🍌 <b>Fresh news</b> — a loud, shiny story the price <b>hasn’t chased yet</b>. It drops the second everyone piles in.", arr:N, key:'b',
-        note:(nThin?("⚠️ but timing on <span class='ct-r'>"+esc(N[0].sym)+"</span> is only "+N[0].o+" — you might be buying the top like an absolute loser."):("Loud today. Tomorrow? Not my fucking problem, mate."))},
+        note:(nThin?("⚠️ but timing on <span class='ct-r'>"+ctDispName(N[0])+"</span> is only "+N[0].o+" — you might be buying the top like an absolute loser."):("Loud today. Tomorrow? Not my fucking problem, mate."))},
       cap:"🍌 <b>Fresh news</b> — shiny, and not yet chased.",
       say:"Banana. Fresh news the price hasn't chased yet. Loud, shiny, brand new. Top three: "+sl(N)+(nAllMax?", all maxed out at a hundred, calm down":"")+". Cracking headline today. Tomorrow? Not my fucking problem, mate."+(nThin?(" And the timing on these is thin, so you might be buying the very top like an absolute loser. Your call."):"") },
     { k:'salad', fill:{def:"🥗 <b>Fruit salad</b> — the all-rounder: decent at timing, agreement <b>and</b> news, all at once. Boring. Beautiful, boring.", arr:Sd, key:'min',
         note:(Sd.length
-          ? ("<span class='ct-t'>"+esc(Sd[0].sym)+"</span> — 🍊"+Sd[0].o+" · 🍒"+Sd[0].c+" · 🍌"+Sd[0].b+". Good at everything, best at fuck all."+(sBadge?" A proper 🥗.":" No shiny badge (needs all three ≥ "+SALAD_MIN+") — just the steadiest of the lot."))
+          ? ("<span class='ct-t'>"+ctDispName(Sd[0])+"</span> — 🍊"+Sd[0].o+" · 🍒"+Sd[0].c+" · 🍌"+Sd[0].b+". Good at everything, best at fuck all."+(sBadge?" A proper 🥗.":" No shiny badge (needs all three ≥ "+SALAD_MIN+") — just the steadiest of the lot."))
           : "Sod all to rank tonight. Rare beast, the all-rounder.")},
       cap:"🥗 <b>Fruit salad</b> — good at everything, best at fuck all.",
       say:(Sd.length
-        ? ("The salad. The all-rounder — decent at timing, decent at agreement, decent at news, all at once. Boring. Beautiful, boring. Top three: "+sl(Sd)+". "+ctSpell(Sd[0].sym)+" tops it — "+Sd[0].o+" timing, "+Sd[0].c+" conviction, "+Sd[0].b+" news. Good at everything, best at fuck all. "+(sBadge?"A proper fruit salad, that one.":"Mind you, none of 'em clear the magic sixty tonight, so no shiny badge — just your steadiest bets. Emphasis on bets."))
+        ? ("The salad. The all-rounder — decent at timing, decent at agreement, decent at news, all at once. Boring. Beautiful, boring. Top three: "+sl(Sd)+". "+ctSpokenName(Sd[0])+" tops it — "+Sd[0].o+" timing, "+Sd[0].c+" conviction, "+Sd[0].b+" news. Good at everything, best at fuck all. "+(sBadge?"A proper fruit salad, that one.":"Mind you, none of 'em clear the magic sixty tonight, so no shiny badge — just your steadiest bets. Emphasis on bets."))
         : "The salad — good at all three at once. Tonight? Sod all. Rare beast. Don't force it.") },
     { k:'verdict',
       cap:"It’s a gamble — but now you’ve got a clue. 🙂 Now piss off and do your homework.",
@@ -6512,6 +6512,17 @@ function ctBuildScenes(reg){
 // spell short/opaque tickers so the built-in voice reads them as letters, not a word
 function ctSpell(sym){ sym=String(sym||''); if(!sym) return 'this one';
   if(sym.length<=4 && sym===sym.toUpperCase()) return sym.split('').join(' '); return sym; }
+// #ct-names — the VOICE should say the company name ("Flexsteel"), not spell the ticker ("F L X S"). Strip the
+// noisy corporate suffixes for a natural read; fall back to the spelled ticker when we have no name.
+function ctSpokenName(x){ var n=(x&&x.name)?String(x.name):'', sym=(x&&x.sym)?String(x.sym):'';
+  if(!n || n.toUpperCase()===sym.toUpperCase()) return ctSpell(sym);
+  n=n.replace(/[.,]?\s+(Incorporated|Inc|Limited|Ltd|Corporation|Corp|Company|Co|PLC|Plc|Group|Holdings|Holding|Industries|International|SA|NV|AG|SE)\b\.?$/i,'').trim();
+  // strip a second trailing suffix (e.g. "... Group Holdings")
+  n=n.replace(/[.,]?\s+(Incorporated|Inc|Limited|Ltd|Corporation|Corp|Company|Co|PLC|Plc|Group|Holdings|Holding|Industries|International|SA|NV|AG|SE)\b\.?$/i,'').trim();
+  return n||ctSpell(sym); }
+// short display name for the board note (keeps the ticker for the tie-in): "Flexsteel (FLXS)"
+function ctDispName(x){ var n=ctSpokenName(x), sym=(x&&x.sym)?String(x.sym):'';
+  return (n&&n!==ctSpell(sym))?(esc(n)+' <span style="opacity:.7">('+esc(sym)+')</span>'):esc(sym); }
 
 var CT_STATE={idx:-1,playing:false,timer:null,audio:null,muted:false,reg:null,data:null,ep:null};
 // openChalkTalk(reg) plays TONIGHT (computed live). openChalkTalk(reg, ep) replays a stored archive episode
@@ -6612,12 +6623,10 @@ function ctBoardHTML(){
       '<path class="ct-draw" pathLength="1" d="M108 82 h24"/>'+                               // flat, unimpressed mouth
       '<path class="ct-draw" pathLength="1" d="M120 96 v54"/>'+                               // body
       '<path class="ct-draw ct-o" pathLength="1" d="M96 116 L146 132 M146 116 L96 132"/>'+   // crossed arms
-      '<path class="ct-draw" pathLength="1" d="M120 150 L102 192 M120 150 L138 192"/>'+       // legs
-      '<path class="ct-draw ct-dim" pathLength="1" d="M210 46 h150 v120 h-150 z"/>'+          // chalkboard
-      '<path class="ct-draw ct-o" pathLength="1" d="M228 88 h90 M228 112 h114 M228 136 h74"/></svg>'+
-      '<div class="ct-txt"><div class="ct-cw big d1" style="left:52%;top:8%;right:5%">Tonight’s top 3</div>'+
-        '<div class="ct-cw sm d2" style="left:52%;top:34%;right:5%">of each flavour. No fluff.</div>'+
-        '<div class="ct-cw mid d3" style="left:52%;bottom:12%"><span class="ct-cwo">🍊</span> <span class="ct-cwc">🍒</span> <span class="ct-cwb">🍌</span> <span class="ct-cwg">🥗</span></div></div></section>'+
+      '<path class="ct-draw" pathLength="1" d="M120 150 L102 192 M120 150 L138 192"/></svg>'+   // legs (no chalkboard doodle — it overlapped the text)
+      '<div class="ct-txt"><div class="ct-cw big d1" style="left:44%;top:16%;right:5%">Tonight’s top 3</div>'+
+        '<div class="ct-cw sm d2" style="left:44%;top:48%;right:5%">of each flavour. No fluff.</div>'+
+        '<div class="ct-cw mid d3" style="left:44%;bottom:14%"><span class="ct-cwo">🍊</span> <span class="ct-cwc">🍒</span> <span class="ct-cwb">🍌</span> <span class="ct-cwg">🥗</span></div></div></section>'+
     // 1 timing (orange top-right; leaderboard left)
     '<section class="ct-layer" data-k="timing"><svg viewBox="0 0 400 250" aria-hidden="true">'+
       '<circle class="ct-draw ct-o" pathLength="1" cx="345" cy="55" r="30"/><path class="ct-draw ct-g" pathLength="1" d="M345 25 q8 -10 18 -6 q-5 10 -18 8"/>'+
@@ -6704,15 +6713,19 @@ function ctEstMs(t){ return Math.max(3400,(String(t||'').split(/\s+/).length)*30
 function ctPlay(from){
   var built=CT_STATE.data; if(!built) return;
   ctStopAudio(); ctClearTimer(); CT_STATE.playing=true;
+  CT_STATE.gen=(CT_STATE.gen||0)+1;                 // new play-chain generation — stale chains abort
   var p=document.getElementById('ctPlay'); if(p) p.innerHTML='⏸ Pause';
-  ctRunScene(from||0);
+  ctRunScene(from||0, CT_STATE.gen);
 }
-function ctRunScene(i){
+function ctRunScene(i, gen){
+  if(gen!==CT_STATE.gen) return;                    // a newer play/replay/toggle superseded this chain
   var built=CT_STATE.data; if(!built) return;
+  ctStopAudio(); ctClearTimer();                    // #ct-overlap — kill any prior audio BEFORE the next scene
   if(i>=built.scenes.length){ ctFinish(); return; }
   CT_STATE.idx=i; ctShowScene(i, built);
-  var sc=built.scenes[i];
-  var next=function(){ if(CT_STATE.playing) CT_STATE.timer=setTimeout(function(){ ctRunScene(i+1); },380); };
+  var sc=built.scenes[i], advanced=false;
+  var next=function(){ if(advanced||gen!==CT_STATE.gen) return; advanced=true;   // onended+onerror can't double-advance
+    if(CT_STATE.playing) CT_STATE.timer=setTimeout(function(){ ctRunScene(i+1, gen); },380); };
   if(!CT_STATE.muted && built.voiced && sc.audio){
     var a=new Audio(sc.audio); CT_STATE.audio=a; a.onended=next;
     a.onerror=function(){ ctSpeakFallback(sc,i,next); };
@@ -6720,7 +6733,7 @@ function ctRunScene(i){
   } else if(!CT_STATE.muted && ('speechSynthesis' in window)){
     ctSpeakFallback(sc,i,next);
   } else {
-    CT_STATE.timer=setTimeout(function(){ if(CT_STATE.playing) ctRunScene(i+1); }, ctEstMs(sc.say||sc.cap));
+    CT_STATE.timer=setTimeout(function(){ if(CT_STATE.playing&&gen===CT_STATE.gen) ctRunScene(i+1, gen); }, ctEstMs(sc.say||sc.cap));
   }
 }
 function ctSpeakFallback(sc,i,next){
