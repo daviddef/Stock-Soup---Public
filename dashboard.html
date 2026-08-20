@@ -5106,7 +5106,10 @@ function applyDeepLink(){
   }
   // #ct-deeplink (user ask) — a shareable direct link to the chalk-talk video: #chalk or #chalk/au or #chalk/us
   if(parts[0]==='chalk'){ var creg=(parts[1]==='us'||parts[1]==='au')?parts[1]:MKT;
-    switchTab('menu'); setTimeout(function(){ try{ openChalkTalk(creg); }catch(e){} },50); return; }
+    switchTab('menu'); var _t=0;
+    (function openWhenReady(){ _t++; var ok=false; try{ ok=!!ctBuildScenes(creg); }catch(e){}
+      if(ok){ try{ openChalkTalk(creg); }catch(e){} } else if(_t<40){ setTimeout(openWhenReady,150); }   // wait up to ~6s for /data to load
+    })(); return; }
   if(parts[0]==='guide'){ setTimeout(function(){ try{ openUserGuide(); }catch(e){} },30); return; }
   if(parts[0]==='method'){ setTimeout(function(){ try{ openExpertBrief(); }catch(e){} },30); return; }
   if(TABNAMES[parts[0]]) switchTab(parts[0]);
@@ -6117,8 +6120,8 @@ function render(D,H){
       // move · picks · top story · buy sector/commodity · filings · your holdings, each tapping to its detail.
       glanceStripHtml(D)+
       breakingHtml(D)+
+      chalkTalkCta(D)+   // #ct-cta (user ask) — the ▶ Watch-tonight's-specials panel ABOVE the headline
       '<h1 class="display">Two pots on the boil: <span class="hot">'+esc(hdl(D,'a'))+'</span> &amp; <span class="hot">'+esc(hdl(D,'b'))+'</span>.</h1>'+
-      chalkTalkCta(D)+   // #ct-cta (user ask) — the ▶ Watch-tonight's-specials panel, up top under the header, before the chef's note
       // chef's framing sits directly under the headline (collapsed). The standalone "Tonight's one move" card
       // was removed (user ask) — it duplicated the pick it points at + the glance tile; the #1 move is now a
       // 🥇 ribbon on its actual pick card in the grid below, and the glance strip's One-move tile jumps to it.
@@ -6697,9 +6700,8 @@ function ctBoardHTML(){
     '<div class="ct-stage" id="ctStage">'+
     // 0 recap — brutal cold open: how last session's served picks actually moved
     '<section class="ct-layer" data-k="recap"><svg viewBox="0 0 400 250" aria-hidden="true">'+
-      '<path class="ct-draw ct-dim" pathLength="1" d="M320 40 v120 M312 160 h100"/>'+          // little axes, top-right
-      '<path class="ct-draw ct-g" pathLength="1" d="M320 150 l18 -30 l16 12 l22 -46"/>'+       // up squiggle
-      '<path class="ct-draw ct-c" pathLength="1" d="M320 150 l14 8 l18 22"/></svg>'+          // down squiggle (cherry-red)
+      '<path class="ct-draw ct-g" pathLength="1" d="M348 78 l10 -18 l9 7 l12 -26"/>'+          // small up squiggle, top-right corner
+      '<path class="ct-draw ct-c" pathLength="1" d="M348 60 l8 6 l11 14"/></svg>'+             // small down tick
       '<div class="ct-txt"><div class="ct-cw big d1" style="left:5%;top:6%">📊 Last time out</div>'+
         '<div class="ct-cw sm d2" style="left:5%;top:22%;right:22%">if you’d actually listened…</div>'+
         '<div class="ct-cw d3" data-fill="r_body" style="left:5%;top:36%;right:4%;bottom:6%"></div></div></section>'+
@@ -6731,8 +6733,7 @@ function ctBoardHTML(){
         '<div class="ct-cw ct-pod d4" data-fill="c_pod" style="left:5%;bottom:5%;right:5%;font-size:clamp(13px,2.4vw,19px)"></div></div></section>'+
     // 3 news (banana + megaphone top-right)
     '<section class="ct-layer" data-k="news"><svg viewBox="0 0 400 250" aria-hidden="true">'+
-      '<path class="ct-draw ct-ba" pathLength="1" d="M312 34 q6 44 46 52 q-11 -11 -12 -25 q-19 -4 -28 -27 z"/>'+
-      '<path class="ct-draw ct-dim" pathLength="1" d="M300 96 l40 -14 v34 l-40 -14 z M340 86 l14 -6 v50 l-14 -6 z"/></svg>'+
+      '<path class="ct-draw ct-ba" pathLength="1" d="M338 30 q5 36 38 43 q-9 -9 -10 -21 q-16 -3 -23 -22 z"/></svg>'+   // small banana, top-right corner only
       '<div class="ct-txt"><div class="ct-cw big ct-cwb d1" style="left:5%;top:6%">🍌 Fresh news</div>'+
         '<div class="ct-cw sm d2" data-fill="n_def" style="left:5%;top:22%;right:20%"></div>'+
         '<div class="ct-cw d3" data-fill="n_sigs" style="left:5%;top:38%;right:4%;bottom:16%"></div>'+
