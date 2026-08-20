@@ -6548,6 +6548,7 @@ function ctSpell(sym){ sym=String(sym||''); if(!sym) return 'this one';
 function ctNameMap(){ try{ return ((LAST&&LAST.D)||{}).chalkNames||{}; }catch(e){ return {}; } }
 function ctSpokenName(x){ var n=(x&&x.name)?String(x.name):'', sym=(x&&x.sym)?String(x.sym):'';
   if(!n || n.toUpperCase()===sym.toUpperCase()){ var mp=ctNameMap()[sym]; if(mp) n=String(mp); }   // #ct-names fill from the map
+  n=n.replace(/\s*\bFPO\b.*$/i,'').replace(/\s*\[[^\]]*\]\s*$/,'').trim();   // guard: strip yfinance ASX junk ("FPO [XXX]")
   if(!n || n.toUpperCase()===sym.toUpperCase()) return ctSpell(sym);
   n=n.replace(/[.,]?\s+(Incorporated|Inc|Limited|Ltd|Corporation|Corp|Company|Co|PLC|Plc|Group|Holdings|Holding|Industries|International|SA|NV|AG|SE)\b\.?$/i,'').trim();
   // strip a second trailing suffix (e.g. "... Group Holdings")
