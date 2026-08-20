@@ -6580,6 +6580,28 @@ function ctBuildScenes(reg){
                       :"No served picks tonight, either timeframe. The model didn't fancy enough to put its name to one, and neither will I. Some nights the kitchen's shut.";
       return { k:'plan', fill:{body:body}, cap:"📋 <b>The plan</b> — 📅 Week & 📈 Long, with the levels.", say:say };
     })(),
+    // #ct-radar (user ask) — a fully-narrated "on the radar" chapter: SHARED, market-wide dates coming up
+    // (earnings + ex-dividends today/tomorrow). No per-user holdings (the audio is shared) — those live in the
+    // Just-in Holdings tab. Pulls latest.upcomingEarnings/upcomingDividends, filtered to this market + ≤ tomorrow.
+    (function(){
+      var D=(LAST&&LAST.D)||{}, now=new Date(), t0=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+      function du(ds){ try{ return Math.round((new Date(ds+'T00:00:00')-t0)/86400000); }catch(e){ return 99; } }
+      function when(d){ return d<=0?'today':'tomorrow'; }
+      var earn=(D.upcomingEarnings||[]).filter(function(e){ return e&&e.date&&(e.region||'us')===reg&&du(e.date)>=0&&du(e.date)<=1; })
+        .map(function(e){ return {sym:e.sym, name:e.name, d:du(e.date)}; }).sort(function(a,b){return a.d-b.d;});
+      var divs=(((D.upcomingDividends||{}).items)||[]).filter(function(x){ return x&&x.date&&(x.region||'au')===reg&&du(x.date)>=0&&du(x.date)<=1; })
+        .map(function(x){ return {sym:x.sym, name:x.name, d:du(x.date), y:x.div_yield_pct}; }).sort(function(a,b){return a.d-b.d;});
+      var rows=[];
+      earn.slice(0,4).forEach(function(e){ rows.push({ic:'📊', k:'earn', sym:e.sym, txt:ctSpokenName(e)+' reports '+when(e.d), tag:when(e.d)}); });
+      divs.slice(0,3).forEach(function(x){ rows.push({ic:'💰', k:'div', sym:x.sym, txt:ctSpokenName(x)+' goes ex-dividend '+when(x.d)+(x.y?', about '+x.y+' percent':''), tag:when(x.d)}); });
+      var sayBits=[];
+      if(earn.length){ sayBits.push(earn.length+' name'+(earn.length>1?'s':'')+' report'+(earn.length>1?'':'s')+' — '+ctJoinList(earn.slice(0,3).map(function(e){return ctSpokenName(e);}))+(earn.length>3?' and more':'')+'. Results swing five to twenty percent same-day, so don\'t be a hero the night before.'); }
+      if(divs.length){ sayBits.push(divs.length+' go'+(divs.length>1?'':'es')+' ex-dividend — own '+ctJoinList(divs.slice(0,2).map(function(x){return ctSpokenName(x);}))+' before the bell or you miss the cheque.'); }
+      var say = sayBits.length
+        ? ("Right, what's on the radar. "+sayBits.join(' ')+" Diarise it. Or don't. Your money.")
+        : "On the radar? Sod all tomorrow — no reports, no ex-divs on this list. Quiet before the storm, probably.";
+      return { k:'radar', fill:{rows:rows}, cap:"📅 <b>On the radar</b> — reports &amp; ex-divs, today &amp; tomorrow.", say:say };
+    })(),
     { k:'verdict',
       fill:{ board:[['🍊 timing',T[0]],['🍒 conviction',Cv[0]],['🍌 news',N[0]],['🥗 salad',Sd[0]]], multi:R.multiWin },
       cap:"🏆 Tonight’s winners — it’s a gamble, but now you’ve got a clue. 🙂",
@@ -6687,6 +6709,9 @@ function ctInjectCSS(){
   '.ct-sig-pos b{color:#7bd88f}.ct-sig-neg b{color:#ff8f8f}'+
   '.ct-plan-row{font-family:"Caveat","Segoe UI",cursive;font-weight:600;font-size:clamp(15px,2.8vw,22px);color:#e8e5da;margin-bottom:9px;line-height:1.3}'+
   '.ct-plan-tf{font-family:"Gaegu",sans-serif;font-weight:800;color:#c9c6ba}.ct-plan-lv{color:#a7ab9c}'+
+  '.ct-radar{display:flex;flex-direction:column;gap:7px}'+
+  '.ct-radar-row{font-family:"Caveat","Segoe UI",cursive;font-weight:600;font-size:clamp(15px,2.8vw,22px);color:#e8e5da;line-height:1.3}'+
+  '.ct-radar-ic{margin-right:6px}.ct-radar-tx{color:#c3c6ba}'+
   '.ct-winboard{display:flex;flex-direction:column;gap:6px}'+
   '.ct-winrow{display:flex;align-items:baseline;gap:10px;font-family:"Gaegu",sans-serif;font-size:clamp(15px,2.9vw,23px)}'+
   '.ct-winlab{font-weight:800;min-width:128px}.ct-winrow b{color:#fff;font-weight:800}'+
@@ -6787,6 +6812,13 @@ function ctBoardHTML(){
       '<div class="ct-txt"><div class="ct-cw big ct-cwy d1" style="left:5%;top:6%">📋 The plan</div>'+
         '<div class="ct-cw sm d2" style="left:5%;top:22%;right:20%">how you’d actually play it — entry · stop · target</div>'+
         '<div class="ct-cw d3" data-fill="p_body" style="left:5%;top:38%;right:4%;bottom:6%"></div></div></section>'+
+    // 5b radar — shared "on the radar" dates (reports + ex-divs today/tomorrow)
+    '<section class="ct-layer" data-k="radar"><svg viewBox="0 0 400 250" aria-hidden="true">'+
+      '<circle class="ct-draw ct-g" pathLength="1" cx="365" cy="48" r="22"/><circle class="ct-draw ct-g" pathLength="1" cx="365" cy="48" r="12"/>'+   // small radar rings, top-right
+      '<path class="ct-draw ct-g" pathLength="1" d="M365 48 L382 34"/></svg>'+
+      '<div class="ct-txt"><div class="ct-cw big ct-cwg d1" style="left:5%;top:6%">📅 On the radar</div>'+
+        '<div class="ct-cw sm d2" style="left:5%;top:22%;right:22%">what’s coming — today &amp; tomorrow</div>'+
+        '<div class="ct-cw d3" data-fill="rd_body" style="left:5%;top:38%;right:4%;bottom:6%"></div></div></section>'+
     // 6 verdict — the winners board + who wins in multiple areas
     '<section class="ct-layer" data-k="verdict">'+   // no corner doodle — the title already carries 🏆 and the winners board fills the width
       '<div class="ct-txt"><div class="ct-cw big ct-cwy d1" style="left:5%;top:6%">🏆 Tonight’s winners</div>'+
@@ -6798,7 +6830,7 @@ function ctMount(reg, built){
   CT_STATE.reg=reg; CT_STATE.data=built; CT_STATE.idx=-1; CT_STATE.playing=false;
   var supportsTTS=('speechSynthesis' in window);
   var dotsWrap=document.getElementById('ctDots'); dotsWrap.innerHTML='';
-  var CT_ICON={recap:'📊',intro:'🍲',timing:'🍊',conv:'🍒',news:'🍌',salad:'🥗',plan:'📋',verdict:'🏆'};
+  var CT_ICON={recap:'📊',intro:'🍲',timing:'🍊',conv:'🍒',news:'🍌',salad:'🥗',plan:'📋',radar:'📅',verdict:'🏆'};
   built.scenes.forEach(function(sc,si){ var d=document.createElement('i');
     d.innerHTML='<span class="ct-dot-ic">'+(CT_ICON[sc.k]||'•')+'</span>';
     d.title='Jump to '+(sc.k||'chapter'); d.setAttribute('role','button'); d.setAttribute('tabindex','0');
@@ -6851,6 +6883,11 @@ function ctFillScenes(scenes){
         return '<div class="ct-scorerow '+(up?'ct-sc-up':'ct-sc-dn')+'"><b>'+esc(ctSpokenName(m))+'</b><span class="ct-scpct">'+(up?'+':'')+m.pct.toFixed(1)+'%</span></div>'; }).join('')+'</div>';
         var net=f.net, netTxt='<div class="ct-scnet"><b>'+f.nUp+'/'+f.n+' up</b> · net you’d be <b style="color:'+(net>=0?'#7bd88f':'#ff8f8f')+'">'+(net>=0?'+':'')+net.toFixed(1)+'%</b> across the lot. '+(net>=0?'Don’t get cocky.':'It’s a gamble, remember.')+'</div>';
         setFill('r_body', rows+netTxt); }
+    } else if(sc.k==='radar'){
+      var rr=(f.rows||[]);
+      setFill('rd_body', rr.length
+        ? ('<div class="ct-radar">'+rr.map(function(x){ return '<div class="ct-radar-row"><span class="ct-radar-ic">'+x.ic+'</span><b class="ct-t">'+esc(x.sym)+'</b> <span class="ct-radar-tx">'+esc(x.txt)+'</span></div>'; }).join('')+'</div>')
+        : '<div class="ct-radar-row" style="opacity:.75">Nothing on the list today or tomorrow — a quiet one.</div>');
     } else if(sc.k==='plan'){ setFill('p_body', f.body||'');
     } else if(sc.k==='verdict'){
       var fr={'🍊 timing':'ct-cwo','🍒 conviction':'ct-cwc','🍌 news':'ct-cwb','🥗 salad':'ct-cwg'};
