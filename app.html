@@ -6569,15 +6569,22 @@ function ctBuildScenes(reg){
     (function(){
       var D=(LAST&&LAST.D)||{}, picks=[];
       (D.regions||[]).forEach(function(r){ if((r.id||r.region)===reg) picks=(r.picks||[]).filter(function(p){return p&&p.sym&&p.sym!=='NONE'&&p.score;}); });
-      function byTf(tf){ return picks.filter(function(p){return String(p.tf||'').toLowerCase().indexOf(tf)>=0;}).sort(function(a,b){return (b.score.buy_now||0)-(a.score.buy_now||0);})[0]; }
-      var wk=byTf('week'), lg=byTf('long');
+      // #ct-plan-all (user ask, 20 Aug): show EVERY served pick, not one per timeframe — a market can serve
+      // 2 Week + 1 Long (VTM was silently dropped when byTf('week') returned only [0]). Week picks first, then
+      // Long, each sorted by score; the tf label repeats so two Week rows both read "📅 Week".
+      function byTf(tf){ return picks.filter(function(p){return String(p.tf||'').toLowerCase().indexOf(tf)>=0;}).sort(function(a,b){return (b.score.buy_now||0)-(a.score.buy_now||0);}); }
+      var wks=byTf('week'), lgs=byTf('long');
+      var served=wks.map(function(p){return {p:p,lab:'📅 Week',say:'week'};}).concat(lgs.map(function(p){return {p:p,lab:'📈 Long',say:'long'};}));
       function planRow(p,lab){ if(!p) return ''; var lv=[]; if(p.nEntry)lv.push('in '+esc(String(p.nEntry))); if(p.nStop)lv.push('stop '+esc(String(p.nStop))); if(p.nTarget)lv.push('target '+esc(String(p.nTarget)));
         return '<div class="ct-plan-row"><span class="ct-plan-tf">'+lab+'</span> <b class="ct-t">'+esc(ctSpokenName(p))+'</b> <span class="ct-plan-lv">'+(lv.join(' · ')||'levels on the card')+'</span></div>'; }
-      function planSay(p,lab){ if(!p) return "No "+lab+" pick tonight — nothing worth the risk. "; var lv=[]; if(p.nEntry)lv.push("get in around "+String(p.nEntry).replace(/[–-].*/,'')); if(p.nStop)lv.push("stop at "+p.nStop); if(p.nTarget)lv.push("aim for "+p.nTarget);
-        return "The "+lab+": "+ctSpokenName(p)+". "+(lv.length?lv.join(", ")+". ":"levels are on the card. "); }
-      var body=(wk||lg)?(planRow(wk,'📅 Week')+planRow(lg,'📈 Long')):'<div class="ct-plan-row">No served picks tonight — the model didn’t like enough to serve. Honest, that.</div>';
-      var say=(wk||lg)?("Right, the actual plan. Two timeframes, Day's been binned — no edge, so we don't pretend. "+planSay(wk,'week pick')+planSay(lg,'long pick')+"Levels are there so you're not just guessing. Use a stop. Always use a stop.")
-                      :"No served picks tonight, either timeframe. The model didn't fancy enough to put its name to one, and neither will I. Some nights the kitchen's shut.";
+      function planSay(p,lab){ var lv=[]; if(p.nEntry)lv.push("get in around "+String(p.nEntry).replace(/[–-].*/,'')); if(p.nStop)lv.push("stop at "+p.nStop); if(p.nTarget)lv.push("aim for "+p.nTarget);
+        return "The "+lab+", "+ctSpokenName(p)+". "+(lv.length?lv.join(", ")+". ":"levels are on the card. "); }
+      var body=served.length ? served.map(function(x){return planRow(x.p,x.lab);}).join('')
+                             : '<div class="ct-plan-row">No served picks tonight — the model didn’t like enough to serve. Honest, that.</div>';
+      var say=served.length ? ("Right, the actual plan. Two timeframes, Day's been binned — no edge, so we don't pretend. "
+                              +served.map(function(x){return planSay(x.p,x.say+" pick");}).join("")
+                              +"Levels are there so you're not just guessing. Use a stop. Always use a stop.")
+                            : "No served picks tonight, either timeframe. The model didn't fancy enough to put its name to one, and neither will I. Some nights the kitchen's shut.";
       return { k:'plan', fill:{body:body}, cap:"📋 <b>The plan</b> — 📅 Week & 📈 Long, with the levels.", say:say };
     })(),
     // #ct-radar (user ask) — a fully-narrated "on the radar" chapter: SHARED, market-wide dates coming up
