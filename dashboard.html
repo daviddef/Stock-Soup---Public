@@ -15,7 +15,7 @@
 <link rel="icon" type="image/png" href="icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,900;1,9..144,800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,900;1,9..144,800&family=Gaegu:wght@400;700&family=Caveat:wght@600;700&display=swap" rel="stylesheet">
 <style>
   :root{
     --ground:#14100E; --surface:#1E1815; --surface-2:#271F1A; --line:#3A2F27;
@@ -6406,6 +6406,260 @@ function saladBadgeFrom(orange, cherry, banana, sym, region){
   return '<span class="saladbadge" title="'+esc(tip)+'">🥗</span>';
 }
 // #salad — the trifecta breakdown modal (mirrors openBanana): the three fruit gauges + why all-three is special.
+// ===== Chalk Talk (#chalktalk) — an animated chalkboard that draws + narrates tonight's four flavours =====
+// The board is built LIVE from the pot (same overallScore/signalRows/_sentResolve/saladInfo the cards use), so
+// it's always consistent + works with browser voice with zero pipeline dependency. When the pipeline has
+// rendered Grok-TTS audio (latest.chalkTalk[mkt].scenes[].audio), the player prefers that studio track and its
+// exact caption text; otherwise it computes scenes live and narrates with the device's built-in speech.
+function ctTopBy(pool,fn){ var best=null,bv=-1e9; pool.forEach(function(c){ var v=fn(c); if(v!=null&&v>bv){bv=v;best=c;} }); return best; }
+function ctLeaders(reg){
+  var D=(LAST&&LAST.D)||{};
+  var pool=(D.candidates||[]).filter(function(c){return (c.region||'us')===reg && c.score && c.score.buy_now!=null;});
+  if(!pool.length) return null;
+  function O(c){return c.score.buy_now;}
+  function C(c){try{var ov=overallScore(c.score.buy_now,signalRows(c,reg));return ov?ov.score:null;}catch(e){return null;}}
+  function B(c){try{var b=_sentResolve(c.sym,reg,c);return b?b.score:null;}catch(e){return null;}}
+  function S(c){try{var s=saladInfo(c.sym,reg,c);return s?s.min:null;}catch(e){return null;}}
+  function pack(c){ if(!c) return null;
+    var head=c.news||c.newsHead||((c.announcements||[])[0]||{}).headline||'';
+    return {sym:c.sym,name:c.name||c.sym,o:Math.round(c.score.buy_now),
+      c:(C(c)!=null?Math.round(C(c)):null),b:(B(c)!=null?Math.round(B(c)):null),
+      verdict:(c.score&&c.score.verdict)||c.verdict||'',head:String(head).slice(0,80)}; }
+  return {label:reg==='au'?'ASX':'US',
+    timing:pack(ctTopBy(pool,O)), conv:pack(ctTopBy(pool,C)),
+    news:pack(ctTopBy(pool,B)), salad:pack(ctTopBy(pool,S)), pool:pool.length};
+}
+function ctBuildScenes(reg){
+  // prefer the pipeline's voiced scenes (exact text the audio was made from)
+  var D=(LAST&&LAST.D)||{}, ct=(D.chalkTalk||{})[reg];
+  if(ct && ct.scenes && ct.scenes.length) return {voiced:true, label:ct.label||(reg==='au'?'ASX':'US'), pool:ct.pool, scenes:ct.scenes};
+  var L=ctLeaders(reg); if(!L||!L.timing) return null;
+  function cap1(s){s=String(s||'');return s.charAt(0).toUpperCase()+s.slice(1);}
+  var T=L.timing, Cv=L.conv, N=L.news, Sd=L.salad, sameHead=(Cv&&T&&Cv.sym===T.sym);
+  var scenes=[
+    { cap:"Tonight's kitchen: every <b>"+L.label+"</b> name, tasted on four flavours — 🍊 timing · 🍒 conviction · 🍌 news · 🥗 salad.",
+      say:"Welcome to tonight's kitchen. We tasted every "+L.label+" name and rated each on four flavours — timing, conviction, fresh news, and the rare fruit salad. Here's what came out of the pot.",
+      k:'intro' },
+    { cap:"🍊 <b>Timing</b> — am I early? Sharpest tonight: <span class='ct-t'>"+T.sym+"</span> at <span class='ct-n'>"+T.o+"</span>. "+esc(T.verdict||''),
+      say:"First flavour, the orange — timing. It asks, is this a fresh setup, am I early before the crowd? Tonight's sharpest is "+ctSpell(T.sym)+", scoring "+T.o+" out of a hundred. "+(T.verdict||''),
+      k:'timing', fill:{t:T.sym, o:T.o, why:(T.head||'')} },
+    { cap: sameHead
+        ? "🍒 <b>Conviction</b> — do all signals agree? <span class='ct-t'>"+Cv.sym+"</span> tops this too at <span class='ct-n'>"+Cv.c+"</span> — one name, both flavours: your headline plate."
+        : "🍒 <b>Conviction</b> — broadest agreement: <span class='ct-t'>"+(Cv?Cv.sym:'—')+"</span> at <span class='ct-n'>"+(Cv?Cv.c:'—')+"</span>.",
+      say: sameHead
+        ? "Next, the cherry — conviction. Do all the signals agree, or just one loud one? Here's the tell: "+ctSpell(Cv.sym)+" tops this too, at "+Cv.c+". When timing and the whole kitchen point at the same dish, that's your headline plate."
+        : "Next, the cherry — conviction. Broadest agreement tonight goes to "+ctSpell(Cv?Cv.sym:'')+", at "+(Cv?Cv.c:'')+".",
+      k:'conv', fill:{t:Cv?Cv.sym:'—', c:Cv?Cv.c:'—'} },
+    { cap:"🍌 <b>Fresh news</b>"+((N&&N.o<45)?" — mind the entry":"")+". Loudest: <span class='ct-t'>"+(N?N.sym:'—')+"</span> at <span class='ct-n'>"+(N?N.b:'—')+"</span>"+((N&&N.o<45)?", yet timing only <span class='ct-r'>"+N.o+"</span> — loud news isn't always a good price.":"."),
+      say:"Now the banana — fresh news. It rewards a story the price hasn't chased yet. The loudest tonight is "+ctSpell(N?N.sym:'')+", scoring "+(N?N.b:'')+". "+((N&&N.o<45)?("But watch — its timing is only "+N.o+". Great news, but the market may have already paid for it. A lesson, not a green light."):""),
+      k:'news', fill:{t:N?N.sym:'—', b:N?N.b:'—', o:N?N.o:'—', warn:(N&&N.o<45)} },
+    (Sd && Sd.o!=null && Sd.c!=null && Sd.b!=null && Math.min(Sd.o,Sd.c,Sd.b)>=SALAD_MIN)
+      ? { cap:"🥗 <b>Fruit salad</b> — all three at once, rare. Tonight: <span class='ct-t'>"+Sd.sym+"</span> — 🍊 <span class='ct-n'>"+Sd.o+"</span> · 🍒 <span class='ct-n'>"+Sd.c+"</span> · 🍌 <span class='ct-n'>"+Sd.b+"</span>.",
+          say:"And the rare one — the fruit salad. Strong on all three at once. Tonight that's "+ctSpell(Sd.sym)+" — "+Sd.o+" timing, "+Sd.c+" conviction, "+Sd.b+" news. Not the flashiest, but the most balanced plate on the menu.",
+          k:'salad', fill:{t:Sd.sym, o:Sd.o, c:Sd.c, b:Sd.b} }
+      : { cap:"🥗 <b>Fruit salad</b> — none tonight. No "+L.label+" name cleared all three flavours at once (that's the point — it's rare).",
+          say:"And the rare one — the fruit salad, strong on all three at once. Tonight, none of the "+L.label+" names cleared it. That's the point — a true trifecta is rare.",
+          k:'salad', fill:{t:'—'} },
+    { cap:"How to order: 🍊 fresh setup · 🍒 everyone agrees · 🍌 mind the entry · 🥗 balance. Same pot, <b>four ways to serve it.</b>",
+      say:"So — how will you order? Want a fresh setup, take the orange. Want everyone at the table nodding, the cherry. Chasing a story, mind the banana's entry. Want balance, the salad. Same pot, four ways to serve it.",
+      k:'verdict' }
+  ];
+  return {voiced:false, label:L.label, pool:L.pool, scenes:scenes};
+}
+// spell short/opaque tickers so the built-in voice reads them as letters, not a word
+function ctSpell(sym){ sym=String(sym||''); if(!sym) return 'this one';
+  if(sym.length<=4 && sym===sym.toUpperCase()) return sym.split('').join(' '); return sym; }
+
+var CT_STATE={idx:-1,playing:false,timer:null,audio:null,muted:false,reg:null,data:null};
+function openChalkTalk(reg){
+  reg=reg||MKT||'au';
+  var built=ctBuildScenes(reg);
+  var m=document.getElementById('modal'); if(!m) return;
+  if(!built){ // no pot yet
+    m.className='modal'; m.innerHTML='<div class="mhead"><button class="mclose" id="mClose" aria-label="Close">✕</button><div class="mtf">🍲 Tonight’s specials</div></div><div class="mbody"><div class="viz"><p>No scored names in the pot for this market yet — check back after the next cook.</p></div></div>';
+    var ovx=document.getElementById('overlay'); if(ovx){ ovx.classList.add('open'); ovx.setAttribute('aria-hidden','false'); }
+    var mcx=document.getElementById('mClose'); if(mcx){ mcx.onclick=closeModal; mcx.focus(); } return;
+  }
+  LASTFOCUS=document.activeElement;
+  ctInjectCSS();
+  m.className='modal ct-modal';
+  var voicedNote = built.voiced ? '🔊 studio voice' : '🔊 device voice';
+  m.innerHTML='<div class="mhead"><button class="mclose" id="mClose" aria-label="Close">✕</button><div class="mtf">🍲 Tonight’s specials — chalk talk</div>'+
+    '<div class="ct-mkt" id="ctMkt"><button data-m="au"'+(reg==='au'?' class="on"':'')+'>🇦🇺 ASX</button><button data-m="us"'+(reg==='us'?' class="on"':'')+'>🇺🇸 US</button></div></div>'+
+    '<div class="mbody ct-body">'+ctBoardHTML()+
+      '<div class="ct-dots" id="ctDots"></div>'+
+      '<p class="ct-cap" id="ctCap" aria-live="polite">Tap <b>▶ Play</b> — chalk + voice walk you through tonight’s four flavours for the <b>'+esc(built.label)+'</b>.</p>'+
+      '<div class="ct-controls">'+
+        '<button class="ct-btn ct-play" id="ctPlay">▶ Play the lesson</button>'+
+        '<button class="ct-btn" id="ctReplay">↻ Replay</button>'+
+        '<button class="ct-btn" id="ctMute" aria-pressed="false">'+voicedNote+'</button>'+
+      '</div>'+
+      '<p class="ct-foot">Every ticker &amp; number is <b>tonight’s real pot</b> ('+built.pool+' '+esc(built.label)+' names). '+(built.voiced?'Narrated with Grok studio voice.':'Narrated with your device’s built-in voice — studio voice fills in once the kitchen renders it.')+'</p>'+
+    '</div>';
+  var ov=document.getElementById('overlay'); if(ov){ ov.classList.add('open'); ov.setAttribute('aria-hidden','false'); }
+  var mc=document.getElementById('mClose'); if(mc){ mc.onclick=function(){ ctStop(); closeModal(); }; mc.focus(); }
+  ctMount(reg, built);
+}
+function ctInjectCSS(){
+  if(document.getElementById('ctCSS')) return;
+  var s=document.createElement('style'); s.id='ctCSS';
+  s.textContent=
+  '.ct-modal .mbody{padding-top:6px}'+
+  '.ct-mkt{display:inline-flex;background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:3px;gap:2px;margin-left:auto}'+
+  '.ct-mkt button{font-weight:800;font-size:12.5px;color:var(--muted);background:none;border:0;border-radius:7px;padding:5px 11px;cursor:pointer}'+
+  '.ct-mkt button.on{background:var(--broth);color:#241207}'+
+  '.ct-board{position:relative;width:100%;aspect-ratio:16/10;border-radius:9px;overflow:hidden;border:11px solid #6b4b2a;'+
+    'background:radial-gradient(140% 120% at 15% 0%,rgba(255,255,255,.05),transparent 40%),linear-gradient(180deg,#26302b,#212a25);'+
+    'box-shadow:0 0 0 2px #4d351d,inset 0 0 80px rgba(0,0,0,.45)}'+
+  '.ct-stage{position:absolute;inset:0}'+
+  '.ct-layer{position:absolute;inset:0;opacity:0;transition:opacity .5s ease}.ct-layer.on{opacity:1}'+
+  '.ct-layer svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible;filter:url(#ctChalk)}'+
+  '.ct-draw{fill:none;stroke:#f4f1e8;stroke-width:2.3;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:1;stroke-dashoffset:1}'+
+  '.ct-layer.on .ct-draw{animation:ctdraw 1s ease forwards}@keyframes ctdraw{to{stroke-dashoffset:0}}'+
+  '.ct-o{stroke:#ff8a3d}.ct-c{stroke:#ff5d73}.ct-ba{stroke:#f7d861}.ct-y{stroke:#f4d03f}.ct-g{stroke:#7bd88f}.ct-dim{stroke:#c9c6ba;opacity:.85}'+
+  '.ct-txt{position:absolute;inset:0;padding:5% 6%}'+
+  '.ct-cw{position:absolute;font-family:"Gaegu","Segoe UI",sans-serif;color:#f4f1e8;text-shadow:0 0 10px rgba(244,241,232,.2);line-height:1.05;opacity:0;transform:translateY(6px)}'+
+  '.ct-layer.on .ct-cw{animation:ctwrite .5s ease forwards}'+
+  '.ct-layer.on .ct-cw.d1{animation-delay:.12s}.ct-layer.on .ct-cw.d2{animation-delay:.4s}.ct-layer.on .ct-cw.d3{animation-delay:.72s}.ct-layer.on .ct-cw.d4{animation-delay:1.05s}'+
+  '@keyframes ctwrite{to{opacity:1;transform:translateY(0)}}'+
+  '.ct-cw.big{font-weight:700;font-size:clamp(24px,5.4vw,46px)}.ct-cw.mid{font-weight:700;font-size:clamp(17px,3.3vw,26px)}'+
+  '.ct-cw.sm{font-family:"Caveat","Segoe UI",cursive;font-weight:700;font-size:clamp(14px,2.7vw,21px);color:#c9c6ba}'+
+  '.ct-cwo{color:#ff8a3d}.ct-cwc{color:#ff5d73}.ct-cwb{color:#f7d861}.ct-cwy{color:#f4d03f}.ct-cwg{color:#7bd88f}.ct-cwr{color:#ff6b6b}'+
+  '.ct-chip{display:inline-block;font-family:"Gaegu";font-weight:700;border:2px solid currentColor;border-radius:8px;padding:0 8px}'+
+  '.ct-barwrap{position:absolute;left:38%;right:8%}.ct-bartrack{height:14px;border:2px solid #c9c6ba;border-radius:8px;opacity:.85;overflow:hidden;position:relative}'+
+  '.ct-barfill{position:absolute;inset:0;width:0;border-radius:6px;background:repeating-linear-gradient(45deg,#ff8a3d,#ff8a3d 6px,rgba(255,138,61,.7) 6px,rgba(255,138,61,.7) 12px)}'+
+  '.ct-layer.on .ct-barfill{animation:ctbar 1s .5s ease forwards}@keyframes ctbar{to{width:var(--pct,50%)}}'+
+  '.ct-cap{margin:14px auto 0;max-width:640px;min-height:56px;font-family:"Caveat","Segoe UI",cursive;font-weight:600;font-size:clamp(18px,3vw,24px);line-height:1.35;text-align:center;text-wrap:balance;color:var(--ink);display:flex;align-items:center;justify-content:center}'+
+  '.ct-cap .ct-n{font-variant-numeric:tabular-nums;color:var(--broth)}.ct-cap .ct-t{color:var(--broth);font-weight:800}.ct-cap .ct-r{color:#e05555}'+
+  '.ct-controls{display:flex;gap:9px;justify-content:center;margin-top:4px;flex-wrap:wrap}'+
+  '.ct-btn{font-family:"Gaegu","Segoe UI",sans-serif;font-weight:800;font-size:14px;color:var(--ink);background:var(--surface-2);border:1px solid var(--line);border-radius:11px;padding:9px 15px;cursor:pointer}'+
+  '.ct-btn:hover{border-color:var(--broth)}.ct-btn.ct-play{background:var(--broth);border-color:var(--broth);color:#241207;padding:10px 20px;font-size:15px}'+
+  '.ct-dots{display:flex;gap:6px;justify-content:center;margin:12px 0 0}.ct-dots i{width:7px;height:7px;border-radius:50%;background:var(--line)}.ct-dots i.on{background:var(--broth)}.ct-dots i.done{background:#c9c6ba}'+
+  '.ct-foot{margin:12px auto 0;max-width:640px;text-align:center;color:var(--muted);font-size:12px;line-height:1.55}'+
+  '@media(prefers-reduced-motion:reduce){.ct-draw{stroke-dashoffset:0!important;animation:none!important}.ct-cw{opacity:1!important;transform:none!important;animation:none!important}.ct-barfill{animation:none!important;width:var(--pct,50%)!important}}';
+  document.head.appendChild(s);
+}
+function ctBoardHTML(){
+  return '<div class="ct-board"><svg width="0" height="0" style="position:absolute"><defs>'+
+    '<filter id="ctChalk"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="4" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="1.6"/></filter></defs></svg>'+
+    '<div class="ct-stage" id="ctStage">'+
+    // 0 intro (pot + hat)
+    '<section class="ct-layer" data-k="intro"><svg viewBox="0 0 400 250" aria-hidden="true">'+
+      '<path class="ct-draw" pathLength="1" d="M150 150 h100 l-10 60 h-80 z"/><path class="ct-draw" pathLength="1" d="M144 150 h112"/>'+
+      '<path class="ct-draw ct-dim" pathLength="1" d="M186 138 q-8 -18 4 -30 q10 -10 2 -26"/><path class="ct-draw ct-dim" pathLength="1" d="M206 136 q-8 -20 4 -32 q10 -12 2 -28"/>'+
+      '<path class="ct-draw" pathLength="1" d="M300 70 a16 16 0 1 1 4 -1 a13 13 0 1 1 -20 6 a15 15 0 1 1 16 -5 Z"/><path class="ct-draw" pathLength="1" d="M286 96 h30 v14 h-30 z"/></svg>'+
+      '<div class="ct-txt"><div class="ct-cw big d1" style="left:6%;top:14%">Tonight’s specials</div>'+
+        '<div class="ct-cw mid d2" style="left:6%;bottom:12%"><span class="ct-cwo">🍊</span> <span class="ct-cwc">🍒</span> <span class="ct-cwb">🍌</span> <span class="ct-cwg">🥗</span></div></div></section>'+
+    // 1 timing (orange)
+    '<section class="ct-layer" data-k="timing"><svg viewBox="0 0 400 250" aria-hidden="true">'+
+      '<circle class="ct-draw ct-o" pathLength="1" cx="90" cy="120" r="46"/><path class="ct-draw ct-g" pathLength="1" d="M90 74 q10 -12 22 -8 q-6 12 -22 10"/>'+
+      '<path class="ct-draw ct-o" pathLength="1" d="M64 104 q26 30 52 0 M64 120 q26 30 52 0 M64 136 q26 26 52 0"/></svg>'+
+      '<div class="ct-txt"><div class="ct-cw big ct-cwo d1" style="left:38%;top:8%">🍊 Timing</div>'+
+        '<div class="ct-cw mid d2" data-fill="t_line" style="left:38%;top:40%"></div>'+
+        '<div class="ct-barwrap d3" style="top:62%"><div class="ct-bartrack"><div class="ct-barfill" data-fill="t_bar"></div></div></div>'+
+        '<div class="ct-cw sm d4" data-fill="t_why" style="left:38%;bottom:6%;right:6%"></div></div></section>'+
+    // 2 conviction (cherries + ticks)
+    '<section class="ct-layer" data-k="conv"><svg viewBox="0 0 400 250" aria-hidden="true">'+
+      '<circle class="ct-draw ct-c" pathLength="1" cx="78" cy="150" r="26"/><circle class="ct-draw ct-c" pathLength="1" cx="128" cy="160" r="26"/>'+
+      '<path class="ct-draw ct-g" pathLength="1" d="M78 124 q20 -46 40 -60 M128 134 q6 -44 -10 -70"/>'+
+      '<path class="ct-draw ct-g" pathLength="1" d="M250 80 l8 8 l16 -18 M250 130 l8 8 l16 -18"/></svg>'+
+      '<div class="ct-txt"><div class="ct-cw big ct-cwc d1" style="left:40%;top:8%">🍒 Conviction</div>'+
+        '<div class="ct-cw mid d2" data-fill="c_line" style="left:40%;top:44%"></div>'+
+        '<div class="ct-cw sm d3" data-fill="c_why" style="left:40%;bottom:10%;right:6%"></div></div></section>'+
+    // 3 news (banana + papers)
+    '<section class="ct-layer" data-k="news"><svg viewBox="0 0 400 250" aria-hidden="true">'+
+      '<path class="ct-draw ct-ba" pathLength="1" d="M60 90 q10 70 74 84 q-18 -18 -20 -40 q-30 -6 -44 -44 z"/>'+
+      '<path class="ct-draw ct-dim" pathLength="1" d="M250 80 h64 v46 h-64 z M250 140 h64 v40 h-64 z"/></svg>'+
+      '<div class="ct-txt"><div class="ct-cw big ct-cwb d1" style="left:34%;top:6%">🍌 Fresh news</div>'+
+        '<div class="ct-cw mid d2" data-fill="n_line" style="left:34%;top:44%"></div>'+
+        '<div class="ct-cw sm ct-cwr d3" data-fill="n_warn" style="left:34%;bottom:8%;right:6%"></div></div></section>'+
+    // 4 salad (bowl)
+    '<section class="ct-layer" data-k="salad"><svg viewBox="0 0 400 250" aria-hidden="true">'+
+      '<path class="ct-draw" pathLength="1" d="M92 130 a70 40 0 0 0 140 0 z"/><path class="ct-draw ct-dim" pathLength="1" d="M84 130 h156"/>'+
+      '<circle class="ct-draw ct-o" pathLength="1" cx="140" cy="120" r="15"/><circle class="ct-draw ct-c" pathLength="1" cx="176" cy="126" r="11"/>'+
+      '<path class="ct-draw ct-ba" pathLength="1" d="M188 108 q6 22 26 26"/></svg>'+
+      '<div class="ct-txt"><div class="ct-cw big ct-cwg d1" style="left:56%;top:10%">🥗 Salad</div>'+
+        '<div class="ct-cw mid d2" data-fill="s_line" style="left:56%;top:46%"></div>'+
+        '<div class="ct-cw sm d3" data-fill="s_why" style="left:56%;bottom:12%;right:5%"></div></div></section>'+
+    // 5 verdict (plate)
+    '<section class="ct-layer" data-k="verdict"><svg viewBox="0 0 400 250" aria-hidden="true">'+
+      '<ellipse class="ct-draw" pathLength="1" cx="200" cy="150" rx="86" ry="20"/><ellipse class="ct-draw ct-dim" pathLength="1" cx="200" cy="146" rx="62" ry="13"/></svg>'+
+      '<div class="ct-txt"><div class="ct-cw big ct-cwy d1" style="left:0;right:0;top:12%;text-align:center">How will you order?</div>'+
+        '<div class="ct-cw mid d2" style="left:0;right:0;bottom:16%;text-align:center">Same pot — <b style="color:#ff8a3d">four ways.</b></div></div></section>'+
+    '</div></div>';
+}
+function ctMount(reg, built){
+  CT_STATE.reg=reg; CT_STATE.data=built; CT_STATE.idx=-1; CT_STATE.playing=false;
+  var supportsTTS=('speechSynthesis' in window);
+  var dotsWrap=document.getElementById('ctDots'); dotsWrap.innerHTML='';
+  built.scenes.forEach(function(){ dotsWrap.appendChild(document.createElement('i')); });
+  ctFillScenes(built.scenes);
+  ctShowScene(0, built); document.querySelectorAll('#ctDots i').forEach(function(d){d.classList.remove('on','done');});
+  var playBtn=document.getElementById('ctPlay'), repBtn=document.getElementById('ctReplay'), muteBtn=document.getElementById('ctMute');
+  CT_STATE.muted = built.voiced ? false : !supportsTTS;
+  if(!built.voiced && !supportsTTS){ muteBtn.textContent='🔇 no voice'; muteBtn.disabled=true; }
+  playBtn.onclick=function(){ if(CT_STATE.playing) ctPause(); else if(CT_STATE.idx>=built.scenes.length-1&&CT_STATE.idx>-1) ctPlay(0); else if(CT_STATE.idx>-1) ctPlay(CT_STATE.idx); else ctPlay(0); };
+  repBtn.onclick=function(){ CT_STATE.idx=-1; ctPlay(0); };
+  muteBtn.onclick=function(){ CT_STATE.muted=!CT_STATE.muted; muteBtn.setAttribute('aria-pressed',CT_STATE.muted?'false':'true');
+    muteBtn.textContent=CT_STATE.muted?'🔇 muted':(built.voiced?'🔊 studio voice':'🔊 device voice'); if(CT_STATE.playing) ctPlay(CT_STATE.idx>-1?CT_STATE.idx:0); };
+  var mkt=document.getElementById('ctMkt'); if(mkt) mkt.onclick=function(e){ var b=e.target.closest('button[data-m]'); if(!b) return;
+    ctStop(); var nr=b.dataset.m; var nb=ctBuildScenes(nr); if(!nb) return;
+    [].forEach.call(this.querySelectorAll('button'),function(x){x.classList.toggle('on',x===b);});
+    document.getElementById('ctCap').innerHTML='Tap <b>▶ Play</b> — tonight’s four flavours for the <b>'+esc(nb.label)+'</b>.';
+    ctMount(nr, nb); document.getElementById('ctPlay').innerHTML='▶ Play the lesson'; };
+}
+function ctFillScenes(scenes){
+  scenes.forEach(function(sc){ if(!sc.fill) return; var f=sc.fill;
+    function set(k,html){ var el=document.querySelector('[data-fill="'+k+'"]'); if(el!=null) el.innerHTML=html; }
+    if(sc.k==='timing'){ set('t_line','<span class="ct-chip ct-cwo">'+esc(f.t)+' · 🍊 '+f.o+'</span>'); var bar=document.querySelector('[data-fill="t_bar"]'); if(bar) bar.style.setProperty('--pct',Math.max(3,Math.min(100,f.o))+'%'); set('t_why', f.why?esc(f.why):''); }
+    if(sc.k==='conv'){ set('c_line','<span class="ct-chip ct-cwc">'+esc(f.t)+' · 🍒 '+f.c+'</span>'); set('c_why','when timing &amp; conviction agree, that’s your headline plate'); }
+    if(sc.k==='news'){ set('n_line','<span class="ct-chip ct-cwb">'+esc(f.t)+' · 🍌 '+f.b+'</span>'); set('n_warn', f.warn?('…but timing only <b style="color:#ff6b6b">'+f.o+'</b> — the price may have moved'):''); }
+    if(sc.k==='salad'){ set('s_line', f.t==='—'?'<span class="ct-chip ct-cwg">none tonight</span>':'<span class="ct-chip ct-cwg">'+esc(f.t)+'</span> 🍊 '+f.o+' · 🍒 '+f.c+' · 🍌 '+f.b); set('s_why', f.t==='—'?'a true trifecta is rare — that’s the point':'the most balanced plate on the menu'); }
+  });
+}
+function ctShowScene(i, built){
+  var layers=document.querySelectorAll('#ctStage .ct-layer');
+  layers.forEach(function(l,j){ l.classList.toggle('on', j===i); });
+  document.querySelectorAll('#ctDots i').forEach(function(d,j){ d.classList.toggle('on',j===i); d.classList.toggle('done',j<i); });
+  var cap=document.getElementById('ctCap'); if(cap) cap.innerHTML=built.scenes[i].cap;
+}
+function ctClearTimer(){ if(CT_STATE.timer){ clearTimeout(CT_STATE.timer); CT_STATE.timer=null; } }
+function ctStopAudio(){ if(CT_STATE.audio){ try{CT_STATE.audio.pause();}catch(e){} CT_STATE.audio=null; } if('speechSynthesis' in window){ try{speechSynthesis.cancel();}catch(e){} } }
+function ctPause(){ CT_STATE.playing=false; ctClearTimer(); ctStopAudio(); var p=document.getElementById('ctPlay'); if(p) p.innerHTML='▶ Play the lesson'; }
+function ctStop(){ ctPause(); CT_STATE.idx=-1; }
+function ctEstMs(t){ return Math.max(3400,(String(t||'').split(/\s+/).length)*300+900); }
+function ctPlay(from){
+  var built=CT_STATE.data; if(!built) return;
+  ctStopAudio(); ctClearTimer(); CT_STATE.playing=true;
+  var p=document.getElementById('ctPlay'); if(p) p.innerHTML='⏸ Pause';
+  ctRunScene(from||0);
+}
+function ctRunScene(i){
+  var built=CT_STATE.data; if(!built) return;
+  if(i>=built.scenes.length){ ctFinish(); return; }
+  CT_STATE.idx=i; ctShowScene(i, built);
+  var sc=built.scenes[i];
+  var next=function(){ if(CT_STATE.playing) CT_STATE.timer=setTimeout(function(){ ctRunScene(i+1); },380); };
+  if(!CT_STATE.muted && built.voiced && sc.audio){
+    var a=new Audio(sc.audio); CT_STATE.audio=a; a.onended=next;
+    a.onerror=function(){ ctSpeakFallback(sc,i,next); };
+    a.play().catch(function(){ ctSpeakFallback(sc,i,next); });
+  } else if(!CT_STATE.muted && ('speechSynthesis' in window)){
+    ctSpeakFallback(sc,i,next);
+  } else {
+    CT_STATE.timer=setTimeout(function(){ if(CT_STATE.playing) ctRunScene(i+1); }, ctEstMs(sc.say||sc.cap));
+  }
+}
+function ctSpeakFallback(sc,i,next){
+  if(!('speechSynthesis' in window)){ CT_STATE.timer=setTimeout(next, ctEstMs(sc.say||sc.cap)); return; }
+  try{ var u=new SpeechSynthesisUtterance(sc.say||String(sc.cap||'').replace(/<[^>]+>/g,'')); u.rate=0.98;
+    var vs=speechSynthesis.getVoices()||[]; var en=vs.filter(function(v){return (v.lang||'').toLowerCase().indexOf('en-au')===0;})[0]||vs.filter(function(v){return (v.lang||'').toLowerCase().indexOf('en')===0;})[0];
+    if(en) u.voice=en; u.onend=next; u.onerror=next; speechSynthesis.speak(u);
+  }catch(e){ CT_STATE.timer=setTimeout(next, ctEstMs(sc.say||sc.cap)); }
+}
+function ctFinish(){ CT_STATE.playing=false; ctClearTimer(); var p=document.getElementById('ctPlay'); if(p) p.innerHTML='↻ Watch again';
+  document.querySelectorAll('#ctDots i').forEach(function(d){ d.classList.remove('on'); d.classList.add('done'); }); }
+
 function openSalad(sym, region, ds){
   region=region||'us';
   var s=null;
@@ -7061,6 +7315,11 @@ function kitchenScoreStory(D){
       +'.ks-exc{background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:14px}.ks-exsym{font-weight:800;font-size:17px}.ks-exname{color:var(--muted);font-size:12px;margin-bottom:10px}'
       +'.ks-glab{display:flex;justify-content:space-between;font-size:11px;color:var(--faint);font-weight:700;margin-top:8px}.ks-gauge{height:8px;border-radius:5px;background:var(--line);overflow:hidden;margin:3px 0}.ks-gauge i{display:block;height:100%}.ks-g-o i{background:var(--broth)}.ks-g-c i{background:#d6283c}.ks-g-b i{background:#f4b23e}'
       +'.ks-verdict{font-size:12.5px;color:var(--muted);line-height:1.5;margin-top:9px}.ks-verdict b{color:var(--ink)}'
+      +'.ks-ct-cta{display:flex;align-items:center;gap:13px;width:100%;text-align:left;cursor:pointer;margin:0 0 16px;padding:13px 15px;border-radius:14px;border:1px solid var(--line);background:linear-gradient(180deg,#2a3129,#222922);color:#f4f1e8;box-shadow:0 8px 20px -12px rgba(0,0,0,.5)}'
+      +'.ks-ct-cta:hover{border-color:var(--broth);transform:translateY(-1px)}.ks-ct-cta:active{transform:translateY(0)}'
+      +'.ks-ct-ic{flex:0 0 auto;width:38px;height:38px;border-radius:50%;background:var(--broth);color:#241207;display:grid;place-items:center;font-size:16px;font-weight:900;box-shadow:0 0 16px -2px var(--broth)}'
+      +'.ks-ct-tx{flex:1 1 auto;display:flex;flex-direction:column;gap:2px;min-width:0}.ks-ct-tx b{font-size:15px;font-weight:800}.ks-ct-tx small{font-size:11.5px;color:#b9c0b0;line-height:1.35}'
+      +'.ks-ct-board{flex:0 0 auto;font-size:26px;filter:drop-shadow(0 3px 6px rgba(0,0,0,.4))}'
       +'.ks-exintro{font-size:12.5px;color:var(--muted);line-height:1.5;margin:0 0 10px}'
       +'.ks-salad{font-size:12px;color:var(--muted);line-height:1.45;margin-top:9px;padding-top:9px;border-top:1px dashed var(--line)}.ks-salad b{color:var(--ink)}.ks-salad-no{opacity:.75}'
       // Mobile: the desktop width-taper (84%/60%/44%/30%) crushes each funnel row into an unreadable sliver.
@@ -7140,7 +7399,9 @@ function kitchenScoreStory(D){
         +'<p>The 🍌 is the key twist: it rewards a name that <b>hasn’t moved yet</b>. So a name that’s <b>also</b> high on 🍊 and 🍒 means “great setup, everything agrees, <b>and</b> there’s a fresh catalyst you’re not late to.” That’s the genuine <b>“get in before it runs”</b> corner — and it’s <b>rare</b>, because momentum names (high 🍊) have usually already moved (low 🍌). When all three line up, it’s special.</p>'
         +'<div class="ks-saltag">🥗 Sort <b>The Stock Pot</b> by <b>Fruit salad</b> to rank names by their weakest fruit — only a true trifecta tops the list.</div>'
       +'</div>';
-    return '<div class="ks-wrap">'+css+funnel+lanes+examples+'</div>';
+    var ctCta='<button class="ks-ct-cta" onclick="openChalkTalk()" title="A 40-second animated chalkboard that narrates tonight’s four flavours">'+
+      '<span class="ks-ct-ic">▶</span><span class="ks-ct-tx"><b>Watch tonight’s specials</b><small>a 40-sec chalk-talk: 🍊 timing · 🍒 conviction · 🍌 news · 🥗 salad — drawn &amp; narrated</small></span><span class="ks-ct-board">🍲</span></button>';
+    return '<div class="ks-wrap">'+css+ctCta+funnel+lanes+examples+'</div>';
   }catch(e){ try{console.error('kitchenScoreStory',e);}catch(_){}; return ''; }
 }
 function overallBannerHtml(ov){
@@ -7539,6 +7800,7 @@ function openModal(p,region,cur){
 }
 
 function closeModal(){
+  try{ ctStop(); }catch(e){}   // #chalktalk — any close path (Escape, overlay tap, ✕) stops narration + audio
   var ov=document.getElementById('overlay');
   ov.classList.remove('open');ov.setAttribute('aria-hidden','true');
   if(LASTFOCUS&&LASTFOCUS.focus)LASTFOCUS.focus();
