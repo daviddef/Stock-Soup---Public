@@ -2113,7 +2113,7 @@
   .owcard:hover{border-color:var(--accent)} .owcard:active{transform:scale(.985)}
   .ow-c-top{display:flex;align-items:baseline;justify-content:space-between;gap:6px}
   .ow-c-sym{font-size:14px;font-weight:800}
-  .ow-c-px{font-size:11.5px;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .ow-c-px{font-size:11.5px;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap;flex:0 0 auto;max-width:60%;overflow:hidden;text-overflow:ellipsis}
   .ow-c-px.up{color:var(--buy)} .ow-c-px.down{color:var(--dont)}
   .ow-c-name{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .ow-c-fruits{font-size:12px;font-weight:700;color:var(--ink);margin-top:3px;font-variant-numeric:tabular-nums}
@@ -6590,10 +6590,14 @@ function hydrateOtherWinners(el){
   [t2,t3].forEach(function(a){ a.forEach(function(p){ bump(p.sym); }); });
   themes.forEach(function(t){ bump(t.leaders[0].sym); });
   function fruits(x){ return '🍊 '+(x.o!=null?x.o:'—')+' · 🍒 '+(x.cc!=null?(x.cc+(x.light?'°':'')):'—')+' · 🍌 '+(x.b!=null?x.b:'—'); }
+  // #ow-chg (21 Aug, user-caught: raw decimals overlapping the symbol) — the scan rows carry `change` as a raw
+  // FRACTION (0.046 = 4.6%), the catalyst rows as a formatted string ("-0.13%"). Normalise both to a short "+X.X%".
+  function _fmtChg(v){ if(v==null||v==='') return ''; var str=String(v), n=parseFloat(str.replace(/[^0-9.\-]/g,''));
+    if(!isFinite(n)) return ''; if(str.indexOf('%')<0 && Math.abs(n)<1) n*=100; return (n>=0?'+':'')+n.toFixed(1)+'%'; }
   function card(sym,name,price,change,up,foot){
-    var heat=Math.min(3,freq[sym]||0), badge=served[sym]?'<span class="ow-star" title="Served tonight">⭐</span>':'';
+    var heat=Math.min(3,freq[sym]||0), badge=served[sym]?'<span class="ow-star" title="Served tonight">⭐</span>':'', _c=_fmtChg(change);
     return '<button class="owcard'+(heat>=2?' ow-h'+heat:'')+'" data-sym="'+esc(sym)+'" data-region="'+esc(MKT)+'"'+(heat>=2?' title="Features in '+heat+' lenses"':'')+'>'
-      +'<div class="ow-c-top"><b class="ow-c-sym">'+esc(sym)+badge+'</b>'+(price!=null&&price!==''?'<span class="ow-c-px '+(up!==false?'up':'down')+'">'+esc(String(price))+(change!=null&&change!==''?' '+esc(String(change)):'')+'</span>':'')+'</div>'
+      +'<div class="ow-c-top"><b class="ow-c-sym">'+esc(sym)+badge+'</b>'+(price!=null&&price!==''?'<span class="ow-c-px '+(up!==false?'up':'down')+'">'+esc(String(price))+(_c?' '+esc(_c):'')+'</span>':'')+'</div>'
       +'<div class="ow-c-name">'+esc(name||sym)+'</div>'
       +'<div class="ow-c-fruits">'+foot+'</div></button>'; }
   function grp(icon,label,arr){ if(!arr.length) return '';
