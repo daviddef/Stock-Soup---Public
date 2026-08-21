@@ -8221,10 +8221,15 @@ function tickerModalHTML(o, region, cur, isPick){
   if(o.score){
     if(o.score.buy_now!=null){ var _jid=++JUICE_SEQ; JUICE_CACHE[_jid]={score:o.score,sym:o.sym,name:o.name,sigRows:signalRows(o,region)};
       chips+='<button class="juicebtn callchip" data-juice-id="'+_jid+'" title="Buy-now score — tap for the full breakdown">🍊 '+Math.round(o.score.buy_now)+'</button>'; }
-    try{ chips+=cherryChip(o.score,o.sym,o.name,signalRows(o,region)); }catch(e){}
+    // #wwyd-fruits — a scan-only name carries a precomputed LIGHT 🍒 (cherryOverride, matching the Stock-Pot
+    // table's fdrLightCherry); a catalyst name recomputes via cherryChip. Never let the two paths disagree.
+    if(o.cherryOverride!=null){ var _cv=o.cherryOverride>=62?'ov-buy':o.cherryOverride>=45?'ov-watch':'ov-avoid';
+      chips+='<span class="cherrybtn '+_cv+'" title="Light conviction — technicals only (whole-market scan name, not deep-vetted). Marked °.">🍒 '+o.cherryOverride+(o.cherryLight?'°':'')+'</span>'; }
+    else { try{ chips+=cherryChip(o.score,o.sym,o.name,signalRows(o,region)); }catch(e){} }
   }
   try{ chips+=bananaChip(o.sym,region,o); }catch(e){}   // #banana — news-Sentiment 🍌 chip in the overlay header
-  try{ chips+=saladBadge(o.sym,region,o); }catch(e){}   // #salad — 🥗 trifecta badge when all three fruits are strong
+  if(o.saladO!=null&&o.saladC!=null&&o.saladB!=null){ try{ chips+=saladBadgeFrom(o.saladO,o.saladC,o.saladB,o.sym,region); }catch(e){} }
+  else { try{ chips+=saladBadge(o.sym,region,o); }catch(e){} }   // #salad — 🥗 trifecta badge when all three fruits are strong
   try{ chips+=ownBadge(o.sym,region); }catch(e){}   // #ownbadge — 📦 if you own it
   try{ chips+=earnFlag(o.sym,region); }catch(e){}   // #bhp-fix — loud "🔴 reports tomorrow" flag in the overlay too
   var watchBtn='<button class="watchbtn iconwatch callwatch" data-sym="'+esc(o.sym)+'" data-region="'+esc(region)+'"'+(o.name?' data-name="'+esc(o.name)+'"':'')+(isPick&&o.nEntry!=null?' data-entry="'+o.nEntry+'"':'')+' aria-pressed="false" title="Add to watchlist">☆</button>';
@@ -10264,6 +10269,19 @@ function renderAnalyst(a){
   var _pot=null; try{ var _D2=(LAST&&LAST.D)||{};
     (_D2.regions||[]).forEach(function(rg){ (rg.picks||[]).forEach(function(p){ if(!_pot&&p&&p.sym===a.sym&&(rg.id||rg.region)===region&&p.score&&p.score.buy_now!=null) _pot=p; }); });
     if(!_pot) _pot=(_D2.candidates||[]).filter(function(c){return c&&c.sym===a.sym&&(c.region||'us')===region&&c.score&&c.score.buy_now!=null;})[0]||null;
+    // scan-only name (whole-market universe, not the catalyst pot) — shape its row so the header still shows the
+    // 🍊 + a light 🍒 (technicals-only) matching the Stock-Pot table, rather than nothing.
+    if(!_pot){ var _fr=((_D2.finderUniverse||{})[region]||[]).filter(function(r){return r&&r.sym===a.sym;})[0];
+      if(_fr&&_fr.buyNow!=null){
+        // match the Stock-Pot table EXACTLY: light 🍒 via fdrLightCherry (not the header's overallScore, which
+        // would land on a different number from the thin scan signals), and the 🥗 from min(🍊,🍒,🍌).
+        var _lc=null; try{ _lc=fdrLightCherry(_fr); }catch(e){}
+        var _sr=null; try{ _sr=_sentResolve(a.sym,region,_fr); }catch(e){}
+        var _sent=(_sr&&_sr.score!=null)?_sr.score:null;
+        _pot={ sym:a.sym, region:region, name:_fr.name||a.name, price:_fr.price, change:_fr.change, up:(_fr.change||0)>=0,
+          score:{buy_now:_fr.buyNow}, rsi:_fr.rsi, cherryLight:true, cherryOverride:_lc,
+          saladO:Math.round(_fr.buyNow), saladC:_lc, saladB:_sent }; }
+    }
   }catch(e){}
   var o=Object.assign({}, _pot||{}, {
     sym:a.sym, region:region, name:a.name||(_pot&&_pot.name)||null, isAnalyst:true,
