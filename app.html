@@ -2122,6 +2122,11 @@
   /* #ow-heat — background heat by how many lenses a name features in (2 = warm, 3+ = hot all-rounder) */
   .owcard.ow-h2{background:rgba(255,138,42,.15);border-color:rgba(255,138,42,.45)}
   .owcard.ow-h3{background:rgba(255,138,42,.28);border-color:rgba(255,138,42,.72)}
+  /* #ow-bothpots — two labelled sections: catalyst pot + whole stock pot */
+  .ow-sec{margin-top:15px}
+  .ow-sec-h{font-size:13px;font-weight:900;color:var(--ink);letter-spacing:.2px;padding:9px 0 2px;border-top:1px solid var(--line)}
+  .ow-sec:first-child{margin-top:3px} .ow-sec:first-child .ow-sec-h{border-top:0;padding-top:2px}
+  .ow-sec-sub{display:block;font-size:10.5px;font-weight:600;color:var(--muted);letter-spacing:0;margin-top:1px}
   /* one-line news on a watchlist card sits a touch tighter than the overlay version */
   .wcard .mnews{margin-top:8px;font-size:12.5px;padding:9px 11px}
   /* #wl-compact (21 Aug, user ask) — a watchlist card shows only the LATEST headline; the rest of the list lives
@@ -6555,7 +6560,7 @@ function otherWinnersHtml(D){
   var hasTier=((mt.type2||{})[MKT]||[]).length || ((mt.type3||{})[MKT]||[]).length;
   if(!pool.length && !hasTier) return '';
   return '<details class="owrap" ontoggle="hydrateOtherWinners(this)">'
-    +'<summary class="ow-sum"><span class="ow-sum-l">🏅 The leaderboard<span class="ow-sum-sub">top per lens, kept distinct · ⭐ = served tonight · warmer card = leads more than one lens · plus the whole-market scan</span></span><span class="ow-chev">▾</span></summary>'
+    +'<summary class="ow-sum"><span class="ow-sum-l">🏅 The leaderboard<span class="ow-sum-sub">both pots — 🌶️ catalyst &amp; 🍲 whole scan · top per lens, kept distinct · ⭐ served · warmer = leads more lenses</span></span><span class="ow-chev">▾</span></summary>'
     +'<div class="ow-body" data-ow-ready="0"><div class="ow-loading">Ranking the pot…</div></div>'
     +'</details>';
 }
@@ -6567,31 +6572,24 @@ function hydrateOtherWinners(el){
   // ranked by conviction" strip was folded in here). Each flavour shows the FULL top-3 from the whole pot INCLUDING
   // served picks (⭐), so the conviction board reads JHX/CVW/MGR just like the old strip — no more two-list confusion.
   var served={}; (D.regions||[]).forEach(function(r){ if((r.id||r.region)===MKT)(r.picks||[]).forEach(function(p){ if(p&&p.sym&&p.sym!=='NONE') served[p.sym]=1; }); });
-  var pool=(D.candidates||[]).filter(function(c){return (c.region||'us')===MKT && c.score && c.score.buy_now!=null;});
-  function cScore(c){ try{ var ov=overallScore(c.score.buy_now, signalRows(c,MKT)); return (ov&&ov.score!=null)?Math.round(ov.score):null; }catch(e){ return null; } }
-  // #ow-banana-fix (21 Aug, user-caught: "where are my bananas") — AU catalyst candidates have NO sentimentScore
-  // object (that's US-only). The 🍌 chip everywhere else uses _sentResolve (which reads news_sentiment + resolves
-  // from the pot), so use the SAME resolver here — else the whole news board was empty on the ASX.
-  function bScore(c){ try{ var r=_sentResolve(c.sym,MKT,c); return (r&&r.score!=null)?r.score:null; }catch(e){ return null; } }
-  var fr=pool.map(function(c){ return {c:c, o:Math.round(c.score.buy_now), cc:cScore(c), b:bScore(c)}; });
-  function topN(key,n){ return fr.filter(function(x){return x[key]!=null;}).sort(function(a,b){return b[key]-a[key];}).slice(0,n); }
+  // #ow-bothpots (21 Aug, user ask: "catalyst pot alongside the stock pot together") — source BOTH views from
+  // fdrPool(D), the SAME normalized picks+candidates+wide-scan list the Stock-Pot TABLE ranks, so the leaderboard
+  // matches the table by construction (KAR/DRR/WOW were catalyst-only; SSM/PNC/FXG are the whole-pot scan leaders).
+  // Catalyst pot = the news-vetted rows (src cand/pick); Whole pot = everything incl. the technical scan.
+  var whole=[]; try{ whole=fdrPool(D); }catch(e){}
+  function mapRow(s){ return {c:{sym:s.sym,region:s.region,name:s.name,price:s.price,change:s.change,up:s.up},
+    o:(s.buyNow!=null?Math.round(s.buyNow):null), cc:(s.cherry!=null?s.cherry:null), b:(s.sentiment!=null?s.sentiment:null), light:!!s.cherryLight}; }
+  var wholeFr=whole.map(mapRow), catFr=whole.filter(function(s){return s.src==='cand'||s.src==='pick';}).map(mapRow);
   var t2=(((D.modelTiers||{}).type2||{})[MKT]||[]).filter(function(p){return p&&p.sym&&p.sym!=='NONE';});
   var t3=(((D.modelTiers||{}).type3||{})[MKT]||[]).filter(function(p){return p&&p.sym&&p.sym!=='NONE';});
-  // #ow-heat (user ask) — heat = how many lenses a name leads, computed from the RAW top-3 of each lens (before
-  // the dedup below), so a multi-lens all-rounder still glows even though it's shown once.
+  var themes=[].concat(D.geo||[], D.sectors||[], D.commodities||[]).filter(function(t){ return t && t.leaders && t.leaders.length && t.leaders[0] && t.leaders[0].sym; });
+  function topN(fr,key,n){ return fr.filter(function(x){return x[key]!=null;}).sort(function(a,b){return (b[key]-a[key])||((b.o||0)-(a.o||0));}).slice(0,n); }
+  // heat = how many WHOLE-POT lenses (+ tier/theme) a name leads — computed before dedup so all-rounders glow.
   var freq={}; function bump(sym){ if(sym) freq[sym]=(freq[sym]||0)+1; }
-  var _rawO=topN('o',3), _rawC=topN('cc',3), _rawB=topN('b',3);
-  [_rawO,_rawC,_rawB].forEach(function(a){ a.forEach(function(x){ bump(x.c.sym); }); });
+  [topN(wholeFr,'o',3),topN(wholeFr,'cc',3),topN(wholeFr,'b',3)].forEach(function(a){ a.forEach(function(x){ bump(x.c.sym); }); });
   [t2,t3].forEach(function(a){ a.forEach(function(p){ bump(p.sym); }); });
-  // #ow-dedup (21 Aug, user-caught: "timing and conviction can't be the same") — 🍒 conviction is 60% the 🍊
-  // timing score, so on a thin-signal market they rank identically. Dedup for DISPLAY so each board shows
-  // DIFFERENT names: timing keeps its top-3; conviction takes its top-3 among names timing didn't claim; news
-  // takes its top-3 among the rest. Heat above still reflects true multi-lens membership.
-  var _claim={}; var oTop=_rawO; oTop.forEach(function(x){ _claim[x.c.sym]=1; });
-  var cTop=topN('cc',24).filter(function(x){return !_claim[x.c.sym];}).slice(0,3); cTop.forEach(function(x){ _claim[x.c.sym]=1; });
-  var _anyB=fr.some(function(x){return x.b!=null;});
-  var bTop=topN('b',24).filter(function(x){return !_claim[x.c.sym];}).slice(0,3);
-  function fruits(x){ return '🍊 '+(x.o!=null?x.o:'—')+' · 🍒 '+(x.cc!=null?x.cc:'—')+' · 🍌 '+(x.b!=null?x.b:'—'); }
+  themes.forEach(function(t){ bump(t.leaders[0].sym); });
+  function fruits(x){ return '🍊 '+(x.o!=null?x.o:'—')+' · 🍒 '+(x.cc!=null?(x.cc+(x.light?'°':'')):'—')+' · 🍌 '+(x.b!=null?x.b:'—'); }
   function card(sym,name,price,change,up,foot){
     var heat=Math.min(3,freq[sym]||0), badge=served[sym]?'<span class="ow-star" title="Served tonight">⭐</span>':'';
     return '<button class="owcard'+(heat>=2?' ow-h'+heat:'')+'" data-sym="'+esc(sym)+'" data-region="'+esc(MKT)+'"'+(heat>=2?' title="Features in '+heat+' lenses"':'')+'>'
@@ -6601,23 +6599,27 @@ function hydrateOtherWinners(el){
   function grp(icon,label,arr){ if(!arr.length) return '';
     return '<div class="ow-grp"><div class="ow-grp-h">'+icon+' '+label+'</div><div class="ow-grid">'
       +arr.map(function(x){ return card(x.c.sym,x.c.name,x.c.price,x.c.change,x.c.up,fruits(x)); }).join('')+'</div></div>'; }
+  // one pot's three fruit boards, DEDUP'd (🍒 conviction is 60% the 🍊 score, so un-deduped they'd echo timing).
+  function potBoards(fr){
+    var oT=topN(fr,'o',3), claim={}; oT.forEach(function(x){ claim[x.c.sym]=1; });
+    var cT=topN(fr,'cc',24).filter(function(x){return !claim[x.c.sym];}).slice(0,3); cT.forEach(function(x){ claim[x.c.sym]=1; });
+    var bT=topN(fr,'b',24).filter(function(x){return !claim[x.c.sym];}).slice(0,3), anyB=fr.some(function(x){return x.b!=null;});
+    var newsG=bT.length?grp('🍌','Top news',bT):(anyB?'':'<div class="ow-grp"><div class="ow-grp-h">🍌 Top news</div><div class="ow-loading">No fresh news-scored names — the 🍌 lens is quiet.</div></div>');
+    return grp('🍊','Top timing',oT)+grp('🍒','Top conviction',cT)+newsG;
+  }
   function tierRows(arr,tier){ return arr.map(function(p){
     var bn=(p.score&&p.score.buy_now!=null)?('🍊 '+Math.round(p.score.buy_now)):'';
     return card(p.sym,p.name,p.price,p.change,p.up,'<span class="ow-tier">'+tier+'</span>'+bn); }).join(''); }
   var tierHtml=(t2.length||t3.length) ? ('<div class="ow-grp"><div class="ow-grp-h">🔬 Whole-market scan · T2 / T3</div><div class="ow-grid">'+tierRows(t2,'T2')+tierRows(t3,'T3')+'</div></div>') : '';
-  // #ow-themes (user ask) — the sector & commodity theme leaders (Oil→OXY, Gold→NEM…): each hot geo/sector/
-  // commodity card's top scored leader, so the macro themes sit alongside the pot leaderboard. Cross-market by
-  // nature (a commodity's best name can be US or AU), so not MKT-filtered.
-  var themes=[].concat(D.geo||[], D.sectors||[], D.commodities||[]).filter(function(t){ return t && t.leaders && t.leaders.length && t.leaders[0] && t.leaders[0].sym; });
   function themeCard(t){ var ld=t.leaders[0], reg=ld.region||t.market||'us', sc=(ld.score!=null)?Math.round(ld.score):null;
     return '<button class="owcard" data-sym="'+esc(ld.sym)+'" data-region="'+esc(reg)+'">'
       +'<div class="ow-c-top"><b class="ow-c-sym">'+esc(ld.sym)+'</b>'+(sc!=null?'<span class="ow-c-px up">🍊 '+sc+'</span>':'')+'</div>'
       +'<div class="ow-c-name">'+esc(t.title||'')+(t.tag?' · '+esc(t.tag):'')+'</div>'
       +'<div class="ow-c-fruits"><span class="ow-tier">theme</span>'+esc(ld.band||'')+'</div></button>'; }
   var themeHtml=themes.length ? ('<div class="ow-grp"><div class="ow-grp-h">🛢️ Sector &amp; commodity leaders</div><div class="ow-grid">'+themes.map(themeCard).join('')+'</div></div>') : '';
-  var newsGrp = bTop.length ? grp('🍌','Top news',bTop)
-    : (_anyB ? '' : '<div class="ow-grp"><div class="ow-grp-h">🍌 Top news</div><div class="ow-loading">No fresh news-scored names in this market tonight — the 🍌 lens is quiet.</div></div>');
-  body.innerHTML=(grp('🍊','Top timing',oTop)+grp('🍒','Top conviction',cTop)+newsGrp+themeHtml+tierHtml)
+  var catSection = catFr.length ? ('<div class="ow-sec"><div class="ow-sec-h">🌶️ Catalyst pot <span class="ow-sec-sub">tonight’s news-driven, deep-vetted names</span></div>'+potBoards(catFr)+'</div>') : '';
+  var wholeSection = wholeFr.length ? ('<div class="ow-sec"><div class="ow-sec-h">🍲 Whole Stock Pot <span class="ow-sec-sub">the full scan — catalyst + whole-market technicals · ° = light 🍒</span></div>'+potBoards(wholeFr)+'</div>') : '';
+  body.innerHTML=(catSection+wholeSection+themeHtml+tierHtml)
     || '<div class="ow-loading">Nothing in the pot yet.</div>';
   body.dataset.owReady='1';
   body.querySelectorAll('.owcard').forEach(function(b){ b.onclick=function(){ try{ openTicker(b.dataset.sym,b.dataset.region); }catch(e){} }; });
