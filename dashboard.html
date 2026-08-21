@@ -6899,11 +6899,11 @@ function ctInjectCSS(){
   '.ct-winrow{display:flex;align-items:baseline;gap:10px;font-family:"Gaegu",sans-serif;font-size:clamp(15px,2.9vw,23px)}'+
   '.ct-winlab{font-weight:800;min-width:128px}.ct-winrow b{color:#fff;font-weight:800}'+
   '.ct-winlab.ct-cwo{color:#ff8a3d}.ct-winlab.ct-cwc{color:#ff5d73}.ct-winlab.ct-cwb{color:#f7d861}.ct-winlab.ct-cwg{color:#7bd88f}'+
-  '.ct-score{display:grid;grid-template-columns:1fr 1fr;gap:4px 18px;font-family:"Gaegu",sans-serif;font-size:clamp(14px,2.7vw,21px)}'+
-  '@media(max-width:560px){.ct-score{grid-template-columns:1fr}}'+
-  '.ct-scorerow{display:flex;justify-content:space-between;align-items:baseline;gap:8px;border-bottom:1px dashed rgba(255,255,255,.08);padding-bottom:2px}'+
-  '.ct-scorerow b{font-weight:700;color:#f4f1e8}.ct-scpct{font-weight:800;font-variant-numeric:tabular-nums}'+
+  '.ct-score{display:flex;flex-direction:column;gap:9px;font-family:"Gaegu",sans-serif;font-size:clamp(14px,2.7vw,21px)}'+
+  '.ct-scorerow{display:flex;flex-direction:column;align-items:flex-start;gap:1px;border-bottom:1px dashed rgba(255,255,255,.08);padding-bottom:6px}'+   /* #ct-recap-layout (user ask) — name on top, % on its OWN line below (was cramped 2-across with the % pushed far right) */
+  '.ct-scorerow b{font-weight:700;color:#f4f1e8}.ct-scpct{font-weight:800;font-variant-numeric:tabular-nums;font-size:1.18em}'+
   '.ct-sc-up .ct-scpct{color:#7bd88f}.ct-sc-dn .ct-scpct{color:#ff8f8f}'+
+  '.ct-scflat{font-size:.62em;font-weight:600;color:#a7ab9c}'+
   '.ct-scnet{margin-top:8px;font-family:"Caveat",cursive;font-size:clamp(15px,2.8vw,21px);color:#d9d5c8}.ct-scnet b{color:#fff}'+
   // clickable chapter dots (fruit icons)
   '.ct-progress{height:5px;background:var(--line);border-radius:5px;margin:12px auto 0;max-width:520px;overflow:hidden}'+
@@ -7065,7 +7065,8 @@ function ctFillScenes(scenes){
     } else if(sc.k==='recap'){
       if(!f.moves||!f.moves.length){ setFill('r_body','<div class="ct-scnet">Fresh menu — nothing served last time. Nothing to be embarrassed about yet.</div>'); }
       else { var rows='<div class="ct-score">'+f.moves.map(function(m){ var up=m.pct>=0;
-        return '<div class="ct-scorerow '+(up?'ct-sc-up':'ct-sc-dn')+'"><b>'+esc(ctSpokenName(m))+'</b><span class="ct-scpct">'+(up?'+':'')+m.pct.toFixed(1)+'%</span></div>'; }).join('')+'</div>';
+        var _nm=(m.name&&m.name.toUpperCase()!==m.sym.toUpperCase())?m.name:m.sym;   // #ct-recap-name — show the real name or the bare ticker, never the voice's spelled-out "S T O"
+        return '<div class="ct-scorerow '+(up?'ct-sc-up':'ct-sc-dn')+'"><b>'+esc(_nm)+'</b><span class="ct-scpct">'+(up?'+':'')+m.pct.toFixed(1)+'%'+(Math.abs(m.pct)<0.1?' <span class="ct-scflat">· flat since served</span>':'')+'</span></div>'; }).join('')+'</div>';
         var net=f.net, netTxt='<div class="ct-scnet"><b>'+f.nUp+'/'+f.n+' up</b> · net you’d be <b style="color:'+(net>=0?'#7bd88f':'#ff8f8f')+'">'+(net>=0?'+':'')+net.toFixed(1)+'%</b> across the lot. '+(net>=0?'Don’t get cocky.':'It’s a gamble, remember.')+'</div>';
         setFill('r_body', rows+netTxt); }
     } else if(sc.k==='radar'){
@@ -12599,8 +12600,23 @@ function fdrNormCand(c){
     div:(f.dividend_yield!=null)?Math.round(f.dividend_yield*1000)/10:null,
     aboveMa:(c.ema?!!(c.ema.above_ema20&&c.ema.above_ema50):null), src:'cand'};   // null = unknown (don't exclude)
 }
+// #scan-cherry (21 Aug, user ask) — a LIGHT 🍒 for whole-market-scan rows (which carry no deep signal set). Build
+// synthetic pos/neg signal rows from the technicals we DO have (RSI extremes, EMA stance, MACD, 52wk position,
+// volume surge) and run the SAME overallScore() the catalyst pot uses — so it's consistent, and its own coverage
+// weighting keeps it honestly shrunk toward neutral on thin evidence. Flagged cherryLight so the UI marks it (°).
+function fdrLightCherry(r){
+  if(r.buyNow==null) return null;
+  var rows=[];
+  if(r.rsi!=null){ if(r.rsi>=70) rows.push({tone:'neg'}); else if(r.rsi<=35) rows.push({tone:'pos'}); }
+  if(r.aboveEma20!=null) rows.push({tone:r.aboveEma20?'pos':'neg'});
+  if(r.aboveEma50!=null) rows.push({tone:r.aboveEma50?'pos':'neg'});
+  if(r.macdRising!=null) rows.push({tone:r.macdRising?'pos':'neg'});
+  if(r.y1pos!=null){ if(r.y1pos>=0.8) rows.push({tone:'pos'}); else if(r.y1pos<=0.2) rows.push({tone:'neg'}); }
+  if(r.volRatio!=null && r.volRatio>=1.5) rows.push({tone:'pos'});
+  try{ var ov=overallScore(Math.round(r.buyNow), rows); return ov?ov.score:null; }catch(e){ return null; }
+}
 function fdrNormFU(r){
-  var _rp=(r.y1pos!=null)?Math.round(r.y1pos*100):null;
+  var _rp=(r.y1pos!=null)?Math.round(r.y1pos*100):null, _lc=fdrLightCherry(r);
   // Wide-scan rows carry no Bollinger-squeeze flag; the rest of the turn signals (macdRising/volRatio/aboveEma20)
   // and the range position ARE present, so the spring score still computes (just without the squeeze bonus).
   var _ret1y=(r.ret1y!=null)?r.ret1y:null;
@@ -12608,7 +12624,7 @@ function fdrNormFU(r){
     squeeze:null, macdRising:r.macdRising, volRatio:r.volRatio, aboveMa20:r.aboveEma20});
   return {sym:r.sym, region:r.region||'us', name:r.name||r.sym, sector:r.sector||null,
     price:fdrNum(r.price), change:r.change, move:fdrNum(String(r.change)), up:(r.change||0)>=0,
-    buyNow:(r.buyNow!=null)?Math.round(r.buyNow):null, cherry:null,
+    buyNow:(r.buyNow!=null)?Math.round(r.buyNow):null, cherry:_lc, cherryLight:(_lc!=null),
     rsi:(r.rsi!=null)?Math.round(r.rsi):null, rangePos:_rp, spring:_spring, ret1y:(_ret1y!=null)?Math.round(_ret1y):null,
     newsFresh:0,   // #freshfix — wide-scan rows carry no headline TEXT, so they're never "fresh news" we can show
     news:fdrSent100(r.newsSent), value:r.value, quality:r.quality, growth:r.growth,
@@ -12847,8 +12863,8 @@ function fdrCardsHtml(rows){
       '<div class="fdr-cname">'+esc(s.name)+'</div>'+
       // #scan-label (19 Aug, user ask) — a scan-only 🍊 (no 🍒) is a shallow technicals+fundamentals score, NOT
       // the deep-vetted number. Mark it with a ° + tooltip so it isn't visually equated with a fully-analysed one.
-      '<div class="fdr-cscores"><span class="fdr-sc fdr-sc-o'+(s.cherry==null?' fdr-sc-scan':'')+'"'+(s.cherry==null?' title="Scan-only score — technicals + fundamentals, not deep-vetted yet (that\'s why there\'s no 🍒). Watch it (☆) to get the full analysis."':'')+'>🍊 '+(s.buyNow!=null?s.buyNow:'—')+(s.cherry==null&&s.buyNow!=null?'°':'')+'</span>'+
-        (s.cherry!=null?'<span class="fdr-sc fdr-sc-c">🍒 '+s.cherry+'</span>':'')+
+      '<div class="fdr-cscores"><span class="fdr-sc fdr-sc-o">🍊 '+(s.buyNow!=null?s.buyNow:'—')+'</span>'+
+        (s.cherry!=null?'<span class="fdr-sc fdr-sc-c'+(s.cherryLight?' fdr-sc-scan':'')+'"'+(s.cherryLight?' title="Light conviction — computed from technicals only. This name came from the whole-market scan, not the deep-vetted catalyst pot, so its 🍒 is technicals-only (marked °). Watch it (☆) to earn the full analysis."':'')+'>🍒 '+s.cherry+(s.cherryLight?'°':'')+'</span>':'')+
         (s.sentiment!=null?'<button class="fdr-sc fdr-sc-s banbtn" data-ban-sym="'+esc(s.sym)+'" data-ban-region="'+esc(s.region)+'" title="Sentiment — tap for the full breakdown">🍌 '+s.sentiment+'</button>':'')+   // #sentcand — tappable to the 🍌 overlay
         (showMatch&&o.m<100?'<span class="fdr-mpill" style="--mc:'+fdrColor(o.m)+'" title="How well this name matches your filters">'+o.m+'% match</span>':'')+   // #match-noise (real-estate #6) — a 100% pill on every card carries no info; only show when it discriminates
         earnFlag(s.sym,s.region)+
@@ -12916,7 +12932,7 @@ function fdrTableHtml(rows){
     return '<tr data-sym="'+esc(s.sym)+'" data-region="'+esc(s.region)+'" style="cursor:pointer">'+
       '<td><span class="fdr-tsym">'+esc(s.sym)+'</span> <span style="color:var(--muted)">'+esc(s.name)+'</span></td>'+
       '<td>'+(s.region==='au'?'ASX':'US')+'</td><td style="color:'+fdrColor(o.m)+';font-weight:800">'+o.m+'%</td>'+
-      '<td>'+(s.buyNow!=null?s.buyNow:'—')+'</td><td>'+(s.cherry!=null?s.cherry:'—')+'</td><td>'+(s.sentiment!=null?s.sentiment:'—')+'</td>'+
+      '<td>'+(s.buyNow!=null?s.buyNow:'—')+'</td><td'+(s.cherryLight?' title="technicals-only 🍒 (scan name, not deep-vetted)"':'')+'>'+(s.cherry!=null?(s.cherry+(s.cherryLight?'°':'')):'—')+'</td><td>'+(s.sentiment!=null?s.sentiment:'—')+'</td>'+
       (function(){ // 🥗 min-of-three; a full trifecta (all ≥ SALAD_MIN) is highlighted, else the plain weakest-fruit value / dash
         if(s.buyNow==null||s.cherry==null||s.sentiment==null) return '<td style="color:var(--faint)">—</td>';
         var mn=Math.min(s.buyNow,s.cherry,s.sentiment);
