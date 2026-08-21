@@ -6555,7 +6555,7 @@ function otherWinnersHtml(D){
   var hasTier=((mt.type2||{})[MKT]||[]).length || ((mt.type3||{})[MKT]||[]).length;
   if(!pool.length && !hasTier) return '';
   return '<details class="owrap" ontoggle="hydrateOtherWinners(this)">'
-    +'<summary class="ow-sum"><span class="ow-sum-l">🏅 The leaderboard<span class="ow-sum-sub">top 3 per flavour · ⭐ = served tonight · hotter card = wins in more lenses · plus the whole-market scan</span></span><span class="ow-chev">▾</span></summary>'
+    +'<summary class="ow-sum"><span class="ow-sum-l">🏅 The leaderboard<span class="ow-sum-sub">top per lens, kept distinct · ⭐ = served tonight · warmer card = leads more than one lens · plus the whole-market scan</span></span><span class="ow-chev">▾</span></summary>'
     +'<div class="ow-body" data-ow-ready="0"><div class="ow-loading">Ranking the pot…</div></div>'
     +'</details>';
 }
@@ -6569,17 +6569,28 @@ function hydrateOtherWinners(el){
   var served={}; (D.regions||[]).forEach(function(r){ if((r.id||r.region)===MKT)(r.picks||[]).forEach(function(p){ if(p&&p.sym&&p.sym!=='NONE') served[p.sym]=1; }); });
   var pool=(D.candidates||[]).filter(function(c){return (c.region||'us')===MKT && c.score && c.score.buy_now!=null;});
   function cScore(c){ try{ var ov=overallScore(c.score.buy_now, signalRows(c,MKT)); return (ov&&ov.score!=null)?Math.round(ov.score):null; }catch(e){ return null; } }
-  function bScore(c){ var s=c.sentimentScore; return (s&&s.score!=null)?s.score:null; }
+  // #ow-banana-fix (21 Aug, user-caught: "where are my bananas") — AU catalyst candidates have NO sentimentScore
+  // object (that's US-only). The 🍌 chip everywhere else uses _sentResolve (which reads news_sentiment + resolves
+  // from the pot), so use the SAME resolver here — else the whole news board was empty on the ASX.
+  function bScore(c){ try{ var r=_sentResolve(c.sym,MKT,c); return (r&&r.score!=null)?r.score:null; }catch(e){ return null; } }
   var fr=pool.map(function(c){ return {c:c, o:Math.round(c.score.buy_now), cc:cScore(c), b:bScore(c)}; });
-  function top(key){ return fr.filter(function(x){return x[key]!=null;}).sort(function(a,b){return b[key]-a[key];}).slice(0,3); }
-  var oTop=top('o'), cTop=top('cc'), bTop=top('b');
+  function topN(key,n){ return fr.filter(function(x){return x[key]!=null;}).sort(function(a,b){return b[key]-a[key];}).slice(0,n); }
   var t2=(((D.modelTiers||{}).type2||{})[MKT]||[]).filter(function(p){return p&&p.sym&&p.sym!=='NONE';});
   var t3=(((D.modelTiers||{}).type3||{})[MKT]||[]).filter(function(p){return p&&p.sym&&p.sym!=='NONE';});
-  // #ow-heat (user ask) — tint each card by how many categories the name features in (timing/conviction/news/scan).
-  // The all-rounders that keep turning up glow hottest — the market agreeing with itself, at a glance.
+  // #ow-heat (user ask) — heat = how many lenses a name leads, computed from the RAW top-3 of each lens (before
+  // the dedup below), so a multi-lens all-rounder still glows even though it's shown once.
   var freq={}; function bump(sym){ if(sym) freq[sym]=(freq[sym]||0)+1; }
-  [oTop,cTop,bTop].forEach(function(a){ a.forEach(function(x){ bump(x.c.sym); }); });
+  var _rawO=topN('o',3), _rawC=topN('cc',3), _rawB=topN('b',3);
+  [_rawO,_rawC,_rawB].forEach(function(a){ a.forEach(function(x){ bump(x.c.sym); }); });
   [t2,t3].forEach(function(a){ a.forEach(function(p){ bump(p.sym); }); });
+  // #ow-dedup (21 Aug, user-caught: "timing and conviction can't be the same") — 🍒 conviction is 60% the 🍊
+  // timing score, so on a thin-signal market they rank identically. Dedup for DISPLAY so each board shows
+  // DIFFERENT names: timing keeps its top-3; conviction takes its top-3 among names timing didn't claim; news
+  // takes its top-3 among the rest. Heat above still reflects true multi-lens membership.
+  var _claim={}; var oTop=_rawO; oTop.forEach(function(x){ _claim[x.c.sym]=1; });
+  var cTop=topN('cc',24).filter(function(x){return !_claim[x.c.sym];}).slice(0,3); cTop.forEach(function(x){ _claim[x.c.sym]=1; });
+  var _anyB=fr.some(function(x){return x.b!=null;});
+  var bTop=topN('b',24).filter(function(x){return !_claim[x.c.sym];}).slice(0,3);
   function fruits(x){ return '🍊 '+(x.o!=null?x.o:'—')+' · 🍒 '+(x.cc!=null?x.cc:'—')+' · 🍌 '+(x.b!=null?x.b:'—'); }
   function card(sym,name,price,change,up,foot){
     var heat=Math.min(3,freq[sym]||0), badge=served[sym]?'<span class="ow-star" title="Served tonight">⭐</span>':'';
@@ -6594,7 +6605,19 @@ function hydrateOtherWinners(el){
     var bn=(p.score&&p.score.buy_now!=null)?('🍊 '+Math.round(p.score.buy_now)):'';
     return card(p.sym,p.name,p.price,p.change,p.up,'<span class="ow-tier">'+tier+'</span>'+bn); }).join(''); }
   var tierHtml=(t2.length||t3.length) ? ('<div class="ow-grp"><div class="ow-grp-h">🔬 Whole-market scan · T2 / T3</div><div class="ow-grid">'+tierRows(t2,'T2')+tierRows(t3,'T3')+'</div></div>') : '';
-  body.innerHTML=(grp('🍊','Top timing',oTop)+grp('🍒','Top conviction',cTop)+grp('🍌','Top news',bTop)+tierHtml)
+  // #ow-themes (user ask) — the sector & commodity theme leaders (Oil→OXY, Gold→NEM…): each hot geo/sector/
+  // commodity card's top scored leader, so the macro themes sit alongside the pot leaderboard. Cross-market by
+  // nature (a commodity's best name can be US or AU), so not MKT-filtered.
+  var themes=[].concat(D.geo||[], D.sectors||[], D.commodities||[]).filter(function(t){ return t && t.leaders && t.leaders.length && t.leaders[0] && t.leaders[0].sym; });
+  function themeCard(t){ var ld=t.leaders[0], reg=ld.region||t.market||'us', sc=(ld.score!=null)?Math.round(ld.score):null;
+    return '<button class="owcard" data-sym="'+esc(ld.sym)+'" data-region="'+esc(reg)+'">'
+      +'<div class="ow-c-top"><b class="ow-c-sym">'+esc(ld.sym)+'</b>'+(sc!=null?'<span class="ow-c-px up">🍊 '+sc+'</span>':'')+'</div>'
+      +'<div class="ow-c-name">'+esc(t.title||'')+(t.tag?' · '+esc(t.tag):'')+'</div>'
+      +'<div class="ow-c-fruits"><span class="ow-tier">theme</span>'+esc(ld.band||'')+'</div></button>'; }
+  var themeHtml=themes.length ? ('<div class="ow-grp"><div class="ow-grp-h">🛢️ Sector &amp; commodity leaders</div><div class="ow-grid">'+themes.map(themeCard).join('')+'</div></div>') : '';
+  var newsGrp = bTop.length ? grp('🍌','Top news',bTop)
+    : (_anyB ? '' : '<div class="ow-grp"><div class="ow-grp-h">🍌 Top news</div><div class="ow-loading">No fresh news-scored names in this market tonight — the 🍌 lens is quiet.</div></div>');
+  body.innerHTML=(grp('🍊','Top timing',oTop)+grp('🍒','Top conviction',cTop)+newsGrp+themeHtml+tierHtml)
     || '<div class="ow-loading">Nothing in the pot yet.</div>';
   body.dataset.owReady='1';
   body.querySelectorAll('.owcard').forEach(function(b){ b.onclick=function(){ try{ openTicker(b.dataset.sym,b.dataset.region); }catch(e){} }; });
@@ -6655,7 +6678,13 @@ function ctBuildScenes(reg){
   // (mirrors the dashboard's own prev-menu logic, #5811); served price from that menu's snapshot, current price
   // from the live pool (wlPriceMap). A real graded recap, not a same-picks echo.
   var moves=[]; try{
-    var _H=(LAST&&LAST.H)||{}, _menus=_H.menus||[], _names=_H.names||{}, _prev=_menus.length>1?_menus[1]:null;
+    var _H=(LAST&&LAST.H)||{}, _menus=_H.menus||[], _names=_H.names||{};
+    // Pick the previous menu whose picks for THIS market genuinely DIFFER from the current serving — so a
+    // US-only run that carried AU forward (or a re-publish of the same picks) can't make "last time out" echo
+    // tonight's picks (the original bug). Fall back to menus[1] if none differ.
+    var _cur=((_menus[0]||{})[reg]||[]).join(','), _prev=null;
+    for(var _i=1;_i<_menus.length;_i++){ var _pa=(_menus[_i]||{})[reg]||[]; if(_pa.length && _pa.join(',')!==_cur){ _prev=_menus[_i]; break; } }
+    if(!_prev && _menus.length>1) _prev=_menus[1];
     if(_prev){
       var _pm=wlPriceMap((LAST&&LAST.D)||{}), _snapBy={};
       (_prev[reg+'Snap']||[]).forEach(function(s){ if(s&&s.sym) _snapBy[s.sym]=s; });
@@ -6667,21 +6696,27 @@ function ctBuildScenes(reg){
     }
   }catch(e){}
   moves=moves.filter(function(x){return x.pct!=null;}).sort(function(a,b){return b.pct-a.pct;});
+  // #ct-recap-flat (21 Aug, user-caught) — when EVERY previous pick reads ~0% it isn't a real graded result,
+  // it's the market having been shut (frozen prices) since they were served. Don't pretend it's "0/3 up · don't
+  // get cocky" — say so plainly. (≥0.1% on any name = a genuine move, so the normal recap runs.)
+  var allFlat = moves.length>0 && moves.every(function(m){ return Math.abs(m.pct)<0.1; });
   var rBest=moves[0], rWorst=moves[moves.length-1], rUp=moves.filter(function(m){return m.pct>0;}).length,
       rNet=moves.reduce(function(a,m){return a+m.pct;},0), rAvg=(moves.length?rNet/moves.length:0);
   function pc(n){ return (n>=0?'+':'')+n.toFixed(1)+'%'; }
   var recapSay = (!moves.length)
     ? "Right. Last time out? Bugger all to grade — fresh menu, clean sheet, nobody's embarrassed yet. Savour it, because it won't last."
-    : ("Right — sit down, shut up, school's in. Last time out, the picks I actually put my name to: "
+    : (allFlat
+      ? ("Right — last time out I served "+ctJoinList(moves.map(function(m){return ctSpokenName(m);}))+". Trouble is the market's been shut since, so not a single one's moved — flat as a tack, nothing to settle yet. Ask me again once it's actually traded, yeah?")
+      : ("Right — sit down, shut up, school's in. Last time out, the picks I actually put my name to: "
         +(rBest.pct>0 ? (ctSpokenName(rBest)+"'s up "+rBest.pct.toFixed(1)+" percent. You're welcome — don't blow it all on scratchies.") : (ctSpokenName(rBest)+" was the least-shit of the lot at "+pc(rBest.pct)+", and that, tragically, is the good news."))
         +(rWorst && rWorst!==rBest && rWorst.pct<0 ? (" "+ctSpokenName(rWorst)+"? Absolutely bricked it, down "+Math.abs(rWorst.pct).toFixed(1)+" percent — there goes your beer money, you mug.") : "")
         +" "+rUp+" of "+moves.length+" green, net you'd be "+(rNet>=0?("up about "+rNet.toFixed(1)):("down about "+Math.abs(rNet).toFixed(1)))+" percent across the lot. "
-        +(rAvg>=0 ? "Not bad. Now wipe the smug off your face — the market claws it straight back the second you get cocky." : "Grim. But that's the gig — some nights the kitchen burns the toast and still hands you the bill. Right. Tonight."));
+        +(rAvg>=0 ? "Not bad. Now wipe the smug off your face — the market claws it straight back the second you get cocky." : "Grim. But that's the gig — some nights the kitchen burns the toast and still hands you the bill. Right. Tonight.")));
   var recapBoard = moves.length ? moves : null;
   var scenes=[
     { k:'recap',
-      fill:{moves:recapBoard, net:rNet, nUp:rUp, n:moves.length},
-      cap:(moves.length?("📊 Last time out — <b>"+rUp+"/"+moves.length+" up</b>, net <b>"+pc(rNet)+"</b>. It’s a gamble. 🙂"):"📊 Last time out — fresh menu, nothing to grade yet."),
+      fill:{moves:recapBoard, net:rNet, nUp:rUp, n:moves.length, flat:allFlat},
+      cap:(!moves.length?"📊 Last time out — fresh menu, nothing to grade yet.":(allFlat?"📊 Last time out — <b>flat</b>: the market’s been shut, nothing to settle yet.":("📊 Last time out — <b>"+rUp+"/"+moves.length+" up</b>, net <b>"+pc(rNet)+"</b>. It’s a gamble. 🙂"))),
       say:recapSay },
     { k:'intro',
       cap:"Tonight’s <b>top 3 of each</b> · <b>"+R.label+"</b>. A casino with a spreadsheet — but hey. 🙂",
