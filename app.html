@@ -10257,18 +10257,24 @@ function renderAnalyst(a){
     var _nc=newsCacheGet(a.sym,region);
     if(_nc){ var _t=(_nc.top3&&_nc.top3.length)?_nc.top3:(_nc.headline?[{title:_nc.headline,url:_nc.url,date:_nc.date}]:[]);
       if(_t.length) _anTop3=_t.map(function(h){return {title:h.title||h.t,url:h.url||h.u||null,date:h.date||h.d||null,tone:null};}); } }
-  var o={
-    sym:a.sym, region:region, name:a.name||null, isAnalyst:true,
-    price:a.price, nNow:_p,
+  // #wwyd-fruits (21 Aug, user ask: "no 🍊/🍒/🥗 on the overlay") — if this ticker IS a scored pot candidate/pick,
+  // use it as the base object so the header shows the SAME 🍊/🍒/🥗 chips + signal rows as the Stock-Pot table.
+  // (The 🍌 already resolved via _sentResolve; the 🍊/🍒 were gated on o.score, which the bare analyst object
+  // never carried.) For a ticker NOT in the pot, _pot is null and it stays the plain analyst read (no fabricated fruits).
+  var _pot=null; try{ var _D2=(LAST&&LAST.D)||{};
+    (_D2.regions||[]).forEach(function(rg){ (rg.picks||[]).forEach(function(p){ if(!_pot&&p&&p.sym===a.sym&&(rg.id||rg.region)===region&&p.score&&p.score.buy_now!=null) _pot=p; }); });
+    if(!_pot) _pot=(_D2.candidates||[]).filter(function(c){return c&&c.sym===a.sym&&(c.region||'us')===region&&c.score&&c.score.buy_now!=null;})[0]||null;
+  }catch(e){}
+  var o=Object.assign({}, _pot||{}, {
+    sym:a.sym, region:region, name:a.name||(_pot&&_pot.name)||null, isAnalyst:true,
+    price:(a.price!=null?a.price:(_pot&&_pot.price)), nNow:_p,
     verdict:a.verdict||null, heat:(a.tone==='buy'?'good':a.tone==='dont'?'cold':'mid'),
     plain:((a.headline?(a.headline+'. '):'')+String(a.action||'').replace(/<[^>]+>/g,'')).trim(),
-    rsi:(s.rsi!=null?s.rsi:null),
-    trend:(s.adx!=null?{adx:s.adx}:null),
-    news_sentiment:(v.sentiment!=null?v.sentiment:null),
-    news_top3:_anTop3,
+    news_top3:_anTop3||(_pot&&_pot.news_top3)||null,
     foundVia:'🧠 Live analyst read — computed on the spot from price history',
     extraHtml:zones+street+dr
-  };
+  });
+  if(!_pot){ o.rsi=(s.rsi!=null?s.rsi:null); o.trend=(s.adx!=null?{adx:s.adx}:null); o.news_sentiment=(v.sentiment!=null?v.sentiment:null); }
   m.className='modal';
   m.innerHTML=tickerModalHTML(o, region, cur, false);
   wireTickerModal(m, o, region, false);   // fills charts/ranges + wires watch (same as picks/candidates)
