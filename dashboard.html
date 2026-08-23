@@ -2768,7 +2768,7 @@
   .spmm{display:flex;justify-content:space-between;font-size:10.5px;font-weight:700;color:var(--faint);font-variant-numeric:tabular-nums;margin-top:3px}
   .scorebar{display:flex;height:16px;border-radius:8px;overflow:hidden;background:var(--surface);border:1px solid var(--line);margin:6px 0}
   .scoreseg{height:100%}
-  .s-pead{background:#23C267}.s-rev{background:#4C9AFF}.s-hi{background:#FF6B1A}.s-news{background:#FFC53D}.s-vol{background:#B692FF}.s-ins{background:#F472B6}
+  .s-pead{background:#23C267}.s-rev{background:#4C9AFF}.s-hi{background:#FF6B1A}.s-news{background:#FFC53D}.s-vol{background:#B692FF}.s-ins{background:#F472B6}.s-nudges{background:#94a3b8}
   .scorelegend{display:flex;flex-wrap:wrap;gap:12px;font-size:11px;color:var(--muted);font-weight:700;margin-top:10px}
   .scorelegend i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px;vertical-align:middle}
   .scorelegend .pen{color:var(--dont)}
@@ -6419,7 +6419,7 @@ function announcementsPanelHtml(D){
   return '<section id="annfeed"><div class="sec-head"><h2 class="display">📢 Key ASX announcements</h2></div>'+
     '<p class="sec-sub">Every price-sensitive filing across tonight\'s ASX names — newest first, tinted by likely direction. ASX only.</p>'+out+'</section>';
 }
-var SCORE_FLAB={pead:"Earnings",rev:"Analysts",hi:"Trend/High",news:"Catalyst",vol:"Volume",ins:"Insider"};
+var SCORE_FLAB={pead:"Earnings",rev:"Analysts",hi:"Trend/High",news:"Catalyst",vol:"Volume",ins:"Insider",nudges:"± Nudges"};
 // #215 follow-up (user: "what exactly is Trend/High, Catalyst vs a signal, and Volume — summarise each
 // below like we do the signals"). Plain-English "what it is + what makes it up" for each score factor.
 var FACTOR_EXPLAIN={
@@ -7338,7 +7338,7 @@ function scoreBarHtml(score,sym,name){
       '<div class="rsimeta">Pending — we don’t yet pull analyst &amp; earnings data for ASX stocks, so the model can’t score this one fairly yet. On the roadmap.</div></div>';
   }
   var facs=score.factors||[];
-  var segs=facs.map(function(fc){return '<span class="scoreseg s-'+fc.k+'" style="width:'+fc.pts+'%"></span>';}).join('');
+  var segs=facs.map(function(fc){return '<span class="scoreseg s-'+fc.k+'" style="width:'+Math.max(0,fc.pts)+'%"></span>';}).join('');   // #aud-factors — clamp width (the net-nudge segment can be negative; the real signed value still shows in the legend)
   var leg=facs.map(function(fc){return '<span><i class="s-'+fc.k+'"></i>'+esc(SCORE_FLAB[fc.k]||fc.k)+' '+fc.pts+'</span>';}).join('');
   if(score.heat&&score.heat>1) leg+='<span class="pen">− overheated '+Math.round(score.heat)+'</span>';
   // #105 follow-up (10 Aug 2026, user ask): the "real juice" breakdown was admin-only and labelled
@@ -8115,7 +8115,7 @@ function _openJuiceInner(id,j,score,d){
   var jhead=(j.sym?'<b style="font-size:21px">'+esc(j.sym)+'</b>'+(j.name?' <span style="font-size:14px;color:var(--muted);font-weight:700">'+esc(j.name)+'</span>':'')+'<br>':'')+
     '<span style="font-size:16px;font-weight:800">'+score.buy_now+'/100 · '+esc(score.band)+'</span>';
   var facs=score.factors||[];
-  var segs=facs.map(function(fc){return '<span class="scoreseg s-'+fc.k+'" style="width:'+fc.pts+'%"></span>';}).join('');
+  var segs=facs.map(function(fc){return '<span class="scoreseg s-'+fc.k+'" style="width:'+Math.max(0,fc.pts)+'%"></span>';}).join('');   // #aud-factors — clamp width (the net-nudge segment can be negative; the real signed value still shows in the legend)
   var leg=facs.map(function(fc){return '<span><i class="s-'+fc.k+'"></i>'+esc(SCORE_FLAB[fc.k]||fc.k)+' '+fc.pts+'</span>';}).join('');
   if(score.heat&&score.heat>1) leg+='<span class="pen">− overheated '+Math.round(score.heat)+'</span>';
   // #271 (user ask) — the score-factor SEGMENT bar + legend (Earnings/Volume/Analysts/Trend) duplicated the
@@ -12907,7 +12907,7 @@ function fdrCardsHtml(rows){
       // the deep-vetted number. Mark it with a ° + tooltip so it isn't visually equated with a fully-analysed one.
       '<div class="fdr-cscores"><span class="fdr-sc fdr-sc-o">🍊 '+(s.buyNow!=null?s.buyNow:'—')+'</span>'+
         (s.cherry!=null?'<span class="fdr-sc fdr-sc-c'+(s.cherryLight?' fdr-sc-scan':'')+'"'+(s.cherryLight?' title="Light conviction — computed from technicals only. This name came from the whole-market scan, not the deep-vetted catalyst pot, so its 🍒 is technicals-only (marked °). Watch it (☆) to earn the full analysis."':'')+'>🍒 '+s.cherry+(s.cherryLight?'°':'')+'</span>':'')+
-        (s.sentiment!=null?'<button class="fdr-sc fdr-sc-s banbtn" data-ban-sym="'+esc(s.sym)+'" data-ban-region="'+esc(s.region)+'" title="Sentiment — tap for the full breakdown">🍌 '+s.sentiment+'</button>':'')+   // #sentcand — tappable to the 🍌 overlay
+        (s.sentiment!=null?'<span class="fdr-sc fdr-sc-s" title="News sentiment (0-100)">🍌 '+s.sentiment+'</span>':'')+   // #aud-finderchips — plain chip like 🍊/🍒 (was a lone tappable banbtn); the whole card is tappable and opens the full modal where every fruit's breakdown is one tap away, so all three chips now behave the same
         (showMatch&&o.m<100?'<span class="fdr-mpill" style="--mc:'+fdrColor(o.m)+'" title="How well this name matches your filters">'+o.m+'% match</span>':'')+   // #match-noise (real-estate #6) — a 100% pill on every card carries no info; only show when it discriminates
         earnFlag(s.sym,s.region)+
         '<span class="fdr-cpx">'+(s.price!=null?fdrCur(s.region)+s.price:'')+'</span></div>'+
