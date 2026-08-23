@@ -6468,6 +6468,10 @@ function _sentResolve(sym, region, obj){
   // only the fallback now (for an off-pot / scan-only name with no candidate row).
   try{ var D=(LAST&&LAST.D)||{};
     var r=take((D.candidates||[]).filter(function(x){return x.sym===sym&&(x.region||'us')===region;})[0]); if(r) return r;
+    // #banana-picks (21 Aug) — a served PICK isn't in D.candidates, so resolve it too (else a pick's 🍌 came up
+    // blank on its card/overlay while the leaderboard, which reads the pick via fdrPool, showed a real number).
+    var pk=null; (D.regions||[]).forEach(function(rg){ if((rg.id||rg.region)===region)(rg.picks||[]).forEach(function(p){ if(!pk&&p&&p.sym===sym&&p.sym!=='NONE') pk=p; }); });
+    r=take(pk); if(r) return r;
     r=take(((D.finderUniverse||{})[region]||[]).filter(function(x){return String(x.sym||'').toUpperCase()===String(sym).toUpperCase();})[0]); if(r) return r;
   }catch(e){}
   return take(obj);
@@ -12517,6 +12521,14 @@ function fdrSentFallback(c){
     var S2=Math.min(1,0.5+0.5*(pos-neg)/Math.max(1,heads.length));
     return {score:Math.round(100*S2*U), why:'Positive coverage ~'+age2+'d ago (from live news — a rough read).'};
   }
+  // C) #banana-gauge (Option A, user pick 21 Aug) — a name with a raw news-sentiment reading but no positive-
+  // fresh signal above still gets a 0-100 GAUGE (50 = neutral) instead of a mysterious blank 🍌 when it clearly
+  // has news. Directional: bearish reads low, bullish high. The "fresh & not-yet-priced-in" nuance (A/B) still
+  // wins when present; this only fills the gap. Covers candidate rows (news_sentiment) + scan rows (newsSent),
+  // both on the raw −1..+1 scale.
+  var ns=(typeof c.news_sentiment==='number')?c.news_sentiment:((typeof c.newsSent==='number')?c.newsSent:null);
+  if(ns!=null){ var sc=Math.max(0,Math.min(100,Math.round(50+ns*50)));
+    return {score:sc, why:'News-sentiment gauge — '+(ns>0.05?'net positive':(ns<-0.05?'net negative':'roughly neutral'))+' overall (50 = neutral). The 🍌 fills in from the sentiment read even when the news isn’t fresh-and-positive.'}; }
   return null;
 }
 function fdrNum(p){ if(p==null)return null; var n=parseFloat(String(p).replace(/[^0-9.\-]/g,'')); return isFinite(n)?n:null; }
