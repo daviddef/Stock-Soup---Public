@@ -4823,7 +4823,7 @@ function breakingHtml(D){
     var _tr=[]; wlGet().forEach(function(w){ var reg=w.region||'us'; if(reg!==MKT) return; if(_seenSym[w.sym+'|'+reg]) return;
       var c=_cn.filter(function(x){return x.sym===w.sym && (x.region||'us')===reg;})[0]; var hd=c&&(c.news||c.newsHead); if(!c||!hd) return;
       var dt=c.news_date||c.newsDate||null; if(dt){ try{ if(Date.now()-new Date(dt).getTime() > 12*24*3600*1000) return; }catch(e){} }
-      _tr.push({sym:w.sym, region:reg, headline:String(hd), url:c.news_url||c.newsUrl||'', source:'📌 your '+(w.own?'holding':'watchlist'),
+      _tr.push({sym:w.sym, region:reg, headline:String(hd), url:c.news_url||c.newsUrl||'', source:'',   // (user ask) drop the redundant "📌 your holding" label — the 📦 badge + "you own this" already say it
         at:dt||new Date().toISOString(), _own:!!w.own, _watch:true, _tracked:true, _dt:(dt?new Date(dt).getTime():0)}); });
     _tr.sort(function(a,b){ return (b._own?1:0)-(a._own?1:0) || (b._dt||0)-(a._dt||0); });
     items=items.concat(_tr.slice(0,24));
@@ -6458,7 +6458,10 @@ function dualChip(score,sym,name,sigRows){
 function _sentResolve(sym, region, obj){
   region=region||'us';
   function take(o){ if(!o) return null;
-    if(o.sentimentScore && o.sentimentScore.score!=null) return {score:o.sentimentScore.score, why:o.sentimentScore.why};
+    if(o.sentimentScore && o.sentimentScore.score!=null){
+      // #banana-vol — if the stored score predates volume-awareness (no `volume` field), recompute live from newsflow.
+      if(o.sentimentScore.volume==null){ try{ var rs=_bananaRescore(o); if(rs) return {score:rs.score, why:rs.why}; }catch(e){} }
+      return {score:o.sentimentScore.score, why:o.sentimentScore.why}; }
     try{ var f=fdrSentFallback(o); if(f) return {score:f.score, why:f.why}; }catch(e){}
     return null; }
   // #salad-reconcile (19 Aug 2026, user ask) — resolve the CANONICAL candidate / scan-universe value for this
@@ -7230,7 +7233,7 @@ function openSalad(sym, region, ds){
         '<p class="bansum-why" style="margin-top:8px">'+
         '<b>🍊 high</b> = the model likes the <b>timing / setup right now</b>.<br>'+
         '<b>🍒 high</b> = <b>every signal independently agrees</b> — broad conviction, not one lucky factor.<br>'+
-        '<b>🍌 high</b> = there’s <b>fresh bullish news the price hasn’t chased yet</b> — you’re early.</p></div>'+
+        '<b>🍌 high</b> = there’s a <b>wave of fresh bullish news the price hasn’t chased yet</b> — broadly covered, and you’re early.</p></div>'+
       '<div class="viz"><h4>'+esc(sym)+'’s three fruits</h4>'+
         gauge('sal-o','🍊','Timing (Buy-Now)',s.orange, s.orange>=60?'The setup looks good right now.':'Timing is only middling.')+
         gauge('sal-c','🍒','Conviction (Overall)',s.cherry, s.cherry>=60?'The signals broadly agree it’s strong.':'The signals are split.')+
@@ -7257,7 +7260,12 @@ function openBanana(sym, region){
   var sc=null, nm=sym, srcObj=null;
   function resolve(o){ if(!o) return false; nm=o.name||nm;
     if(o.sentimentScore && o.sentimentScore.score!=null){ sc=o.sentimentScore; srcObj=o;
-      if(sc.tone==null && o.newsflow && o.newsflow.tone!=null) sc=Object.assign({tone:o.newsflow.tone, stories:o.newsflow.stories, limited:o.newsflow.limited}, sc);
+      // #banana-vol — if the stored score predates volume-awareness, recompute it live so the overlay's SCORE and
+      // its coverage ingredient match the card/leaderboard exactly (else card shows new number, overlay old).
+      if(sc.volume==null){ try{ var _rs=_bananaRescore(o); if(_rs) sc=Object.assign({},sc,_rs); }catch(e){} }
+      if(sc.volume==null && o.newsflow){ var _n=o.newsflow;   // no rescore (e.g. not net-positive) → at least fill display fields
+        if(sc.tone==null&&_n.tone!=null) sc=Object.assign({tone:_n.tone,stories:_n.stories,limited:_n.limited},sc);
+        if(sc.volume==null&&_n.volume!=null) sc=Object.assign({volume:_n.volume,breadth:_n.breadth,event:_n.event,sources:_n.stories},sc); }
       return true; }
     try{ var f=fdrSentFallback(o); if(f){ sc=f; srcObj=o; return true; } }catch(e){}
     return false; }
@@ -7274,12 +7282,19 @@ function openBanana(sym, region){
   LASTFOCUS=document.activeElement;
   var m=document.getElementById('modal'); if(!m) return; m.className='modal';
   var score=sc.score, why=sc.why||'', label=sc.label||'', growth=sc.growth, age=sc.freshAgeDays, tone=sc.tone;
-  // the three ingredients, each with a plain-English read of its actual value
+  var volume=sc.volume, breadth=sc.breadth, sources=sc.sources;
+  // the ingredients, each with a plain-English read of its actual value
   function ing(ic, name, val, read){
     return '<div class="banirow"><span class="banic">'+ic+'</span><div class="banit"><div class="banih"><b>'+name+'</b>'+(val!=null?'<span class="banv">'+val+'</span>':'')+'</div><div class="banird">'+read+'</div></div></div>';
   }
   var toneRead = tone==null?'No directional news read available.':tone>=2?'Strongly positive coverage.':tone>0?'Leaning positive.':'Not positive — so the score is 0.';
   var toneVal = tone==null?null:(tone>0?'+':'')+ (Math.round(tone*10)/10);
+  // #banana-vol — how MUCH & how BROAD the coverage is (sheer volume of articles + spread of outlets)
+  var covVal = volume==null?null:(volume+' fresh'+(sources?(' · '+sources+' outlets'):''));
+  var covRead = volume==null?'Coverage volume not captured for this read.'
+    :(volume>=3&&(breadth||0)>=1.3)?'Broad, heavy coverage — many outlets carrying it, not just one. That lifts the score.'
+    :volume<=1?'Thin — a single fresh story, so the strength is damped (one article ≠ a wave).'
+    :'Moderate — a few fresh stories.';
   var grRead = growth==null?'—':growth>10?'Already run up hard since the news — mostly priced in.':growth>3?'Some early move already — partly priced in.':growth<0?'Actually dipped since the news — plenty of room.':'Barely moved on the news yet — room to run.';
   var grVal = growth==null?null:(growth>0?'+':'')+growth+'%';
   var frRead = age==null?'—':age<=1?'Broke in the last day.':age<=3?'A few days old.':'Within the last week (past ~7 days = too stale to count).';
@@ -7308,13 +7323,14 @@ function openBanana(sym, region){
     '<div class="mtop"><div class="msym" style="line-height:1.25"><b style="font-size:21px">'+esc(sym)+'</b>'+(nm&&nm!==sym?' <span style="font-size:14px;color:var(--muted);font-weight:700">'+esc(nm)+'</span>':'')+
       '<br><span style="font-size:16px;font-weight:800">'+(score!=null?score:'—')+'/100</span>'+(label?' <span style="font-size:13px;color:var(--muted);font-weight:700">· '+esc(label)+'</span>':'')+'</div></div></div>'+
     '<div class="mbody">'+
-      '<div class="viz bansum"><p class="bansum-lead">The 🍌 is a <b>pure news read</b>: <b>positive recent news the price hasn’t chased yet</b>. High = fresh bullish coverage on a name that <i>hasn’t</i> moved on it — a not-yet-priced-in opportunity. It falls as the price runs up on that news. At <b>'+(score!=null?score:'—')+'/100</b>, '+esc(sym)+' reads as <b>'+band+'</b>.</p>'+
+      '<div class="viz bansum"><p class="bansum-lead">The 🍌 is a <b>pure news read</b>: <b>positive, fresh, broadly-covered news the price hasn’t chased yet</b>. High = a real <i>wave</i> of bullish coverage on a name that <i>hasn’t</i> moved on it — a not-yet-priced-in opportunity. A lone headline counts for less than a dozen across many outlets, and it falls as the price runs up on the news. At <b>'+(score!=null?score:'—')+'/100</b>, '+esc(sym)+' reads as <b>'+band+'</b>.</p>'+
         (why?'<p class="bansum-why">'+esc(why)+'</p>':'')+'</div>'+
-      '<div class="viz"><h4>What’s in it — three ingredients</h4>'+
+      '<div class="viz"><h4>What’s in it — four ingredients</h4>'+
         ing('🗞️','How positive the news is', toneVal, toneRead)+
+        ing('📰','How much &amp; how broad the coverage is', covVal, covRead)+
         ing('📈','How much it’s already grown', grVal, grRead)+
         ing('⏱️','How fresh the news is', frVal, frRead)+
-        '<p class="banformula">Score = <b>news positivity</b> × <b>how little it’s grown since</b>. Positive news only (neutral/negative = 0), last 7 days, and past ~10% up on the news it’s treated as priced-in.</p>'+
+        '<p class="banformula">Score = <b>news positivity</b> × <b>how much &amp; how broad the coverage is</b> × <b>how little it’s grown since</b>. Positive news only (neutral/negative = 0), last 7 days. More fresh articles across more outlets score higher — a single story is damped — and mega-caps are discounted (they have baseline daily buzz). Past ~10% up on the news = treated as priced-in.</p>'+
       '</div>'+
       newsBlock+
       '<div class="viz banfit"><h4>Where it fits</h4><p>The 🍌 is <b>deliberately separate</b> from the 🍊 <b>Buy-now</b> (timing) and the 🍒 <b>Conviction</b> (all signals blended). It is <b>NOT folded into either score</b> — it’s its own lens so you can hunt for fresh-news candidates directly (sort the Stock Pot by 🍌). The <i>earnings/news signals that DO move the 🍊</i> — the EPS beat/miss (PEAD), EPS <i>growth</i> (forward vs trailing), and the news-flow nudge — live inside the orange; the banana is the standalone news-timing view.</p></div>'+
@@ -7522,7 +7538,7 @@ function snowflakeAxes(o){
     {k:'conviction',label:'Conviction',emoji:'🍒',v:(cherry!=null?Math.round(cherry):null),
       info:'🍒 <b>Overall conviction</b> — the buy-now score tempered by how ALL the signals vote (for vs against). How strong is it, full stop?'},
     {k:'news',label:'News',emoji:'🍌',v:news,
-      info:'🍌 <b>Fresh news</b> — positive recent coverage the price <i>hasn’t chased yet</i>. High = a fresh catalyst you’re early to.'},
+      info:'🍌 <b>Fresh news</b> — positive, <i>widely-covered</i> recent news the price <i>hasn’t chased yet</i>. High = a real wave of coverage (many articles, many outlets) on a fresh catalyst you’re early to — a lone headline counts for less.'},
     {k:'value',label:'Value',emoji:'💰',v:(fd.value_score!=null?Math.round(fd.value_score):null),
       info:'💰 <b>Value</b> — how cheap it is on the fundamentals (P/E, P/B, PEG). Higher = better value.'},
     {k:'quality',label:'Quality',emoji:'🏆',v:(fd.quality_score!=null?Math.round(fd.quality_score):null),
@@ -7930,7 +7946,7 @@ function kitchenScoreStory(D){
         +'<div class="ks-ing"><span class="e">📰</span><span class="n">News buzz</span><span class="ks-v ks-vu">for</span></div>'
         +'<div class="ks-ing"><span class="e">💧</span><span class="n">Money-flow</span><span class="ks-v ks-vu">for</span></div>'
         +'<div class="ks-pills"><span class="ks-mini">tally the votes → conviction. A stock can be <b>strong</b> (high 🍒) yet a <b>poor entry today</b> (low 🍊)</span></div></div>'
-      +'<div class="ks-lane b"><div class="ks-lq">🍌 "Is there <em>fresh news</em> it hasn’t chased?"</div><div class="ks-lsub">Pure <b>news &amp; sentiment</b> — bullish flow, how one-sided it is, and crucially how little the price has moved on it. Rewards a name that <b>hasn’t run yet</b>. 0–100.</div>'
+      +'<div class="ks-lane b"><div class="ks-lq">🍌 "Is there <em>fresh news</em> it hasn’t chased?"</div><div class="ks-lsub">Pure <b>news &amp; sentiment</b> — bullish flow, how one-sided it is, <b>how much &amp; how broadly it’s covered</b> (a wave of articles across many outlets beats a lone headline; mega-caps discounted for baseline buzz), and crucially how little the price has moved on it. Rewards a name that <b>hasn’t run yet</b>. 0–100.</div>'
         +'<div class="ks-ll">Three ingredients</div>'
         +'<div class="ks-ing"><span class="e">📰</span><span class="n">News tone <small>bullish &amp; one-sided beats mixed</small></span><span class="ks-v ks-vu">for</span></div>'
         +'<div class="ks-ing"><span class="e">📈</span><span class="n">Growth since the news <small>already run up = lower score</small></span><span class="ks-v ks-vn">gate</span></div>'
@@ -8710,10 +8726,11 @@ var INFO={
     '<p>The subset our four discovery nets surfaced <i>tonight</i> — <b>news / macro</b>, the <b>whole-market quant</b> scan, the <b>earnings calendar</b>, and <b>new listings / IPOs</b>. These are the names with a fresh, datable reason to look now.</p>'+
     '<p>Every one of these gets the <b>full</b> signal treatment (so both 🍊 and 🍒), and they’re the pool tonight’s 6 served picks are chosen from. Tap <b>📋 audit list</b> to see every scored name and which net found it — no black box.</p>'},
   banana:{icon:'🍌',title:'🍌 Sentiment — fresh news the price hasn’t chased',body:
-    '<p>A pure <b>news-and-sentiment</b> score, 0–100 — deliberately separate from the 🍊 timing and 🍒 conviction scores. It answers one question: <b>is there fresh bullish news that the price hasn’t run on yet?</b></p>'+
-    '<p>Three ingredients:</p>'+
+    '<p>A pure <b>news-and-sentiment</b> score, 0–100 — deliberately separate from the 🍊 timing and 🍒 conviction scores. It answers one question: <b>is there a wave of fresh bullish news that the price hasn’t run on yet?</b></p>'+
+    '<p>Four ingredients:</p>'+
     '<ul class="infoul">'+
-    '<li>📰 <b>News tone</b> — how bullish the recent flow is, and how <i>one-sided</i> it is (all-good beats mixed).</li>'+
+    '<li>🗞️ <b>News tone</b> — how bullish the recent flow is, and how <i>one-sided</i> it is (all-good beats mixed).</li>'+
+    '<li>📰 <b>How much &amp; how broad</b> — the sheer <i>volume</i> of fresh articles and how many distinct <i>outlets</i> carry it. A dozen stories across many mastheads beats one lone headline; and mega-caps are discounted, since they generate baseline coverage every day whether or not anything happened.</li>'+
     '<li>📈 <b>Growth since the news</b> — has the price already moved a lot on it? A name that has <b>not</b> chased the story scores higher — that’s the whole point.</li>'+
     '<li>⏱️ <b>Freshness</b> — the catalyst is recent (last ~7 days), not last month’s story.</li>'+
     '</ul>'+
@@ -8723,7 +8740,7 @@ var INFO={
     '<ul class="infoul">'+
     '<li>🍊 <b>high</b> = the model likes the <b>timing / setup right now</b>.</li>'+
     '<li>🍒 <b>high</b> = <b>every signal independently agrees</b> — broad conviction, not one lucky factor.</li>'+
-    '<li>🍌 <b>high</b> = there’s <b>fresh bullish news the price hasn’t chased yet</b> — you’re early.</li>'+
+    '<li>🍌 <b>high</b> = there’s a <b>wave of fresh bullish news the price hasn’t chased yet</b> — broadly covered, and you’re early.</li>'+
     '</ul>'+
     '<p>The 🍌 is the key twist: it rewards a name that hasn’t moved yet. So a name that’s <b>also</b> high on 🍊 and 🍒 means “great setup, everything agrees, <b>and</b> there’s a fresh catalyst you’re not late to.” That’s the genuine <b>“get in before it runs”</b> corner.</p>'+
     '<p class="infofoot">It’s <b>rare</b> — momentum names (high 🍊) have usually already moved (low 🍌), so all three rarely line up. When they do, it’s special. Sort by <b>🥗 Fruit salad</b> in The Stock Pot to see them ranked by their <i>weakest</i> fruit (all three must be strong to top the list).</p>'},
@@ -8755,7 +8772,7 @@ var INFO={
     '<li><b>Match</b> — how well this name fits <i>your</i> active levers. 100% = it satisfies every filter you’ve set; with no levers on, everything is 100%.</li>'+
     '<li>🍊 <b>Orange (Buy-Now)</b> — the model’s “how good a buy <i>right now</i>” score: catalyst + technicals + fundamentals rolled into one. Higher is stronger.</li>'+
     '<li>🍒 <b>Cherry</b> — the blended overall read: the orange score tempered by the full signal picture. This is the headline number on the card face.</li>'+
-    '<li>🍌 <b>Sentiment</b> — a pure <i>news</i> read: <b>positive recent news the price hasn’t chased yet</b>. High = fresh bullish coverage (last ~7 days) on a name that <i>hasn’t</i> run up on it — a not-yet-priced-in candidate; it falls as the price rises on that news (past ~10% up = mostly priced in). Positive-news-only — quiet or negative names sit at 0, and a name with no recent news shows a dash. Sort by 🍌 to float fresh-news candidates to the top.</li>'+
+    '<li>🍌 <b>Sentiment</b> — a pure <i>news</i> read: <b>positive, broadly-covered recent news the price hasn’t chased yet</b>. High = a real wave of fresh bullish coverage (last ~7 days) — <b>more articles across more outlets score higher, a lone story is damped, and mega-caps are discounted for their baseline daily buzz</b> — on a name that <i>hasn’t</i> run up on it. It falls as the price rises on that news (past ~10% up = mostly priced in). Positive-news-only — quiet or negative names sit at 0, and a name with no recent news shows a dash. Sort by 🍌 to float fresh-news candidates to the top.</li>'+
     '<li>🥗 <b>Fruit salad</b> — the <b>trifecta</b>: it shows the <i>weakest</i> of the three fruits (🍊/🍒/🍌). When all three are ≥ 60 it lights up as <b>🥗 N</b> — a rare sweet spot: a great setup (🍊), everything agrees (🍒), <b>and</b> there’s fresh news you’re early to (🍌). Otherwise it’s the plain weakest-fruit number (or — if a fruit is missing). Sort by 🥗 to rank every name by that weakest fruit, so only a true trifecta tops the list. Tap the 🥗 badge on any card for the full read.</li>'+
     '<li><b>Range</b> — where the price sits in its 1-year range: 0 = at the year’s low, 100 = at the year’s high.</li>'+
     '<li><b>Value</b> — how <i>cheap</i> it is on the fundamentals (P/E · P/B · PEG). Higher = better value.</li>'+
@@ -9761,7 +9778,9 @@ function timeAgo(iso){
   if(!iso) return '';
   try{ var mins=Math.round((Date.now()-new Date(iso).getTime())/60000);
     if(mins<1) return 'just now'; if(mins<60) return mins+'m ago';
-    var h=Math.floor(mins/60); return h+'h '+(mins%60)+'m ago'; }catch(e){ return ''; }
+    var h=Math.floor(mins/60);
+    if(h<24) return h+'h ago';                          // (user ask) drop the minutes once we're in hours…
+    var d=Math.floor(h/24); return d+'d '+(h%24)+'h ago'; }catch(e){ return ''; }  // …and show days + hours past a day
 }
 // News Staleness rule (CLAUDE.md): article >7 days old with no fresher update -> flag OLD, never
 // silently shown as if fresh. Real incident (9 Aug 2026, CQR): the single "In the news" headline
@@ -12497,17 +12516,63 @@ function fdrSent100(s){ return s==null?null:Math.round((Math.max(-1,Math.min(1,+
 // accurate version (features._sentiment_candidate: growth measured from the price ON the news date) replaces
 // this on the next major run. Same one-sided ≤7-day rules; growth proxied by today's move here. Returns
 // {score,why} or null. Positive news the price hasn't chased → high; positive news already run → low.
+// #banana-vol (24 Aug 2026) — mirror features._cap_weight: shrink the coverage-volume amplifier for large caps
+// (a mega-cap has baseline daily buzz; a small-cap's coverage surge is real signal). None cap → 1.0 (no damp).
+function _capWeight(mcap){
+  if(mcap==null) return 1.0;
+  var capB=mcap/1e9; if(capB<=2) return 1.0; if(capB>=200) return 0.35;
+  return 1.0-0.65*(Math.log(capB)/Math.LN10-Math.log(2)/Math.LN10)/(Math.log(200)/Math.LN10-Math.log(2)/Math.LN10);
+}
+// best-effort market cap for the banana's cap-damp: candidate fundamentals → candidate cap → whole-market scan
+// row (finderUniverse carries mcap for the whole universe, incl. US mega-caps that lack per-candidate cap).
+function _bananaCap(c){
+  try{ var f=c.fundamentals||{}; if(f.market_cap) return f.market_cap;
+    if(c.mcap) return c.mcap; if(c.marketCap) return c.marketCap;
+    var D=(LAST&&LAST.D)||{}, fu=((D.finderUniverse||{})[c.region||'us']||[]);
+    var s=String(c.sym||'').toUpperCase();
+    for(var i=0;i<fu.length;i++){ if(String(fu[i].sym||'').toUpperCase()===s && fu[i].mcap) return fu[i].mcap; }
+  }catch(e){} return null;
+}
+// #banana-vol (24 Aug 2026) — recompute a name's 🍌 from its stored `newsflow` using the volume+breadth+cap-aware
+// formula (mirrors features._sentiment_candidate). Read-only, no pipeline: it makes the new balancing visible
+// IMMEDIATELY (card, overlay AND leaderboard, consistently) on bundles whose stored sentimentScore predates this
+// change — until the next major run repopulates the score. Returns null if the object has no newsflow or the news
+// isn't net-positive/fresh (caller then falls back to the stored score). Keeps the pipeline's accurate growth-since-
+// the-news (stored on sentimentScore) rather than the cruder today's-move proxy.
+function _bananaRescore(o){
+  var nf=o&&o.newsflow; if(!nf) return null;
+  var dir=0.55*(nf.event||0)+0.45*(nf.tone||0); if(dir<=0) return null;
+  var ss=o.sentimentScore||{};
+  var age=(ss.freshAgeDays!=null)?ss.freshAgeDays:null;
+  if(age==null){ try{ if(o.news_date) age=Math.floor((Date.now()-new Date(o.news_date).getTime())/86400000); }catch(e){} }
+  if(age==null||age>7) return null;
+  var growth=(ss.growth!=null)?ss.growth:(parseFloat(String(o.change==null?'':o.change).replace(/[^0-9.\-]/g,''))||0);
+  var U=Math.max(0,Math.min(1,1-Math.max(0,growth)/10));
+  var vol=Math.min(nf.volume||0,6), brd=Math.max(0,Math.min(2,nf.breadth||0));
+  var base=Math.max(0,Math.min(1,dir/2));
+  var covf=Math.min(0.6+Math.min(vol,5)*0.12*_capWeight(_bananaCap(o))+0.4*Math.min(brd/2,1),1.3);
+  var S=Math.max(0,Math.min(1,base*covf)); if(nf.limited) S*=0.75;
+  var cov=(vol>=3&&brd>=1.3)?('broad coverage — '+vol+' fresh across '+(nf.stories||vol)+' outlets'):(vol<=1?'thin coverage — 1 fresh story':(vol+' fresh stories'));
+  return {score:Math.round(100*S*U), why:'Bullish, '+cov+', ~'+age+'d ago.', growth:growth, freshAgeDays:age, label:ss.label,
+          volume:nf.volume, breadth:nf.breadth, tone:nf.tone, event:nf.event, sources:nf.stories};
+}
 function fdrSentFallback(c){
   var growth=parseFloat(String(c.change==null?'':c.change).replace(/[^0-9.\-]/g,''))||0;   // rough proxy: today's move
   var U=Math.max(0,Math.min(1,1-Math.max(0,growth)/10));
   function daysAgo(d){ if(!d) return null; try{ return Math.floor((Date.now()-new Date(d).getTime())/86400000); }catch(e){ return null; } }
-  // A) news-scored candidate — proper newsflow tone (-3..+3), one-sided, ≤7-day. #sentlim: `limited` (single
-  // story) still counts (a fresh bullish announcement is the signal) — just damp the strength for thin coverage.
+  // A) news-scored candidate — proper newsflow, one-sided, ≤7-day. #banana-vol: strength blends coverage VOLUME
+  // (cap-damped) × source BREADTH with the directional (event+tone) core, mirroring features._sentiment_candidate
+  // so a scan/AU fallback reads the same as a pipeline-scored name. #sentlim: a single fresh story still counts.
   var nf=c.newsflow;
-  if(nf && nf.tone!=null && nf.tone>0){
+  if(nf && (0.55*(nf.event||0)+0.45*(nf.tone||0))>0){
     var age=daysAgo(c.news_date); if(age==null||age>7) return null;
-    var S=Math.max(0,Math.min(1,nf.tone/2)); if(nf.limited) S*=0.75;
-    return {score:Math.round(100*S*U), why:'Positive news ~'+age+'d ago (rough read — refines on the next run).'};
+    var vol=Math.min(nf.volume||0,6), brd=Math.max(0,Math.min(2,nf.breadth||0)), dir=0.55*(nf.event||0)+0.45*(nf.tone||0);
+    var base=Math.max(0,Math.min(1,dir/2));
+    var covf=Math.min(0.6+Math.min(vol,5)*0.12*_capWeight(_bananaCap(c))+0.4*Math.min(brd/2,1),1.3);
+    var S=Math.max(0,Math.min(1,base*covf)); if(nf.limited) S*=0.75;
+    var cov=(vol>=3&&brd>=1.3)?('broad coverage — '+vol+' fresh across '+(nf.stories||vol)+' outlets'):(vol<=1?'thin coverage — 1 fresh story':(vol+' fresh stories'));
+    return {score:Math.round(100*S*U), why:'Bullish, '+cov+', ~'+age+'d ago (rough read — refines on the next run).',
+            volume:nf.volume, breadth:nf.breadth, tone:nf.tone, event:nf.event, sources:nf.stories};
   }
   // B) #restone (19 Aug 2026, user-caught: QML) — a SCAN name (no newsflow) that DOES have Mac-sourced news in
   // the bundle (newsCache). Derive a rough one-sided tone from its headlines so a name with obvious fresh
