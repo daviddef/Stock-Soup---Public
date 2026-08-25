@@ -7693,14 +7693,30 @@ function _divDate(iso){ try{ var d=new Date(iso+'T00:00:00'); if(isNaN(d)) retur
 // analyst card (a name not in the pot, e.g. ORA) still SUBSTANTIATES the yield the Dividends board shows.
 function _divOf(o,region){
   var d=((o&&o.fundamentals)||{}).dividend;
-  if(d&&d.yield!=null&&d.yield>0) return d;
-  try{ var sym=(o&&o.sym);
-    var r=(((LAST&&LAST.D||{}).dividendBoard||{}).rows||[]).filter(function(x){return x.sym===sym&&(x.region||'us')===region;})[0];
-    if(r&&r.yield!=null) return {yield:r.yield, rate:r.rate, payout:r.payout, ex_date:r.exDate, pay_date:r.payDate,
-      franking:r.franking, amount:r.amount, avg5y_yield:r.avg5y_yield,
-      safety:(r.safety!=null?{score:r.safety, verdict:r.verdict, why:r.why||[]}:null)};
-  }catch(e){}
-  return null;
+  var sym=(o&&o.sym), r=null;
+  try{ r=(((LAST&&LAST.D||{}).dividendBoard||{}).rows||[]).filter(function(x){return x.sym===sym&&(x.region||'us')===region;})[0]; }catch(e){}
+  // base = the rich yfinance snapshot when it carries a real yield; else the consolidated board row (investsmart
+  // for AU — carries franking + ex-date) so an on-the-fly analyst card (a name not in the pot, e.g. ORA) still
+  // substantiates the yield the Dividends board shows.
+  var base = (d&&d.yield!=null&&d.yield>0) ? Object.assign({},d)
+    : (r&&r.yield!=null) ? {yield:r.yield, rate:r.rate, payout:r.payout, ex_date:r.exDate, pay_date:r.payDate,
+        franking:r.franking, amount:r.amount, avg5y_yield:r.avg5y_yield,
+        safety:(r.safety!=null?{score:r.safety, verdict:r.verdict, why:r.why||[]}:null)}
+    : null;
+  if(!base) return null;
+  // #div-fresh (25 Aug 2026, user-caught: BHP showing March ex-date while its Sept ex-date was live) — yfinance's
+  // fundamentals.dividend.ex_date is only ever the LAST ex-date, so it goes stale the moment a new dividend is
+  // declared. The forward ex-div calendar (dividendBoard) carries the CONFIRMED upcoming date — overlay it (and
+  // its pay-date / franking) whenever it's in the future and fresher than the snapshot's stale one.
+  try{ if(r&&r.exDate){
+    var today=new Date(); today.setHours(0,0,0,0); var bex=new Date(r.exDate+'T00:00:00');
+    var curEx=base.ex_date?new Date(base.ex_date+'T00:00:00'):null;
+    if(!isNaN(bex) && bex>=today && (!curEx||isNaN(curEx)||bex>curEx)){
+      base.ex_date=r.exDate; if(r.payDate) base.pay_date=r.payDate;
+      if(base.franking==null && r.franking!=null) base.franking=r.franking;
+    }
+  } }catch(e){}
+  return base;
 }
 function dividendCardHtml(o,region){
   var d=_divOf(o,region);
