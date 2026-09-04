@@ -3862,6 +3862,28 @@ function postmortemHtml(D){
     (dodged?'<div class="pm-block"><div class="pm-h">Losers we dodged</div><div class="pm-dodges">'+dodged+'</div></div>':'')+
   '</section>';
 }
+// #saladlab (4 Sep 2026, user ask) — the LEARNING panel: every scored name graded on its real 5-day forward
+// move vs the market, grouped by the SIGNAL COMBINATIONS it had at scan time, so we see which permutations
+// actually precede a win (the empirical basis for better 🥗 salads). Fed by salad-lab.py → latest.saladLab.
+// Cross-market (edges are largely market-agnostic; splitting would halve the sample). Reuses the pm-* styles.
+function saladLabHtml(D){
+  var sl=D.saladLab; if(!sl||!sl.matured) return '';
+  var b=sl.baseline||{}, H=sl.horizon||5;
+  function row(s){ var v=s.avgExcess, cls=v>=0?'up':'down';
+    return '<div class="pm-row"><b class="pm-sym" style="flex:1">'+esc(s.combo||s.flag)+'</b>'+
+      '<span class="pm-mv '+cls+'">'+(v>=0?'+':'')+v+'%</span>'+
+      '<span class="pm-sc">win '+s.winRate+'% · n='+s.n+'</span></div>'; }
+  var single=(sl.single||[]).slice(0,6).map(row).join('');
+  var combos=(sl.combos||[]).slice(0,6).map(row).join('');
+  var worst=(sl.worst||[]).slice(0,4).map(row).join('');
+  return '<section class="panel pm-panel"><div class="paneltop"><h3>🥗 Salad Lab — what actually wins</h3></div>'+
+    '<p class="sec-sub" style="margin-top:2px">Every scored name, graded on its <b>real '+H+'-day forward move vs the market</b>, grouped by the signals it carried at scan time — so we learn which <b>combinations</b> precede a win, not just single fruits. <span class="pm-stamp">'+esc(sl.span||'')+' · '+sl.matured+' graded</span></p>'+
+    (b.winRate!=null?'<div class="pm-stat">Baseline: any scored name beat the market <b>'+b.winRate+'%</b> of the time over '+H+'d (avg '+(b.avgExcess>=0?'+':'')+b.avgExcess+'%). A combo above this is a real edge.</div>':'')+
+    (single?'<div class="pm-block"><div class="pm-h">Strongest single triggers</div>'+single+'</div>':'')+
+    (combos?'<div class="pm-block"><div class="pm-h">Best signal combinations — lean into these for the next salad</div>'+combos+'</div>':'')+
+    (worst?'<div class="pm-block"><div class="pm-h">Worst combinations — down-weight</div>'+worst+'</div>':'')+
+  '</section>';
+}
 // Each horizon is its own KV block (latest.misses/missesWeek/missesMonth) so a run that only refreshed
 // Day still shows real Week/Month data from whenever those last ran, not silently blanked.
 function missesSection(D){
@@ -6266,6 +6288,7 @@ function render(D,H){
       '<button class="trackcta" id="trackCta">See the full month graded → what we learned, what we\'d change</button></div></section>'+
     shadowPortfolioHtml(D)+
     postmortemHtml(D)+
+    saladLabHtml(D)+
     missesSection(D)+
   '</div>'+
 
